@@ -27,6 +27,9 @@ This directory contains definitions and specialized prompts for domain-focused s
 7. **`fullstack-architect`** (`prompts/fullstack-architect.md`):
    - **Role**: Principal Fullstack Architect.
    - **Focus**: E2E type-safety (OpenAPI/Zod), optimistic UI mutations, SSE/WebSocket streams.
+8. **`python-specialist`** (`prompts/python-specialist.md`):
+   - **Role**: Principal Python Systems Engineer.
+   - **Focus**: Python 3.11+, FastAPI, SQLAlchemy 2.0 async, Pydantic v2, asyncio event loops.
 
 ---
 

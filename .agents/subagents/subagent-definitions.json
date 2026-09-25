@@ -62,6 +62,15 @@
       "enable_write_tools": true,
       "enable_subagent_tools": false,
       "recommended_model": "pro"
+    },
+    {
+      "name": "python-specialist",
+      "role": "Principal Python Systems Engineer",
+      "description": "Deep-dives into modern Python (3.11+), FastAPI, SQLAlchemy 2.0 async, Pydantic v2, and asyncio event loops.",
+      "promptFile": "./prompts/python-specialist.md",
+      "enable_write_tools": true,
+      "enable_subagent_tools": false,
+      "recommended_model": "inherit"
     }
   ]
 }
