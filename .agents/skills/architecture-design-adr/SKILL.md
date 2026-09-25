@@ -34,3 +34,10 @@ Before recommending or executing an architectural change, evaluate:
 1. Identify the need for a documented decision (e.g., choice between PostgreSQL `pgvector` vs dedicated vector DB, or EF Core vs Dapper).
 2. Create an ADR document inside `docs/adr/` using the [ADR Production Template](./references/adr-template.md).
 3. Outline context, considered options, pros/cons matrix, and the final decision with consequences.
+
+---
+
+## 4. ⚡ Token-Saving Execution Rule
+- **Matrix-First**: Format option evaluations in compact markdown tables.
+- **Concise Trade-offs**: Limit pros and cons to high-impact points (1–2 lines each). Avoid verbose narrative prose.
+

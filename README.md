@@ -24,6 +24,7 @@ Designed to be version-controlled as a reusable Git repository and deployed acro
 senior-developer-arsenal/
 ├── .agents/
 │   ├── rules/                              # Behavioral guidelines & constraints
+│   │   ├── token-conservation.md           # Strict token frugality, surgical diffs & context engineering
 │   │   ├── senior-engineer-core.md         # Architecture, clean code, code review principles
 │   │   ├── csharp-dotnet-standards.md      # .NET 8/9, EF Core, Dapper, async/await, Result pattern
 │   │   ├── nodejs-standards.md             # TS Strict, non-blocking event loop, streams, security

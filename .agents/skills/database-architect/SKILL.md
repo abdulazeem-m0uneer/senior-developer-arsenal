@@ -45,3 +45,10 @@ Consult the deep-dive: [SQLite Production Tuning Guide](./references/sqlite-prod
 1. **WAL Mode**: Always execute `PRAGMA journal_mode = WAL;`.
 2. **Batch Transactions**: Wrap multiple inserts inside explicit transactions.
 3. **Timeouts**: Set `PRAGMA busy_timeout = 5000;` to prevent `database is locked` errors during concurrent access.
+
+---
+
+## 3. ⚡ Token-Saving Execution Rule
+- **Direct DDL/DML**: Output only the necessary SQL statements and indexes. Omit conversational explanations of obvious SQL syntax.
+- **Execution Plan Distillation**: Extract only critical plan metrics (Node type, Total cost, Actual time, Buffers hit/read). Never paste 200 lines of raw text execution plans unless requested.
+

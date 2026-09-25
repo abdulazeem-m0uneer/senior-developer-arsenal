@@ -75,3 +75,8 @@ npm run lint
 # Run unit & integration tests
 npm test
 ```
+
+### E. ⚡ Token-Saving Execution Rule
+- **Targeted Modules Only**: Output only modified TypeScript functions, Zod schemas, or handlers. Never paste entire service files.
+- **Terse Reporting**: Summarize linting and test results in 1 line (`✅ ESLint & Vitest: 18 tests passed`). Omit verbose npm headers.
+

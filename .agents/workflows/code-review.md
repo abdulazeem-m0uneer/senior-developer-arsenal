@@ -37,6 +37,10 @@ Follow this procedure whenever requested to perform a code review or audit chang
 4. **Generate Structured Review Report**:
    - Produce a markdown report using the senior feedback rubric:
      - **Verdict**: [ Approved | Approved with Suggestions | Changes Requested ]
-     - **Summary**: Concise high-level appraisal.
+     - **Summary**: Concise high-level appraisal (max 2 sentences).
      - **Ranked Findings**: Grouped by `🚨 [Blocker]`, `⚡ [Performance]`, `🏗️ [Architecture]`, and `💡 [Suggestion]`.
-     - **Concrete Diffs**: Exact before/after code snippets for every recommendation.
+     - **Concrete Diffs**: Exact 2-5 line snippets for fixes. Never paste full unchanged files.
+
+5. **Token Conservation Mandate**:
+   - Omit generic review intros and outros. Output only the structured report.
+

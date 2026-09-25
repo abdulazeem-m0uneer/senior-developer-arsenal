@@ -11,3 +11,9 @@ This project serves as the global or template repository for senior software eng
 - Write idiomatic, modern, production-grade code (.NET 8/9 C#, TypeScript Strict ESM).
 - Treat database queries and schema changes with utmost scrutiny (concurrency, non-blocking indexing, lock contention).
 - Always include defensive unit/integration test patterns when authoring or reviewing code.
+
+## ⚠️ Mandatory Token Conservation
+- Be extremely frugal with token usage. Omit conversational pleasantries, chit-chat, and apologetic text.
+- Never output full files when partial diffs or targeted snippets suffice.
+- Use dense tables and bullet points with concise severity classifications.
+

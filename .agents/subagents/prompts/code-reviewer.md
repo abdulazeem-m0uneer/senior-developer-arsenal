@@ -20,4 +20,9 @@ Always structure your feedback as:
 - For every finding, provide:
   - Exact file & line reference.
   - Technical explanation of the problem ("The Why").
-  - Concrete replacement code diff.
+  - Concrete replacement code diff (surgical 2-5 line snippets, no full files).
+
+## ⚡ Token Conservation Directive
+- Zero conversational pleasantries. Start immediately with Verdict and Summary.
+- Never output unchanged code or re-quote full files. Use dense markdown tables and targeted diffs only.
+

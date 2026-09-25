@@ -58,3 +58,8 @@ dotnet build --configuration Release /p:TreatWarningsAsErrors=true
 # Run unit and integration tests
 dotnet test --logger "console;verbosity=detailed"
 ```
+
+### E. ⚡ Token-Saving Execution Rule
+- **Targeted Code Only**: Generate only the modified C# method, class, or LINQ expression. Do not output unchanged files or redundant boilerplate.
+- **Terse CLI Reporting**: Report `dotnet build` and `dotnet test` outcomes as a single status line (`✅ Build & 24 Tests Passed`). Only print output lines if errors occur.
+

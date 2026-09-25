@@ -45,3 +45,12 @@ Format the final review report according to the [Feedback Rubric](./references/f
   - `🏗️ [Architecture]`: Layer violations, bad abstractions, tight coupling.
   - `💡 [Suggestion / Nit]`: Code readability, minor idioms, naming.
 - **Concrete Code Snippets**: Provide exact replacement code diffs illustrating the recommended fix.
+
+---
+
+## 3. ⚡ Token-Saving Execution Rule
+
+- **Dense Output**: Output findings strictly in concise markdown tables or bullet lists.
+- **Surgical Diffs**: Show only targeted 2-5 line diffs for fixes. Never print entire unmodified files.
+- **Zero Fluff**: Omit generic review introductions. Start immediately with the Executive Summary and Findings table.
+

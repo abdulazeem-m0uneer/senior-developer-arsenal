@@ -56,3 +56,10 @@ git rebase -i HEAD~4
 1. **Never guess**: Inspect both the incoming changes (`THEIRS` / upstream) and your local branch changes (`OURS`).
 2. **Preserve invariants**: Ensure both intended fixes coexist cleanly.
 3. **Verify build and tests**: Run `dotnet test` or `npm test` immediately after conflict resolution before continuing the rebase.
+
+---
+
+## 3. ⚡ Token-Saving Execution Rule
+- **Command-First**: Provide direct Git CLI commands. Avoid lengthy explanations of standard Git flags unless asked.
+- **Log Summaries**: Use `git log --oneline -n <N>` to prevent context window saturation.
+
