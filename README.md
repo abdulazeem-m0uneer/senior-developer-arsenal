@@ -95,6 +95,10 @@ senior-developer-arsenal/
 │       ├── api-design.md                   # /api-design workflow
 │       ├── perf-audit.md                   # /perf-audit workflow
 │       └── git-release.md                  # /git-release workflow
+├── scripts/
+│   └── arsenal                             # Native CLI helper for Ubuntu / Linux / WSL
+├── docs/
+│   └── UBUNTU-INTEGRATION.md               # Dedicated guide for Ubuntu OS & WSL integration
 ├── AGENTS.md                               # Root agent configuration file
 ├── GEMINI.md                               # Workspace rules marker
 ├── install.ps1                             # PowerShell installer for Windows
@@ -119,12 +123,13 @@ cd C:\Users\Abdulazeem\Desktop\senior-developer-arsenal
 ```
 
 ```bash
-# In Linux / macOS / WSL:
+# In Ubuntu / Linux / WSL:
 cd ~/Desktop/senior-developer-arsenal
-chmod +x install.sh
-./install.sh --global
+chmod +x install.sh scripts/arsenal
+./install.sh --global --cli
 ```
-*This installs skills into `~/.gemini/config/skills/` and rules into `~/.gemini/config/rules/`.*
+*Installs skills into `~/.gemini/config/skills/`, rules into `~/.gemini/config/rules/`, and provides the `arsenal` command in your terminal.*
+*(See [Ubuntu & Linux Integration Guide](docs/UBUNTU-INTEGRATION.md) for full Linux details).*
 
 ---
 
@@ -132,17 +137,17 @@ chmod +x install.sh
 Inject or symlink the `.agents/` directory directly into a target repository:
 
 ```powershell
-# Copy into an existing project:
+# In Windows PowerShell (Copy or Symlink):
 .\install.ps1 -Project "C:\Users\Abdulazeem\repos\my-api"
-
-# Or create a symbolic link (changes in arsenal automatically reflect in project):
 .\install.ps1 -Project "C:\Users\Abdulazeem\repos\my-api" -Symlink
 ```
 
 ```bash
-# On Linux / macOS / WSL:
-./install.sh --project /path/to/my-project
-./install.sh --project /path/to/my-project --symlink
+# In Ubuntu / Linux using the 'arsenal' CLI:
+cd ~/projects/my-api
+arsenal link .          # Creates live symlinks to the arsenal
+# Or manually via install.sh:
+./install.sh --project /path/to/my-project --link
 ```
 
 ---
