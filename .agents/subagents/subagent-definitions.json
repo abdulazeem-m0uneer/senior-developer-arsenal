@@ -1,0 +1,49 @@
+{
+  "subagents": [
+    {
+      "name": "code-reviewer",
+      "role": "Senior Staff Code Reviewer",
+      "description": "Reviews code changes, pull requests, and git diffs against senior engineering standards: correctness, security, performance, and clean architecture.",
+      "promptFile": "./prompts/code-reviewer.md",
+      "enable_write_tools": true,
+      "enable_subagent_tools": false,
+      "recommended_model": "pro"
+    },
+    {
+      "name": "db-architect",
+      "role": "Senior Database Architect",
+      "description": "Designs schemas, optimizes queries (EXPLAIN ANALYZE), builds indexing strategies, and verifies zero-downtime migrations across PostgreSQL, MSSQL, and SQLite.",
+      "promptFile": "./prompts/db-architect.md",
+      "enable_write_tools": true,
+      "enable_subagent_tools": false,
+      "recommended_model": "inherit"
+    },
+    {
+      "name": "dotnet-specialist",
+      "role": "Principal .NET & C# Engineer",
+      "description": "Deep-dives into C# (.NET 8/9), ASP.NET Core Web APIs, EF Core query performance, Dapper, async/concurrency, and Clean Architecture.",
+      "promptFile": "./prompts/dotnet-specialist.md",
+      "enable_write_tools": true,
+      "enable_subagent_tools": false,
+      "recommended_model": "inherit"
+    },
+    {
+      "name": "node-specialist",
+      "role": "Principal Node.js & TypeScript Engineer",
+      "description": "Deep-dives into Node.js / TypeScript backends, non-blocking event loop optimization, stream processing, and Fastify/Express/NestJS APIs.",
+      "promptFile": "./prompts/node-specialist.md",
+      "enable_write_tools": true,
+      "enable_subagent_tools": false,
+      "recommended_model": "inherit"
+    },
+    {
+      "name": "security-auditor",
+      "role": "Application Security Auditor",
+      "description": "Audits codebases for OWASP Top 10 vulnerabilities, SQL injection, broken authorization (IDOR/BOLA), secrets leakage, and timing attacks.",
+      "promptFile": "./prompts/security-auditor.md",
+      "enable_write_tools": false,
+      "enable_subagent_tools": false,
+      "recommended_model": "pro"
+    }
+  ]
+}
