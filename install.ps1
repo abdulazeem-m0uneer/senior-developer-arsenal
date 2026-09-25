@@ -44,6 +44,7 @@ if ($Global) {
     $GlobalConfigDir = Join-Path $env:USERPROFILE ".gemini\config"
     $GlobalSkillsDir = Join-Path $GlobalConfigDir "skills"
     $GlobalRulesDir = Join-Path $GlobalConfigDir "rules"
+    $GlobalWorkflowsDir = Join-Path $GlobalConfigDir "workflows"
 
     Write-Host "[+] Installing globally into: $GlobalConfigDir" -ForegroundColor Yellow
 
@@ -52,6 +53,9 @@ if ($Global) {
     }
     if (-not (Test-Path $GlobalRulesDir)) {
         New-Item -ItemType Directory -Path $GlobalRulesDir -Force | Out-Null
+    }
+    if (-not (Test-Path $GlobalWorkflowsDir)) {
+        New-Item -ItemType Directory -Path $GlobalWorkflowsDir -Force | Out-Null
     }
 
     # Copy Skills
@@ -70,7 +74,15 @@ if ($Global) {
         Copy-Item -Path $rule.FullName -Destination $target -Force
     }
 
-    Write-Host "`n[SUCCESS] Global installation completed! All projects in Antigravity will now load these skills." -ForegroundColor Green
+    # Copy Workflows
+    $Workflows = Get-ChildItem -Path (Join-Path $SourceAgents "workflows") -Filter "*.md"
+    foreach ($wf in $Workflows) {
+        $target = Join-Path $GlobalWorkflowsDir $wf.Name
+        Write-Host "  -> Installing workflow: $($wf.Name)" -ForegroundColor Green
+        Copy-Item -Path $wf.FullName -Destination $target -Force
+    }
+
+    Write-Host "`n[SUCCESS] Global installation completed! All projects in Antigravity will now load these skills, rules, and workflows." -ForegroundColor Green
 }
 
 # 2. Project Installation Mode
@@ -87,13 +99,21 @@ if ($Project) {
     $TargetAgentsMd = Join-Path $TargetProject "AGENTS.md"
 
     if ($Symlink) {
-        Write-Host "  -> Creating symbolic link for .agents directory..." -ForegroundColor Cyan
+        Write-Host "  -> Creating live link for .agents directory..." -ForegroundColor Cyan
         if (Test-Path $TargetAgents) { Remove-Item -Path $TargetAgents -Recurse -Force }
-        New-Item -ItemType SymbolicLink -Path $TargetAgents -Target $SourceAgents | Out-Null
+        try {
+            New-Item -ItemType Junction -Path $TargetAgents -Target $SourceAgents -ErrorAction Stop | Out-Null
+        } catch {
+            New-Item -ItemType SymbolicLink -Path $TargetAgents -Target $SourceAgents | Out-Null
+        }
 
-        Write-Host "  -> Creating symbolic link for AGENTS.md..." -ForegroundColor Cyan
+        Write-Host "  -> Creating live link for AGENTS.md..." -ForegroundColor Cyan
         if (Test-Path $TargetAgentsMd) { Remove-Item -Path $TargetAgentsMd -Force }
-        New-Item -ItemType SymbolicLink -Path $TargetAgentsMd -Target $SourceAgentsMd | Out-Null
+        try {
+            New-Item -ItemType HardLink -Path $TargetAgentsMd -Target $SourceAgentsMd -ErrorAction Stop | Out-Null
+        } catch {
+            New-Item -ItemType SymbolicLink -Path $TargetAgentsMd -Target $SourceAgentsMd | Out-Null
+        }
     } else {
         Write-Host "  -> Copying .agents directory..." -ForegroundColor Cyan
         Copy-Item -Path $SourceAgents -Destination $TargetAgents -Recurse -Force

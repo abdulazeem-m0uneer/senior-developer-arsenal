@@ -18,6 +18,7 @@ SOURCE_AGENTS_MD="$ARSENAL_DIR/AGENTS.md"
 GLOBAL_CONFIG="$HOME/.gemini/config"
 GLOBAL_SKILLS="$GLOBAL_CONFIG/skills"
 GLOBAL_RULES="$GLOBAL_CONFIG/rules"
+GLOBAL_WORKFLOWS="$GLOBAL_CONFIG/workflows"
 
 # ANSI Colors
 CYAN='\033[0;36m'
@@ -45,7 +46,7 @@ show_help() {
 
 cmd_sync() {
   echo -e "${YELLOW}[+] Synchronizing globally into: $GLOBAL_CONFIG${NC}"
-  mkdir -p "$GLOBAL_SKILLS" "$GLOBAL_RULES"
+  mkdir -p "$GLOBAL_SKILLS" "$GLOBAL_RULES" "$GLOBAL_WORKFLOWS"
 
   local skill_count=0
   for skill_dir in "$SOURCE_AGENTS/skills/"*; do
@@ -70,8 +71,19 @@ cmd_sync() {
     fi
   done
 
+  local wf_count=0
+  for wf_file in "$SOURCE_AGENTS/workflows/"*.md; do
+    if [ -f "$wf_file" ]; then
+      wf_name="$(basename "$wf_file")"
+      target="$GLOBAL_WORKFLOWS/$wf_name"
+      cp "$wf_file" "$target"
+      echo -e "  -> ${GREEN}Workflow installed:${NC} $wf_name"
+      ((wf_count++))
+    fi
+  done
+
   echo ""
-  echo -e "${GREEN}[SUCCESS] Installed $skill_count skills and $rule_count rules into $GLOBAL_CONFIG${NC}"
+  echo -e "${GREEN}[SUCCESS] Installed $skill_count skills, $rule_count rules, and $wf_count workflows into $GLOBAL_CONFIG${NC}"
 }
 
 cmd_link() {
@@ -120,6 +132,13 @@ cmd_status() {
     done
   else
     echo "  No rules directory found at $GLOBAL_RULES"
+  fi
+
+  if [ -d "$GLOBAL_WORKFLOWS" ]; then
+    echo -e "\n${YELLOW}Active Workflows:${NC}"
+    for w in "$GLOBAL_WORKFLOWS/"*.md; do
+      [ -f "$w" ] && echo "  - $(basename "$w")"
+    done
   fi
 }
 

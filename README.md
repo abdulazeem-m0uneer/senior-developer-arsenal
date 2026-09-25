@@ -84,7 +84,7 @@ senior-developer-arsenal/
 │   │       ├── dotnet-specialist.md        # Principal .NET & C# Systems persona
 │   │       ├── node-specialist.md          # Principal Node.js & TypeScript Systems persona
 │   │       └── security-auditor.md         # Application Security Auditor persona
-│   └── workflows/                          # Standardized workflow runbooks
+│   ├── workflows/                          # Standardized workflow runbooks
 │       ├── code-review.md                  # /code-review workflow
 │       ├── investigate.md                  # /investigate workflow
 │       ├── python-audit.md                 # /python-audit workflow
@@ -95,6 +95,9 @@ senior-developer-arsenal/
 │       ├── api-design.md                   # /api-design workflow
 │       ├── perf-audit.md                   # /perf-audit workflow
 │       └── git-release.md                  # /git-release workflow
+│   └── skills.json                         # Explicit skills manifest for deterministic discovery
+├── .githooks/
+│   └── commit-msg                          # Automated Conventional Commits validator hook
 ├── scripts/
 │   └── arsenal                             # Native CLI helper for Ubuntu / Linux / WSL
 ├── docs/
@@ -149,6 +152,17 @@ arsenal link .          # Creates live symlinks to the arsenal
 # Or manually via install.sh:
 ./install.sh --project /path/to/my-project --link
 ```
+
+---
+
+### Option C: Automated Conventional Commits Hook
+Enforce standardized commit messages automatically across your repository:
+
+```bash
+# Enable the pre-configured commit-msg hook:
+git config core.hooksPath .githooks
+```
+*Rejects non-compliant commit messages before they enter git history.*
 
 ---
 

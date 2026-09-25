@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# Git commit-msg hook: Enforces Conventional Commits specification
+# ==============================================================================
+# Format: <type>(<scope>): <subject>
+# Types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert
+
+commit_msg_file="$1"
+first_line=$(head -n 1 "$commit_msg_file")
+
+# Allow merge commits
+if [[ "$first_line" =~ ^Merge.* ]]; then
+  exit 0
+fi
+
+# Conventional commit pattern
+conventional_regex='^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-zA-Z0-9_\.\-]+\))?!?: .{1,80}$'
+
+if ! [[ "$first_line" =~ $conventional_regex ]]; then
+  echo "" >&2
+  echo "❌ [ERROR] Commit message does not follow Conventional Commits standard!" >&2
+  echo "------------------------------------------------------------------------" >&2
+  echo "Your message was:" >&2
+  echo "  $first_line" >&2
+  echo "" >&2
+  echo "Expected format: <type>(<scope>): <subject>" >&2
+  echo "Allowed types  : feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert" >&2
+  echo "Example        : feat(order): add split payment calculation" >&2
+  echo "               : fix(auth): resolve expired token refresh deadlock" >&2
+  echo "------------------------------------------------------------------------" >&2
+  exit 1
+fi

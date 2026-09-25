@@ -84,9 +84,10 @@ if [ "$GLOBAL_MODE" = true ]; then
   GLOBAL_CONFIG="$HOME/.gemini/config"
   GLOBAL_SKILLS="$GLOBAL_CONFIG/skills"
   GLOBAL_RULES="$GLOBAL_CONFIG/rules"
+  GLOBAL_WORKFLOWS="$GLOBAL_CONFIG/workflows"
 
   echo -e "${YELLOW}[+] Installing globally into: $GLOBAL_CONFIG${NC}"
-  mkdir -p "$GLOBAL_SKILLS" "$GLOBAL_RULES"
+  mkdir -p "$GLOBAL_SKILLS" "$GLOBAL_RULES" "$GLOBAL_WORKFLOWS"
 
   skill_count=0
   for skill_dir in "$SOURCE_AGENTS/skills/"*; do
@@ -110,8 +111,18 @@ if [ "$GLOBAL_MODE" = true ]; then
     fi
   done
 
+  wf_count=0
+  for wf_file in "$SOURCE_AGENTS/workflows/"*.md; do
+    if [ -f "$wf_file" ]; then
+      wf_name="$(basename "$wf_file")"
+      cp "$wf_file" "$GLOBAL_WORKFLOWS/$wf_name"
+      echo -e "  -> ${GREEN}Workflow:${NC} $wf_name"
+      ((wf_count++))
+    fi
+  done
+
   echo ""
-  echo -e "${GREEN}[SUCCESS] Installed $skill_count skills and $rule_count rules globally!${NC}"
+  echo -e "${GREEN}[SUCCESS] Installed $skill_count skills, $rule_count rules, and $wf_count workflows globally!${NC}"
 fi
 
 # 2. CLI Tool Installation Mode
