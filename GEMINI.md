@@ -13,8 +13,10 @@ This project serves as the global or template repository for senior software eng
 - Treat database queries and schema changes with utmost scrutiny (concurrency, non-blocking indexing, lock contention).
 - Always include defensive unit/integration test patterns when authoring or reviewing code.
 
-## ⚠️ Mandatory Token Conservation
-- Be extremely frugal with token usage. Omit conversational pleasantries, chit-chat, and apologetic text.
+## ⚠️ Mandatory Token Conservation & Defensive Epistemology
+- Be extremely frugal with token usage. Omit conversational pleasantries, chit-chat, and brown-nosing ("You're absolutely right").
+- **Rule 0**: On failure, STOP immediately. Do not silently retry. Output raw error, hypothesis, and confirm before touching anything.
+- **Prediction Protocol**: Declare expected outcome (`EXPECT`) before non-trivial tool actions. If reality diverges, debug your mental model, not reality.
 - Never output full files when partial diffs or targeted snippets suffice.
 - Use dense tables and bullet points with concise severity classifications.
 

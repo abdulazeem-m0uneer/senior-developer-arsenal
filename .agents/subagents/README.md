@@ -30,6 +30,9 @@ This directory contains definitions and specialized prompts for domain-focused s
 8. **`python-specialist`** (`prompts/python-specialist.md`):
    - **Role**: Principal Python Systems Engineer.
    - **Focus**: Python 3.11+, FastAPI, SQLAlchemy 2.0 async, Pydantic v2, asyncio event loops.
+9. **`epistemic-debugger`** (`prompts/epistemic-debugger.md`):
+   - **Role**: Epistemic Debugger & Root Cause Specialist.
+   - **Focus**: Applied rationality, 5+ competing hypotheses, 5-Whys causal tree, Rule 0 failure stop, Chesterton's Fence.
 
 ---
 

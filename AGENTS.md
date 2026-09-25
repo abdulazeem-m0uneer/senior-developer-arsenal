@@ -4,10 +4,12 @@ This file defines the authoritative engineering rules, architectural philosophie
 
 ---
 
-## 0. High-Priority Operating Constraint: Maximum Token Efficiency
+## 0. High-Priority Operating Constraint: Token Efficiency & Defensive Epistemology
 
-The user requires **strict token conservation**:
-- **Zero Conversational Fluff**: No greetings, filler, or apologetic preambles. Start immediately with technical findings, diffs, or commands.
+The user requires **strict token conservation and applied rationality**:
+- **Zero Conversational Fluff & Anti-Sycophancy**: No greetings, filler, apologies, or brown-nosing ("You're absolutely right"). Output starts immediately with technical findings, diffs, or commands.
+- **Rule 0 on Failure**: When a tool, script, or test fails, **STOP immediately**. Do not silently retry or guess. Output the raw error, theory of failure, proposed action, and confirm before continuing.
+- **Prediction Protocol**: Before executing non-trivial actions, declare expected outcome (`EXPECT`). Verify immediately after (`MATCHES: yes/no`). If reality diverges from expectation, **debug your mental model**, not reality.
 - **Surgical Diffs Only**: Never output full unchanged files. Output only the modified lines or functions with minimal context.
 - **Dense, Compact Reporting**: Use concise tables and bullet points with severity tags (`[Blocker]`, `[Perf]`, `[Arch]`, `[Nit]`).
 - **No Echoing**: When creating or editing files, do not re-paste their content in the chat. Provide only the file link and a 1-line summary.
@@ -69,6 +71,7 @@ When approaching complex tasks, utilize the dedicated skills and subagents insid
 - **Python**: Activate `python-backend-expert` skill or invoke `python-specialist` subagent.
 - **Git & Releases**: Use `git-workflow-master` for rebase strategies and release automation.
 - **Skill Authoring**: Activate `skill-writer` skill to interactively design and scaffold new skills.
+- **Root Cause & Epistemic Debugging**: Run `/investigate` workflow, activate `root-cause-investigator` skill, or invoke `epistemic-debugger` subagent.
 
 
 

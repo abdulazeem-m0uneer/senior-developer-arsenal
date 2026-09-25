@@ -71,6 +71,15 @@
       "enable_write_tools": true,
       "enable_subagent_tools": false,
       "recommended_model": "inherit"
+    },
+    {
+      "name": "epistemic-debugger",
+      "role": "Epistemic Debugger & Root Cause Specialist",
+      "description": "Applies defensive epistemology, 5+ competing hypotheses, and 5-Whys causal analysis to diagnose complex bugs, crashes, and regressions.",
+      "promptFile": "./prompts/epistemic-debugger.md",
+      "enable_write_tools": true,
+      "enable_subagent_tools": false,
+      "recommended_model": "pro"
     }
   ]
 }
