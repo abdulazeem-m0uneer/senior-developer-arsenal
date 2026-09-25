@@ -44,6 +44,24 @@
       "enable_write_tools": false,
       "enable_subagent_tools": false,
       "recommended_model": "pro"
+    },
+    {
+      "name": "frontend-architect",
+      "role": "Senior Frontend Architect",
+      "description": "Architects modern React (18/19) and Angular (17/18/19) applications, Signal reactivity, re-render avoidance, and WCAG accessibility.",
+      "promptFile": "./prompts/frontend-architect.md",
+      "enable_write_tools": true,
+      "enable_subagent_tools": false,
+      "recommended_model": "inherit"
+    },
+    {
+      "name": "fullstack-architect",
+      "role": "Principal Fullstack Architect",
+      "description": "Bridges Frontend (React/Angular) with Backend (.NET/Node.js), ensuring end-to-end type safety, optimistic UI mutations, and real-time streams.",
+      "promptFile": "./prompts/fullstack-architect.md",
+      "enable_write_tools": true,
+      "enable_subagent_tools": false,
+      "recommended_model": "pro"
     }
   ]
 }

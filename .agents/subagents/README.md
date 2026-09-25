@@ -21,6 +21,12 @@ This directory contains definitions and specialized prompts for domain-focused s
 5. **`security-auditor`** (`prompts/security-auditor.md`):
    - **Role**: Application Security Auditor.
    - **Focus**: OWASP Top 10, SQLi, BOLA/IDOR, prototype pollution, secrets detection.
+6. **`frontend-architect`** (`prompts/frontend-architect.md`):
+   - **Role**: Senior Frontend Architect.
+   - **Focus**: React 18/19 (RSC, Zustand), Angular 17/18/19 (Signals, OnPush, @defer), a11y.
+7. **`fullstack-architect`** (`prompts/fullstack-architect.md`):
+   - **Role**: Principal Fullstack Architect.
+   - **Focus**: E2E type-safety (OpenAPI/Zod), optimistic UI mutations, SSE/WebSocket streams.
 
 ---
 

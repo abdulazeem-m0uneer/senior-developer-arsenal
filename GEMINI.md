@@ -8,7 +8,8 @@ This project serves as the global or template repository for senior software eng
 - Follow the subagent definitions in `.agents/subagents/` when delegating tasks.
 
 ## Code Standards Reminder
-- Write idiomatic, modern, production-grade code (.NET 8/9 C#, TypeScript Strict ESM).
+- Write idiomatic, modern, production-grade code (.NET 8/9 C#, TypeScript Strict ESM, React 18/19 RSC, Angular 17/18/19 Signals).
+- Enforce end-to-end type safety, optimistic UI rollback safety, and non-blocking database queries.
 - Treat database queries and schema changes with utmost scrutiny (concurrency, non-blocking indexing, lock contention).
 - Always include defensive unit/integration test patterns when authoring or reviewing code.
 
