@@ -66,4 +66,6 @@ When approaching complex tasks, utilize the dedicated skills and subagents insid
 - **C# / .NET**: Activate `csharp-dotnet-expert` skill or invoke `dotnet-specialist` subagent.
 - **Node.js**: Activate `nodejs-backend-expert` skill or invoke `node-specialist` subagent.
 - **Git & Releases**: Use `git-workflow-master` for rebase strategies and release automation.
+- **Skill Authoring**: Activate `skill-writer` skill to interactively design and scaffold new skills.
+
 

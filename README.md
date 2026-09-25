@@ -11,9 +11,9 @@ Designed to be version-controlled as a reusable Git repository and deployed acro
 | Component | Quantity | Purpose |
 | :--- | :---: | :--- |
 | **Workspace & Global Rules** | 8 | Enforce senior standards across Frontend, Backend, Databases, Git, and Token Conservation. |
-| **Specialized Skills** | 8 | Runbooks for Code Reviews, Frontend, Fullstack, C# .NET, Node.js, DB Tuning, Git, and ADRs. |
+| **Specialized Skills** | 9 | Runbooks for Reviews, Frontend, Fullstack, C# .NET, Node.js, DB Tuning, Git, ADRs, and Skill Writing. |
 | **Specialized Subagents** | 7 | Dedicated personas (`code-reviewer`, `frontend-architect`, `fullstack-architect`, `db-architect`, etc.). |
-| **Production Workflows** | 7 | Workflows for Reviews, Frontend Audits, E2E Features, DB Migrations, API Design, Perf, Releases. |
+| **Production Workflows** | 8 | Workflows for Reviews, Frontend Audits, E2E Features, DB Migrations, API Design, Perf, Releases, Skill Creation. |
 | **Multi-Project Installers** | 2 | Automated PowerShell (`install.ps1`) and Bash (`install.sh`) scripts for 1-click global or per-project setup. |
 
 ---
@@ -40,7 +40,8 @@ senior-developer-arsenal/
 │   │   ├── nodejs-backend-expert/          # Fastify/Express/NestJS, event loop latency, streams, security
 │   │   ├── database-architect/             # EXPLAIN ANALYZE, indexing (B-Tree, GIN, BRIN), non-blocking DDL
 │   │   ├── git-workflow-master/            # Interactive rebase, conflict resolution, SemVer release tags
-│   │   └── architecture-design-adr/        # Architecture Decision Records (ADRs) & trade-off frameworks
+│   │   ├── architecture-design-adr/        # Architecture Decision Records (ADRs) & trade-off frameworks
+│   │   └── skill-writer/                   # Interactive skill architect & generator with token-saving guardrails
 │   ├── subagents/                          # Subagent configuration profiles & prompts
 │   │   ├── subagent-definitions.json       # Declarative JSON manifest for subagent registration
 │   │   ├── README.md                       # Subagent delegation documentation
@@ -56,6 +57,7 @@ senior-developer-arsenal/
 │       ├── code-review.md                  # /code-review workflow
 │       ├── frontend-audit.md               # /frontend-audit workflow
 │       ├── e2e-feature.md                  # /e2e-feature workflow
+│       ├── create-skill.md                 # /create-skill workflow
 │       ├── database-migration.md           # /database-migration workflow
 │       ├── api-design.md                   # /api-design workflow
 │       ├── perf-audit.md                   # /perf-audit workflow
@@ -148,6 +150,12 @@ Inject or symlink the `.agents/` directory directly into a target repository:
 - **Includes**:
   - `references/adr-template.md`: Production-ready ADR template with evaluation matrix and consequence tracking.
 
+### 9. `skill-writer`
+- **When to use**: Interactively interviewing the user to architect, scaffold, and generate new token-efficient skills.
+- **Includes**:
+  - `references/skill-template.md`: Canonical skill structure with YAML frontmatter, execution steps, and token guardrails.
+  - `references/interview-guide.md`: Structured 4-question interview framework minimizing interaction rounds.
+
 ---
 
 ## 🤖 Subagents
@@ -171,8 +179,10 @@ Delegate complex tasks to specialized subagents defined in `.agents/subagents/`:
 - **`/code-review`**: Runs diff analysis, executes test/build commands, and outputs a severity-ranked code review.
 - **`/frontend-audit`**: Inspects re-render churn, OnPush change detection, deferred loading, and a11y compliance.
 - **`/e2e-feature`**: Guides fullstack feature delivery from migration to API to optimistic UI.
+- **`/create-skill`**: Interactively scaffolds a new token-efficient Antigravity skill with references.
 - **`/database-migration`**: Performs pre-migration lock safety audits, writes safe non-blocking DDL, and produces rollback scripts.
 - **`/api-design`**: Designs RESTful contracts, DTO records, schema validations (Zod/FluentValidation), and RFC 7807 problem details.
 - **`/perf-audit`**: Systematic scan for query bottlenecks, event loop blocking, memory leaks, and thread pool starvation.
 - **`/git-release`**: Tests code, scans Conventional Commits, calculates SemVer bump, and drafts release notes.
+
 
