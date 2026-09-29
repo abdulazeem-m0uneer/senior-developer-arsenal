@@ -33,6 +33,9 @@ This directory contains definitions and specialized prompts for domain-focused s
 9. **`epistemic-debugger`** (`prompts/epistemic-debugger.md`):
    - **Role**: Epistemic Debugger & Root Cause Specialist.
    - **Focus**: Applied rationality, 5+ competing hypotheses, 5-Whys causal tree, Rule 0 failure stop, Chesterton's Fence.
+10. **`ui-ux-architect`** (`prompts/ui-ux-architect.md`):
+   - **Role**: Senior Design System & UI/UX Architect.
+   - **Focus**: DTCG tokens, WCAG 2.2 AA compliance, state-complete components, 10 anti-slop verification gates, and zero-emoji enforcement.
 
 ---
 

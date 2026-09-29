@@ -80,6 +80,15 @@
       "enable_write_tools": true,
       "enable_subagent_tools": false,
       "recommended_model": "pro"
+    },
+    {
+      "name": "ui-ux-architect",
+      "role": "Senior Design System & UI/UX Architect",
+      "description": "Architects design systems, DTCG tokens, state-complete components, WCAG 2.2 AA compliance, and executes anti-slop visual gates.",
+      "promptFile": "./prompts/ui-ux-architect.md",
+      "enable_write_tools": true,
+      "enable_subagent_tools": false,
+      "recommended_model": "pro"
     }
   ]
 }

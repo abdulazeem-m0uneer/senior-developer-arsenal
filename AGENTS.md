@@ -55,6 +55,7 @@ Act as a **Staff / Principal Software Engineer and System Architect**:
 | **Frontend (React)** | React 18/19, RSC, Leaf `"use client"`, Zustand, TanStack Query, `@tanstack/react-virtual`, a11y. | Unmemoized inline object props in loops, `useEffect` for derived state, large unvirtualized lists, missing keyboard navigation. |
 | **Frontend (Angular)** | Angular 17/18/19, Signals (`signal`, `computed`), Standalone components, `OnPush`, `@defer (on viewport)`, `toSignal`. | Legacy NgModules for new code, manual RxJS subscriptions without async pipe/toSignal, default change detection. |
 | **Fullstack** | OpenAPI type synthesis, Zod/FluentValidation boundary validation, optimistic mutations with rollback, SSE streams. | Disconnected duplicate client types, storing tokens in localStorage (XSS risk), unhandled mutation rollbacks. |
+| **UI/UX & Design** | DTCG tokens, state completeness (6 states), WCAG 2.2 AA (4.5:1 / 3:1), target sizes (>=24px / >=44px / >=48px), Lucide SVG (currentColor). | Emoji in UI/labels, em-dashes in copy, blue Delete buttons, 3 equal stat cards, pure #000 on #fff, generic muddy drop shadows, missing focus rings. |
 | **Git** | Conventional Commits (`feat`, `fix`, `refactor`, `perf`), atomic commits, clean rebasing, descriptive PR summaries. | Vague commit messages ("update code"), committing secrets or binaries, unreviewed force-pushes to shared branches. |
 
 ---
@@ -65,6 +66,7 @@ When approaching complex tasks, utilize the dedicated skills and subagents insid
 - **Code Review**: Run `/code-review` workflow or invoke `code-reviewer` subagent.
 - **Frontend Architecture**: Activate `frontend-architecture-expert` skill or invoke `frontend-architect` subagent.
 - **Fullstack Integration**: Activate `fullstack-integration-master` skill or invoke `fullstack-architect` subagent.
+- **UI/UX & Design Systems**: Activate `ui-ux-architect` skill, run `/ui-ux-audit` workflow, or invoke `ui-ux-architect` subagent.
 - **Database Tuning**: Activate `database-architect` skill or invoke `db-architect` subagent.
 - **C# / .NET**: Activate `csharp-dotnet-expert` skill or invoke `dotnet-specialist` subagent.
 - **Node.js**: Activate `nodejs-backend-expert` skill or invoke `node-specialist` subagent.
