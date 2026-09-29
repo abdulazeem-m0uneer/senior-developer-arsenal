@@ -1,46 +1,63 @@
 ---
 name: git-release
-description: Release preparation workflow to verify build & tests, inspect commit history, bump version according to SemVer, and draft release notes.
+description: Release preparation workflow to verify build & tests, inspect commit history, bump version according to SemVer, and draft release notes. Use when the user asks to prepare a release, bump versions, cut a tag, or runs /git-release. Triggers on: "prepare release", "cut tag", "bump version", "release notes", "/git-release". Do not use for interactive git rebasing or merge conflict resolution (use git-workflow-master).
 ---
 
-# Git Release Workflow
+# Production Release Preparation Skill
 
-Use this workflow when preparing a production release or merging a milestone.
+Follow this procedure when cutting a milestone release, calculating SemVer version bumps, and authoring release changelogs.
 
-## Steps
+---
 
-1. **Verify Working Tree & Branch**:
-   - Ensure working tree is clean (`git status`).
-   - Sync with remote upstream:
-     ```bash
-     git fetch origin main
-     git rebase origin/main
-     ```
+## 1. When to Use This Skill
 
-2. **Execute Full Test Suite**:
-   - For C# / .NET:
-     ```powershell
-     dotnet test --configuration Release
-     ```
-   - For Node.js:
-     ```bash
-     npm run test
-     npm run build
-     ```
+Activate this skill when:
+- Preparing a production release tag from clean branch commits.
+- Evaluating Conventional Commits history to determine Major, Minor, or Patch SemVer bumps.
+- Drafting structured release notes and changelog summaries.
+- The user runs the `/git-release` slash command.
 
-3. **Analyze Conventional Commits & Determine SemVer Bump**:
-   - Run `git log --oneline <last-tag>..HEAD`.
-   - If commits contain `BREAKING CHANGE:` or `!`: **MAJOR** bump.
-   - If commits contain `feat:` without breaking changes: **MINOR** bump.
-   - If only `fix:`, `perf:`, `refactor:`, `chore:`: **PATCH** bump.
+*Boundary*: For interactive git rebasing, commit squashing, or resolving git merge conflicts, use `git-workflow-master`.
 
-4. **Draft Release Notes & Tag**:
-   - Format release notes grouped by:
-     - 🚀 Features
-     - 🐛 Bug Fixes
-     - ⚡ Performance Improvements
-     - ⚠️ Breaking Changes
-   - Tag the release:
-     ```bash
-     git tag -a v1.x.x -m "Release v1.x.x"
-     ```
+---
+
+## 2. Step-by-Step Execution Runbook
+
+### Step 1: Pre-Release Working Tree & Test Verification
+1. Ensure working directory is clean: `git status`.
+2. Sync with upstream: `git fetch origin main && git rebase origin/main`.
+3. Execute full automated test suite:
+   - C#: `dotnet test --configuration Release`
+   - Node.js: `npm test && npm run build`
+   - Python: `pytest`
+
+### Step 2: SemVer Calculation
+Consult: [Release Preparation & SemVer Guide](./references/release-guide.md)
+1. Inspect commit range since last tag: `git log $(git describe --tags --abbrev=0)..HEAD --oneline`.
+2. Determine bump level:
+   - `BREAKING CHANGE:` or `!` $\to$ **MAJOR** bump.
+   - `feat:` $\to$ **MINOR** bump.
+   - `fix:`, `perf:`, `refactor:` $\to$ **PATCH** bump.
+
+### Step 3: Author Release Changelog
+Group commits into structured sections: `Features`, `Bug Fixes`, `Performance Improvements`, and `Breaking Changes`. Include commit hashes with clickable file links.
+
+### Step 4: Tag & Publish
+```bash
+git tag -a vX.Y.Z -m "Release vX.Y.Z"
+```
+
+---
+
+## 3. Verification Protocol
+
+1. Assert all tests pass with zero failures.
+2. Assert calculated SemVer adheres strictly to Conventional Commits rules.
+3. Verify git tag exists: `git tag -l "vX.Y.Z"`.
+
+---
+
+## 4. ⚡ Token-Saving Execution Rule
+
+- Output only the calculated version bump, the formatted changelog markdown, and the git tag command.
+- Do not dump full git log outputs into chat.

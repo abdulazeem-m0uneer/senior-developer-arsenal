@@ -11,9 +11,8 @@ Designed to be version-controlled as a reusable Git repository and deployed acro
 | Component | Quantity | Purpose |
 | :--- | :---: | :--- |
 | **Workspace & Global Rules** | 11 | Enforce senior engineering standards across Python, Node.js, C#, Frontend, UI/UX, Databases, Git, Token Frugality, and Defensive Epistemology. |
-| **Specialized Skills** | 13 | Actionable runbooks for Reviews, Root-Cause Debugging, Python, Frontend, UI/UX Architect, UI/UX Audit, Fullstack, C# .NET, Node.js, DB Tuning, Git, ADRs, Skill Writing. |
+| **Specialized Skills** | 20 | Actionable runbooks adhering to modern Agent Skills standards (`SKILL.md` + progressive `references/`) with slash commands and negative triggers. |
 | **Autonomous Subagents** | 10 | Dedicated personas (`code-reviewer`, `epistemic-debugger`, `python-specialist`, `frontend-architect`, `ui-ux-architect`, `fullstack-architect`, `db-architect`, etc.). |
-| **Production Workflows** | 11 | Slash-command runbooks for Reviews, Investigations, Python Audits, Frontend Audits, UI/UX Audits, E2E Features, DB Migrations, API Design, Perf, Releases. |
 | **Multi-Project Installers** | 2 | Automated PowerShell (`install.ps1`) and Bash (`install.sh`) scripts for 1-click global or per-project setup. |
 
 ---
@@ -60,20 +59,27 @@ senior-developer-arsenal/
 │   │   ├── nodejs-standards.md             # TS Strict, non-blocking event loop, streams, security
 │   │   ├── database-standards.md           # PostgreSQL (primary), MSSQL, SQLite optimization & safety
 │   │   └── git-standards.md                # Conventional Commits, atomic commits, rebase workflows
-│   ├── skills/                             # Actionable on-demand skills
-│   │   ├── senior-code-review/             # Deep multi-pass code reviews with checklists and rubrics
-│   │   ├── root-cause-investigator/        # Applied rationality, 5+ hypotheses, 5-Whys causal analysis
-│   │   ├── python-backend-expert/          # FastAPI, asyncio TaskGroup, SQLAlchemy 2.0 async, Pydantic v2
-│   │   ├── frontend-architecture-expert/   # React RSC/Zustand, Angular Signals/OnPush, a11y
-│   │   ├── ui-ux-architect/                # DTCG tokens, state completeness, 10 anti-slop gates
-│   │   ├── ui-ux-audit/                    # Anti-slop gate audit matrix & remediation
-│   │   ├── fullstack-integration-master/   # E2E contracts (OpenAPI/Zod), optimistic UI mutations, SSE
-│   │   ├── csharp-dotnet-expert/           # C# / .NET 8/9, EF Core performance, Dapper, async pipelines
-│   │   ├── nodejs-backend-expert/          # Fastify/Express/NestJS, event loop latency, streams, security
-│   │   ├── database-architect/             # EXPLAIN ANALYZE, indexing (B-Tree, GIN, BRIN), non-blocking DDL
-│   │   ├── git-workflow-master/            # Interactive rebase, conflict resolution, SemVer release tags
+│   ├── skills/                             # Actionable on-demand skills (Agent Skills standard)
+│   │   ├── api-design/                     # REST/RPC API contracts, RFC 7807 problem details
 │   │   ├── architecture-design-adr/        # Architecture Decision Records (ADRs) & trade-off frameworks
-│   │   └── skill-writer/                   # Interactive skill architect & generator with token-saving guardrails
+│   │   ├── code-review/                    # Multi-pass senior code reviews, checklists, rubrics
+│   │   ├── create-skill/                   # Interactive skill architect & generator with token-saving guardrails
+│   │   ├── csharp-dotnet-expert/           # C# / .NET 8/9, EF Core performance, Dapper, async pipelines
+│   │   ├── database-architect/             # EXPLAIN ANALYZE, indexing (B-Tree, GIN, BRIN), non-blocking DDL
+│   │   ├── database-migration/             # Zero-downtime, non-blocking migrations & rollback verification
+│   │   ├── e2e-feature/                    # Vertical slice feature implementation (DB -> Backend -> UI)
+│   │   ├── frontend-architecture-expert/   # React RSC/Zustand, Angular Signals/OnPush, a11y
+│   │   ├── frontend-audit/                 # Re-render churn, OnPush detection, lazy loading audit
+│   │   ├── fullstack-integration-master/   # E2E contracts (OpenAPI/Zod), optimistic UI mutations, SSE
+│   │   ├── git-release/                    # SemVer calculation, commit analysis, release notes
+│   │   ├── git-workflow-master/            # Interactive rebase, conflict resolution, SemVer release tags
+│   │   ├── investigate/                    # Applied rationality, 5+ hypotheses, 5-Whys causal analysis
+│   │   ├── nodejs-backend-expert/          # Fastify/Express/NestJS, event loop latency, streams, security
+│   │   ├── perf-audit/                     # Query bottlenecks, event loop lag, memory leak diagnosis
+│   │   ├── python-audit/                   # Ruff, strict Mypy typing, asyncio blocking call audit
+│   │   ├── python-backend-expert/          # FastAPI, asyncio TaskGroup, SQLAlchemy 2.0 async, Pydantic v2
+│   │   ├── ui-ux-architect/                # DTCG tokens, state completeness, 10 anti-slop gates
+│   │   └── ui-ux-audit/                    # Anti-slop gate audit matrix & remediation
 │   ├── subagents/                          # Subagent configuration profiles & prompts
 │   │   ├── subagent-definitions.json       # Declarative JSON manifest for subagent registration
 │   │   ├── README.md                       # Subagent delegation documentation
@@ -88,18 +94,7 @@ senior-developer-arsenal/
 │   │       ├── dotnet-specialist.md        # Principal .NET & C# Systems persona
 │   │       ├── node-specialist.md          # Principal Node.js & TypeScript Systems persona
 │   │       └── security-auditor.md         # Application Security Auditor persona
-│   ├── workflows/                          # Standardized workflow runbooks
-│       ├── code-review.md                  # /code-review workflow
-│       ├── investigate.md                  # /investigate workflow
-│       ├── python-audit.md                 # /python-audit workflow
-│       ├── frontend-audit.md               # /frontend-audit workflow
-│       ├── ui-ux-audit.md                  # /ui-ux-audit workflow
-│       ├── e2e-feature.md                  # /e2e-feature workflow
-│       ├── create-skill.md                 # /create-skill workflow
-│       ├── database-migration.md           # /database-migration workflow
-│       ├── api-design.md                   # /api-design workflow
-│       ├── perf-audit.md                   # /perf-audit workflow
-│       └── git-release.md                  # /git-release workflow
+│   ├── workflows/                          # Legacy workflows safely archived (*.md.bak)
 │   └── skills.json                         # Explicit skills manifest for deterministic discovery
 ├── .githooks/
 │   └── commit-msg                          # Automated Conventional Commits validator hook
@@ -194,81 +189,127 @@ These 11 rules are automatically applied by Antigravity across your workspaces:
 
 ## ⚡ Active Skills & Capabilities
 
-### 1. `senior-code-review`
-- **When to use**: Auditing pull requests, checking recent diffs, or validating branch changes.
-- **Includes**:
-  - [`review-checklist.md`](.agents/skills/senior-code-review/references/review-checklist.md): Exhaustive 20-point checklist covering SQLi, IDOR, N+1 queries, async safety, and test coverage.
-  - [`feedback-rubric.md`](.agents/skills/senior-code-review/references/feedback-rubric.md): Standardized review report template categorizing findings into `[Blocker]`, `[Performance]`, `[Architecture]`, and `[Suggestion]`.
+The arsenal includes 20 specialized skills conforming to modern Agent Skills standards (gentskills.io / Google Antigravity 2.0 / Claude), featuring isolated progressive disclosure references (
+eferences/), slash commands, and negative triggers:
 
-### 2. `root-cause-investigator`
+### 1. code-review (/code-review)
+- **When to use**: Auditing pull requests, reviewing recent commits, inspecting staged diffs, or evaluating branch code quality.
+- **Includes**:
+  - [
+eview-checklist.md](.agents/skills/code-review/references/review-checklist.md): Exhaustive 20-point checklist covering SQLi, IDOR, N+1 queries, async safety, and test coverage.
+  - [eedback-rubric.md](.agents/skills/code-review/references/feedback-rubric.md): Standardized review report template categorizing findings into [Blocker], [Performance], [Architecture], and [Suggestion].
+
+### 2. investigate (/investigate)
 - **When to use**: Diagnosing elusive bugs, intermittent test failures, unexplained crashes, production outages, or confusing regressions.
 - **Includes**:
-  - [`investigation-template.md`](.agents/skills/root-cause-investigator/references/investigation-template.md): Structured artifact template with Facts vs. Assumptions, 5+ Competing Hypotheses, 5-Whys causal tree, and Chesterton's Fence audit.
-  - [`epistemic-checklist.md`](.agents/skills/root-cause-investigator/references/epistemic-checklist.md): Sanity checklist for hypothesis rigor, discriminative test isolation, and blast radius verification.
+  - [investigation-template.md](.agents/skills/investigate/references/investigation-template.md): Structured artifact template with Facts vs. Assumptions, 5+ Competing Hypotheses, 5-Whys causal tree, and Chesterton's Fence audit.
+  - [epistemic-checklist.md](.agents/skills/investigate/references/epistemic-checklist.md): Sanity checklist for hypothesis rigor, discriminative test isolation, and blast radius verification.
 
-### 3. `python-backend-expert`
-- **When to use**: Designing or optimizing modern Python services (FastAPI, Django, Flask), asyncio TaskGroup pipelines, or SQLAlchemy 2.0 async queries.
-- **Includes**:
-  - [`asyncio-perf.md`](.agents/skills/python-backend-expert/references/asyncio-perf.md): Non-blocking asyncio patterns, TaskGroup structured concurrency, thread pool offloading (`asyncio.to_thread`).
-  - [`pydantic-fastapi.md`](.agents/skills/python-backend-expert/references/pydantic-fastapi.md): Pydantic v2 schemas, lifespan context managers, and dependency injection patterns.
-
-### 4. `frontend-architecture-expert`
-- **When to use**: Designing React (18/19) or Angular (17/18/19) applications, debugging re-render churn, or auditing a11y.
-- **Includes**:
-  - [`react-performance.md`](.agents/skills/frontend-architecture-expert/references/react-performance.md): RSC leaf boundaries, Zustand selective subscriptions, list virtualization (`@tanstack/react-virtual`).
-  - [`angular-signals-best-practices.md`](.agents/skills/frontend-architecture-expert/references/angular-signals-best-practices.md): Angular Signals (`signal`, `computed`), Standalone components, `OnPush`, `@defer (on viewport)`.
-
-### 5. `ui-ux-architect`
-- **When to use**: Architecting design systems, DTCG tokens, state-complete components, or ensuring WCAG 2.2 AA compliance.
-- **Includes**:
-  - [`dtcg-tokens.md`](.agents/skills/ui-ux-architect/references/dtcg-tokens.md): Three-tier DTCG architecture, color/typography/spacing tokens, and zero-runtime CSS compilation.
-  - [`anti-slop-gates.md`](.agents/skills/ui-ux-architect/references/anti-slop-gates.md): The 10 objective verification gates (Zero-Emoji, Intent Tokens, Contrast, States, Target Size, Overflow, Focus Trap, Copy, Hierarchy, Theme).
-
-### 6. `ui-ux-audit`
-- **When to use**: Auditing UI templates, components, and stylesheets against anti-slop gates, contrast ratios, and touch targets.
-- **Includes**:
-  - Step-by-step gate execution, compact Markdown audit matrix generation, and surgical 2–5 line diff remediation.
-
-### 7. `fullstack-integration-master`
-- **When to use**: Designing end-to-end features bridging UI and Backend, synchronizing API types, or implementing optimistic UI.
-- **Includes**:
-  - [`e2e-type-safety.md`](.agents/skills/fullstack-integration-master/references/e2e-type-safety.md): OpenAPI $\to$ TypeScript client generation (`openapi-typescript`), shared Zod contracts.
-  - [`realtime-optimistic-ui.md`](.agents/skills/fullstack-integration-master/references/realtime-optimistic-ui.md): TanStack Query optimistic mutation with rollback snapshot, Server-Sent Events (SSE).
-
-### 8. `csharp-dotnet-expert`
-- **When to use**: Writing or optimizing C# (.NET 8/9), ASP.NET Core, EF Core, or Dapper code.
-- **Includes**:
-  - [`efcore-performance.md`](.agents/skills/csharp-dotnet-expert/references/efcore-performance.md): No-tracking reads, selective projections, split queries (`AsSplitQuery`), batch updates (`ExecuteUpdateAsync`), and Dapper integration.
-  - [`dotnet-async-best-practices.md`](.agents/skills/csharp-dotnet-expert/references/dotnet-async-best-practices.md): Eliminating sync-over-async (`.Result`/`.Wait()`), `CancellationToken` flow, `ValueTask` hot paths, and `SemaphoreSlim`.
-
-### 9. `nodejs-backend-expert`
-- **When to use**: Developing Fastify, Express, or NestJS services, configuring connection pools, or profiling latency.
-- **Includes**:
-  - [`event-loop-perf.md`](.agents/skills/nodejs-backend-expert/references/event-loop-perf.md): Event loop latency monitoring, worker threads for CPU tasks, stream processing with backpressure (`stream.pipeline`), and memory leak prevention.
-  - [`node-security.md`](.agents/skills/nodejs-backend-expert/references/node-security.md): Zod schema validation, Helmet security headers, rate limiting, and prototype pollution defenses.
-
-### 10. `database-architect`
-- **When to use**: Profiling queries, designing schemas, choosing indexes, or planning zero-downtime migrations.
-- **Includes**:
-  - [`postgres-tuning.md`](.agents/skills/database-architect/references/postgres-tuning.md): `EXPLAIN (ANALYZE, BUFFERS)` analysis, composite B-Tree ordering, GIN for JSONB, BRIN for time-series, `SKIP LOCKED` queues, and `CREATE INDEX CONCURRENTLY`.
-  - [`mssql-guidelines.md`](.agents/skills/database-architect/references/mssql-guidelines.md): Covering indexes with `INCLUDE`, `READ_COMMITTED_SNAPSHOT` (RCSI), sargable queries, and parameter sniffing fixes.
-  - [`sqlite-production.md`](.agents/skills/database-architect/references/sqlite-production.md): WAL mode (`PRAGMA journal_mode=WAL;`), synchronous pragmas, 64MB cache tuning, and bulk transaction batching.
-
-### 11. `git-workflow-master`
-- **When to use**: Git operations, interactive rebases, atomic commits, conflict resolution, or release tagging.
-- **Includes**:
-  - [`conventional-commits.md`](.agents/skills/git-workflow-master/references/conventional-commits.md): Conventional Commits standard matrix (`feat`, `fix`, `perf`, `refactor`, `breaking change`) and SemVer impact guide.
-
-### 12. `architecture-design-adr`
-- **When to use**: Authoring Architecture Decision Records (ADRs) or evaluating system trade-offs.
-- **Includes**:
-  - [`adr-template.md`](.agents/skills/architecture-design-adr/references/adr-template.md): Production-ready ADR template with evaluation matrix and consequence tracking.
-
-### 13. `skill-writer`
+### 3. create-skill (/create-skill)
 - **When to use**: Interactively interviewing the user to architect, scaffold, and generate new token-efficient skills.
 - **Includes**:
-  - [`skill-template.md`](.agents/skills/skill-writer/references/skill-template.md): Canonical skill structure with YAML frontmatter, execution steps, and token guardrails.
-  - [`interview-guide.md`](.agents/skills/skill-writer/references/interview-guide.md): Structured 4-question interview framework minimizing interaction rounds.
+  - [skill-template.md](.agents/skills/create-skill/references/skill-template.md): Canonical skill structure with YAML frontmatter, execution steps, and token guardrails.
+  - [interview-guide.md](.agents/skills/create-skill/references/interview-guide.md): Structured 4-question interview framework minimizing interaction rounds.
+
+### 4. pi-design (/api-design)
+- **When to use**: Designing RESTful or RPC API contracts, input validation schemas, DTO models, and RFC 7807 error representations.
+- **Includes**:
+  - [pi-standards.md](.agents/skills/api-design/references/api-standards.md): RESTful URI design, RFC 7807 problem details, pagination standards, and schema validation.
+
+### 5. rchitecture-design-adr (/architecture-design-adr)
+- **When to use**: Authoring Architecture Decision Records (ADRs), designing subsystems, evaluating technology choices, or defining service boundaries.
+- **Includes**:
+  - [dr-template.md](.agents/skills/architecture-design-adr/references/adr-template.md): Production-ready ADR template with evaluation matrix and consequence tracking.
+
+### 6. csharp-dotnet-expert (/csharp-dotnet-expert)
+- **When to use**: Writing or optimizing C# (.NET 8/9), ASP.NET Core, EF Core, or Dapper code.
+- **Includes**:
+  - [efcore-performance.md](.agents/skills/csharp-dotnet-expert/references/efcore-performance.md): No-tracking reads, selective projections, split queries (AsSplitQuery), batch updates (ExecuteUpdateAsync), and Dapper integration.
+  - [dotnet-async-best-practices.md](.agents/skills/csharp-dotnet-expert/references/dotnet-async-best-practices.md): Eliminating sync-over-async (.Result/.Wait()), CancellationToken flow, ValueTask hot paths, and SemaphoreSlim.
+
+### 7. database-architect (/database-architect)
+- **When to use**: Profiling queries, designing schemas, choosing indexes, or planning zero-downtime migrations.
+- **Includes**:
+  - [postgres-tuning.md](.agents/skills/database-architect/references/postgres-tuning.md): EXPLAIN (ANALYZE, BUFFERS) analysis, composite B-Tree ordering, GIN for JSONB, BRIN for time-series, SKIP LOCKED queues, and CREATE INDEX CONCURRENTLY.
+  - [mssql-guidelines.md](.agents/skills/database-architect/references/mssql-guidelines.md): Covering indexes with INCLUDE, READ_COMMITTED_SNAPSHOT (RCSI), sargable queries, and parameter sniffing fixes.
+  - [sqlite-production.md](.agents/skills/database-architect/references/sqlite-production.md): WAL mode (PRAGMA journal_mode=WAL;), synchronous pragmas, 64MB cache tuning, and bulk transaction batching.
+
+### 8. database-migration (/database-migration)
+- **When to use**: Designing, reviewing, or applying non-blocking database migrations with safe rollback scripts.
+- **Includes**:
+  - [migration-safety.md](.agents/skills/database-migration/references/migration-safety.md): Safe migration checklist, lock timeout configuration, concurrent indexing, and column addition safety.
+
+### 9. e2e-feature (/e2e-feature)
+- **When to use**: Implementing fullstack end-to-end features bridging database migrations, backend endpoints, and frontend UI views.
+- **Includes**:
+  - [ertical-slice.md](.agents/skills/e2e-feature/references/vertical-slice.md): Vertical slice architecture, migration safety, type synchronization, and optimistic mutation workflow.
+
+### 10. rontend-architecture-expert (/frontend-architecture-expert)
+- **When to use**: Designing React (18/19) or Angular (17/18/19) applications, debugging re-render churn, or auditing a11y.
+- **Includes**:
+  - [
+eact-performance.md](.agents/skills/frontend-architecture-expert/references/react-performance.md): RSC leaf boundaries, Zustand selective subscriptions, list virtualization (@tanstack/react-virtual).
+  - [ngular-signals-best-practices.md](.agents/skills/frontend-architecture-expert/references/angular-signals-best-practices.md): Angular Signals (signal, computed), Standalone components, OnPush, @defer (on viewport).
+
+### 11. rontend-audit (/frontend-audit)
+- **When to use**: Auditing frontend performance, re-render bottlenecks, bundle size, change detection, and web accessibility.
+- **Includes**:
+  - [
+ender-profiling.md](.agents/skills/frontend-audit/references/render-profiling.md): React DevTools / Angular DevTools profiling guides, memoization rules, and a11y audit steps.
+
+### 12. ullstack-integration-master (/fullstack-integration-master)
+- **When to use**: Designing end-to-end features bridging UI and Backend, synchronizing API types, or implementing optimistic UI.
+- **Includes**:
+  - [e2e-type-safety.md](.agents/skills/fullstack-integration-master/references/e2e-type-safety.md): OpenAPI -> TypeScript client generation (openapi-typescript), shared Zod contracts.
+  - [
+ealtime-optimistic-ui.md](.agents/skills/fullstack-integration-master/references/realtime-optimistic-ui.md): TanStack Query optimistic mutation with rollback snapshot, Server-Sent Events (SSE).
+
+### 13. git-release (/git-release)
+- **When to use**: Preparing software releases, verifying test suites, bumping versions according to SemVer, and authoring release notes.
+- **Includes**:
+  - [
+elease-guide.md](.agents/skills/git-release/references/release-guide.md): Pre-release verification checklist, SemVer bump rules, Conventional Commits changelog generation, and tag creation.
+
+### 14. git-workflow-master (/git-workflow-master)
+- **When to use**: Git operations, interactive rebases, atomic commits, conflict resolution, or release tagging.
+- **Includes**:
+  - [conventional-commits.md](.agents/skills/git-workflow-master/references/conventional-commits.md): Conventional Commits standard matrix (eat, ix, perf, 
+efactor, reaking change) and SemVer impact guide.
+
+### 15. 
+odejs-backend-expert (/nodejs-backend-expert)
+- **When to use**: Developing Fastify, Express, or NestJS services, configuring connection pools, or profiling latency.
+- **Includes**:
+  - [event-loop-perf.md](.agents/skills/nodejs-backend-expert/references/event-loop-perf.md): Event loop latency monitoring, worker threads for CPU tasks, stream processing with backpressure (stream.pipeline), and memory leak prevention.
+  - [
+ode-security.md](.agents/skills/nodejs-backend-expert/references/node-security.md): Zod schema validation, Helmet security headers, rate limiting, and prototype pollution defenses.
+
+### 16. perf-audit (/perf-audit)
+- **When to use**: Performance auditing to detect database query bottlenecks, event loop lag, memory leaks, and thread pool starvation.
+- **Includes**:
+  - [perf-profiling.md](.agents/skills/perf-audit/references/perf-profiling.md): Profiling procedures for Node.js event loop, .NET thread pool, and PostgreSQL query execution.
+
+### 17. python-audit (/python-audit)
+- **When to use**: Auditing Python codebases for type safety, lint compliance (Ruff), and asyncio concurrency hazards.
+- **Includes**:
+  - [python-rules.md](.agents/skills/python-audit/references/python-rules.md): Ruff configuration rules, Mypy strict type checking guidelines, and async event loop safety checklist.
+
+### 18. python-backend-expert (/python-backend-expert)
+- **When to use**: Designing or optimizing modern Python services (FastAPI, Django, Flask), asyncio TaskGroup pipelines, or SQLAlchemy 2.0 async queries.
+- **Includes**:
+  - [syncio-perf.md](.agents/skills/python-backend-expert/references/asyncio-perf.md): Non-blocking asyncio patterns, TaskGroup structured concurrency, thread pool offloading (syncio.to_thread).
+  - [pydantic-fastapi.md](.agents/skills/python-backend-expert/references/pydantic-fastapi.md): Pydantic v2 schemas, lifespan context managers, and dependency injection patterns.
+
+### 19. ui-ux-architect (/ui-ux-architect)
+- **When to use**: Architecting design systems, DTCG tokens, state-complete components, or ensuring WCAG 2.2 AA compliance.
+- **Includes**:
+  - [dtcg-tokens.md](.agents/skills/ui-ux-architect/references/dtcg-tokens.md): Three-tier DTCG architecture, color/typography/spacing tokens, and zero-runtime CSS compilation.
+  - [nti-slop-gates.md](.agents/skills/ui-ux-architect/references/anti-slop-gates.md): The 10 objective verification gates (Zero-Emoji, Intent Tokens, Contrast, States, Target Size, Overflow, Focus Trap, Copy, Hierarchy, Theme).
+
+### 20. ui-ux-audit (/ui-ux-audit)
+- **When to use**: Auditing UI templates, components, and stylesheets against anti-slop gates, contrast ratios, and touch targets.
+- **Includes**:
+  - [udit-matrix-template.md](.agents/skills/ui-ux-audit/references/audit-matrix-template.md): Compact Markdown audit matrix template and surgical 2-5 line diff remediation workflow.
 
 ---
 
@@ -301,27 +342,36 @@ In Antigravity chat, invoke subagents using natural language or tool calls:
 
 ---
 
-## 📋 Ready-to-Run Workflows & Slash Commands
+## 📋 Unified Agent Skills & Slash Commands
 
-Execute standardized workflows directly in Antigravity chat:
+All workflows have been consolidated into first-class, token-efficient skills under `.agents/skills/` adhering to modern Agent Skills standards (`agentskills.io` / Google Antigravity 2.0 / Claude). Each skill provides an instant slash command and natural language trigger:
 
-| Workflow | Slash Command | Execution Runbook | Deliverable / Output |
+| Skill | Slash Command | Focus Area & Trigger | Primary Deliverable |
 | :--- | :--- | :--- | :--- |
 | **Code Review** | `/code-review` | Inspects git diffs, runs test suites, checks security/performance checklists. | Ranked review table (`[Blocker]`, `[Perf]`, `[Arch]`, `[Suggestion]`). |
-| **Investigate** | `/investigate` | Gathers ground truth, tests 5+ competing hypotheses, performs 5-Whys root-cause tree. | Formal investigation report + surgical regression fix. |
-| **Python Audit** | `/python-audit` | Runs Ruff linter, Mypy strict type checks, inspects asyncio blocking calls. | Static analysis report and surgical fixes. |
-| **Frontend Audit** | `/frontend-audit` | Audits re-render churn, OnPush detection, lazy loading, and WCAG a11y. | Frontend optimization recommendations with code snippets. |
-| **UI/UX Audit** | `/ui-ux-audit` | Executes 10 anti-slop gates, checks contrast ratios, target sizes, and state completeness. | Compact audit matrix (`[Gate]`, `[Target]`, `[Status]`, `[Fix]`) + surgical diffs. |
-| **E2E Feature** | `/e2e-feature` | Guides end-to-end delivery: DB migration $\to$ backend API $\to$ optimistic UI. | Fullstack integrated feature implementation. |
+| **Investigate** | `/investigate` | Gathers ground truth, tests 5+ competing hypotheses, performs 5-Whys causal tree. | Formal investigation report + surgical regression fix. |
 | **Create Skill** | `/create-skill` | Interactively interviews user to generate a new token-saving skill. | Scaffolds `.agents/skills/<name>/SKILL.md` + references. |
-| **DB Migration** | `/database-migration` | Pre-migration lock safety check, non-blocking DDL (`CONCURRENTLY`), rollback script. | Safe migration script + rollback companion. |
 | **API Design** | `/api-design` | Designs RESTful contracts, DTO records, schema validation, RFC 7807 problem details. | API specification, DTOs, and route handlers. |
-| **Perf Audit** | `/perf-audit` | Scans for query bottlenecks, event loop blocking, memory leaks, thread starvation. | Targeted latency and throughput optimization plan. |
+| **Architecture ADR** | `/architecture-design-adr` | Authors Architecture Decision Records (ADRs) and evaluates system trade-offs. | Formal ADR document with trade-off matrix. |
+| **C# / .NET Expert** | `/csharp-dotnet-expert` | Writes or optimizes ASP.NET Core, EF Core queries, Dapper, async/await pipelines. | High-performance .NET code and query refactors. |
+| **Database Architect** | `/database-architect` | Profiles query execution plans, indexes, connection pools, and non-blocking DDL. | Index strategy and query execution tuning. |
+| **DB Migration** | `/database-migration` | Pre-migration lock safety check, non-blocking DDL (`CONCURRENTLY`), rollback script. | Safe migration script + rollback companion. |
+| **E2E Feature** | `/e2e-feature` | Guides end-to-end delivery: DB migration -> backend API -> optimistic UI. | Fullstack integrated feature implementation. |
+| **Frontend Architecture** | `/frontend-architecture-expert` | Designs React RSC/Zustand, Angular Signals/OnPush, eliminates re-renders. | Optimized component trees and state architecture. |
+| **Frontend Audit** | `/frontend-audit` | Audits re-render churn, OnPush detection, lazy loading, and WCAG a11y. | Frontend optimization recommendations with code snippets. |
+| **Fullstack Integration** | `/fullstack-integration-master` | Synchronizes contracts (OpenAPI/Zod), optimistic UI mutations, SSE/WebSocket streams. | End-to-end type-safe contract synchronization. |
 | **Git Release** | `/git-release` | Verifies tests, analyzes Conventional Commits, calculates SemVer bump, writes notes. | Git tag and changelog release draft. |
+| **Git Workflow** | `/git-workflow-master` | Git operations, interactive rebases, atomic commits, conflict resolution, SemVer tags. | Clean rebased branches, conflict resolutions. |
+| **Node.js Expert** | `/nodejs-backend-expert` | Develops Fastify/Express/NestJS, event loop latency, streams backpressure, security. | Non-blocking server handlers and security middleware. |
+| **Perf Audit** | `/perf-audit` | Scans for query bottlenecks, event loop blocking, memory leaks, thread starvation. | Targeted latency and throughput optimization plan. |
+| **Python Audit** | `/python-audit` | Runs Ruff linter, Mypy strict type checks, inspects asyncio blocking calls. | Static analysis report and surgical fixes. |
+| **Python Expert** | `/python-backend-expert` | FastAPI, asyncio TaskGroup pipelines, SQLAlchemy 2.0 async queries, Pydantic v2. | Production-grade async Python endpoints and models. |
+| **UI/UX Architect** | `/ui-ux-architect` | Architecting design systems, DTCG tokens, state-complete components, WCAG 2.2 AA. | Token-driven CSS, complete component states. |
+| **UI/UX Audit** | `/ui-ux-audit` | Executes 10 anti-slop gates, checks contrast ratios, target sizes, and state completeness. | Compact audit matrix (`[Gate]`, `[Target]`, `[Status]`, `[Fix]`) + surgical diffs. |
 
 ---
 
-## ✍️ Meta-Skill: Authoring New Skills (`skill-writer`)
+## ✍️ Meta-Skill: Authoring New Skills (`create-skill`)
 
 Need to create custom skills for internal proprietary tools or new frameworks? The toolkit includes a built-in interactive meta-skill:
 

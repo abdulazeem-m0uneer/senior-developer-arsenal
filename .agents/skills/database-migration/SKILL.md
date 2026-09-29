@@ -1,36 +1,53 @@
 ---
 name: database-migration
-description: Safe, non-blocking database migration design and verification workflow for PostgreSQL, SQLite, and MSSQL.
+description: Safe, non-blocking database migration design and verification workflow for PostgreSQL, SQLite, and MSSQL. Use when the user asks to create migrations, alter tables, add indexes, or runs /database-migration. Triggers on: "database migration", "schema migration", "alter table", "add column", "/database-migration". Do not use for query plan profiling or indexing strategy (use database-architect).
 ---
 
-# Database Migration Workflow
+# Safe Database Migration Procedure
 
-Use this workflow to author, audit, and execute database migrations with zero downtime.
+Follow this procedure when creating, verifying, or rolling back schema migrations in production databases.
 
-## Steps
+---
 
-1. **Schema & Intent Analysis**:
-   - Identify the database engine in use (PostgreSQL, SQLite, or MSSQL).
-   - Clarify the data model changes: new tables, column additions, type modifications, or index changes.
+## 1. When to Use This Skill
 
-2. **Pre-Migration Safety Audit**:
-   - **PostgreSQL**:
-     - Are indexes created with `CREATE INDEX CONCURRENTLY`?
-     - Are table locks avoided? Is `SET lock_timeout = '2s';` declared?
-     - Are timestamps using `TIMESTAMPTZ`?
-     - Are primary keys `BIGINT IDENTITY` or `UUIDv7`?
-   - **SQLite**:
-     - Are changes wrapped in `BEGIN TRANSACTION ... COMMIT`?
-     - Are foreign key constraints preserved during table recreations?
-   - **MSSQL**:
-     - Are non-clustered indexes using `INCLUDE` to eliminate key lookups?
-     - Are operations batched to prevent transaction log bloat?
+Activate this skill when:
+- Authoring EF Core migrations, Flyway/Liquibase scripts, or raw SQL DDL files.
+- Adding non-blocking indexes (`CREATE INDEX CONCURRENTLY`), columns, or constraints on high-throughput tables.
+- Preparing zero-downtime database deployment scripts with rollback companions.
+- The user runs the `/database-migration` slash command.
 
-3. **Draft Up and Down (Rollback) Scripts**:
-   - Always produce both the `Up` migration and an exact, verified `Down` rollback script.
-   - For column renames, use the Expand and Contract pattern (do not rename columns in-place on high-traffic production databases).
+*Boundary*: For query execution plan analysis (`EXPLAIN ANALYZE`) or deep indexing architecture, use `database-architect`.
 
-4. **Verification & Dry Run**:
-   - Apply the migration in a test or local database container.
-   - Run sample queries against the migrated schema using `EXPLAIN ANALYZE`.
-   - Test the rollback script to verify complete reversion without orphan constraints.
+---
+
+## 2. Step-by-Step Execution Runbook
+
+### Step 1: Pre-Migration Lock & Safety Assessment
+Consult: [Migration Safety Reference](./references/migration-safety.md)
+1. Identify target table size and read/write throughput.
+2. Check lock level required: Avoid table-rewriting operations during peak load.
+3. Enforce statement lock timeout: `SET lock_timeout = '3s';`.
+
+### Step 2: Non-Blocking DDL Authoring
+1. Indexes: Use `CREATE INDEX CONCURRENTLY` in PostgreSQL (outside transaction block).
+2. Foreign Keys: Add with `NOT VALID`, then validate in a second step via `VALIDATE CONSTRAINT`.
+3. Column Renames: Use expand/contract pattern (add new column $\to$ dual-write $\to$ backfill $\to$ drop old) rather than renaming active columns.
+
+### Step 3: Author Companion Rollback Script
+Ensure every migration script has an accompanying idempotent rollback file (`U{timestamp}__rollback.sql` or EF Core `Down()` method).
+
+---
+
+## 3. Verification Protocol
+
+1. Run migration against a local/staging database instance.
+2. Verify table locks were not held: assert duration $< 500$ms for metadata alterations.
+3. Execute the rollback script and verify schema returns cleanly to initial state without orphaned constraints.
+
+---
+
+## 4. ⚡ Token-Saving Execution Rule
+
+- Output only the specific SQL DDL script or EF Core migration code snippet.
+- Never output full database schemas or unchanged model snapshots.

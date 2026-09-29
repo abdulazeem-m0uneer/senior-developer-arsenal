@@ -89,6 +89,9 @@ if [ "$GLOBAL_MODE" = true ]; then
   echo -e "${YELLOW}[+] Installing globally into: $GLOBAL_CONFIG${NC}"
   mkdir -p "$GLOBAL_SKILLS" "$GLOBAL_RULES" "$GLOBAL_WORKFLOWS"
 
+  # Remove stale duplicate skills if present
+  rm -rf "$GLOBAL_SKILLS/senior-code-review" "$GLOBAL_SKILLS/root-cause-investigator" "$GLOBAL_SKILLS/skill-writer"
+
   skill_count=0
   for skill_dir in "$SOURCE_AGENTS/skills/"*; do
     if [ -d "$skill_dir" ]; then
@@ -111,18 +114,17 @@ if [ "$GLOBAL_MODE" = true ]; then
     fi
   done
 
-  wf_count=0
-  for wf_file in "$SOURCE_AGENTS/workflows/"*.md; do
-    if [ -f "$wf_file" ]; then
-      wf_name="$(basename "$wf_file")"
-      cp "$wf_file" "$GLOBAL_WORKFLOWS/$wf_name"
-      echo -e "  -> ${GREEN}Workflow:${NC} $wf_name"
-      ((wf_count++))
-    fi
-  done
+  # Archive legacy global .md workflows to .md.bak
+  if [ -d "$GLOBAL_WORKFLOWS" ]; then
+    for wf_file in "$GLOBAL_WORKFLOWS/"*.md; do
+      if [ -f "$wf_file" ]; then
+        mv "$wf_file" "${wf_file}.bak"
+      fi
+    done
+  fi
 
   echo ""
-  echo -e "${GREEN}[SUCCESS] Installed $skill_count skills, $rule_count rules, and $wf_count workflows globally!${NC}"
+  echo -e "${GREEN}[SUCCESS] Installed $skill_count modern skills and $rule_count rules globally!${NC}"
 fi
 
 # 2. CLI Tool Installation Mode

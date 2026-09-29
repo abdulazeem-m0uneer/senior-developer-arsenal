@@ -1,6 +1,6 @@
 ---
 name: frontend-architecture-expert
-description: Senior frontend architecture skill for React (18/19) and Angular (17/18/19). Use when designing components, optimizing client-side performance, eliminating unnecessary re-renders, configuring Signals/Hooks, or auditing web accessibility.
+description: Senior frontend architecture skill for React (18/19) and Angular (17/18/19). Use when designing components, optimizing client-side performance, eliminating unnecessary re-renders, configuring Signals/Hooks, or auditing web accessibility. Triggers on: "React", "Angular", "RSC", "Signals", "Zustand", "OnPush", "frontend architecture". Do not use for automated UI/UX anti-slop audits (use ui-ux-audit) or design tokens (use ui-ux-architect).
 ---
 
 # Frontend Architecture Skill (React & Angular)
@@ -15,20 +15,22 @@ Activate this skill when:
 - Architecting React component trees (RSC, Client boundaries, hooks, context).
 - Migrating or building Angular applications with Signals, Standalone Components, and `@defer`.
 - Diagnosing render performance bottlenecks (React DevTools Profiler, Angular OnPush change detection).
-- Implementing responsive, accessible UI patterns adhering to WCAG 2.1 AA.
+- Implementing responsive, accessible UI patterns adhering to WCAG 2.2 AA.
 - Structuring client state management (Zustand, TanStack Query, SignalStore).
+
+*Boundary*: For UI/UX design tokens and anti-slop visual auditing, use `ui-ux-architect` and `ui-ux-audit`.
 
 ---
 
-## 2. Framework Execution Runbooks
+## 2. Step-by-Step Execution Runbook
 
-### A. React Performance Runbook
+### Step 1: React Performance & Concurrency Runbook
 Consult: [React Performance & Concurrency Guide](./references/react-performance.md)
 1. **Render Profiling**: Identify components re-rendering unnecessarily due to unstable prop references.
-2. **State Colocation**: Push state down as close as possible to the consuming component. Do not lift state to root contexts unless shared globally.
+2. **State Colocation**: Push state down as close as possible to consuming leaf components.
 3. **List Virtualization**: Integrate `@tanstack/react-virtual` for datasets exceeding 100 DOM elements.
 
-### B. Angular Signals & OnPush Runbook
+### Step 2: Angular Signals & OnPush Runbook
 Consult: [Angular Signals & Modern Best Practices](./references/angular-signals-best-practices.md)
 1. **Signal State**: Replace mutable component properties with `signal<T>()`.
 2. **Derived Reactivity**: Use `computed()` for calculated state; never recalculate in template getters.
@@ -37,7 +39,15 @@ Consult: [Angular Signals & Modern Best Practices](./references/angular-signals-
 
 ---
 
-## 3. ⚡ Token-Saving Execution Rule
+## 3. Verification Protocol
+
+1. Verify TypeScript types: `npx tsc --noEmit` or `ng build --configuration production`.
+2. Run automated component unit tests (`vitest` or `karma`/`jest`).
+3. Check for zero console warnings regarding missing keys, duplicate effects, or hydration mismatches.
+
+---
+
+## 4. ⚡ Token-Saving Execution Rule
 
 - **Targeted Code Output**: Output only the modified JSX/TSX component or Angular TypeScript/HTML snippet.
 - **Concise Performance Analysis**: Summarize re-render bottlenecks and a11y violations in compact tables (`Location`, `Issue`, `Fix`). Never dump full component trees.

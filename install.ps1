@@ -58,7 +58,16 @@ if ($Global) {
         New-Item -ItemType Directory -Path $GlobalWorkflowsDir -Force | Out-Null
     }
 
-    # Copy Skills
+    # Remove stale duplicate skills if present in global directory
+    $StaleSkills = @("senior-code-review", "root-cause-investigator", "skill-writer")
+    foreach ($stale in $StaleSkills) {
+        $stalePath = Join-Path $GlobalSkillsDir $stale
+        if (Test-Path $stalePath) {
+            Remove-Item -Path $stalePath -Recurse -Force
+        }
+    }
+
+    # Copy Skills (Modern Agent Skills standard)
     $Skills = Get-ChildItem -Path (Join-Path $SourceAgents "skills") -Directory
     foreach ($skill in $Skills) {
         $target = Join-Path $GlobalSkillsDir $skill.Name
@@ -74,15 +83,15 @@ if ($Global) {
         Copy-Item -Path $rule.FullName -Destination $target -Force
     }
 
-    # Copy Workflows
-    $Workflows = Get-ChildItem -Path (Join-Path $SourceAgents "workflows") -Filter "*.md"
-    foreach ($wf in $Workflows) {
-        $target = Join-Path $GlobalWorkflowsDir $wf.Name
-        Write-Host "  -> Installing workflow: $($wf.Name)" -ForegroundColor Green
-        Copy-Item -Path $wf.FullName -Destination $target -Force
+    # Archive any legacy unmigrated .md workflows in global directory to .md.bak
+    if (Test-Path $GlobalWorkflowsDir) {
+        Get-ChildItem -Path $GlobalWorkflowsDir -Filter "*.md" | ForEach-Object {
+            $bakTarget = $_.FullName + ".bak"
+            Move-Item -Path $_.FullName -Destination $bakTarget -Force
+        }
     }
 
-    Write-Host "`n[SUCCESS] Global installation completed! All projects in Antigravity will now load these skills, rules, and workflows." -ForegroundColor Green
+    Write-Host "`n[SUCCESS] Global installation completed! All 20 modern skills and 11 rules are active across Antigravity." -ForegroundColor Green
 }
 
 # 2. Project Installation Mode

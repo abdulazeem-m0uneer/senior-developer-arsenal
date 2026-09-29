@@ -1,26 +1,64 @@
 ---
 name: create-skill
-description: Workflow to interactively create, scaffold, and install a new token-efficient Antigravity skill.
+description: Interactive meta-skill to architect, interview, scaffold, and install token-efficient Antigravity skills following modern agent standards. Use when the user wants to create, scaffold, or customize a new skill, or runs /create-skill. Triggers on: "create skill", "new skill", "author skill", "/create-skill". Do not use for ADR authoring (use architecture-design-adr).
 ---
 
-# Create Skill Workflow
+# Skill Authoring & Scaffolding Procedure
 
-Follow this procedure to scaffold a new skill with the user.
+Use this interactive skill to interview the user and generate a new production-grade, token-efficient Antigravity skill adhering to the modern Agent Skills standard.
 
-## Steps
+---
 
-1. **Trigger Interview**:
-   - Ask the user the 4 core skill questions: Name/Trigger, Workflow steps, Reference materials, and Destination (Project or Global).
-   - Use `ask_question` or concise text prompts.
+## 1. When to Use This Skill
 
-2. **Scaffold Directory & Files**:
-   - Create `<destination>/skills/<skill-name>/` and `references/`.
-   - Author `SKILL.md` using the canonical template with YAML frontmatter.
-   - Author reference manuals in `references/<name>.md`.
+Activate this skill when:
+- Creating a new procedural skill or runbook for a specialized domain or proprietary internal tool.
+- Packaging multi-step engineering checklists into progressive disclosure directories.
+- The user runs the `/create-skill` slash command or asks to create a new skill.
 
-3. **Inject Token Conservation Rule**:
-   - Verify the generated skill includes Section 3: `⚡ Token-Saving Execution Rule`.
+*Boundary*: For architectural decision records and technology trade-offs, use `architecture-design-adr`.
 
-4. **Install & Verify**:
-   - If installed in `senior-developer-arsenal`, run `git status` and `.\install.ps1 -Global`.
-   - Confirm file existence in a single-line summary.
+---
+
+## 2. Step-by-Step Execution Runbook
+
+### Step 1: Run the 4-Question Structured Interview
+Consult: [Interview Guide](./references/interview-guide.md)
+Present all 4 core questions in a single round to minimize back-and-forth token consumption:
+1. **Trigger & Scope**: What is the skill name, purpose, and exact triggers (e.g., slash command, prompt keywords)?
+2. **Step-by-Step Runbook**: What concrete steps, commands, or tools does the agent execute?
+3. **References & Progressive Disclosure**: What heavy documentation, checklists, or schemas should be extracted into `references/`?
+4. **Scope & Destination**: Should this skill be installed globally (`~/.gemini/config/skills/`) or per-project (`.agents/skills/`)?
+
+### Step 2: Scaffold Directory & Canonical Files
+Consult: [Skill Template](./references/skill-template.md)
+1. Create directory structure:
+   ```text
+   skills/<skill-name>/
+   ├── SKILL.md
+   └── references/
+   ```
+2. Author `SKILL.md` with standard YAML frontmatter (`name`, `description` with third-person summary, explicit triggers, and negative triggers).
+3. Extract bulky manuals and checklists into `references/<name>.md`.
+
+### Step 3: Enforce Token-Saving Guardrail
+Mandate Section 4: `⚡ Token-Saving Execution Rule` in the generated `SKILL.md` to prevent conversational fluff and require surgical diffs.
+
+---
+
+## 3. Verification Protocol
+
+1. Verify folder name exactly matches frontmatter `name`.
+2. Verify `description` specifies third-person capabilities, trigger conditions, and negative boundaries.
+3. If installed in the arsenal, execute:
+   ```powershell
+   .\install.ps1 -Global
+   ```
+4. Confirm discovery in `~/.gemini/config/skills/<skill-name>/`.
+
+---
+
+## 4. ⚡ Token-Saving Execution Rule
+
+- Conduct interview in a single batch.
+- Output created files with direct file links; never re-print the generated files into the chat.

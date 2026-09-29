@@ -63,17 +63,19 @@ Act as a **Staff / Principal Software Engineer and System Architect**:
 ## 4. Subagents & Skills Quick Reference
 
 When approaching complex tasks, utilize the dedicated skills and subagents inside `.agents/`:
-- **Code Review**: Run `/code-review` workflow or invoke `code-reviewer` subagent.
-- **Frontend Architecture**: Activate `frontend-architecture-expert` skill or invoke `frontend-architect` subagent.
-- **Fullstack Integration**: Activate `fullstack-integration-master` skill or invoke `fullstack-architect` subagent.
-- **UI/UX & Design Systems**: Activate `ui-ux-architect` skill, run `/ui-ux-audit` workflow, or invoke `ui-ux-architect` subagent.
-- **Database Tuning**: Activate `database-architect` skill or invoke `db-architect` subagent.
+- **Code Review**: Activate `code-review` skill or invoke `code-reviewer` subagent.
+- **Frontend Architecture**: Activate `frontend-architecture-expert` or `frontend-audit` skills, or invoke `frontend-architect` subagent.
+- **Fullstack Integration**: Activate `fullstack-integration-master` or `e2e-feature` skills, or invoke `fullstack-architect` subagent.
+- **UI/UX & Design Systems**: Activate `ui-ux-architect` or `ui-ux-audit` skills, or invoke `ui-ux-architect` subagent.
+- **Database Architecture & Migration**: Activate `database-architect` or `database-migration` skills, or invoke `db-architect` subagent.
+- **API Design**: Activate `api-design` skill to design RESTful/RPC endpoints and RFC 7807 contracts.
+- **Performance Profiling**: Activate `perf-audit` skill to diagnose slow queries and event loop bottlenecks.
 - **C# / .NET**: Activate `csharp-dotnet-expert` skill or invoke `dotnet-specialist` subagent.
 - **Node.js**: Activate `nodejs-backend-expert` skill or invoke `node-specialist` subagent.
-- **Python**: Activate `python-backend-expert` skill or invoke `python-specialist` subagent.
-- **Git & Releases**: Use `git-workflow-master` for rebase strategies and release automation.
-- **Skill Authoring**: Activate `skill-writer` skill to interactively design and scaffold new skills.
-- **Root Cause & Epistemic Debugging**: Run `/investigate` workflow, activate `root-cause-investigator` skill, or invoke `epistemic-debugger` subagent.
+- **Python**: Activate `python-backend-expert` or `python-audit` skills, or invoke `python-specialist` subagent.
+- **Git & Releases**: Activate `git-workflow-master` or `git-release` skills for rebasing, SemVer bumps, and release notes.
+- **Skill Authoring**: Activate `create-skill` skill to interactively design and scaffold new skills.
+- **Root Cause & Epistemic Debugging**: Activate `investigate` skill or invoke `epistemic-debugger` subagent.
 
 
 

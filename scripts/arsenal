@@ -48,6 +48,9 @@ cmd_sync() {
   echo -e "${YELLOW}[+] Synchronizing globally into: $GLOBAL_CONFIG${NC}"
   mkdir -p "$GLOBAL_SKILLS" "$GLOBAL_RULES" "$GLOBAL_WORKFLOWS"
 
+  # Remove stale duplicate skills if present
+  rm -rf "$GLOBAL_SKILLS/senior-code-review" "$GLOBAL_SKILLS/root-cause-investigator" "$GLOBAL_SKILLS/skill-writer"
+
   local skill_count=0
   for skill_dir in "$SOURCE_AGENTS/skills/"*; do
     if [ -d "$skill_dir" ]; then
@@ -71,19 +74,17 @@ cmd_sync() {
     fi
   done
 
-  local wf_count=0
-  for wf_file in "$SOURCE_AGENTS/workflows/"*.md; do
-    if [ -f "$wf_file" ]; then
-      wf_name="$(basename "$wf_file")"
-      target="$GLOBAL_WORKFLOWS/$wf_name"
-      cp "$wf_file" "$target"
-      echo -e "  -> ${GREEN}Workflow installed:${NC} $wf_name"
-      ((wf_count++))
-    fi
-  done
+  # Archive legacy global .md workflows to .md.bak
+  if [ -d "$GLOBAL_WORKFLOWS" ]; then
+    for wf_file in "$GLOBAL_WORKFLOWS/"*.md; do
+      if [ -f "$wf_file" ]; then
+        mv "$wf_file" "${wf_file}.bak"
+      fi
+    done
+  fi
 
   echo ""
-  echo -e "${GREEN}[SUCCESS] Installed $skill_count skills, $rule_count rules, and $wf_count workflows into $GLOBAL_CONFIG${NC}"
+  echo -e "${GREEN}[SUCCESS] Installed $skill_count modern skills and $rule_count rules into $GLOBAL_CONFIG${NC}"
 }
 
 cmd_link() {
