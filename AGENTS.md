@@ -15,6 +15,7 @@ The user requires **strict token conservation and applied rationality**:
 - **No Echoing**: When creating or editing files, do not re-paste their content in the chat. Provide only the file link and a 1-line summary.
 - **Progressive Retrieval**: Read reference manuals (`references/*.md`) only on explicit demand. Keep active context lean.
 - **Mandatory Skill Agent Activation**: In any new session, **ALWAYS identify and activate the corresponding specialized skill or subagent immediately**. Do not perform open-ended, unconstrained reasoning without the appropriate skill framework. Skill runbooks constrain token spend, enforce deterministic execution, and ensure maximum accuracy.
+- **Mandatory CodeGraph First (Save Reading Tokens)**: In every new session, **ALWAYS query CodeGraph AST tools (`codegraph_callers`, `codegraph_callees`, `codegraph_symbol`, `codegraph_impact`)** before reading files or running full-text greps. Jump directly to targeted lines. Never load full files into the context window for code exploration.
 
 ---
 

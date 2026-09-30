@@ -33,6 +33,7 @@ show_help() {
   echo "  ./install.sh --project <path> --link   # Symlink into target project repository"
   echo "  ./install.sh --status                  # Verify installed skills & rules"
   echo "  ./install.sh --hindsight               # Configure Hindsight MCP memory server for Antigravity"
+  echo "  ./install.sh --codegraph               # Configure CodeGraph AST intelligence server for Antigravity"
 }
 
 if [ $# -eq 0 ]; then
@@ -46,6 +47,7 @@ PROJECT_PATH=""
 SYMLINK_MODE=false
 STATUS_MODE=false
 HINDSIGHT_MODE=false
+CODEGRAPH_MODE=false
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -71,6 +73,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --hindsight|-m)
       HINDSIGHT_MODE=true
+      shift
+      ;;
+    --codegraph|-c)
+      CODEGRAPH_MODE=true
       shift
       ;;
     --help|-h)
@@ -234,4 +240,43 @@ with open(mcp_file, 'w', encoding='utf-8') as f:
     json.dump(data, f, indent=2)
 "
   echo -e "${GREEN}[SUCCESS] Registered 'hindsight' MCP server in $MCP_FILE!${NC}"
+fi
+
+# 6. CodeGraph MCP Configuration Mode
+if [ "$CODEGRAPH_MODE" = true ]; then
+  MCP_DIR="$HOME/.gemini/antigravity"
+  MCP_FILE="$MCP_DIR/mcp.json"
+  mkdir -p "$MCP_DIR"
+
+  echo -e "${YELLOW}[+] Configuring CodeGraph MCP Intelligence Server into: $MCP_FILE${NC}"
+  TARGET_ROOT="$(pwd)"
+  if [ -n "$PROJECT_PATH" ]; then
+    TARGET_ROOT="$(cd "$PROJECT_PATH" && pwd)"
+  fi
+
+  python3 -c "
+import json, os
+mcp_file = os.path.expanduser('$MCP_FILE')
+data = {'mcpServers': {}}
+if os.path.exists(mcp_file):
+    try:
+        with open(mcp_file, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+            if 'mcpServers' not in data:
+                data['mcpServers'] = {}
+    except Exception:
+        pass
+
+data['mcpServers']['codegraph'] = {
+    'command': 'npx',
+    'args': ['-y', '@colbymchenry/codegraph', 'serve'],
+    'env': {
+        'CODEGRAPH_ROOT': '$TARGET_ROOT'
+    }
+}
+
+with open(mcp_file, 'w', encoding='utf-8') as f:
+    json.dump(data, f, indent=2)
+"
+  echo -e "${GREEN}[SUCCESS] Registered 'codegraph' MCP server in $MCP_FILE!${NC}"
 fi

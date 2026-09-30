@@ -26,7 +26,10 @@ param (
     [switch]$Symlink,
 
     [Parameter(Mandatory = $false)]
-    [switch]$Hindsight
+    [switch]$Hindsight,
+
+    [Parameter(Mandatory = $false)]
+    [switch]$CodeGraph
 )
 
 $ArsenalRoot = $PSScriptRoot
@@ -94,7 +97,7 @@ if ($Global) {
         }
     }
 
-    Write-Host "`n[SUCCESS] Global installation completed! All 21 modern skills and 11 rules are active across Antigravity." -ForegroundColor Green
+    Write-Host "`n[SUCCESS] Global installation completed! All 22 modern skills and 11 rules are active across Antigravity." -ForegroundColor Green
 }
 
 # 2. Project Installation Mode
@@ -179,10 +182,53 @@ if ($Hindsight) {
     Write-Host "[SUCCESS] Hindsight MCP server successfully configured!" -ForegroundColor Green
 }
 
-if (-not $Global -and -not $Project -and -not $Hindsight) {
+# 4. Optional CodeGraph MCP Configuration
+if ($CodeGraph) {
+    Write-Host "[+] Configuring CodeGraph MCP Intelligence Server..." -ForegroundColor Yellow
+    $McpConfigDir = Join-Path $env:USERPROFILE ".gemini\antigravity"
+    if (-not (Test-Path $McpConfigDir)) {
+        New-Item -ItemType Directory -Path $McpConfigDir -Force | Out-Null
+    }
+    $McpConfigFile = Join-Path $McpConfigDir "mcp.json"
+
+    $McpData = @{
+        mcpServers = @{}
+    }
+
+    if (Test-Path $McpConfigFile) {
+        try {
+            $RawJson = Get-Content -Path $McpConfigFile -Raw
+            if ($RawJson.Trim().Length -gt 0) {
+                $McpData = ConvertFrom-Json $RawJson -AsHashtable
+                if (-not $McpData.ContainsKey("mcpServers")) {
+                    $McpData["mcpServers"] = @{}
+                }
+            }
+        } catch {
+            Write-Warning "Failed to parse existing mcp.json; creating new structure."
+        }
+    }
+
+    $TargetDir = if ($Project) { (Resolve-Path $Project).Path } else { (Get-Location).Path }
+    $McpData["mcpServers"]["codegraph"] = @{
+        command = "npx"
+        args = @("-y", "@colbymchenry/codegraph", "serve")
+        env = @{
+            CODEGRAPH_ROOT = $TargetDir
+        }
+    }
+
+    $UpdatedJson = ConvertTo-Json $McpData -Depth 10
+    Set-Content -Path $McpConfigFile -Value $UpdatedJson -Encoding UTF8
+    Write-Host "  -> Registered 'codegraph' in $McpConfigFile (Root: $TargetDir)" -ForegroundColor Green
+    Write-Host "[SUCCESS] CodeGraph MCP server successfully configured!" -ForegroundColor Green
+}
+
+if (-not $Global -and -not $Project -and -not $Hindsight -and -not $CodeGraph) {
     Write-Host "No action specified. Run with:" -ForegroundColor White
     Write-Host "  .\install.ps1 -Global                      # Installs for all projects on this machine" -ForegroundColor Gray
     Write-Host "  .\install.ps1 -Project <path-to-project>   # Installs into a specific project" -ForegroundColor Gray
     Write-Host "  .\install.ps1 -Project <path> -Symlink     # Links directly to this repository" -ForegroundColor Gray
-    Write-Host "  .\install.ps1 -Hindsight                   # Configures Hindsight MCP memory server for Antigravity" -ForegroundColor Gray
+    Write-Host "  .\install.ps1 -Hindsight                   # Configures Hindsight MCP memory server" -ForegroundColor Gray
+    Write-Host "  .\install.ps1 -CodeGraph                   # Configures CodeGraph AST intelligence server" -ForegroundColor Gray
 }

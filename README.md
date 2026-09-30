@@ -11,7 +11,7 @@ Designed to be version-controlled as a reusable Git repository and deployed acro
 | Component | Quantity | Purpose |
 | :--- | :---: | :--- |
 | **Workspace & Global Rules** | 11 | Enforce senior engineering standards across Python, Node.js, C#, Frontend, UI/UX, Databases, Git, Token Frugality, and Defensive Epistemology. |
-| **Specialized Skills** | 21 | Actionable runbooks adhering to modern Agent Skills standards (`SKILL.md` + progressive `references/`) with slash commands and negative triggers. |
+| **Specialized Skills** | 22 | Actionable runbooks adhering to modern Agent Skills standards (`SKILL.md` + progressive `references/`) with slash commands and negative triggers. |
 | **Autonomous Subagents** | 10 | Dedicated personas (`code-reviewer`, `epistemic-debugger`, `python-specialist`, `frontend-architect`, `ui-ux-architect`, `fullstack-architect`, `db-architect`, etc.). |
 | **Multi-Project Installers** | 2 | Automated PowerShell (`install.ps1`) and Bash (`install.sh`) scripts for 1-click global or per-project setup. |
 
@@ -165,6 +165,25 @@ git config core.hooksPath .githooks
 ```
 *Rejects non-compliant commit messages before they enter git history.*
 
+---
+
+### Option E: CodeGraph AST Intelligence (Save Reading Tokens)
+Provide Antigravity agents with AST-level code intelligence via [colbymchenry/codegraph](https://github.com/colbymchenry/codegraph).
+
+#### Why It's Useful:
+- **Drastic Token Reduction (~85%)**: Replaces brute-force full-file reads and recursive greps with direct AST queries (codegraph_callers, codegraph_callees, codegraph_symbol, codegraph_impact).
+- **Instant Blast Radius Analysis**: Understands complete dependency graphs before renaming or refactoring methods.
+- **Accurate Line Targeting**: Delivers pinpoint ile:L30-L45 references instead of loading thousands of lines of context.
+
+#### 1-Click Installer Command:
+\\powershell
+# In Windows PowerShell:
+.\install.ps1 -CodeGraph
+\
+\\ash
+# In Ubuntu / Linux / WSL:
+./install.sh --codegraph
+\
 ---
 
 ### Option D: Persistent Agent Memory (Hindsight Biomimetic Memory)
@@ -348,6 +367,11 @@ ode-security.md](.agents/skills/nodejs-backend-expert/references/node-security.m
 - **When to use**: Saving durable architectural decisions, recording resolved bug patterns from root-cause debugging, or retrieving project rules across sessions using Hindsight.
 - **Includes**:
   - [memory-architecture.md](.agents/skills/agent-memory/references/memory-architecture.md): Biomimetic memory concepts (Facts, Observations, Mental Models) and hybrid search ranking (Vector, BM25, Graph, Temporal).
+
+### 22. codegraph (/codegraph)
+- **When to use**: Navigating codebases, finding callers/callees, assessing refactoring blast radius, or jumping to symbol definitions without full-file reading.
+- **Includes**:
+  - [codegraph-guide.md](.agents/skills/codegraph/references/codegraph-guide.md): AST knowledge graph structure, SQLite FTS5 index details, and token savings comparison.
 
 ---
 
