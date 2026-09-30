@@ -173,17 +173,17 @@ Provide Antigravity agents with AST-level code intelligence via [colbymchenry/co
 #### Why It's Useful:
 - **Drastic Token Reduction (~85%)**: Replaces brute-force full-file reads and recursive greps with direct AST queries (codegraph_callers, codegraph_callees, codegraph_symbol, codegraph_impact).
 - **Instant Blast Radius Analysis**: Understands complete dependency graphs before renaming or refactoring methods.
-- **Accurate Line Targeting**: Delivers pinpoint ile:L30-L45 references instead of loading thousands of lines of context.
+- **Accurate Line Targeting**: Delivers pinpoint file:L30-L45 references instead of loading thousands of lines of context.
 
 #### 1-Click Installer Command:
-\\powershell
+```powershell
 # In Windows PowerShell:
 .\install.ps1 -CodeGraph
-\
-\\ash
+```
+```bash
 # In Ubuntu / Linux / WSL:
 ./install.sh --codegraph
-\
+```
 ---
 
 ### Option D: Persistent Agent Memory (Hindsight Biomimetic Memory)
@@ -241,15 +241,13 @@ These 11 rules are automatically applied by Antigravity across your workspaces:
 
 ## ⚡ Active Skills & Capabilities
 
-The arsenal includes 20 specialized skills conforming to modern Agent Skills standards (gentskills.io / Google Antigravity 2.0 / Claude), featuring isolated progressive disclosure references (
-eferences/), slash commands, and negative triggers:
+The arsenal includes 22 specialized skills conforming to modern Agent Skills standards (agentskills.io / Google Antigravity 2.0 / Claude), featuring isolated progressive disclosure references (`references/`), slash commands, and negative triggers:
 
 ### 1. code-review (/code-review)
 - **When to use**: Auditing pull requests, reviewing recent commits, inspecting staged diffs, or evaluating branch code quality.
 - **Includes**:
-  - [
-eview-checklist.md](.agents/skills/code-review/references/review-checklist.md): Exhaustive 20-point checklist covering SQLi, IDOR, N+1 queries, async safety, and test coverage.
-  - [eedback-rubric.md](.agents/skills/code-review/references/feedback-rubric.md): Standardized review report template categorizing findings into [Blocker], [Performance], [Architecture], and [Suggestion].
+  - [review-checklist.md](.agents/skills/code-review/references/review-checklist.md): Exhaustive 20-point checklist covering SQLi, IDOR, N+1 queries, async safety, and test coverage.
+  - [feedback-rubric.md](.agents/skills/code-review/references/feedback-rubric.md): Standardized review report template categorizing findings into [Blocker], [Performance], [Architecture], and [Suggestion].
 
 ### 2. investigate (/investigate)
 - **When to use**: Diagnosing elusive bugs, intermittent test failures, unexplained crashes, production outages, or confusing regressions.
@@ -263,15 +261,15 @@ eview-checklist.md](.agents/skills/code-review/references/review-checklist.md): 
   - [skill-template.md](.agents/skills/create-skill/references/skill-template.md): Canonical skill structure with YAML frontmatter, execution steps, and token guardrails.
   - [interview-guide.md](.agents/skills/create-skill/references/interview-guide.md): Structured 4-question interview framework minimizing interaction rounds.
 
-### 4. pi-design (/api-design)
+### 4. api-design (/api-design)
 - **When to use**: Designing RESTful or RPC API contracts, input validation schemas, DTO models, and RFC 7807 error representations.
 - **Includes**:
-  - [pi-standards.md](.agents/skills/api-design/references/api-standards.md): RESTful URI design, RFC 7807 problem details, pagination standards, and schema validation.
+  - [api-standards.md](.agents/skills/api-design/references/api-standards.md): RESTful URI design, RFC 7807 problem details, pagination standards, and schema validation.
 
-### 5. rchitecture-design-adr (/architecture-design-adr)
+### 5. architecture-design-adr (/architecture-design-adr)
 - **When to use**: Authoring Architecture Decision Records (ADRs), designing subsystems, evaluating technology choices, or defining service boundaries.
 - **Includes**:
-  - [dr-template.md](.agents/skills/architecture-design-adr/references/adr-template.md): Production-ready ADR template with evaluation matrix and consequence tracking.
+  - [adr-template.md](.agents/skills/architecture-design-adr/references/adr-template.md): Production-ready ADR template with evaluation matrix and consequence tracking.
 
 ### 6. csharp-dotnet-expert (/csharp-dotnet-expert)
 - **When to use**: Writing or optimizing C# (.NET 8/9), ASP.NET Core, EF Core, or Dapper code.
@@ -294,47 +292,40 @@ eview-checklist.md](.agents/skills/code-review/references/review-checklist.md): 
 ### 9. e2e-feature (/e2e-feature)
 - **When to use**: Implementing fullstack end-to-end features bridging database migrations, backend endpoints, and frontend UI views.
 - **Includes**:
-  - [ertical-slice.md](.agents/skills/e2e-feature/references/vertical-slice.md): Vertical slice architecture, migration safety, type synchronization, and optimistic mutation workflow.
+  - [vertical-slice.md](.agents/skills/e2e-feature/references/vertical-slice.md): Vertical slice architecture, migration safety, type synchronization, and optimistic mutation workflow.
 
-### 10. rontend-architecture-expert (/frontend-architecture-expert)
+### 10. frontend-architecture-expert (/frontend-architecture-expert)
 - **When to use**: Designing React (18/19) or Angular (17/18/19) applications, debugging re-render churn, or auditing a11y.
 - **Includes**:
-  - [
-eact-performance.md](.agents/skills/frontend-architecture-expert/references/react-performance.md): RSC leaf boundaries, Zustand selective subscriptions, list virtualization (@tanstack/react-virtual).
-  - [ngular-signals-best-practices.md](.agents/skills/frontend-architecture-expert/references/angular-signals-best-practices.md): Angular Signals (signal, computed), Standalone components, OnPush, @defer (on viewport).
+  - [react-performance.md](.agents/skills/frontend-architecture-expert/references/react-performance.md): RSC leaf boundaries, Zustand selective subscriptions, list virtualization (@tanstack/react-virtual).
+  - [angular-signals-best-practices.md](.agents/skills/frontend-architecture-expert/references/angular-signals-best-practices.md): Angular Signals (signal, computed), Standalone components, OnPush, @defer (on viewport).
 
-### 11. rontend-audit (/frontend-audit)
+### 11. frontend-audit (/frontend-audit)
 - **When to use**: Auditing frontend performance, re-render bottlenecks, bundle size, change detection, and web accessibility.
 - **Includes**:
-  - [
-ender-profiling.md](.agents/skills/frontend-audit/references/render-profiling.md): React DevTools / Angular DevTools profiling guides, memoization rules, and a11y audit steps.
+  - [render-profiling.md](.agents/skills/frontend-audit/references/render-profiling.md): React DevTools / Angular DevTools profiling guides, memoization rules, and a11y audit steps.
 
-### 12. ullstack-integration-master (/fullstack-integration-master)
+### 12. fullstack-integration-master (/fullstack-integration-master)
 - **When to use**: Designing end-to-end features bridging UI and Backend, synchronizing API types, or implementing optimistic UI.
 - **Includes**:
   - [e2e-type-safety.md](.agents/skills/fullstack-integration-master/references/e2e-type-safety.md): OpenAPI -> TypeScript client generation (openapi-typescript), shared Zod contracts.
-  - [
-ealtime-optimistic-ui.md](.agents/skills/fullstack-integration-master/references/realtime-optimistic-ui.md): TanStack Query optimistic mutation with rollback snapshot, Server-Sent Events (SSE).
+  - [realtime-optimistic-ui.md](.agents/skills/fullstack-integration-master/references/realtime-optimistic-ui.md): TanStack Query optimistic mutation with rollback snapshot, Server-Sent Events (SSE).
 
 ### 13. git-release (/git-release)
 - **When to use**: Preparing software releases, verifying test suites, bumping versions according to SemVer, and authoring release notes.
 - **Includes**:
-  - [
-elease-guide.md](.agents/skills/git-release/references/release-guide.md): Pre-release verification checklist, SemVer bump rules, Conventional Commits changelog generation, and tag creation.
+  - [release-guide.md](.agents/skills/git-release/references/release-guide.md): Pre-release verification checklist, SemVer bump rules, Conventional Commits changelog generation, and tag creation.
 
 ### 14. git-workflow-master (/git-workflow-master)
 - **When to use**: Git operations, interactive rebases, atomic commits, conflict resolution, or release tagging.
 - **Includes**:
-  - [conventional-commits.md](.agents/skills/git-workflow-master/references/conventional-commits.md): Conventional Commits standard matrix (eat, ix, perf, 
-efactor, reaking change) and SemVer impact guide.
+  - [conventional-commits.md](.agents/skills/git-workflow-master/references/conventional-commits.md): Conventional Commits standard matrix (feat, fix, perf, refactor, breaking change) and SemVer impact guide.
 
-### 15. 
-odejs-backend-expert (/nodejs-backend-expert)
+### 15. nodejs-backend-expert (/nodejs-backend-expert)
 - **When to use**: Developing Fastify, Express, or NestJS services, configuring connection pools, or profiling latency.
 - **Includes**:
   - [event-loop-perf.md](.agents/skills/nodejs-backend-expert/references/event-loop-perf.md): Event loop latency monitoring, worker threads for CPU tasks, stream processing with backpressure (stream.pipeline), and memory leak prevention.
-  - [
-ode-security.md](.agents/skills/nodejs-backend-expert/references/node-security.md): Zod schema validation, Helmet security headers, rate limiting, and prototype pollution defenses.
+  - [node-security.md](.agents/skills/nodejs-backend-expert/references/node-security.md): Zod schema validation, Helmet security headers, rate limiting, and prototype pollution defenses.
 
 ### 16. perf-audit (/perf-audit)
 - **When to use**: Performance auditing to detect database query bottlenecks, event loop lag, memory leaks, and thread pool starvation.
@@ -349,19 +340,19 @@ ode-security.md](.agents/skills/nodejs-backend-expert/references/node-security.m
 ### 18. python-backend-expert (/python-backend-expert)
 - **When to use**: Designing or optimizing modern Python services (FastAPI, Django, Flask), asyncio TaskGroup pipelines, or SQLAlchemy 2.0 async queries.
 - **Includes**:
-  - [syncio-perf.md](.agents/skills/python-backend-expert/references/asyncio-perf.md): Non-blocking asyncio patterns, TaskGroup structured concurrency, thread pool offloading (syncio.to_thread).
+  - [asyncio-perf.md](.agents/skills/python-backend-expert/references/asyncio-perf.md): Non-blocking asyncio patterns, TaskGroup structured concurrency, thread pool offloading (asyncio.to_thread).
   - [pydantic-fastapi.md](.agents/skills/python-backend-expert/references/pydantic-fastapi.md): Pydantic v2 schemas, lifespan context managers, and dependency injection patterns.
 
 ### 19. ui-ux-architect (/ui-ux-architect)
 - **When to use**: Architecting design systems, DTCG tokens, state-complete components, or ensuring WCAG 2.2 AA compliance.
 - **Includes**:
   - [dtcg-tokens.md](.agents/skills/ui-ux-architect/references/dtcg-tokens.md): Three-tier DTCG architecture, color/typography/spacing tokens, and zero-runtime CSS compilation.
-  - [nti-slop-gates.md](.agents/skills/ui-ux-architect/references/anti-slop-gates.md): The 10 objective verification gates (Zero-Emoji, Intent Tokens, Contrast, States, Target Size, Overflow, Focus Trap, Copy, Hierarchy, Theme).
+  - [anti-slop-gates.md](.agents/skills/ui-ux-architect/references/anti-slop-gates.md): The 10 objective verification gates (Zero-Emoji, Intent Tokens, Contrast, States, Target Size, Overflow, Focus Trap, Copy, Hierarchy, Theme).
 
 ### 20. ui-ux-audit (/ui-ux-audit)
 - **When to use**: Auditing UI templates, components, and stylesheets against anti-slop gates, contrast ratios, and touch targets.
 - **Includes**:
-  - [udit-matrix-template.md](.agents/skills/ui-ux-audit/references/audit-matrix-template.md): Compact Markdown audit matrix template and surgical 2-5 line diff remediation workflow.
+  - [audit-matrix-template.md](.agents/skills/ui-ux-audit/references/audit-matrix-template.md): Compact Markdown audit matrix template and surgical 2-5 line diff remediation workflow.
 
 ### 21. agent-memory (/memory)
 - **When to use**: Saving durable architectural decisions, recording resolved bug patterns from root-cause debugging, or retrieving project rules across sessions using Hindsight.
