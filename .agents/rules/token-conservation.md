@@ -37,3 +37,13 @@ This rule enforces strict token economy across all agent responses, code generat
   - `✅ Build passed (0 errors, 0 warnings). 14/14 tests green.`
   - Do not paste hundreds of lines of successful build logs. Only print relevant error lines when a build or test fails.
 - **Concise Reasoning**: Keep chain-of-thought and explanations dense, technical, and free of redundant restatements.
+
+---
+
+## 5. Mandatory Session Skill & Subagent Delegation
+
+In any new session within an Arsenal-enabled project:
+- **Immediate Skill Activation**: For every incoming technical task (code review, bug diagnosis, architecture design, migration, performance profiling, UI/UX audit, feature implementation), the agent **MUST immediately activate the corresponding skill (`.agents/skills/*`) or delegate to its dedicated subagent**.
+- **Context Economy via Delegation**: Never attempt generic, multi-turn manual prompt flailing. Specialized skills and subagents contain tailored runbooks, negative triggers, and compact references that enforce token limits and eliminate hallucinated trial-and-error.
+- **Biomimetic Memory Check**: Before executing architecture decisions or refactorings, query previous project memory observations (`agent-memory` / `recall`) to prevent rediscovering established context.
+

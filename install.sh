@@ -32,6 +32,7 @@ show_help() {
   echo "  ./install.sh --project <path>          # Copy into target project repository"
   echo "  ./install.sh --project <path> --link   # Symlink into target project repository"
   echo "  ./install.sh --status                  # Verify installed skills & rules"
+  echo "  ./install.sh --hindsight               # Configure Hindsight MCP memory server for Antigravity"
 }
 
 if [ $# -eq 0 ]; then
@@ -44,6 +45,7 @@ CLI_MODE=false
 PROJECT_PATH=""
 SYMLINK_MODE=false
 STATUS_MODE=false
+HINDSIGHT_MODE=false
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -65,6 +67,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --status|-s)
       STATUS_MODE=true
+      shift
+      ;;
+    --hindsight|-m)
+      HINDSIGHT_MODE=true
       shift
       ;;
     --help|-h)
@@ -188,4 +194,44 @@ if [ "$STATUS_MODE" = true ]; then
       [ -f "$r" ] && echo "  - $(basename "$r")"
     done
   fi
+fi
+
+# 5. Hindsight MCP Configuration Mode
+if [ "$HINDSIGHT_MODE" = true ]; then
+  MCP_DIR="$HOME/.gemini/antigravity"
+  MCP_FILE="$MCP_DIR/mcp.json"
+  mkdir -p "$MCP_DIR"
+
+  echo -e "${YELLOW}[+] Configuring Hindsight MCP Memory Server into: $MCP_FILE${NC}"
+  BANK_NAME="senior-developer-arsenal"
+  if [ -n "$PROJECT_PATH" ]; then
+    BANK_NAME="$(basename "$PROJECT_PATH")"
+  fi
+
+  python3 -c "
+import json, os
+mcp_file = os.path.expanduser('$MCP_FILE')
+data = {'mcpServers': {}}
+if os.path.exists(mcp_file):
+    try:
+        with open(mcp_file, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+            if 'mcpServers' not in data:
+                data['mcpServers'] = {}
+    except Exception:
+        pass
+
+data['mcpServers']['hindsight'] = {
+    'command': 'npx',
+    'args': ['-y', '@vectorize-io/hindsight-mcp'],
+    'env': {
+        'HINDSIGHT_BASE_URL': 'http://localhost:8888',
+        'HINDSIGHT_BANK_ID': '$BANK_NAME'
+    }
+}
+
+with open(mcp_file, 'w', encoding='utf-8') as f:
+    json.dump(data, f, indent=2)
+"
+  echo -e "${GREEN}[SUCCESS] Registered 'hindsight' MCP server in $MCP_FILE!${NC}"
 fi

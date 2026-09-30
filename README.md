@@ -11,7 +11,7 @@ Designed to be version-controlled as a reusable Git repository and deployed acro
 | Component | Quantity | Purpose |
 | :--- | :---: | :--- |
 | **Workspace & Global Rules** | 11 | Enforce senior engineering standards across Python, Node.js, C#, Frontend, UI/UX, Databases, Git, Token Frugality, and Defensive Epistemology. |
-| **Specialized Skills** | 20 | Actionable runbooks adhering to modern Agent Skills standards (`SKILL.md` + progressive `references/`) with slash commands and negative triggers. |
+| **Specialized Skills** | 21 | Actionable runbooks adhering to modern Agent Skills standards (`SKILL.md` + progressive `references/`) with slash commands and negative triggers. |
 | **Autonomous Subagents** | 10 | Dedicated personas (`code-reviewer`, `epistemic-debugger`, `python-specialist`, `frontend-architect`, `ui-ux-architect`, `fullstack-architect`, `db-architect`, etc.). |
 | **Multi-Project Installers** | 2 | Automated PowerShell (`install.ps1`) and Bash (`install.sh`) scripts for 1-click global or per-project setup. |
 
@@ -167,6 +167,39 @@ git config core.hooksPath .githooks
 
 ---
 
+### Option D: Persistent Agent Memory (Hindsight Biomimetic Memory)
+Provide Antigravity agents with cross-session long-term memory using [vectorize-io/hindsight](https://github.com/vectorize-io/hindsight).
+
+#### Why It's Useful:
+- **Zero Loss of Architectural Context**: Prevents agents from "forgetting" past decisions, custom rules, or solved edge cases between chat sessions.
+- **Massive Token Conservation**: Instead of re-reading large READMEs, ADR files, and past chat logs, agents perform high-precision hybrid retrieval (`recall`) and synthesized reflection (`reflect`).
+- **Evidence-Based Consolidated Observations**: Stores deduplicated beliefs with proof counters and lineage tracking, resolving contradictions automatically.
+
+#### 1-Click Installer Command:
+```powershell
+# In Windows PowerShell:
+.\install.ps1 -Hindsight
+```
+
+```bash
+# In Ubuntu / Linux / WSL:
+./install.sh --hindsight
+```
+
+#### CLI / Script Usage:
+```bash
+# Store an architectural decision or resolved bug finding:
+python scripts/memory.py retain --bank "my-project" --content "We enforce UUIDv7 and WAL mode on SQLite."
+
+# Search memories using hybrid search (vector + BM25 + graph + temporal):
+python scripts/memory.py recall --bank "my-project" --query "What are our SQLite settings?"
+
+# Ask the agent to reason across its memory bank:
+python scripts/memory.py reflect --bank "my-project" --query "Summarize all database constraints."
+```
+
+---
+
 ## 📐 Engineering Standards & Rules (Always-On)
 
 These 11 rules are automatically applied by Antigravity across your workspaces:
@@ -310,6 +343,11 @@ ode-security.md](.agents/skills/nodejs-backend-expert/references/node-security.m
 - **When to use**: Auditing UI templates, components, and stylesheets against anti-slop gates, contrast ratios, and touch targets.
 - **Includes**:
   - [udit-matrix-template.md](.agents/skills/ui-ux-audit/references/audit-matrix-template.md): Compact Markdown audit matrix template and surgical 2-5 line diff remediation workflow.
+
+### 21. agent-memory (/memory)
+- **When to use**: Saving durable architectural decisions, recording resolved bug patterns from root-cause debugging, or retrieving project rules across sessions using Hindsight.
+- **Includes**:
+  - [memory-architecture.md](.agents/skills/agent-memory/references/memory-architecture.md): Biomimetic memory concepts (Facts, Observations, Mental Models) and hybrid search ranking (Vector, BM25, Graph, Temporal).
 
 ---
 

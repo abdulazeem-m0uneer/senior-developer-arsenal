@@ -14,6 +14,7 @@ The user requires **strict token conservation and applied rationality**:
 - **Dense, Compact Reporting**: Use concise tables and bullet points with severity tags (`[Blocker]`, `[Perf]`, `[Arch]`, `[Nit]`).
 - **No Echoing**: When creating or editing files, do not re-paste their content in the chat. Provide only the file link and a 1-line summary.
 - **Progressive Retrieval**: Read reference manuals (`references/*.md`) only on explicit demand. Keep active context lean.
+- **Mandatory Skill Agent Activation**: In any new session, **ALWAYS identify and activate the corresponding specialized skill or subagent immediately**. Do not perform open-ended, unconstrained reasoning without the appropriate skill framework. Skill runbooks constrain token spend, enforce deterministic execution, and ensure maximum accuracy.
 
 ---
 

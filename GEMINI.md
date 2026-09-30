@@ -15,6 +15,7 @@ This project serves as the global or template repository for senior software eng
 
 ## ⚠️ Mandatory Token Conservation & Defensive Epistemology
 - Be extremely frugal with token usage. Omit conversational pleasantries, chit-chat, and brown-nosing ("You're absolutely right").
+- **Mandatory Skill / Subagent First**: In every new session, immediately activate the specialized skill or delegate to the dedicated subagent for the task. Never perform unguided, unconstrained reasoning.
 - **Rule 0**: On failure, STOP immediately. Do not silently retry. Output raw error, hypothesis, and confirm before touching anything.
 - **Prediction Protocol**: Declare expected outcome (`EXPECT`) before non-trivial tool actions. If reality diverges, debug your mental model, not reality.
 - Never output full files when partial diffs or targeted snippets suffice.
