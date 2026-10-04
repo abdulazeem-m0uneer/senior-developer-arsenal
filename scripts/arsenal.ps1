@@ -32,7 +32,9 @@ Commands:
 # Forwards to install.ps1 through a child process so -Switch tokens bind as parameters.
 function Invoke-Installer([object[]]$Arguments) {
     $shell = (Get-Process -Id $PID).Path
-    & $shell -NoProfile -ExecutionPolicy Bypass -File $Installer @Arguments
+    # "-Target a,b" arrives as an array; rejoin it so it stays one argument.
+    $flattened = @($Arguments | ForEach-Object { if ($_ -is [array]) { $_ -join "," } else { $_ } })
+    & $shell -NoProfile -ExecutionPolicy Bypass -File $Installer @flattened
     exit $LASTEXITCODE
 }
 

@@ -90,7 +90,7 @@ done
 
 # --- Resolve targets, scopes and inputs ---------------------------------------
 TARGETS=()
-IFS=',' read -r -a requested_targets <<< "$TARGET_LIST"
+IFS=',' read -r -a requested_targets <<< "${TARGET_LIST// /}"
 for requested in "${requested_targets[@]}"; do
   if [ "$requested" = "all" ]; then
     read -r -a TARGETS <<< "$ALL_TARGETS"
@@ -108,13 +108,17 @@ if [ -n "$PROJECT_PATH" ]; then
   [ -d "$PROJECT_PATH" ] || die "Target project directory '$PROJECT_PATH' not found."
   PROJECT_ROOT="$(cd "$PROJECT_PATH" && pwd -P)"
   [ "$PROJECT_ROOT" != "$ARSENAL_ROOT" ] || die "Refusing to install the arsenal into its own repository."
+  [ "$PROJECT_ROOT" != "$(cd "$HOME" && pwd -P)" ] || die "The home directory is not a project; use --global."
 fi
 
-if [ -z "$BANK_ID" ]; then
+if [ -n "$BANK_ID" ]; then
+  [[ "$BANK_ID" =~ ^[A-Za-z0-9._-]+$ ]] || die "Bank id '$BANK_ID' may only contain letters, digits, '.', '_' and '-'."
+elif [ -n "$PROJECT_ROOT" ]; then
+  # Derived from the folder name; anything outside the safe set becomes '-'.
+  BANK_ID="$(basename "$PROJECT_ROOT" | tr -c 'A-Za-z0-9._\n-' '-')"
+else
   BANK_ID="senior-developer-arsenal"
-  [ -z "$PROJECT_ROOT" ] || BANK_ID="$(basename "$PROJECT_ROOT")"
 fi
-[[ "$BANK_ID" =~ ^[A-Za-z0-9._-]+$ ]] || die "Bank id '$BANK_ID' may only contain letters, digits, '.', '_' and '-' (use --bank)."
 
 MCP_MODE=false
 if [ "$HINDSIGHT_MODE" = true ] || [ "$CODEGRAPH_MODE" = true ]; then MCP_MODE=true; fi
@@ -201,12 +205,48 @@ is_current() { # source path
   fi
 }
 
-block_marker_counts() { # file -> "begin end"
-  awk -v b="$BLOCK_BEGIN" -v e="$BLOCK_END" '$0 == b { nb++ } $0 == e { ne++ } END { print nb + 0, ne + 0 }' "$1"
+# True when a path would be written or deleted inside the arsenal repository itself,
+# which happens when one of its parent directories is a symlink into the arsenal.
+resolves_into_arsenal() {
+  local directory
+  directory="$(dirname "$1")"
+  while [ ! -d "$directory" ]; do directory="$(dirname "$directory")"; done
+  directory="$(cd "$directory" && pwd -P)"
+  case "$directory" in "$ARSENAL_ROOT"|"$ARSENAL_ROOT"/*) return 0 ;; *) return 1 ;; esac
 }
 
-strip_block() { # file -> stdout without the managed block
-  awk -v b="$BLOCK_BEGIN" -v e="$BLOCK_END" '$0 == b { skip = 1; next } $0 == e { skip = 0; next } !skip' "$1"
+# A recorded destination is only trusted when it stays inside the scope base.
+is_safe_destination() {
+  case "$1" in ""|/*|..|../*|*/..|*/../*) return 1 ;; *) return 0 ;; esac
+}
+
+# Prints "none", "ok" (one BEGIN before one END) or "bad". Line endings may be LF or CRLF.
+block_state() { # file
+  awk -v b="$BLOCK_BEGIN" -v e="$BLOCK_END" '
+    { line = $0; sub(/\r$/, "", line) }
+    line == b { nb++; begin_line = NR }
+    line == e { ne++; end_line = NR }
+    END {
+      if (nb + ne == 0) print "none"
+      else if (nb == 1 && ne == 1 && begin_line < end_line) print "ok"
+      else print "bad"
+    }' "$1"
+}
+
+strip_block() { # file -> stdout without the managed block, LF line endings
+  awk -v b="$BLOCK_BEGIN" -v e="$BLOCK_END" '
+    { sub(/\r$/, "") }
+    $0 == b { skip = 1; next }
+    $0 == e { skip = 0; next }
+    !skip' "$1"
+}
+
+has_crlf() { grep -q $'\r$' "$1"; }
+
+# Replaces a file's content in place so its permissions and ownership are kept.
+write_in_place() { # source destination crlf(true|false)
+  if [ "$3" = true ]; then awk '{ printf "%s\r\n", $0 }' "$1" > "$2"; else cat "$1" > "$2"; fi
+  rm -f "$1"
 }
 
 # Older releases symlinked the whole .agents directory and AGENTS.md into the project.
@@ -230,6 +270,11 @@ install_item() { # target scope kind name source destination
   base="$(scope_base "$scope")"; state="$(state_file "$scope")"; path="$base/$destination"
   [ -e "$source" ] || die "Missing source '$5'. Run: python3 scripts/build.py"
 
+  if resolves_into_arsenal "$path"; then
+    warn "Skipped $path (its parent directory resolves into the arsenal repository)."
+    SKIPPED=$((SKIPPED + 1))
+    return 0
+  fi
   if [ -e "$path" ] || [ -L "$path" ]; then
     if is_current "$source" "$path"; then
       [ "$DRY_RUN" = true ] || record "$state" "$target" "$destination"
@@ -250,6 +295,7 @@ install_item() { # target scope kind name source destination
   mkdir -p "$(dirname "$path")"
   if [ "$LINK_MODE" = true ]; then
     ln -s "$source" "$path"
+    [ -L "$path" ] || warn "$path was copied: this shell cannot create symlinks (Git Bash needs MSYS=winsymlinks:nativestrict)."
   elif [ "$kind" = "dir" ]; then
     cp -R "$source" "$path"
   else
@@ -261,18 +307,22 @@ install_item() { # target scope kind name source destination
 
 install_block() { # target scope source destination
   local target="$1" scope="$2" source="$ARSENAL_ROOT/$3" destination="$4"
-  local base state path counts body
+  local base state path body crlf=false
   base="$(scope_base "$scope")"; state="$(state_file "$scope")"; path="$base/$destination"
   [ -f "$source" ] || die "Missing source '$3'. Run: python3 scripts/build.py"
 
   body=""
-  if [ -f "$path" ]; then
-    counts="$(block_marker_counts "$path")"
-    if [ "$counts" != "0 0" ] && [ "$counts" != "1 1" ]; then
+  if [ -L "$path" ] || resolves_into_arsenal "$path"; then
+    warn "Skipped $path (a symlink, or inside the arsenal repository; add the block to its target manually)."
+    SKIPPED=$((SKIPPED + 1))
+    return 0
+  elif [ -f "$path" ]; then
+    if [ "$(block_state "$path")" = "bad" ]; then
       warn "Skipped $path (unbalanced arsenal block markers; fix the file manually)."
       SKIPPED=$((SKIPPED + 1))
       return 0
     fi
+    ! has_crlf "$path" || crlf=true
     # A file copied verbatim by an older release is replaced, not duplicated.
     cmp -s "$source" "$path" || body="$(strip_block "$path")"
   elif [ -e "$path" ]; then
@@ -292,18 +342,22 @@ install_block() { # target scope source destination
     printf '%s\n' "$BLOCK_END"
   } > "$path.arsenal-tmp"
   record "$state" "$target" "$destination"
+  if [ "$crlf" = true ]; then
+    awk '{ printf "%s\r\n", $0 }' "$path.arsenal-tmp" > "$path.arsenal-crlf"
+    mv "$path.arsenal-crlf" "$path.arsenal-tmp"
+  fi
   if [ -f "$path" ] && cmp -s "$path.arsenal-tmp" "$path"; then
     rm -f "$path.arsenal-tmp"
     UNCHANGED=$((UNCHANGED + 1))
     return 0
   fi
-  mv "$path.arsenal-tmp" "$path"
+  write_in_place "$path.arsenal-tmp" "$path" false
   INSTALLED=$((INSTALLED + 1))
 }
 
 uninstall_item() { # target scope destination
   local target="$1" scope="$2" destination="$3"
-  local base state path remaining
+  local base state path crlf=false
   base="$(scope_base "$scope")"; state="$(state_file "$scope")"; path="$base/$destination"
   if [ "$DRY_RUN" = true ]; then
     echo "[dry-run] would remove $path"
@@ -311,12 +365,22 @@ uninstall_item() { # target scope destination
   fi
   forget "$state" "$target" "$destination"
   [ -f "$state" ] || remove_empty_parents "$state" "$base"
+  if ! is_safe_destination "$destination"; then
+    warn "Dropped unsafe entry '$destination' from the install record; nothing was deleted for it."
+    SKIPPED=$((SKIPPED + 1))
+    return 0
+  fi
   # Another installed target still shares this path.
   if is_recorded "$state" "$destination"; then return 0; fi
+  if resolves_into_arsenal "$path"; then
+    warn "Left $path in place (its parent directory resolves into the arsenal repository)."
+    return 0
+  fi
   if is_block_destination "$destination"; then
-    if [ -f "$path" ] && [ "$(block_marker_counts "$path")" = "1 1" ]; then
-      remaining="$(strip_block "$path")"
-      if [ -n "${remaining//[[:space:]]/}" ]; then printf '%s\n' "$remaining" > "$path"; else rm -f "$path"; fi
+    if [ -f "$path" ] && [ ! -L "$path" ] && [ "$(block_state "$path")" = "ok" ]; then
+      ! has_crlf "$path" || crlf=true
+      strip_block "$path" | awk '{ lines[NR] = $0 } /[^[:space:]]/ { last = NR } END { for (i = 1; i <= last; i++) print lines[i] }' > "$path.arsenal-tmp"
+      if [ -s "$path.arsenal-tmp" ]; then write_in_place "$path.arsenal-tmp" "$path" "$crlf"; else rm -f "$path.arsenal-tmp" "$path"; fi
     fi
   else
     rm -rf "$path"
@@ -388,7 +452,7 @@ show_status() { # target scope
     case "$kind" in dir|file|block) ;; *) continue ;; esac
     total=$((total + 1)); path="$base/$destination"
     if [ "$kind" = "block" ]; then
-      if [ -f "$path" ] && grep -Fxq "$BLOCK_BEGIN" "$path"; then present=$((present + 1)); fi
+      if [ -f "$path" ] && [ "$(block_state "$path")" = "ok" ]; then present=$((present + 1)); fi
     elif [ -e "$path" ]; then
       present=$((present + 1))
     fi

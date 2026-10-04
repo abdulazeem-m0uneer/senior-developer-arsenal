@@ -134,4 +134,80 @@ echo '{}' > "$HOME/.gemini/antigravity/mcp.json"
 grep -q codegraph "$HOME/.gemini/antigravity/mcp.json" || fail "did not update the existing legacy Antigravity MCP file"
 pass "legacy Antigravity MCP file is updated only when present"
 
+fresh
+mkdir -p "$WORK/my proj"
+"$INSTALL" --project "$WORK/my proj" --target cursor --hindsight > "$WORK/out.txt" 2>&1 || { cat "$WORK/out.txt"; fail "a project path with spaces was rejected"; }
+grep -q '"url": "http://localhost:8888/mcp/my-proj/"' "$WORK/my proj/.cursor/mcp.json" || fail "derived bank id was not sanitised"
+[ -d "$WORK/my proj/.agents/skills/code-review" ] || fail "install into a path with spaces failed"
+rm -rf "$WORK/my proj"
+if "$INSTALL" --project "$HOME" --target codex > /dev/null 2>&1; then fail "the home directory was accepted as a project"; fi
+pass "paths with spaces work and the home directory is refused as a project"
+
+fresh
+mkdir -p "$WORK/victim" "$WORK/proj/.agents"
+echo keep > "$WORK/victim/file"
+echo keep > "$WORK/proj/user.txt"
+printf 'claude\t../victim\nclaude\t/%s\nclaude\nclaude\tsub/../../victim\n' "$WORK/victim" > "$WORK/proj/.agents/.arsenal-manifest"
+"$INSTALL" --project "$WORK/proj" --target claude --uninstall > /dev/null 2>&1
+[ -f "$WORK/victim/file" ] || fail "uninstall followed a path outside the project"
+[ -f "$WORK/proj/user.txt" ] || fail "an empty record deleted the project"
+pass "unsafe install records never delete anything"
+
+fresh
+ARSENAL_COPY="$WORK/arsenal"
+mkdir -p "$ARSENAL_COPY"
+cp -R "$ROOT/.agents" "$ROOT/dist" "$ROOT/scripts" "$ROOT/install.sh" "$ROOT/AGENTS.md" "$ARSENAL_COPY/"
+mkdir -p "$WORK/proj/.agents"
+ln -s "$ARSENAL_COPY/.agents/skills" "$WORK/proj/.agents/skills"
+copy_files() { find "$ARSENAL_COPY/.agents" -type f | wc -l | tr -d ' '; }
+before="$(copy_files)"
+"$ARSENAL_COPY/install.sh" --project "$WORK/proj" --target codex --force > /dev/null 2>&1
+"$ARSENAL_COPY/install.sh" --project "$WORK/proj" --target codex --link --force > /dev/null 2>&1
+"$ARSENAL_COPY/install.sh" --project "$WORK/proj" --target codex --uninstall > /dev/null 2>&1
+[ "$(copy_files)" = "$before" ] || fail "a symlinked parent let the installer modify the arsenal repository"
+[ ! -L "$ARSENAL_COPY/.agents/skills/code-review" ] || fail "a source skill was replaced by a link to itself"
+rm -rf "$ARSENAL_COPY"
+pass "a parent symlinked into the arsenal is never written to or deleted"
+
+fresh
+printf '%s\n%s\nuser text after\n' '<!-- END senior-developer-arsenal -->' '<!-- BEGIN senior-developer-arsenal -->' > "$WORK/proj/AGENTS.md"
+cp "$WORK/proj/AGENTS.md" "$WORK/expected.md"
+"$INSTALL" --project "$WORK/proj" --target windsurf > "$WORK/out.txt" 2>&1
+cmp -s "$WORK/proj/AGENTS.md" "$WORK/expected.md" || fail "reversed block markers led to lost content on install"
+"$INSTALL" --project "$WORK/proj" --target windsurf --uninstall > /dev/null 2>&1
+cmp -s "$WORK/proj/AGENTS.md" "$WORK/expected.md" || fail "reversed block markers led to lost content on uninstall"
+pass "reversed block markers are left untouched"
+
+fresh
+echo "# mine" > "$WORK/proj/AGENTS.md"
+ln -s AGENTS.md "$WORK/proj/CLAUDE.md"
+"$INSTALL" --project "$WORK/proj" --target claude > "$WORK/out.txt" 2>&1
+[ -L "$WORK/proj/CLAUDE.md" ] || fail "a symlinked CLAUDE.md was replaced by a regular file"
+[ "$(grep -c 'BEGIN senior-developer-arsenal' "$WORK/proj/AGENTS.md")" = "1" ] || fail "writing through a symlink corrupted AGENTS.md"
+grep -q "@AGENTS.md" "$WORK/proj/AGENTS.md" && fail "the CLAUDE.md import was written through the symlink"
+"$INSTALL" --project "$WORK/proj" --target claude > "$WORK/out.txt" 2>&1
+grep -q "Installed 0," "$WORK/out.txt" || fail "a symlinked block file makes re-runs unstable"
+pass "a symlinked instruction file is skipped, not replaced or written through"
+
+fresh
+printf '# Mine\r\n\r\nKeep me.\r\n' > "$WORK/proj/AGENTS.md"
+chmod 600 "$WORK/proj/AGENTS.md"
+cp "$WORK/proj/AGENTS.md" "$WORK/expected.md"
+"$INSTALL" --project "$WORK/proj" --target windsurf > /dev/null 2>&1
+"$INSTALL" --project "$WORK/proj" --target windsurf > "$WORK/out.txt" 2>&1
+[ "$(grep -c 'BEGIN senior-developer-arsenal' "$WORK/proj/AGENTS.md")" = "1" ] || fail "a CRLF file received a second block"
+if grep -qv $'\r$' "$WORK/proj/AGENTS.md"; then fail "LF lines were written into a CRLF file"; fi
+[ -n "$(find "$WORK/proj/AGENTS.md" -perm 600)" ] || fail "file permissions were widened"
+"$INSTALL" --project "$WORK/proj" --target windsurf --uninstall > /dev/null 2>&1
+cmp -s "$WORK/proj/AGENTS.md" "$WORK/expected.md" || fail "uninstall did not restore the CRLF file byte for byte"
+pass "CRLF files keep their line endings and permissions"
+
+fresh
+mkdir -p "$HOME/.cursor"
+echo '{}' > "$HOME/.cursor/mcp.json"
+chmod 600 "$HOME/.cursor/mcp.json"
+"$INSTALL" --target cursor --codegraph > /dev/null 2>&1
+[ -n "$(find "$HOME/.cursor/mcp.json" -perm 600)" ] || fail "MCP config permissions were widened"
+pass "MCP config permissions are preserved"
+
 echo "all $PASSED smoke tests passed"

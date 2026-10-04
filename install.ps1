@@ -24,7 +24,7 @@
     .\install.ps1 -Global -Target codex -CodeGraph
 #>
 
-[CmdletBinding()]
+[CmdletBinding(PositionalBinding = $false)]
 param (
     [switch]$Global,
     [string]$Project,
@@ -81,13 +81,20 @@ if ($Project) {
     if ($ProjectRoot -eq $ArsenalRoot.TrimEnd("\", "/")) {
         Stop-Install "Refusing to install the arsenal into its own repository."
     }
+    if ($ProjectRoot -eq (Resolve-Path -LiteralPath $UserHome).ProviderPath.TrimEnd("\", "/")) {
+        Stop-Install "The home directory is not a project; use -Global."
+    }
 }
 
-if (-not $Bank) {
-    $Bank = if ($ProjectRoot) { Split-Path -Leaf $ProjectRoot } else { "senior-developer-arsenal" }
-}
-if ($Bank -notmatch "^[A-Za-z0-9._-]+$") {
-    Stop-Install "Bank id '$Bank' may only contain letters, digits, '.', '_' and '-' (use -Bank)."
+if ($Bank) {
+    if ($Bank -notmatch "^[A-Za-z0-9._-]+$") {
+        Stop-Install "Bank id '$Bank' may only contain letters, digits, '.', '_' and '-'."
+    }
+} elseif ($ProjectRoot) {
+    # Derived from the folder name; anything outside the safe set becomes '-'.
+    $Bank = (Split-Path -Leaf $ProjectRoot) -replace "[^A-Za-z0-9._-]", "-"
+} else {
+    $Bank = "senior-developer-arsenal"
 }
 
 $McpMode = ($Hindsight -or $CodeGraph)
@@ -98,9 +105,12 @@ if ($ProjectRoot) { $Scopes += "project" }
 # MCP registration, status and uninstall default to the global scope.
 if ($Scopes.Count -eq 0 -and ($McpMode -or $Status -or $Uninstall)) { $Scopes += "global" }
 
-if ($Scopes.Count -eq 0 -and -not $Cli) {
+if ($PSBoundParameters.Count -eq 0) {
     Get-Help $PSCommandPath
     exit 0
+}
+if ($Scopes.Count -eq 0 -and -not $Cli) {
+    Stop-Install "Nothing to do. Pass -Global and/or -Project <path> (see Get-Help .\install.ps1)."
 }
 if ($Scopes.Count -gt 0 -and -not (Test-Path -LiteralPath $ManifestPath)) {
     Stop-Install "Missing dist/manifest.tsv. Run: python3 scripts/build.py"
@@ -184,7 +194,54 @@ function Remove-PathSafely([string]$Path) {
         if ($item.PSIsContainer) { [System.IO.Directory]::Delete($Path, $false) } else { [System.IO.File]::Delete($Path) }
         return
     }
+    if ($item.PSIsContainer) {
+        foreach ($link in @(Get-ChildItem -LiteralPath $Path -Recurse -Force -Attributes ReparsePoint)) {
+            if (Test-PathOrLink $link.FullName) { Remove-PathSafely $link.FullName }
+        }
+    }
     Remove-Item -LiteralPath $Path -Recurse -Force
+}
+
+# True when a path would be written or deleted inside the arsenal repository itself,
+# which happens when one of its parent directories is a link into the arsenal.
+function Test-ResolvesIntoArsenal([string]$Path) {
+    $root = $ArsenalRoot.TrimEnd("\", "/")
+    $directory = Split-Path -Parent $Path
+    while ($directory -and -not (Test-Path -LiteralPath $directory -PathType Container)) { $directory = Split-Path -Parent $directory }
+    while ($directory) {
+        $linkTarget = Get-LinkTarget $directory
+        if ($linkTarget -and ($linkTarget -eq $root -or $linkTarget.StartsWith($root + [System.IO.Path]::DirectorySeparatorChar))) { return $true }
+        $directory = Split-Path -Parent $directory
+    }
+    return $false
+}
+
+# A recorded destination is only trusted when it stays inside the scope base.
+function Test-SafeDestination([string]$Destination) {
+    if (-not $Destination -or [System.IO.Path]::IsPathRooted($Destination)) { return $false }
+    return (@($Destination -split "[\\/]") -notcontains "..")
+}
+
+# Reads a user file as strict UTF-8. Returns $null when it is not UTF-8 (the caller must leave it alone).
+function Read-Utf8File([string]$Path) {
+    $bytes = [System.IO.File]::ReadAllBytes($Path)
+    $hasBom = ($bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF)
+    $offset = if ($hasBom) { 3 } else { 0 }
+    try {
+        $text = (New-Object System.Text.UTF8Encoding($false, $true)).GetString($bytes, $offset, $bytes.Length - $offset)
+    } catch {
+        return $null
+    }
+    return @{ Text = $text; HasBom = $hasBom }
+}
+
+function Write-UserFile([string]$Path, [string]$Text, [bool]$WithBom) {
+    [System.IO.File]::WriteAllText($Path, $Text, (New-Object System.Text.UTF8Encoding($WithBom)))
+}
+
+function ConvertTo-Lines([string]$Text) {
+    if ($Text.Length -eq 0) { return @() }
+    return @(($Text -replace "`r`n", "`n").TrimEnd("`n") -split "`n")
 }
 
 function Get-ContentSignature([string]$Path) {
@@ -207,15 +264,20 @@ function Test-Current([string]$Source, [string]$Path) {
 }
 
 function Get-TextLines([string]$Path) {
-    $text = [System.IO.File]::ReadAllText($Path)
-    if ($text.Length -eq 0) { return @() }
-    return @(($text -replace "`r`n", "`n").TrimEnd("`n") -split "`n")
+    return ConvertTo-Lines ([System.IO.File]::ReadAllText($Path))
 }
 
-function Get-BlockMarkerCounts([string[]]$Lines) {
-    $begin = @($Lines | Where-Object { $_ -eq $BlockBegin }).Count
-    $end = @($Lines | Where-Object { $_ -eq $BlockEnd }).Count
-    return "$begin $end"
+# Returns "none", "ok" (one BEGIN before one END) or "bad".
+function Get-BlockState([string[]]$Lines) {
+    $begins = @()
+    $ends = @()
+    for ($index = 0; $index -lt @($Lines).Count; $index++) {
+        if ($Lines[$index] -eq $BlockBegin) { $begins += $index }
+        if ($Lines[$index] -eq $BlockEnd) { $ends += $index }
+    }
+    if ($begins.Count + $ends.Count -eq 0) { return "none" }
+    if ($begins.Count -eq 1 -and $ends.Count -eq 1 -and $begins[0] -lt $ends[0]) { return "ok" }
+    return "bad"
 }
 
 function Remove-Block([string[]]$Lines) {
@@ -229,8 +291,8 @@ function Remove-Block([string[]]$Lines) {
     return (($kept -join "`n").TrimEnd())
 }
 
-function Get-LineEnding([string]$Path) {
-    if ((Test-Path -LiteralPath $Path -PathType Leaf) -and [System.IO.File]::ReadAllText($Path).Contains("`r`n")) { return "`r`n" }
+function Get-LineEnding([string]$Text) {
+    if ($Text -and $Text.Contains("`r`n")) { return "`r`n" }
     return "`n"
 }
 
@@ -274,6 +336,10 @@ function Install-Item([string]$TargetName, [string]$Scope, [string]$RelativeSour
     $path = Join-Path (Get-ScopeBase $Scope) $Destination
     if (-not (Test-Path -LiteralPath $source)) { Stop-Install "Missing source '$RelativeSource'. Run: python3 scripts/build.py" }
 
+    if (Test-ResolvesIntoArsenal $path) {
+        Write-Skip "Skipped $path (its parent directory resolves into the arsenal repository)."
+        return
+    }
     if (Test-PathOrLink $path) {
         if (Test-Current $source $path) {
             if (-not $DryRun) { Add-StateRecord $statePath $TargetName $Destination }
@@ -309,11 +375,20 @@ function Install-Block([string]$TargetName, [string]$Scope, [string]$RelativeSou
     $sourceLines = Get-TextLines $source
     $body = ""
     $existing = $null
-    if (Test-Path -LiteralPath $path -PathType Leaf) {
-        $existing = [System.IO.File]::ReadAllText($path)
-        $lines = Get-TextLines $path
-        $counts = Get-BlockMarkerCounts $lines
-        if ($counts -ne "0 0" -and $counts -ne "1 1") {
+    $hasBom = $false
+    if ((Get-LinkTarget $path) -or (Test-ResolvesIntoArsenal $path)) {
+        Write-Skip "Skipped $path (a link, or inside the arsenal repository; add the block to its target manually)."
+        return
+    } elseif (Test-Path -LiteralPath $path -PathType Leaf) {
+        $file = Read-Utf8File $path
+        if (-not $file) {
+            Write-Skip "Skipped $path (not UTF-8; add the block manually)."
+            return
+        }
+        $existing = $file.Text
+        $hasBom = $file.HasBom
+        $lines = ConvertTo-Lines $existing
+        if ((Get-BlockState $lines) -eq "bad") {
             Write-Skip "Skipped $path (unbalanced arsenal block markers; fix the file manually)."
             return
         }
@@ -325,7 +400,7 @@ function Install-Block([string]$TargetName, [string]$Scope, [string]$RelativeSou
     }
     if ($DryRun) { Write-Host "[dry-run] would write the arsenal block in $path"; return }
 
-    $newline = Get-LineEnding $path
+    $newline = Get-LineEnding $existing
     $output = @()
     if ($body) { $output += @($body -split "`n") + "" }
     $output += $BlockBegin
@@ -334,7 +409,9 @@ function Install-Block([string]$TargetName, [string]$Scope, [string]$RelativeSou
     $text = ($output -join $newline) + $newline
     Add-StateRecord $statePath $TargetName $Destination
     if ($existing -ceq $text) { $script:Unchanged++; return }
-    Write-TextFile $path $text
+    $parent = Split-Path -Parent $path
+    if (-not (Test-Path -LiteralPath $parent)) { New-Item -ItemType Directory -Path $parent -Force | Out-Null }
+    Write-UserFile $path $text $hasBom
     $script:Installed++
 }
 
@@ -349,16 +426,26 @@ function Uninstall-Item([string]$TargetName, [string]$Scope, [string]$Destinatio
     if ($DryRun) { Write-Host "[dry-run] would remove $path"; return }
     Remove-StateRecord $statePath $TargetName $Destination
     if (-not (Test-Path -LiteralPath $statePath)) { Remove-EmptyParents $statePath $base }
+    if (-not (Test-SafeDestination $Destination)) {
+        Write-Skip "Dropped unsafe entry '$Destination' from the install record; nothing was deleted for it."
+        return
+    }
     # Another installed target still shares this path.
     if (Test-Recorded $statePath $Destination "") { return }
+    if (Test-ResolvesIntoArsenal $path) {
+        Write-Host "[WARN] Left $path in place (its parent directory resolves into the arsenal repository)." -ForegroundColor Yellow
+        return
+    }
     if (Test-BlockDestination $Destination) {
-        if (Test-Path -LiteralPath $path -PathType Leaf) {
-            $lines = Get-TextLines $path
-            if ((Get-BlockMarkerCounts $lines) -eq "1 1") {
-                $newline = Get-LineEnding $path
+        $file = $null
+        if ((Test-Path -LiteralPath $path -PathType Leaf) -and -not (Get-LinkTarget $path)) { $file = Read-Utf8File $path }
+        if ($file) {
+            $lines = ConvertTo-Lines $file.Text
+            if ((Get-BlockState $lines) -eq "ok") {
+                $newline = Get-LineEnding $file.Text
                 $remaining = Remove-Block $lines
                 if ($remaining.Trim()) {
-                    Write-TextFile $path ((($remaining -split "`n") -join $newline) + $newline)
+                    Write-UserFile $path ((($remaining -split "`n") -join $newline) + $newline) $file.HasBom
                 } else {
                     [System.IO.File]::Delete($path)
                 }
@@ -458,7 +545,7 @@ function Show-Status([string]$TargetName, [string]$Scope) {
     foreach ($row in $rows) {
         $path = Join-Path $base $row.destination
         if ($row.kind -eq "block") {
-            if ((Test-Path -LiteralPath $path -PathType Leaf) -and ((Get-TextLines $path) -contains $BlockBegin)) { $present++ }
+            if ((Test-Path -LiteralPath $path -PathType Leaf) -and ((Get-BlockState (Get-TextLines $path)) -eq "ok")) { $present++ }
         } elseif (Test-PathOrLink $path) {
             $present++
         }

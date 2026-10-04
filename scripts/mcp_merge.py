@@ -43,7 +43,7 @@ def main(argv=None):
     exists = os.path.exists(config)
     if exists and os.path.getsize(config) > 0:
         try:
-            with open(config, encoding="utf-8") as handle:
+            with open(config, encoding="utf-8-sig") as handle:
                 data = json.load(handle)
         except (ValueError, OSError) as error:
             return refuse(config, f"not valid JSON ({error})", options.key, options.name, entry)
@@ -66,6 +66,8 @@ def main(argv=None):
     with open(temporary, "w", encoding="utf-8", newline="\n") as handle:
         json.dump(data, handle, indent=2)
         handle.write("\n")
+    if exists:
+        shutil.copymode(config, temporary)
     os.replace(temporary, config)
     print(f"registered '{options.name}' in {config}")
     return 0

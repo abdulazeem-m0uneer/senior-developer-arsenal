@@ -145,6 +145,14 @@ class McpMergeTests(unittest.TestCase):
                 self.assertEqual(self.merge(), 2)
                 self.assertEqual(self.config.read_text(), content)
 
+    def test_existing_permissions_and_a_utf8_bom_are_handled(self):
+        self.config.parent.mkdir()
+        self.config.write_bytes(b"\xef\xbb\xbf" + b'{"mcpServers": {}}')
+        self.config.chmod(0o600)
+        self.assertEqual(self.merge(), 0)
+        self.assertIn("hindsight", json.loads(self.config.read_text())["mcpServers"])
+        self.assertEqual(self.config.stat().st_mode & 0o777, 0o600)
+
     def test_dry_run_writes_nothing(self):
         self.assertEqual(self.merge("--dry-run"), 0)
         self.assertFalse(self.config.exists())
