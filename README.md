@@ -1,8 +1,29 @@
 # 🚀 Senior Developer Arsenal
 
-An enterprise-grade, polyglot Antigravity AI engineering toolkit tailored specifically for **Senior Software Engineers**, **System Architects**, and **Fullstack Leaders** working with **Python (FastAPI / SQLAlchemy 2.0)**, **React (18/19)**, **Angular (17/18/19)**, **Node.js / TypeScript**, **C# / .NET 8/9**, **PostgreSQL**, **MSSQL**, **SQLite**, and **Git**.
+[![CI](https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/actions/workflows/ci.yml/badge.svg)](https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/actions/workflows/ci.yml)
+[![Stars](https://img.shields.io/github/stars/abdulazeem-m0uneer/senior-developer-arsenal?style=flat)](https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/stargazers)
+[![Forks](https://img.shields.io/github/forks/abdulazeem-m0uneer/senior-developer-arsenal?style=flat)](https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/network/members)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Designed to be version-controlled as a reusable Git repository and deployed across all your projects or activated globally on your workstation with strict **Token Conservation Protocols**, **Applied Rationality**, and **Context Engineering Guardrails**.
+An enterprise-grade, polyglot AI engineering toolkit for **Senior Software Engineers**, **System Architects**, and **Fullstack Leaders** working with **Python (FastAPI / SQLAlchemy 2.0)**, **React (18/19)**, **Angular (17/18/19)**, **Node.js / TypeScript**, **C# / .NET 8/9**, **PostgreSQL**, **MSSQL**, **SQLite**, and **Git**.
+
+One source of truth (`.agents/`), usable from **any AI coding agent**: Claude Code, Codex CLI, OpenCode, Cursor, Windsurf, GitHub Copilot, Gemini CLI, and Google Antigravity. Deploy it per project or globally with strict **Token Conservation Protocols**, **Applied Rationality**, and **Context Engineering Guardrails**.
+
+---
+
+## 📈 GitHub Trending Rank
+
+<!-- BEGIN trending -->
+| Period | Rank on [GitHub Trending](https://github.com/trending) |
+| :--- | :--- |
+| Today | Not trending |
+| This week | Not trending |
+| This month | Not trending |
+
+_Last change detected: 2026-10-04 (UTC). Checked daily by `.github/workflows/trending.yml`._
+<!-- END trending -->
+
+GitHub offers no trending API, so [`scripts/trending_rank.py`](scripts/trending_rank.py) reads the public trending page once a day and rewrites this table only when a rank changes.
 
 ---
 
@@ -10,16 +31,17 @@ Designed to be version-controlled as a reusable Git repository and deployed acro
 
 | Component | Quantity | Purpose |
 | :--- | :---: | :--- |
-| **Workspace & Global Rules** | 11 | Enforce senior engineering standards across Python, Node.js, C#, Frontend, UI/UX, Databases, Git, Token Frugality, and Defensive Epistemology. |
-| **Specialized Skills** | 22 | Actionable runbooks adhering to modern Agent Skills standards (`SKILL.md` + progressive `references/`) with slash commands and negative triggers. |
-| **Autonomous Subagents** | 10 | Dedicated personas (`code-reviewer`, `epistemic-debugger`, `python-specialist`, `frontend-architect`, `ui-ux-architect`, `fullstack-architect`, `db-architect`, etc.). |
-| **Multi-Project Installers** | 2 | Automated PowerShell (`install.ps1`) and Bash (`install.sh`) scripts for 1-click global or per-project setup. |
+| **Rules** | 12 | Enforce senior engineering standards: SOLID, a 1000-line file cap, mandatory tests with every change, plus Python, Node.js, C#, Frontend, UI/UX, Databases, Git, Token Frugality, and Defensive Epistemology. |
+| **Specialized Skills** | 30 | Actionable runbooks following the Agent Skills standard (`SKILL.md` + progressive `references/`) with slash commands and negative triggers. |
+| **Autonomous Subagents** | 13 | Dedicated personas (`code-reviewer`, `qa-engineer`, `test-engineer`, `security-auditor`, `devops-engineer`, `epistemic-debugger`, and stack specialists). |
+| **Supported Agents** | 8 | Claude Code (plugin), Codex CLI, OpenCode, Cursor, Windsurf, GitHub Copilot, Gemini CLI, Antigravity. |
+| **Installers** | 2 | PowerShell (`install.ps1`) and Bash (`install.sh`) with identical options, non-destructive installs, and clean uninstall. |
 
 ---
 
 ## 🔥 Token Conservation & Defensive Epistemology Protocol
 
-Antigravity operates with strict **Token Frugality & Epistemic Hygiene Guardrails** built into every rule, skill, and subagent:
+The arsenal operates with strict **Token Frugality & Epistemic Hygiene Guardrails** built into every rule, skill, and subagent:
 
 ### 1. Applied Rationality & Rule 0 on Failure
 - **Rule 0 on Failure**: When a tool, script, or test fails unexpectedly, the agent **STOPS immediately**. No silent retries, no guessing, no speculative tool chaining. It outputs the raw error, current hypothesis, proposed action, and confirms before touching code.
@@ -46,188 +68,140 @@ Benchmarked against full-solution reviews on production-grade repositories:
 
 ```text
 senior-developer-arsenal/
-├── .agents/
-│   ├── rules/                              # Behavioral guidelines & constraints (Always-On)
-│   │   ├── token-conservation.md           # Strict token frugality, surgical diffs & context engineering
-│   │   ├── defensive-epistemology.md       # Applied rationality, Rule 0 failure stop, prediction protocol
-│   │   ├── senior-engineer-core.md         # Architecture, clean code, code review principles
-│   │   ├── python-standards.md             # Python 3.11+, FastAPI, SQLAlchemy 2.0 async, Pydantic v2
-│   │   ├── frontend-standards.md           # React 18/19 RSC, Angular 17/18/19 Signals, OnPush, a11y
-│   │   ├── ui-ux-standards.md              # DTCG tokens, anti-slop gates, WCAG 2.2 AA, complete states
-│   │   ├── fullstack-standards.md          # E2E type-safety, optimistic UI mutations, SSE/WebSocket streams
-│   │   ├── csharp-dotnet-standards.md      # .NET 8/9, EF Core, Dapper, async/await, Result pattern
-│   │   ├── nodejs-standards.md             # TS Strict, non-blocking event loop, streams, security
-│   │   ├── database-standards.md           # PostgreSQL (primary), MSSQL, SQLite optimization & safety
-│   │   └── git-standards.md                # Conventional Commits, atomic commits, rebase workflows
-│   ├── skills/                             # Actionable on-demand skills (Agent Skills standard)
-│   │   ├── api-design/                     # REST/RPC API contracts, RFC 7807 problem details
-│   │   ├── architecture-design-adr/        # Architecture Decision Records (ADRs) & trade-off frameworks
-│   │   ├── code-review/                    # Multi-pass senior code reviews, checklists, rubrics
-│   │   ├── create-skill/                   # Interactive skill architect & generator with token-saving guardrails
-│   │   ├── csharp-dotnet-expert/           # C# / .NET 8/9, EF Core performance, Dapper, async pipelines
-│   │   ├── database-architect/             # EXPLAIN ANALYZE, indexing (B-Tree, GIN, BRIN), non-blocking DDL
-│   │   ├── database-migration/             # Zero-downtime, non-blocking migrations & rollback verification
-│   │   ├── e2e-feature/                    # Vertical slice feature implementation (DB -> Backend -> UI)
-│   │   ├── frontend-architecture-expert/   # React RSC/Zustand, Angular Signals/OnPush, a11y
-│   │   ├── frontend-audit/                 # Re-render churn, OnPush detection, lazy loading audit
-│   │   ├── fullstack-integration-master/   # E2E contracts (OpenAPI/Zod), optimistic UI mutations, SSE
-│   │   ├── git-release/                    # SemVer calculation, commit analysis, release notes
-│   │   ├── git-workflow-master/            # Interactive rebase, conflict resolution, SemVer release tags
-│   │   ├── investigate/                    # Applied rationality, 5+ hypotheses, 5-Whys causal analysis
-│   │   ├── nodejs-backend-expert/          # Fastify/Express/NestJS, event loop latency, streams, security
-│   │   ├── perf-audit/                     # Query bottlenecks, event loop lag, memory leak diagnosis
-│   │   ├── python-audit/                   # Ruff, strict Mypy typing, asyncio blocking call audit
-│   │   ├── python-backend-expert/          # FastAPI, asyncio TaskGroup, SQLAlchemy 2.0 async, Pydantic v2
-│   │   ├── ui-ux-architect/                # DTCG tokens, state completeness, 10 anti-slop gates
-│   │   └── ui-ux-audit/                    # Anti-slop gate audit matrix & remediation
-│   ├── subagents/                          # Subagent configuration profiles & prompts
-│   │   ├── subagent-definitions.json       # Declarative JSON manifest for subagent registration
-│   │   ├── README.md                       # Subagent delegation documentation
-│   │   └── prompts/
-│   │       ├── code-reviewer.md            # Senior Staff Code Reviewer persona
-│   │       ├── epistemic-debugger.md       # Epistemic Debugger & Root Cause Specialist persona
-│   │       ├── python-specialist.md        # Principal Python Systems persona
-│   │       ├── frontend-architect.md       # Senior Frontend Architect persona
-│   │       ├── ui-ux-architect.md          # Senior Design System & UI/UX Architect persona
-│   │       ├── fullstack-architect.md      # Principal Fullstack Architect persona
-│   │       ├── db-architect.md             # Database Architect & Query Tuning persona
-│   │       ├── dotnet-specialist.md        # Principal .NET & C# Systems persona
-│   │       ├── node-specialist.md          # Principal Node.js & TypeScript Systems persona
-│   │       └── security-auditor.md         # Application Security Auditor persona
-│   ├── workflows/                          # Legacy workflows safely archived (*.md.bak)
-│   └── skills.json                         # Explicit skills manifest for deterministic discovery
-├── .githooks/
-│   └── commit-msg                          # Automated Conventional Commits validator hook
+├── .agents/                     # Single source of truth (edit here only)
+│   ├── rules/                   # 12 rules with trigger/description/globs frontmatter
+│   ├── skills/<name>/           # 30 skills: SKILL.md + references/ (+ scripts/ where bundled)
+│   ├── subagents/               # subagent-definitions.json + prompts/<name>.md
+│   └── mcp/servers.json         # Canonical MCP server definitions (CodeGraph, Hindsight)
+├── dist/                        # GENERATED per-agent output (do not edit)
+│   ├── <agent>/agents|rules/    # Native subagent and rule formats for each agent
+│   ├── mcp/<flavor>/            # MCP server entries in each client's config shape
+│   └── manifest.tsv             # What each installer copies where
+├── .claude-plugin/              # GENERATED Claude Code plugin + marketplace manifests
+├── plugins/                     # GENERATED opt-in Claude plugins for the MCP servers
 ├── scripts/
-│   ├── arsenal                             # Native CLI helper for Ubuntu / Linux / WSL
-│   └── verify_ui_ux.py                     # Automated UI/UX anti-slop verification gate script
-├── docs/
-│   └── UBUNTU-INTEGRATION.md               # Dedicated guide for Ubuntu OS & WSL integration
-├── AGENTS.md                               # Root agent configuration file
-├── GEMINI.md                               # Workspace rules marker
-├── install.ps1                             # PowerShell installer for Windows
-├── install.sh                              # Bash installer for Linux/WSL/macOS
-├── .gitignore                              # Git exclusion rules
-└── README.md                               # Comprehensive documentation
+│   ├── build.py                 # Generator: --validate, --check, or write dist/
+│   ├── mcp_merge.py             # Safe JSON merge for MCP configs (used by install.sh)
+│   ├── trending_rank.py         # Updates the trending table in this README
+│   ├── arsenal                  # CLI wrapper over install.sh
+│   └── arsenal.ps1              # CLI wrapper over install.ps1
+├── tests/                       # smoke.sh and smoke.ps1 installer tests
+├── .github/workflows/           # ci.yml (lint + smoke tests) and trending.yml
+├── .githooks/commit-msg         # Conventional Commits validator hook
+├── docs/                        # TARGETS.md, UBUNTU-INTEGRATION.md
+├── AGENTS.md                    # Root instruction file read by every agent
+├── GEMINI.md                    # Imports AGENTS.md for Gemini CLI / Antigravity
+├── install.sh / install.ps1     # Installers (same options on both)
+├── CONTRIBUTING.md, LICENSE, VERSION
+└── README.md
 ```
 
 ---
 
-## 🛠️ How to Use in Every Project
+## 🛠️ Installation
 
-You have two powerful options to use this toolkit:
+### Claude Code (plugin)
 
-### Option A: Global Installation (Recommended)
-Install once into your user profile so **every project** opened in Antigravity automatically inherits these skills and rules:
-
-```powershell
-# In Windows PowerShell:
-cd C:\Users\Abdulazeem\Desktop\senior-developer-arsenal
-.\install.ps1 -Global
+```text
+/plugin marketplace add abdulazeem-m0uneer/senior-developer-arsenal
+/plugin install arsenal@senior-developer-arsenal
 ```
+
+Skills appear as `/arsenal:<skill>` and subagents as `arsenal:<name>`. A plugin cannot ship rules, so add them with the installer: `./install.sh --global --target claude`. Optional MCP servers: `/plugin install arsenal-codegraph@senior-developer-arsenal` and `/plugin install arsenal-hindsight@senior-developer-arsenal`.
+
+### Every other agent (installer)
 
 ```bash
-# In Ubuntu / Linux / WSL:
-cd ~/Desktop/senior-developer-arsenal
-chmod +x install.sh scripts/arsenal
-./install.sh --global --cli
+git clone https://github.com/abdulazeem-m0uneer/senior-developer-arsenal.git
+cd senior-developer-arsenal
+
+# Linux / macOS / WSL
+./install.sh --global --target all                              # every supported agent, user-wide
+./install.sh --project ~/code/my-api --target cursor,copilot    # one repository
+./install.sh --project ~/code/my-api --target codex --link      # live symlinks
+
+# Windows PowerShell (5.1 or 7+)
+.\install.ps1 -Global -Target all
+.\install.ps1 -Project "C:\repos\my-api" -Target cursor,copilot
 ```
-*Installs skills into `~/.gemini/config/skills/`, rules into `~/.gemini/config/rules/`, and provides the `arsenal` command in your terminal.*
-*(See [Ubuntu & Linux Integration Guide](docs/UBUNTU-INTEGRATION.md) for full Linux details).*
 
----
+`--target` accepts `antigravity` (default, so existing commands behave as before), `gemini`, `claude`, `codex`, `opencode`, `cursor`, `windsurf`, `copilot`, or `all`.
 
-### Option B: Per-Project Installation
-Inject or symlink the `.agents/` directory directly into a target repository:
+| Agent | Skills | Subagents | Rules |
+| :--- | :--- | :--- | :--- |
+| **Claude Code** | plugin | plugin | `.claude/rules/arsenal/` |
+| **Codex CLI** | `.agents/skills/` | `.codex/agents/*.toml` | `AGENTS.md` index + `.agents/rules/` |
+| **OpenCode** | `.agents/skills/` | `.opencode/agents/*.md` | `AGENTS.md` index + `.agents/rules/` |
+| **Cursor** | `.agents/skills/` | `.cursor/agents/*.md` | `.cursor/rules/*.mdc` |
+| **Windsurf** | `.agents/skills/` | not supported by the agent | `.windsurf/rules/*.md` |
+| **GitHub Copilot** | `.agents/skills/` | `.github/agents/*.agent.md` | `.github/instructions/*.instructions.md` |
+| **Gemini CLI** | `.agents/skills/` | `.gemini/agents/*.md` | `GEMINI.md` importing `AGENTS.md` |
+| **Antigravity** | `.agents/skills/` (`~/.gemini/config/skills/` globally) | `.agents/agents/*.md` | `.agents/rules/` |
 
-```powershell
-# In Windows PowerShell (Copy or Symlink):
-.\install.ps1 -Project "C:\Users\Abdulazeem\repos\my-api"
-.\install.ps1 -Project "C:\Users\Abdulazeem\repos\my-api" -Symlink
-```
+Global and project paths for every agent are listed in [docs/TARGETS.md](docs/TARGETS.md).
+
+### Installer behavior
+
+| Option (`install.sh` / `install.ps1`) | Effect |
+| :--- | :--- |
+| `--link` / `-Symlink` | Link each item to this repository instead of copying. |
+| `--force` / `-Force` | Replace files the installer did not create. Without it, your own files are skipped and reported. |
+| `--uninstall` / `-Uninstall` | Remove exactly what the installer created for the chosen targets. |
+| `--dry-run` / `-DryRun` | Print the plan without touching anything. |
+| `--status` / `-Status` | Show how many items are present per agent. |
+| `--cli` / `-Cli` | Put the `arsenal` command on your PATH (`arsenal sync`, `arsenal link .`, `arsenal remove .`). |
+
+- **Non-destructive**: installs item by item, never deletes a directory it does not own, and adds a marked block to an existing `AGENTS.md` instead of replacing it.
+- **Upgrading from a pre-1.0 install**: files copied by the old installer are not recognized as owned; run once with `--force`.
+
+### Scan a repository to pick the right skills
+
+After installing into a project, ask the agent to run the `repo-scan` skill, or run its script directly:
 
 ```bash
-# In Ubuntu / Linux using the 'arsenal' CLI:
-cd ~/projects/my-api
-arsenal link .          # Creates live symlinks to the arsenal
-# Or manually via install.sh:
-./install.sh --project /path/to/my-project --link
+python .agents/skills/repo-scan/scripts/detect_stack.py /path/to/project
 ```
 
----
+It detects the stack (Node.js, React, Angular, .NET, Python, SQL, Docker, CI, tests) and reports which skills, rules, and subagents apply, plus gaps such as missing tests or files over 1000 lines.
 
-### Option C: Automated Conventional Commits Hook
-Enforce standardized commit messages automatically across your repository:
+### Conventional Commits hook
 
 ```bash
-# Enable the pre-configured commit-msg hook:
 git config core.hooksPath .githooks
 ```
-*Rejects non-compliant commit messages before they enter git history.*
 
----
+### MCP servers (optional)
 
-### Option E: CodeGraph AST Intelligence (Save Reading Tokens)
-Provide Antigravity agents with AST-level code intelligence via [colbymchenry/codegraph](https://github.com/colbymchenry/codegraph).
-
-#### Why It's Useful:
-- **Drastic Token Reduction (~85%)**: Replaces brute-force full-file reads and recursive greps with direct AST queries (codegraph_callers, codegraph_callees, codegraph_symbol, codegraph_impact).
-- **Instant Blast Radius Analysis**: Understands complete dependency graphs before renaming or refactoring methods.
-- **Accurate Line Targeting**: Delivers pinpoint file:L30-L45 references instead of loading thousands of lines of context.
-
-#### 1-Click Installer Command:
-```powershell
-# In Windows PowerShell:
-.\install.ps1 -CodeGraph
-```
-```bash
-# In Ubuntu / Linux / WSL:
-./install.sh --codegraph
-```
----
-
-### Option D: Persistent Agent Memory (Hindsight Biomimetic Memory)
-Provide Antigravity agents with cross-session long-term memory using [vectorize-io/hindsight](https://github.com/vectorize-io/hindsight).
-
-#### Why It's Useful:
-- **Zero Loss of Architectural Context**: Prevents agents from "forgetting" past decisions, custom rules, or solved edge cases between chat sessions.
-- **Massive Token Conservation**: Instead of re-reading large READMEs, ADR files, and past chat logs, agents perform high-precision hybrid retrieval (`recall`) and synthesized reflection (`reflect`).
-- **Evidence-Based Consolidated Observations**: Stores deduplicated beliefs with proof counters and lineage tracking, resolving contradictions automatically.
-
-#### 1-Click Installer Command:
-```powershell
-# In Windows PowerShell:
-.\install.ps1 -Hindsight
-```
+| Server | Flag | Requirement |
+| :--- | :--- | :--- |
+| [CodeGraph](https://github.com/colbymchenry/codegraph) AST intelligence | `--codegraph` / `-CodeGraph` | `npm install -g @colbymchenry/codegraph`, then `codegraph init` in each project. |
+| [Hindsight](https://github.com/vectorize-io/hindsight) long-term memory | `--hindsight` / `-Hindsight` (`--bank <id>`) | A Hindsight server on `http://localhost:8888`. |
 
 ```bash
-# In Ubuntu / Linux / WSL:
-./install.sh --hindsight
+./install.sh --global --target cursor,codex --codegraph --hindsight
 ```
 
-#### CLI / Script Usage:
+The server entry is merged into each agent's MCP config. Existing entries are preserved, a timestamped backup is written, and a config that cannot be parsed is left untouched. CodeGraph also ships its own `codegraph install`, which additionally writes agent instructions.
+
+Memory helper bundled with the `agent-memory` skill:
+
 ```bash
-# Store an architectural decision or resolved bug finding:
-python scripts/memory.py retain --bank "my-project" --content "We enforce UUIDv7 and WAL mode on SQLite."
-
-# Search memories using hybrid search (vector + BM25 + graph + temporal):
-python scripts/memory.py recall --bank "my-project" --query "What are our SQLite settings?"
-
-# Ask the agent to reason across its memory bank:
-python scripts/memory.py reflect --bank "my-project" --query "Summarize all database constraints."
+python .agents/skills/agent-memory/scripts/memory.py retain --bank "my-project" --content "We enforce UUIDv7 and WAL mode on SQLite."
+python .agents/skills/agent-memory/scripts/memory.py recall --bank "my-project" --query "What are our SQLite settings?"
 ```
 
 ---
 
 ## 📐 Engineering Standards & Rules (Always-On)
 
-These 11 rules are automatically applied by Antigravity across your workspaces:
+Three core rules plus the testing rule are always on; the rest load by file glob or by relevance (see each rule's frontmatter):
 
 | Rule File | Scope & Mandate | Red Flags / Forbidden Patterns |
 | :--- | :--- | :--- |
 | **[`token-conservation.md`](.agents/rules/token-conservation.md)** | Enforces strict token economy, zero conversational fluff, surgical 2-5 line diffs, and progressive reference loading. | Full-file reprinting, conversational filler, broad un-targeted file reads. |
 | **[`defensive-epistemology.md`](.agents/rules/defensive-epistemology.md)** | Applied rationality, Rule 0 failure stop, prediction protocol (`EXPECT`/`MATCHES`), Chesterton's Fence, anti-sycophancy. | Silent tool retries, "this should work" traps, deleting ununderstood code, blind flailing. |
-| **[`senior-engineer-core.md`](.agents/rules/senior-engineer-core.md)** | Clean Architecture, domain-driven boundaries, Result pattern error handling, defensive boundary validation, observability. | Framework bleed into Domain, silent exception swallowing, raw unvalidated inputs. |
+| **[`senior-engineer-core.md`](.agents/rules/senior-engineer-core.md)** | **SOLID always**, **1000-line file cap**, tests with every change, Clean Architecture, Result pattern error handling, defensive boundary validation. | SOLID violations, files over 1000 lines, framework bleed into Domain, silent exception swallowing. |
+| **[`testing-standards.md`](.agents/rules/testing-standards.md)** | Every feature, bug fix, refactor, or other change ships with tests; regression test first for bug fixes; deterministic, behavior-focused tests. | Untested changes, skipped or deleted tests, vacuous assertions, flaky tests. |
 | **[`python-standards.md`](.agents/rules/python-standards.md)** | Python 3.11+, FastAPI, SQLAlchemy 2.0 async, Pydantic v2, asyncio TaskGroup, strict Ruff/Mypy typing. | Blocking sync calls in async event loop, `pickle.loads` on untrusted data, missing eager loading (N+1). |
 | **[`frontend-standards.md`](.agents/rules/frontend-standards.md)** | React 18/19 (RSC, leaf `"use client"`, Zustand), Angular 17/18/19 (Signals, Standalone, OnPush, @defer), WCAG AA a11y. | Unmemoized loop props, `useEffect` for derived state, manual RxJS subscriptions without `toSignal`/async pipe. |
 | **[`ui-ux-standards.md`](.agents/rules/ui-ux-standards.md)** | DTCG 3-tier tokens, state completeness (6 states), WCAG 2.2 AA (4.5:1/3:1), target sizes (>=24px/>=44px/>=48px), Lucide SVG (currentColor). | Emoji in UI/labels, em-dashes in copy, blue Delete buttons, 3 equal stat cards, pure #000 on #fff, generic muddy drop shadows, missing focus rings. |
@@ -241,7 +215,7 @@ These 11 rules are automatically applied by Antigravity across your workspaces:
 
 ## ⚡ Active Skills & Capabilities
 
-The arsenal includes 22 specialized skills conforming to modern Agent Skills standards (agentskills.io / Google Antigravity 2.0 / Claude), featuring isolated progressive disclosure references (`references/`), slash commands, and negative triggers:
+The arsenal includes 30 specialized skills conforming to the Agent Skills standard (agentskills.io), featuring isolated progressive disclosure references (`references/`), slash commands, and negative triggers:
 
 ### 1. code-review (/code-review)
 - **When to use**: Auditing pull requests, reviewing recent commits, inspecting staged diffs, or evaluating branch code quality.
@@ -364,11 +338,39 @@ The arsenal includes 22 specialized skills conforming to modern Agent Skills sta
 - **Includes**:
   - [codegraph-guide.md](.agents/skills/codegraph/references/codegraph-guide.md): AST knowledge graph structure, SQLite FTS5 index details, and token savings comparison.
 
+### 23. security-audit (/security-audit)
+- **When to use**: Security audits, vulnerability hunts, and pre-release hardening (OWASP Top 10, injection, IDOR/BOLA, secrets, SSRF, supply chain).
+- **Includes**: [vulnerability-patterns.md](.agents/skills/security-audit/references/vulnerability-patterns.md), [audit-checklist.md](.agents/skills/security-audit/references/audit-checklist.md).
+
+### 24. test-strategy (/test-strategy)
+- **When to use**: Designing a test suite, choosing unit vs integration vs end-to-end scope, test doubles, and fixing flaky tests.
+- **Includes**: [test-layering-and-doubles.md](.agents/skills/test-strategy/references/test-layering-and-doubles.md), [edge-cases-and-flakiness.md](.agents/skills/test-strategy/references/edge-cases-and-flakiness.md).
+
+### 25. test-every-change (/test-every-change)
+- **When to use**: Every code change. Maps each changed behavior to required tests: regression test first for bug fixes, happy/error/edge cases for features, characterization tests before refactors.
+
+### 26. qa-engineer (/qa-engineer)
+- **When to use**: Acceptance criteria, test plans and test cases, exploratory testing charters, bug reports, and release sign-off.
+
+### 27. definition-of-done (/definition-of-done)
+- **When to use**: Before reporting any feature complete. Builds the per-feature Definition of Done and verifies every item with evidence, ending in a DONE / NOT DONE verdict.
+
+### 28. deep-review (/deep-review)
+- **When to use**: Exhaustive, multi-pass, evidence-verified review of a whole change or subsystem, with a false-positive elimination pass and a re-review loop after fixes.
+
+### 29. repo-scan (/repo-scan)
+- **When to use**: Onboarding the arsenal into a repository. Detects the stack and reports which skills, rules, and subagents apply, plus gaps.
+- **Includes**: bundled `scripts/detect_stack.py`.
+
+### 30. devops-ci (/devops-ci)
+- **When to use**: Dockerfile hardening, GitHub Actions pipelines, caching, secrets handling, deploy strategies, and rollback.
+- **Includes**: [dockerfile-hardening.md](.agents/skills/devops-ci/references/dockerfile-hardening.md), [pipeline-and-deploy.md](.agents/skills/devops-ci/references/pipeline-and-deploy.md).
+
 ---
 
 ## 🤖 Autonomous Subagents
 
-Antigravity includes 10 specialized subagent profiles defined in `.agents/subagents/subagent-definitions.json`:
+The arsenal defines 13 specialized subagent profiles in `.agents/subagents/subagent-definitions.json`; `scripts/build.py` converts them into each agent's native format:
 
 | Subagent Name | Role | Focus Area & Capabilities |
 | :--- | :--- | :--- |
@@ -381,10 +383,13 @@ Antigravity includes 10 specialized subagent profiles defined in `.agents/subage
 | **`db-architect`** | Senior Database Architect | Query execution plan tuning, index strategy, and zero-downtime migrations (PostgreSQL/MSSQL/SQLite). |
 | **`dotnet-specialist`** | Principal .NET & C# Engineer | .NET 8/9, Clean Architecture, EF Core profiling, Dapper, and zero-allocation async programming. |
 | **`node-specialist`** | Principal Node.js Engineer | Non-blocking event loop optimization, streams, Fastify/Express, and runtime resilience. |
-| **`security-auditor`** | Application Security Auditor | OWASP Top 10, SQLi, BOLA/IDOR, secrets audit, and secure cryptographic comparisons. |
+| **`security-auditor`** | Application Security Auditor | OWASP Top 10, SQLi, BOLA/IDOR, secrets audit, and secure cryptographic comparisons. Read-only. |
+| **`test-engineer`** | Senior Test Engineer (SDET) | Test strategy, unit/integration/e2e authoring, edge cases, flaky-test diagnosis. |
+| **`qa-engineer`** | Senior QA Engineer | Acceptance criteria, test plans, exploratory and regression testing, release sign-off. |
+| **`devops-engineer`** | Senior DevOps & Platform Engineer | Dockerfiles, GitHub Actions, caching, secrets, deploy and rollback strategies. |
 
 ### How to Invoke Subagents
-In Antigravity chat, invoke subagents using natural language or tool calls:
+In any agent chat, invoke subagents using natural language:
 ```text
 "Invoke epistemic-debugger to find why the payment queue intermittently deadlocks."
 "Invoke python-specialist to refactor the database access layer to async SQLAlchemy 2.0."
@@ -397,7 +402,7 @@ In Antigravity chat, invoke subagents using natural language or tool calls:
 
 ## 📋 Unified Agent Skills & Slash Commands
 
-All workflows have been consolidated into first-class, token-efficient skills under `.agents/skills/` adhering to modern Agent Skills standards (`agentskills.io` / Google Antigravity 2.0 / Claude). Each skill provides an instant slash command and natural language trigger:
+All workflows have been consolidated into first-class, token-efficient skills under `.agents/skills/` adhering to the Agent Skills standard (`agentskills.io`). Each skill provides a slash command (prefixed `arsenal:` in the Claude Code plugin) and natural language triggers:
 
 | Skill | Slash Command | Focus Area & Trigger | Primary Deliverable |
 | :--- | :--- | :--- | :--- |
@@ -421,6 +426,16 @@ All workflows have been consolidated into first-class, token-efficient skills un
 | **Python Expert** | `/python-backend-expert` | FastAPI, asyncio TaskGroup pipelines, SQLAlchemy 2.0 async queries, Pydantic v2. | Production-grade async Python endpoints and models. |
 | **UI/UX Architect** | `/ui-ux-architect` | Architecting design systems, DTCG tokens, state-complete components, WCAG 2.2 AA. | Token-driven CSS, complete component states. |
 | **UI/UX Audit** | `/ui-ux-audit` | Executes 10 anti-slop gates, checks contrast ratios, target sizes, and state completeness. | Compact audit matrix (`[Gate]`, `[Target]`, `[Status]`, `[Fix]`) + surgical diffs. |
+| **Agent Memory** | `/memory` | Retains and recalls architectural decisions through Hindsight. | Stored and recalled project memory. |
+| **CodeGraph** | `/codegraph` | Structural code navigation: callers, callees, impact, symbol lookup. | Precise `file:line` pointers instead of file reads. |
+| **Security Audit** | `/security-audit` | OWASP Top 10, injection, authz, secrets, SSRF, supply chain. | Severity-ranked vulnerability table with fixes. |
+| **Test Strategy** | `/test-strategy` | Test pyramid, layering, doubles, flaky-test diagnosis. | Test plan and authored tests. |
+| **Test Every Change** | `/test-every-change` | Derives and writes the tests each change requires. | Tests for the diff plus a green full suite. |
+| **QA Engineer** | `/qa-engineer` | Acceptance criteria, test cases, exploratory testing, sign-off. | Test plan, bug reports, release sign-off. |
+| **Definition of Done** | `/definition-of-done` | Builds and verifies the per-feature Definition of Done. | Evidence-backed DONE / NOT DONE verdict. |
+| **Deep Review** | `/deep-review` | Multi-pass, evidence-verified review with a re-review loop. | Verified, severity-ranked findings. |
+| **Repo Scan** | `/repo-scan` | Detects the stack and maps it to arsenal skills, rules, subagents. | Applicability report plus gaps. |
+| **DevOps & CI** | `/devops-ci` | Dockerfiles, pipelines, deploy and rollback strategies. | Hardened Dockerfile and workflow changes. |
 
 ---
 
@@ -441,17 +456,39 @@ Need to create custom skills for internal proprietary tools or new frameworks? T
 
 ## 🔄 Updating & Synchronization
 
-To synchronize updates made to this repository with your global configuration:
-
-```powershell
-# In PowerShell:
-cd C:\Users\Abdulazeem\Desktop\senior-developer-arsenal
-git pull origin master   # If tracking a remote
-.\install.ps1 -Global    # Redeploy skills and rules globally
+```bash
+arsenal update --target all          # git pull, then reinstall globally
+# or
+git pull && ./install.sh --global --target all
 ```
+
+Claude Code plugin users: `/plugin marketplace update senior-developer-arsenal`.
+
+Contributors edit `.agents/` only, then run `python3 scripts/build.py` and commit the regenerated `dist/`. See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+---
+
+## 🧭 Recommended Next Skills
+
+Candidates not yet in the arsenal, in rough priority order:
+
+| Skill | Why |
+| :--- | :--- |
+| `accessibility-audit` | Dedicated WCAG 2.2 AA audit with assistive-technology test scripts, beyond the UI/UX gates. |
+| `observability` | Structured logging, metrics, tracing (OpenTelemetry), SLOs, and alert design. |
+| `incident-response` | Production triage runbook, mitigation-first workflow, and blameless postmortem template. |
+| `dependency-upgrade` | Safe major-version upgrades: changelog triage, codemods, staged rollout, CVE response. |
+| `refactor-legacy` | Characterization tests, strangler-fig migration, and seam extraction for untested code. |
+| `threat-model` | STRIDE-based design-time threat modeling to complement the code-level security audit. |
+| `docs-writer` | README, API reference, runbook, and changelog authoring to a consistent standard. |
+| `kubernetes-ops` | Manifests, Helm, resource limits, probes, and rollout debugging. |
+| `data-privacy` | PII inventory, retention, GDPR/CCPA data-subject request handling. |
+| `mobile-expert` | React Native / Flutter architecture, performance, and release pipelines. |
+
+Scaffold any of them with the `create-skill` skill.
 
 ---
 
 ## 📄 License & Attribution
 
-Crafted for high-performance software engineering teams. Free to use, customize, and extend across all personal and enterprise repositories.
+Crafted for high-performance software engineering teams. Released under the [MIT License](LICENSE): free to use, customize, and extend across all personal and enterprise repositories.

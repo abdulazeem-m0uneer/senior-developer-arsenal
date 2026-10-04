@@ -28,3 +28,12 @@ obj/
 .env.local
 *.pfx
 *.certificate
+
+# Python
+__pycache__/
+*.pyc
+
+# Agent / tooling state
+.refact/
+.hindsight_data/
+.codegraph/
