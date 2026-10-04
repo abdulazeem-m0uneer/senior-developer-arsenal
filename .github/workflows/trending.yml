@@ -1,0 +1,38 @@
+name: Trending rank
+
+on:
+  schedule:
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: trending
+  cancel-in-progress: false
+
+jobs:
+  update:
+    # Forks would otherwise record their own rank.
+    if: github.repository == 'abdulazeem-m0uneer/senior-developer-arsenal'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Read the trending page
+        run: python3 scripts/trending_rank.py || echo "::warning::Could not read the trending page; README left unchanged."
+      - name: Commit when the rank changed
+        run: |
+          if git diff --quiet -- README.md; then
+            echo "No rank change."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md
+          git commit -m "docs(readme): update GitHub trending rank"
+          git pull --rebase
+          git push

@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate canonical sources
+        run: python3 scripts/build.py --validate
+      - name: Generated output is up to date
+        run: python3 scripts/build.py --check
+      - name: Unit tests
+        run: python3 -m unittest discover -s tests -p "test_*.py" -v
+      - name: Strict YAML and TOML parsing
+        run: |
+          pip install --quiet pyyaml
+          python3 tests/check_formats.py
+      - name: ShellCheck
+        run: shellcheck install.sh scripts/arsenal tests/smoke.sh .githooks/commit-msg
+      - name: PSScriptAnalyzer
+        shell: pwsh
+        run: |
+          Install-Module PSScriptAnalyzer -Force -Scope CurrentUser
+          $issues = Invoke-ScriptAnalyzer -Path . -Recurse -Severity Error
+          $issues | Format-Table -AutoSize
+          if ($issues) { exit 1 }
+
+  smoke-bash:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Installer smoke tests
+        run: bash tests/smoke.sh
+
+  smoke-powershell:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Installer smoke tests (Windows PowerShell 5.1)
+        shell: powershell
+        run: .\tests\smoke.ps1
+      - name: Installer smoke tests (PowerShell 7)
+        shell: pwsh
+        run: .\tests\smoke.ps1
