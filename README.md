@@ -151,7 +151,9 @@ Global and project paths for every agent are listed in [docs/TARGETS.md](docs/TA
 | `--status` / `-Status` | Show how many items are present per agent. |
 | `--cli` / `-Cli` | Put the `arsenal` command on your PATH (`arsenal sync`, `arsenal link .`, `arsenal remove .`). |
 
-- **Non-destructive**: installs item by item, never deletes a directory it does not own, and adds a marked block to an existing `AGENTS.md` instead of replacing it.
+- **Non-destructive**: installs item by item, never deletes a directory it does not own, and adds a marked block to an existing `AGENTS.md` instead of replacing it (line endings, encoding, and permissions are kept).
+- **Skips what it cannot change safely**: instruction files that are symlinks, are not UTF-8, or have damaged block markers are reported and left untouched, as is any destination whose parent folder links back into the arsenal.
+- **Project paths**: any folder except your home directory (use `--global` for that) and the arsenal repository itself.
 - **Upgrading from a pre-1.0 install**: files copied by the old installer are not recognized as owned; run once with `--force`.
 
 ### Scan a repository to pick the right skills

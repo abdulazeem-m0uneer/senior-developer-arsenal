@@ -79,6 +79,18 @@ Source: `.agents/mcp/servers.json`. Registered only with `--codegraph` / `--hind
 
 Merge guarantees: existing entries are preserved, a timestamped `.bak-*` copy is written before any change, and a file that cannot be parsed is left untouched with the snippet printed for manual use. Config files containing comments (JSONC) count as unparseable. For Codex, a table that already exists is never rewritten.
 
+## Safety rules
+
+| Situation | Behavior |
+| :--- | :--- |
+| Destination exists and was not created by the installer | Skipped and reported; `--force` replaces it. |
+| Instruction file is a symlink (for example `CLAUDE.md -> AGENTS.md`) | Skipped; add the block to the link target yourself if you want it. |
+| Instruction file is not UTF-8, or its block markers are duplicated or reversed | Skipped and left byte for byte unchanged. |
+| Instruction file uses CRLF line endings or a UTF-8 BOM | The block is written with the same line endings and the BOM is kept. |
+| A parent folder of the destination is a link into the arsenal repository | Skipped on install and on uninstall, so the arsenal sources are never modified. |
+| Install record contains an absolute path, an empty path, or `..` | The entry is dropped and nothing is deleted for it. |
+| Project path is the home directory or the arsenal repository | Refused. |
+
 ## Ownership and uninstall
 
 Each install records what it created in a state file: `~/.config/senior-developer-arsenal/manifest` (global) or `P/.agents/.arsenal-manifest` (project). Uninstall removes only recorded paths, keeps paths another installed target still needs, strips the marked blocks, and removes directories it leaves empty. MCP entries are left in place.
