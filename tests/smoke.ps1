@@ -52,7 +52,18 @@ function Invoke-Installer {
 }
 
 function Get-Entries([string]$Path) {
-    return @(Get-ChildItem -LiteralPath $Path -Recurse -Force)
+    return @(Get-ChildItem -LiteralPath $Path -Recurse -Force | ForEach-Object { $_.FullName })
+}
+
+# Entries under the sandbox home and project that were not there in the baseline.
+function Get-NewEntries([string[]]$Baseline) {
+    return @((Get-Entries $HomeDir) + (Get-Entries $ProjectDir) | Where-Object { $Baseline -notcontains $_ })
+}
+
+# The shell itself may create profile folders under the sandbox home on first start; capture them.
+function Get-Baseline {
+    Invoke-Installer -Status | Out-Null
+    return @((Get-Entries $HomeDir) + (Get-Entries $ProjectDir))
 }
 
 function Assert-Installed([string]$TargetName, [string]$Scope, [string]$Base) {
@@ -71,6 +82,7 @@ $SkillCount = @(Get-ChildItem -LiteralPath (Join-Path (Join-Path $Root ".agents"
 
 foreach ($name in $Targets) {
     Reset-Sandbox
+    $baseline = Get-Baseline
     $code = Invoke-Installer -Global -Project $ProjectDir -Target $name
     Assert-True ($code -eq 0) "${name}: install exited $code"
     Assert-Installed $name "global" $HomeDir
@@ -79,7 +91,8 @@ foreach ($name in $Targets) {
     Invoke-Installer -Global -Project $ProjectDir -Target $name | Out-Null
     Assert-True ($script:Output -match "Installed 0,") "${name}: second run is not idempotent"
     Invoke-Installer -Global -Project $ProjectDir -Target $name -Uninstall | Out-Null
-    Assert-True (((Get-Entries $HomeDir).Count + (Get-Entries $ProjectDir).Count) -eq 0) "${name}: uninstall left files behind"
+    $leftover = Get-NewEntries $baseline
+    Assert-True ($leftover.Count -eq 0) "${name}: uninstall left files behind: $($leftover -join '; ')"
     Complete-Test "${name}: install, idempotent re-run, uninstall"
 }
 
@@ -130,8 +143,10 @@ Assert-True ((Get-Entries $ProjectDir).Count -eq 0) "uninstall left linked files
 Complete-Test "-Symlink links per item and uninstall never follows links"
 
 Reset-Sandbox
+$baseline = Get-Baseline
 Invoke-Installer -Global -DryRun -Target all | Out-Null
-Assert-True ((Get-Entries $HomeDir).Count -eq 0) "-DryRun changed the filesystem"
+$created = Get-NewEntries $baseline
+Assert-True ($created.Count -eq 0) "-DryRun changed the filesystem: $($created -join '; ')"
 Complete-Test "-DryRun changes nothing"
 
 Reset-Sandbox
