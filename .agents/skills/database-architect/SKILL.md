@@ -1,6 +1,6 @@
 ---
 name: database-architect
-description: Comprehensive relational database architecture, query optimization, indexing, and migration skill. Use when the user asks to design schemas, optimize slow queries with EXPLAIN ANALYZE, build index strategies, or plan non-blocking migrations in PostgreSQL, SQLite, or MSSQL. Triggers on: "database architecture", "EXPLAIN ANALYZE", "index strategy", "slow query", "PostgreSQL", "MSSQL", "SQLite WAL". Do not use for application API routes (use api-design).
+description: 'Comprehensive relational database architecture, query optimization, indexing, and migration skill. Use when the user asks to design schemas, optimize slow queries with EXPLAIN ANALYZE, build index strategies, or plan non-blocking migrations in PostgreSQL, SQLite, or MSSQL. Triggers on: "database architecture", "EXPLAIN ANALYZE", "index strategy", "slow query", "PostgreSQL", "MSSQL", "SQLite WAL". Do not use for application API routes (use api-design).'
 ---
 
 # Database Architecture & Query Optimization Skill

@@ -1,6 +1,6 @@
 ---
 name: git-workflow-master
-description: Advanced Git operations, rebase workflows, branch management, conventional commits, and pull request crafting. Use when formatting commits, rebasing onto main, resolving merge conflicts, crafting release tags, or auditing git history. Triggers on: "git rebase", "merge conflict", "conventional commits", "squash commits", "git bisect". Do not use for automated release version bumping and tag publishing (use git-release).
+description: 'Advanced Git operations, rebase workflows, branch management, conventional commits, and pull request crafting. Use when formatting commits, rebasing onto main, resolving merge conflicts, crafting release tags, or auditing git history. Triggers on: "git rebase", "merge conflict", "conventional commits", "squash commits", "git bisect". Do not use for automated release version bumping and tag publishing (use git-release).'
 ---
 
 # Git Workflow & Advanced Operations Skill

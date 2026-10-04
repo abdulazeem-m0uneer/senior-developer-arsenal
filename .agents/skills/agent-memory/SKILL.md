@@ -1,18 +1,11 @@
 ---
 name: agent-memory
-description: Long-term biomimetic agent memory management using Hindsight (vectorize-io/hindsight). Retains project architecture, records solved debugging lessons, and recalls contextual knowledge using hybrid retrieval (vector, keyword, graph, temporal).
-triggers:
-  - remember this decision
-  - save architectural rule
-  - recall project context
-  - query memory bank
-  - hindsight memory
-  - /memory
+description: 'Long-term biomimetic agent memory management using Hindsight (vectorize-io/hindsight). Retains project architecture, records solved debugging lessons, and recalls contextual knowledge using hybrid retrieval (vector, keyword, graph, temporal). Triggers on: "remember this decision", "save architectural rule", "recall project context", "query memory bank", "hindsight memory", "/memory". Do not use for reading active source code (use codegraph or code search).'
 ---
 
 # Agent Memory Skill (`agent-memory`)
 
-This skill integrates **Hindsight** (`vectorize-io/hindsight`) to give Antigravity agents durable, long-term memory across sessions without consuming excessive context window tokens.
+This skill integrates **Hindsight** (`vectorize-io/hindsight`) to give coding agents durable, long-term memory across sessions without consuming excessive context window tokens.
 
 ## 🎯 When to Use
 - **Recording Architecture Decisions**: Saving domain rules, ADR summaries, or database invariants into the persistent project memory bank.
@@ -22,7 +15,7 @@ This skill integrates **Hindsight** (`vectorize-io/hindsight`) to give Antigravi
 
 ## 🚫 When NOT to Use
 - Temporary scratchpad data or one-off code snippets.
-- Reading active codebase source code (use code search or `view_file` directly).
+- Reading active codebase source code (use code search or your file-read tool directly).
 - Overwriting active git files or documentation files.
 
 ---
@@ -40,7 +33,7 @@ Hindsight exposes three fundamental verbs:
 ## 💻 Developer Usage
 
 ### 1. Using Python Embedded / CLI
-Run memory actions directly using the arsenal helper script:
+Run memory actions directly using the helper script bundled with this skill (path is relative to this skill's directory):
 
 ```bash
 # Store an architectural fact or constraint
@@ -53,7 +46,7 @@ python scripts/memory.py recall --bank "<project-name>" --query "What timestamp 
 python scripts/memory.py reflect --bank "<project-name>" --query "What are our database indexing and migration policies?"
 ```
 
-### 2. Using Antigravity / Agent MCP Tools
+### 2. Using Agent MCP Tools
 When the Hindsight MCP server is active, subagents can directly invoke native memory tools:
 - `hindsight_retain(bank_id, content)`: Call after closing an investigation or agreeing on an ADR.
 - `hindsight_recall(bank_id, query)`: Call before reviewing a PR or scaffolding new database models.

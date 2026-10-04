@@ -1,6 +1,6 @@
 ---
 name: e2e-feature
-description: Fullstack feature implementation workflow bridging database migration, backend endpoint, and frontend UI view. Use when the user asks to build an end-to-end feature across the entire stack or runs /e2e-feature. Triggers on: "build feature", "end to end", "fullstack feature", "implement slice", "/e2e-feature". Do not use for isolated backend API design (use api-design) or isolated UI audit (use frontend-audit).
+description: 'Fullstack feature implementation workflow bridging database migration, backend endpoint, and frontend UI view. Use when the user asks to build an end-to-end feature across the entire stack or runs /e2e-feature. Triggers on: "build feature", "end to end", "fullstack feature", "implement slice", "/e2e-feature". Do not use for isolated backend API design (use api-design) or isolated UI audit (use frontend-audit).'
 ---
 
 # End-to-End Vertical Slice Feature Skill

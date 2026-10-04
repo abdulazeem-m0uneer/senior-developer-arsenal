@@ -1,4 +1,4 @@
-# Antigravity Subagents for Senior Engineers
+# Subagents for Senior Engineers
 
 This directory contains definitions and specialized prompts for domain-focused subagents.
 
@@ -36,15 +36,36 @@ This directory contains definitions and specialized prompts for domain-focused s
 10. **`ui-ux-architect`** (`prompts/ui-ux-architect.md`):
    - **Role**: Senior Design System & UI/UX Architect.
    - **Focus**: DTCG tokens, WCAG 2.2 AA compliance, state-complete components, 10 anti-slop verification gates, and zero-emoji enforcement.
+11. **`test-engineer`** (`prompts/test-engineer.md`):
+   - **Role**: Senior Test Engineer (SDET).
+   - **Focus**: Test strategy, unit/integration/e2e authoring, edge-case enumeration, flaky-test diagnosis.
+12. **`devops-engineer`** (`prompts/devops-engineer.md`):
+   - **Role**: Senior DevOps & Platform Engineer.
+   - **Focus**: Dockerfile hardening, GitHub Actions pipelines, caching, secrets, deploy and rollback strategies.
+13. **`qa-engineer`** (`prompts/qa-engineer.md`):
+   - **Role**: Senior QA Engineer.
+   - **Focus**: Acceptance criteria, test plans, exploratory and regression testing, bug reports, release sign-off.
 
 ---
 
-## How to Invoke in Antigravity
+## Source Format and Generated Outputs
 
-Antigravity provides two built-in tools for subagents:
-- `define_subagent`: Registers a customized subagent with its system prompt and tool capabilities.
-- `invoke_subagent`: Launches the subagent in an isolated context and receives its results automatically.
+`subagent-definitions.json` plus `prompts/<name>.md` are the single source of truth. `scripts/build.py` converts them into each agent's native format under `dist/`:
 
-You can also prompt the primary agent directly:
+| Agent | Generated file | Installed to |
+| :--- | :--- | :--- |
+| Claude Code | `dist/claude/agents/<name>.md` | loaded by the `arsenal` plugin |
+| Codex CLI | `dist/codex/agents/<name>.toml` | `.codex/agents/` |
+| OpenCode | `dist/opencode/agents/<name>.md` | `.opencode/agents/` |
+| Cursor | `dist/cursor/agents/<name>.md` | `.cursor/agents/` |
+| GitHub Copilot | `dist/copilot/agents/<name>.agent.md` | `.github/agents/` |
+| Antigravity | `dist/antigravity/agents/<name>.md` | `.agents/agents/` |
+| Gemini CLI | `dist/gemini/agents/<name>.md` | `.gemini/agents/` |
+
+Never edit files under `dist/`; edit the source here and run `python3 scripts/build.py`.
+
+## How to Invoke
+
+Prompt the primary agent directly:
 > *"Invoke the code-reviewer subagent to audit the changes between main and this branch."*
 > *"Launch the db-architect subagent to inspect this query and suggest PostgreSQL indexes."*

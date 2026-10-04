@@ -1,6 +1,6 @@
 ---
 name: nodejs-backend-expert
-description: Specialized Node.js and TypeScript backend engineering skill. Use when developing, profiling, refactoring, or securing production-grade Node.js servers (Fastify, Express, NestJS), managing async event loops, streams, and database connectivity. Triggers on: "Node.js", "TypeScript backend", "Fastify", "Express", "NestJS", "event loop lag", "stream backpressure". Do not use for Python services (use python-backend-expert) or .NET services (use csharp-dotnet-expert).
+description: 'Specialized Node.js and TypeScript backend engineering skill. Use when developing, profiling, refactoring, or securing production-grade Node.js servers (Fastify, Express, NestJS), managing async event loops, streams, and database connectivity. Triggers on: "Node.js", "TypeScript backend", "Fastify", "Express", "NestJS", "event loop lag", "stream backpressure". Do not use for Python services (use python-backend-expert) or .NET services (use csharp-dotnet-expert).'
 ---
 
 # Node.js & TypeScript Backend Engineering Skill

@@ -1,0 +1,14 @@
+{
+  "codegraph": {
+    "type": "stdio",
+    "command": "codegraph",
+    "args": [
+      "serve",
+      "--mcp"
+    ]
+  },
+  "hindsight": {
+    "type": "http",
+    "url": "http://localhost:8888/mcp/{{BANK_ID}}/"
+  }
+}

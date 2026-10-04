@@ -1,6 +1,6 @@
 ---
 name: python-audit
-description: Python quality, static type checking, and asyncio performance audit workflow. Use when the user asks to lint Python, run mypy strict checks, audit asyncio event loops, or runs /python-audit. Triggers on: "python audit", "lint python", "mypy check", "asyncio audit", "/python-audit". Do not use for Node.js or .NET code (use code-review).
+description: 'Python quality, static type checking, and asyncio performance audit workflow. Use when the user asks to lint Python, run mypy strict checks, audit asyncio event loops, or runs /python-audit. Triggers on: "python audit", "lint python", "mypy check", "asyncio audit", "/python-audit". Do not use for Node.js or .NET code (use code-review).'
 ---
 
 # Python Quality & Asyncio Audit Skill

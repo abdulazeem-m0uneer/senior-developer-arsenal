@@ -89,6 +89,33 @@
       "enable_write_tools": true,
       "enable_subagent_tools": false,
       "recommended_model": "pro"
+    },
+    {
+      "name": "test-engineer",
+      "role": "Senior Test Engineer (SDET)",
+      "description": "Designs test strategy and writes unit, integration, and end-to-end tests; enumerates edge cases, diagnoses flaky tests, and closes meaningful coverage gaps across Vitest/Jest, xUnit, pytest, and Playwright.",
+      "promptFile": "./prompts/test-engineer.md",
+      "enable_write_tools": true,
+      "enable_subagent_tools": false,
+      "recommended_model": "inherit"
+    },
+    {
+      "name": "devops-engineer",
+      "role": "Senior DevOps & Platform Engineer",
+      "description": "Builds and hardens CI/CD pipelines and container images: multi-stage Dockerfiles, GitHub Actions workflows, caching, secrets handling, deploy strategies, rollback, and health checks.",
+      "promptFile": "./prompts/devops-engineer.md",
+      "enable_write_tools": true,
+      "enable_subagent_tools": false,
+      "recommended_model": "inherit"
+    },
+    {
+      "name": "qa-engineer",
+      "role": "Senior QA Engineer",
+      "description": "Derives acceptance criteria, writes test plans and test cases, runs exploratory and regression testing, files reproducible bug reports, and gives release sign-off against the definition of done.",
+      "promptFile": "./prompts/qa-engineer.md",
+      "enable_write_tools": true,
+      "enable_subagent_tools": false,
+      "recommended_model": "inherit"
     }
   ]
 }

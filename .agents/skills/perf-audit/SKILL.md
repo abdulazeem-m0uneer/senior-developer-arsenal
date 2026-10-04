@@ -1,6 +1,6 @@
 ---
 name: perf-audit
-description: Performance auditing workflow to detect database query bottlenecks, event loop lag, memory leaks, and thread pool starvation. Use when the user asks to audit backend performance, profile slow queries, detect event loop lag, or runs /perf-audit. Triggers on: "performance audit", "slow queries", "event loop lag", "memory leak", "thread starvation", "/perf-audit". Do not use for frontend client-side re-render profiling (use frontend-audit).
+description: 'Performance auditing workflow to detect database query bottlenecks, event loop lag, memory leaks, and thread pool starvation. Use when the user asks to audit backend performance, profile slow queries, detect event loop lag, or runs /perf-audit. Triggers on: "performance audit", "slow queries", "event loop lag", "memory leak", "thread starvation", "/perf-audit". Do not use for frontend client-side re-render profiling (use frontend-audit).'
 ---
 
 # Systems Performance & Latency Audit Skill

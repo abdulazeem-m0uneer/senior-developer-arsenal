@@ -1,4 +1,4 @@
-# Production Antigravity Skill Template
+# Production Agent Skill Template
 
 Use this canonical template when generating new skills.
 
@@ -7,7 +7,7 @@ Use this canonical template when generating new skills.
 ```markdown
 ---
 name: {{skill-name}}
-description: {{concise third-person description stating WHAT it does and WHEN to activate it}}
+description: '{{concise third-person description stating WHAT it does and WHEN to activate it; single-quoted, no apostrophes}}'
 ---
 
 # {{Skill Title}}

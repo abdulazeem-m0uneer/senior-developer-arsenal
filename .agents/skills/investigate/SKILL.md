@@ -1,6 +1,6 @@
 ---
 name: investigate
-description: Autonomous root-cause investigation procedure using defensive epistemology, 5+ competing hypotheses, and 5-Whys causal analysis. Use when the user reports an elusive bug, intermittent test failure, unexplained crash, production outage, or runs /investigate. Triggers on: "investigate bug", "debug crash", "find root cause", "/investigate". Do not use for standard PR review (use code-review) or general performance profiling (use perf-audit).
+description: 'Autonomous root-cause investigation procedure using defensive epistemology, 5+ competing hypotheses, and 5-Whys causal analysis. Use when the user reports an elusive bug, intermittent test failure, unexplained crash, production outage, or runs /investigate. Triggers on: "investigate bug", "debug crash", "find root cause", "/investigate". Do not use for standard PR review (use code-review) or general performance profiling (use perf-audit).'
 ---
 
 # Epistemic Root-Cause Investigation Procedure

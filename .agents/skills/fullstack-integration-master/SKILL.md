@@ -1,6 +1,6 @@
 ---
 name: fullstack-integration-master
-description: End-to-end fullstack engineering skill bridging Frontend (React / Angular) with Backend (.NET / Node.js) and Databases. Use when designing end-to-end features, synchronizing contracts, building optimistic UI mutations, or configuring real-time event streams. Triggers on: "fullstack integration", "type contracts", "optimistic mutation", "SSE", "WebSockets". Do not use for isolated backend API design (use api-design) or standalone UI tokens (use ui-ux-architect).
+description: 'End-to-end fullstack engineering skill bridging Frontend (React / Angular) with Backend (.NET / Node.js) and Databases. Use when designing end-to-end features, synchronizing contracts, building optimistic UI mutations, or configuring real-time event streams. Triggers on: "fullstack integration", "type contracts", "optimistic mutation", "SSE", "WebSockets". Do not use for isolated backend API design (use api-design) or standalone UI tokens (use ui-ux-architect).'
 ---
 
 # Fullstack Integration Skill

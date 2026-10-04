@@ -1,6 +1,6 @@
 ---
 name: api-design
-description: Senior workflow for designing RESTful or RPC API contracts, input validation, and service interfaces in ASP.NET Core or Node.js. Use when the user asks to design endpoints, DTO contracts, API validation, or runs /api-design. Triggers on: "design API", "create endpoints", "API schema", "/api-design". Do not use for client-side state or fullstack synchronization (use fullstack-integration-master).
+description: 'Senior workflow for designing RESTful or RPC API contracts, input validation, and service interfaces in ASP.NET Core or Node.js. Use when the user asks to design endpoints, DTO contracts, API validation, or runs /api-design. Triggers on: "design API", "create endpoints", "API schema", "/api-design". Do not use for client-side state or fullstack synchronization (use fullstack-integration-master).'
 ---
 
 # API Design & Interface Specification Skill

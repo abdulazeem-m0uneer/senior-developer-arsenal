@@ -13,7 +13,7 @@ When gathering requirements from the user, avoid long open-ended chats. Ask thes
 | **1. Identity** | "What is the skill name and exact trigger phrase?" | `name` (kebab-case) and `description` (3rd person) |
 | **2. Workflow** | "What are the 2-4 main steps the agent must execute?" | Numbered action items & tools to use |
 | **3. Deep Dives** | "Are there large checklists, cheat sheets, or configs to offload?" | Files to create inside `references/` |
-| **4. Target** | "Where should this be saved: Workspace (`.agents/skills/`) or Global (`~/.gemini/config/skills/`)?" | File system destination |
+| **4. Target** | "Where should this be saved: Workspace (`.agents/skills/`) or Global (`~/.agents/skills/`, or the agent-specific global directory)?" | File system destination |
 
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: frontend-audit
-description: Senior frontend performance, re-render, and accessibility audit workflow for React and Angular. Use when the user asks to audit frontend performance, fix unnecessary re-renders, inspect change detection, or runs /frontend-audit. Triggers on: "frontend audit", "audit renders", "re-render churn", "OnPush audit", "/frontend-audit". Do not use for UI/UX visual taste and design tokens (use ui-ux-audit) or backend profiling (use perf-audit).
+description: 'Senior frontend performance, re-render, and accessibility audit workflow for React and Angular. Use when the user asks to audit frontend performance, fix unnecessary re-renders, inspect change detection, or runs /frontend-audit. Triggers on: "frontend audit", "audit renders", "re-render churn", "OnPush audit", "/frontend-audit". Do not use for UI/UX visual taste and design tokens (use ui-ux-audit) or backend profiling (use perf-audit).'
 ---
 
 # Frontend Performance & Re-render Audit Skill

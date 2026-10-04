@@ -1,6 +1,6 @@
 ---
 name: code-review
-description: Comprehensive senior software engineer code review procedure. Use when the user asks to review pull requests, inspect git diffs, audit code changes, or runs /code-review. Triggers on: "review code", "audit PR", "inspect diff", "/code-review". Do not use for frontend re-render audits (use frontend-audit) or UI/UX visual audits (use ui-ux-audit).
+description: 'Comprehensive senior software engineer code review procedure. Use when the user asks to review pull requests, inspect git diffs, audit code changes, or runs /code-review. Triggers on: "review code", "audit PR", "inspect diff", "/code-review". Do not use for frontend re-render audits (use frontend-audit) or UI/UX visual audits (use ui-ux-audit).'
 ---
 
 # Senior Code Review Procedure

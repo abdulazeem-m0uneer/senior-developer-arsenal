@@ -1,6 +1,6 @@
 ---
 name: frontend-architecture-expert
-description: Senior frontend architecture skill for React (18/19) and Angular (17/18/19). Use when designing components, optimizing client-side performance, eliminating unnecessary re-renders, configuring Signals/Hooks, or auditing web accessibility. Triggers on: "React", "Angular", "RSC", "Signals", "Zustand", "OnPush", "frontend architecture". Do not use for automated UI/UX anti-slop audits (use ui-ux-audit) or design tokens (use ui-ux-architect).
+description: 'Senior frontend architecture skill for React (18/19) and Angular (17/18/19). Use when designing components, optimizing client-side performance, eliminating unnecessary re-renders, configuring Signals/Hooks, or auditing web accessibility. Triggers on: "React", "Angular", "RSC", "Signals", "Zustand", "OnPush", "frontend architecture". Do not use for automated UI/UX anti-slop audits (use ui-ux-audit) or design tokens (use ui-ux-architect).'
 ---
 
 # Frontend Architecture Skill (React & Angular)
