@@ -1,0 +1,24 @@
+{
+  "name": "senior-developer-arsenal",
+  "owner": {
+    "name": "Abdulazeem Mohammed"
+  },
+  "description": "Senior engineering skills, subagents and rules for Node.js, .NET, Python, SQL, frontend, security, testing and DevOps.",
+  "plugins": [
+    {
+      "name": "arsenal",
+      "source": "./",
+      "description": "Senior engineering skills, subagents and rules for Node.js, .NET, Python, SQL, frontend, security, testing and DevOps."
+    },
+    {
+      "name": "arsenal-codegraph",
+      "source": "./plugins/codegraph",
+      "description": "Optional codegraph MCP server."
+    },
+    {
+      "name": "arsenal-hindsight",
+      "source": "./plugins/hindsight",
+      "description": "Optional hindsight MCP server."
+    }
+  ]
+}

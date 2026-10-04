@@ -1,0 +1,9 @@
+{
+  "name": "arsenal-hindsight",
+  "version": "1.0.0",
+  "description": "Registers the hindsight MCP server for the Senior Developer Arsenal.",
+  "author": {
+    "name": "Abdulazeem Mohammed"
+  },
+  "license": "MIT"
+}

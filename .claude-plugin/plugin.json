@@ -1,0 +1,27 @@
+{
+  "name": "arsenal",
+  "version": "1.0.0",
+  "description": "Senior engineering skills, subagents and rules for Node.js, .NET, Python, SQL, frontend, security, testing and DevOps.",
+  "author": {
+    "name": "Abdulazeem Mohammed"
+  },
+  "license": "MIT",
+  "skills": [
+    "./.agents/skills/"
+  ],
+  "agents": [
+    "./dist/claude/agents/code-reviewer.md",
+    "./dist/claude/agents/db-architect.md",
+    "./dist/claude/agents/dotnet-specialist.md",
+    "./dist/claude/agents/node-specialist.md",
+    "./dist/claude/agents/security-auditor.md",
+    "./dist/claude/agents/frontend-architect.md",
+    "./dist/claude/agents/fullstack-architect.md",
+    "./dist/claude/agents/python-specialist.md",
+    "./dist/claude/agents/epistemic-debugger.md",
+    "./dist/claude/agents/ui-ux-architect.md",
+    "./dist/claude/agents/test-engineer.md",
+    "./dist/claude/agents/devops-engineer.md",
+    "./dist/claude/agents/qa-engineer.md"
+  ]
+}

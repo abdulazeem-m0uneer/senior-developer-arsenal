@@ -1,0 +1,9 @@
+{
+  "name": "arsenal-codegraph",
+  "version": "1.0.0",
+  "description": "Registers the codegraph MCP server for the Senior Developer Arsenal.",
+  "author": {
+    "name": "Abdulazeem Mohammed"
+  },
+  "license": "MIT"
+}

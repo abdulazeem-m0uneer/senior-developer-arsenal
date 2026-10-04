@@ -1,0 +1,4 @@
+* text=auto eol=lf
+dist/** linguist-generated=true
+plugins/** linguist-generated=true
+.claude-plugin/plugin.json linguist-generated=true

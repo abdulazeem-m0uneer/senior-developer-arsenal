@@ -1,0 +1,2 @@
+command = "codegraph"
+args = ["serve", "--mcp"]

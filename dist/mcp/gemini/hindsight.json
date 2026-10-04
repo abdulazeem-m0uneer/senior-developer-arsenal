@@ -1,0 +1,3 @@
+{
+  "httpUrl": "http://localhost:8888/mcp/{{BANK_ID}}/"
+}
