@@ -1,3 +1,8 @@
+---
+trigger: model_decision
+description: 'Apply when a change spans API contracts and client code (type synthesis, optimistic mutations, streaming).'
+---
+
 # Fullstack Architecture & Integration Standards
 
 These rules enforce end-to-end type safety, resilient state synchronization, and secure communication bridging Frontend (React/Angular) and Backend (Node.js/C# .NET).

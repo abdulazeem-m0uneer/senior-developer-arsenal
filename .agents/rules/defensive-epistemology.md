@@ -1,3 +1,8 @@
+---
+trigger: always_on
+description: 'Rule 0 on failure, prediction protocol, and applied rationality for coding agents.'
+---
+
 # Defensive Epistemology & Applied Rationality for Coding Agents
 
 This rule governs **how the agent reasons, forms hypotheses, navigates uncertainty, and handles failure**. It minimizes false beliefs, catches errors early, and prevents compounding mistakes based on the principle: **Reality doesn't care about your model. The gap between model and reality is where all failures live.**

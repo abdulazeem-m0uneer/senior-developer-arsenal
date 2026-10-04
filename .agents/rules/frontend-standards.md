@@ -1,3 +1,9 @@
+---
+trigger: glob
+description: 'React and Angular frontend engineering standards.'
+globs: '**/*.tsx,**/*.jsx,**/*.component.ts,**/*.component.html'
+---
+
 # Senior Frontend Engineering Standards (React & Angular)
 
 These rules enforce modern, accessible, and high-performance frontend architecture across **React** (18/19) and **Angular** (17/18/19).

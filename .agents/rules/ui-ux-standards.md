@@ -1,3 +1,9 @@
+---
+trigger: glob
+description: 'UI/UX and design system standards.'
+globs: '**/*.tsx,**/*.jsx,**/*.html,**/*.css,**/*.scss,**/*.component.ts'
+---
+
 # Senior UI/UX & Design System Standards
 
 Authoritative rules for architecting accessible, production-grade design systems, DTCG tokens, and user interfaces across React, Angular, Web, and Native.

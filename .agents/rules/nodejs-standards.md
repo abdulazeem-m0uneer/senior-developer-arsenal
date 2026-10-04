@@ -1,3 +1,9 @@
+---
+trigger: glob
+description: 'Node.js and TypeScript backend engineering standards.'
+globs: '**/*.ts,**/*.mts,**/*.cts,**/*.js,**/*.mjs,**/*.cjs,**/package.json'
+---
+
 # Node.js & TypeScript Senior Engineering Standards
 
 These rules enforce high-throughput, secure, and production-hardened Node.js backend services.

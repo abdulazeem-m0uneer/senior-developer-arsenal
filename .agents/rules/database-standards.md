@@ -1,3 +1,9 @@
+---
+trigger: glob
+description: 'Relational database schema, query, and migration standards.'
+globs: '**/*.sql,**/migrations/**,**/Migrations/**,**/*.prisma'
+---
+
 # Relational Database Engineering Standards
 
 These rules enforce strict data integrity, indexing strategies, query performance, and migration safety across **PostgreSQL** (primary), **SQLite**, and **MSSQL**.

@@ -1,3 +1,9 @@
+---
+trigger: glob
+description: 'C# and .NET engineering standards.'
+globs: '**/*.cs,**/*.csproj,**/*.sln,**/*.razor'
+---
+
 # C# & .NET Senior Engineering Standards
 
 These rules enforce idiomatic, high-performance, and secure development for .NET 8 / .NET 9 and modern C# (12/13).

@@ -1,3 +1,8 @@
+---
+trigger: always_on
+description: 'Core senior engineering principles and code review standards.'
+---
+
 # Senior Software Engineer Core Principles & Code Review Standards
 
 This rule establishes senior-level engineering practices across all language stacks, system designs, and code reviews.
@@ -21,7 +26,26 @@ This rule establishes senior-level engineering practices across all language sta
 
 ---
 
-## 2. Code Review Standard Operating Procedure
+## 2. Non-Negotiable Code Constraints
+
+These apply to every line an agent writes or modifies, in every language:
+
+1. **SOLID, always**:
+   - **S**ingle Responsibility: one reason to change per class, module, and function.
+   - **O**pen/Closed: extend behavior through new types or composition, not by editing stable code paths.
+   - **L**iskov Substitution: subtypes honor the contract of the type they replace (no strengthened preconditions, no surprising exceptions).
+   - **I**nterface Segregation: small, role-specific interfaces; no client depends on methods it does not use.
+   - **D**ependency Inversion: depend on abstractions; inject infrastructure (database, HTTP, clock, filesystem) into domain code.
+2. **File size cap: 1000 lines maximum**:
+   - No source file may exceed 1000 lines after a change. Split by responsibility before crossing the limit.
+   - Never add code to a file that is already over the limit; extract a cohesive unit first, then make the change.
+   - Generated files, lockfiles, and vendored code are exempt; say so explicitly when relying on the exemption.
+3. **Every change ships with tests**: see `testing-standards.md`. A change without a test is not done.
+4. **Verify before claiming done**: run lint, type-check, build, and the full test suite; report failures verbatim.
+
+---
+
+## 3. Code Review Standard Operating Procedure
 
 When performing code reviews or reviewing code for PRs:
 
@@ -56,7 +80,7 @@ When performing code reviews or reviewing code for PRs:
 
 ---
 
-## 3. Communication & Feedback Rubric
+## 4. Communication & Feedback Rubric
 
 When providing feedback to engineers:
 - **Categorize Issues**: Tag comments as `[Blocker]` (security, data loss, severe bug), `[Performance]`, `[Architecture]`, `[Minor/Nit]` (styling, formatting), or `[Question]` (clarification).

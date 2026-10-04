@@ -1,3 +1,8 @@
+---
+trigger: model_decision
+description: 'Apply when creating commits, branches, rebases, releases, or pull requests.'
+---
+
 # Git Version Control & Pull Request Standards
 
 These rules enforce clean, traceable, and atomic version control practices across all projects.

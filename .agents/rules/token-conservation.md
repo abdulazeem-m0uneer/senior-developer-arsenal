@@ -1,3 +1,8 @@
+---
+trigger: always_on
+description: 'Token conservation, surgical diffs, and skill or subagent delegation protocol.'
+---
+
 # Token Conservation & Context Engineering Protocol
 
 This rule enforces strict token economy across all agent responses, code generations, code reviews, and reasoning steps. The user is strictly focused on minimizing token consumption while maintaining senior engineering rigor.
@@ -45,7 +50,7 @@ This rule enforces strict token economy across all agent responses, code generat
 In any new session within an Arsenal-enabled project:
 - **Immediate Skill Activation**: For every incoming technical task (code review, bug diagnosis, architecture design, migration, performance profiling, UI/UX audit, feature implementation), the agent **MUST immediately activate the corresponding skill (`.agents/skills/*`) or delegate to its dedicated subagent**.
 - **Context Economy via Delegation**: Never attempt generic, multi-turn manual prompt flailing. Specialized skills and subagents contain tailored runbooks, negative triggers, and compact references that enforce token limits and eliminate hallucinated trial-and-error.
-- **Mandatory CodeGraph AST Navigation**: Before reading entire files or running broad recursive greps across folders, the agent **MUST query CodeGraph (`codegraph_callers`, `codegraph_callees`, `codegraph_symbol`, `codegraph_impact`)**. Jump directly to the exact target lines (`file.cs:L45-L60`) rather than reading whole files into the context window.
+- **CodeGraph AST Navigation When Connected**: If a CodeGraph MCP server is connected, before reading entire files or running broad recursive greps across folders, the agent **MUST query CodeGraph (`codegraph_search`, `codegraph_callers`, `codegraph_callees`, `codegraph_impact`)**. Otherwise use targeted search and partial reads. Jump directly to the exact target lines (`file.cs:L45-L60`) rather than reading whole files into the context window.
 - **Biomimetic Memory Check**: Before executing architecture decisions or refactorings, query previous project memory observations (`agent-memory` / `recall`) to prevent rediscovering established context.
 
 

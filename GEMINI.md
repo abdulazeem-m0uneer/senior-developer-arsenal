@@ -1,24 +1,7 @@
-# Antigravity Gemini Workspace Configuration
+# Gemini Workspace Configuration
 
-This project serves as the global or template repository for senior software engineering workflows across C#, Node.js, PostgreSQL, MSSQL, SQLite, and Git.
+@./AGENTS.md
 
-## Active Rules & Skills
-- Load all rules in `.agents/rules/` when operating on code files in this repository or any target repository using these tools.
-- Refer to skills located in `.agents/skills/` for execution runbooks and checklists.
-- Follow the subagent definitions in `.agents/subagents/` when delegating tasks.
-
-## Code Standards Reminder
-- Write idiomatic, modern, production-grade code (.NET 8/9 C#, TypeScript Strict ESM, Python 3.11+ FastAPI/SQLAlchemy 2.0, React 18/19 RSC, Angular 17/18/19 Signals, DTCG Design Tokens, WCAG 2.2 AA).
-- Enforce end-to-end type safety, optimistic UI rollback safety, state-complete components (6 states), zero-emoji UI, and non-blocking database queries.
-- Treat database queries and schema changes with utmost scrutiny (concurrency, non-blocking indexing, lock contention).
-- Always include defensive unit/integration test patterns when authoring or reviewing code.
-
-## ⚠️ Mandatory Token Conservation & Defensive Epistemology
-- Be extremely frugal with token usage. Omit conversational pleasantries, chit-chat, and brown-nosing ("You're absolutely right").
-- **Mandatory Skill / Subagent First**: In every new session, immediately activate the specialized skill or delegate to the dedicated subagent for the task. Never perform unguided, unconstrained reasoning.
-- **Mandatory CodeGraph First (Save Reading Tokens)**: In every new session, query CodeGraph AST tools (`codegraph_callers`, `codegraph_callees`, `codegraph_symbol`, `codegraph_impact`) before reading files or running full-text greps. Jump directly to target lines.
-- **Rule 0**: On failure, STOP immediately. Do not silently retry. Output raw error, hypothesis, and confirm before touching anything.
-- **Prediction Protocol**: Declare expected outcome (`EXPECT`) before non-trivial tool actions. If reality diverges, debug your mental model, not reality.
-- Never output full files when partial diffs or targeted snippets suffice.
-- Use dense tables and bullet points with concise severity classifications.
-
+## Gemini / Antigravity Notes
+- `AGENTS.md` (imported above) is the authoritative instruction file; if the import is not resolved, read it directly.
+- Rules: `.agents/rules/`. Skills: `.agents/skills/`. Subagents: `.agents/agents/` (Antigravity) or `.gemini/agents/` (Gemini CLI), generated from `.agents/subagents/` by `scripts/build.py`.

@@ -1,3 +1,9 @@
+---
+trigger: glob
+description: 'Modern Python engineering standards.'
+globs: '**/*.py,**/pyproject.toml'
+---
+
 # Modern Python Senior Engineering Standards
 
 These rules enforce robust, high-performance, and type-safe Python (3.11+) backend development across **FastAPI**, **Django**, **Flask**, **SQLAlchemy 2.0**, and **asyncio**.

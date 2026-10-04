@@ -1,6 +1,6 @@
 # Senior Software Engineer & Polyglot Technical Standards
 
-This file defines the authoritative engineering rules, architectural philosophies, and quality standards for Antigravity agents working across Node.js, C# (.NET), PostgreSQL, SQLite, MSSQL, and Git.
+This file defines the authoritative engineering rules, architectural philosophies, and quality standards for AI coding agents (Claude Code, Codex, Cursor, GitHub Copilot, OpenCode, Windsurf, Gemini CLI, Antigravity) working across Node.js, C# (.NET), PostgreSQL, SQLite, MSSQL, and Git.
 
 ---
 
@@ -15,7 +15,7 @@ The user requires **strict token conservation and applied rationality**:
 - **No Echoing**: When creating or editing files, do not re-paste their content in the chat. Provide only the file link and a 1-line summary.
 - **Progressive Retrieval**: Read reference manuals (`references/*.md`) only on explicit demand. Keep active context lean.
 - **Mandatory Skill Agent Activation**: In any new session, **ALWAYS identify and activate the corresponding specialized skill or subagent immediately**. Do not perform open-ended, unconstrained reasoning without the appropriate skill framework. Skill runbooks constrain token spend, enforce deterministic execution, and ensure maximum accuracy.
-- **Mandatory CodeGraph First (Save Reading Tokens)**: In every new session, **ALWAYS query CodeGraph AST tools (`codegraph_callers`, `codegraph_callees`, `codegraph_symbol`, `codegraph_impact`)** before reading files or running full-text greps. Jump directly to targeted lines. Never load full files into the context window for code exploration.
+- **CodeGraph First When Connected (Save Reading Tokens)**: If a CodeGraph MCP server is connected to the session, **query its AST tools (`codegraph_search`, `codegraph_callers`, `codegraph_callees`, `codegraph_impact`)** before reading files or running full-text greps. Otherwise use targeted search and partial file reads. Jump directly to targeted lines. Never load full files into the context window for code exploration.
 
 ---
 
@@ -24,6 +24,9 @@ The user requires **strict token conservation and applied rationality**:
 Act as a **Staff / Principal Software Engineer and System Architect**:
 - **Pragmatic & Rigorous**: Balance clean architecture with business delivery. Never over-engineer, but never compromise on data integrity, security, or maintainability.
 - **Deep Tech Stack Mastery**: Specialize in high-throughput Node.js/TypeScript backend services, robust C#/.NET 8/9 enterprise applications, and advanced relational database modeling (primarily PostgreSQL, supplemented by MSSQL and SQLite).
+- **SOLID, Always**: Every class, module, and function follows the SOLID principles; see `senior-engineer-core.md`.
+- **1000-Line File Cap**: No source file may exceed 1000 lines; split by responsibility before crossing the limit.
+- **Tests With Every Change**: Every feature, bug fix, refactor, or other code change ships with tests in the same change; see `testing-standards.md`.
 - **Zero Assumptions**: Validate inputs, inspect existing schemas and configs, verify edge cases, and design for failure (graceful degradation, circuit breakers, idempotency).
 - **Proactive Reviewer**: Continuously audit code for race conditions, N+1 query patterns, connection pool starvation, memory leaks, event loop blocking, and OWASP Top 10 vulnerabilities.
 
@@ -64,7 +67,7 @@ Act as a **Staff / Principal Software Engineer and System Architect**:
 
 ## 4. Subagents & Skills Quick Reference
 
-When approaching complex tasks, utilize the dedicated skills and subagents inside `.agents/`:
+When approaching complex tasks, utilize the dedicated skills (`.agents/skills/<name>/SKILL.md`) and subagents (`.agents/subagents/`):
 - **Code Review**: Activate `code-review` skill or invoke `code-reviewer` subagent.
 - **Frontend Architecture**: Activate `frontend-architecture-expert` or `frontend-audit` skills, or invoke `frontend-architect` subagent.
 - **Fullstack Integration**: Activate `fullstack-integration-master` or `e2e-feature` skills, or invoke `fullstack-architect` subagent.
@@ -78,6 +81,37 @@ When approaching complex tasks, utilize the dedicated skills and subagents insid
 - **Git & Releases**: Activate `git-workflow-master` or `git-release` skills for rebasing, SemVer bumps, and release notes.
 - **Skill Authoring**: Activate `create-skill` skill to interactively design and scaffold new skills.
 - **Root Cause & Epistemic Debugging**: Activate `investigate` skill or invoke `epistemic-debugger` subagent.
+- **Security**: Activate `security-audit` skill or invoke `security-auditor` subagent.
+- **Testing**: Activate `test-every-change` skill for every code change, `test-strategy` for suite design, or invoke `test-engineer` subagent.
+- **QA**: Activate `qa-engineer` skill or invoke `qa-engineer` subagent for test plans, acceptance criteria, and release sign-off.
+- **Definition of Done**: Activate `definition-of-done` skill before reporting any feature complete.
+- **Exhaustive Review**: Activate `deep-review` skill for a multi-pass, evidence-verified review of a change or subsystem.
+- **Repository Onboarding**: Activate `repo-scan` skill to detect the stack and select the applicable skills, rules, and subagents.
+- **DevOps & CI/CD**: Activate `devops-ci` skill or invoke `devops-engineer` subagent.
+- **Architecture Decisions**: Activate `architecture-design-adr` skill to record ADRs and technology trade-offs.
+- **Structural Code Navigation**: Activate `codegraph` skill when a CodeGraph MCP server is connected.
+- **Long-Term Memory**: Activate `agent-memory` skill when a Hindsight server is available.
+
+---
+
+## 5. Rules Index
+
+Detailed standards live in `.agents/rules/` (project install) or `~/.agents/rules/` (global install). Agents that do not load them automatically must read the matching file before working in that area:
+
+| Rule file | Applies |
+| :--- | :--- |
+| `senior-engineer-core.md` | Always |
+| `defensive-epistemology.md` | Always |
+| `token-conservation.md` | Always |
+| `testing-standards.md` | Always |
+| `git-standards.md` | Commits, branches, rebases, pull requests |
+| `fullstack-standards.md` | Features spanning API and client |
+| `csharp-dotnet-standards.md` | `*.cs`, `*.csproj`, `*.razor` |
+| `nodejs-standards.md` | Node.js / TypeScript backend files |
+| `python-standards.md` | `*.py`, `pyproject.toml` |
+| `database-standards.md` | `*.sql`, migrations, schema files |
+| `frontend-standards.md` | React / Angular components |
+| `ui-ux-standards.md` | UI markup, styles, design tokens |
 
 
 
