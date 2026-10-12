@@ -32,8 +32,8 @@ GitHub offers no trending API, so [`scripts/trending_rank.py`](scripts/trending_
 | Component | Quantity | Purpose |
 | :--- | :---: | :--- |
 | **Rules** | 12 | Enforce senior engineering standards: SOLID, a 1000-line file cap, mandatory tests with every change, plus Python, Node.js, C#, Frontend, UI/UX, Databases, Git, Token Frugality, and Defensive Epistemology. |
-| **Specialized Skills** | 30 | Actionable runbooks following the Agent Skills standard (`SKILL.md` + progressive `references/`) with slash commands and negative triggers. |
-| **Autonomous Subagents** | 13 | Dedicated personas (`code-reviewer`, `qa-engineer`, `test-engineer`, `security-auditor`, `devops-engineer`, `epistemic-debugger`, and stack specialists). |
+| **Specialized Skills** | 46 | Actionable runbooks following the Agent Skills standard (`SKILL.md` + progressive `references/`) with slash commands and negative triggers. |
+| **Autonomous Subagents** | 16 | Dedicated personas (`code-reviewer`, `qa-engineer`, `test-engineer`, `security-auditor`, `devops-engineer`, `epistemic-debugger`, `spec-reviewer`, `infra-reviewer`, `legacy-analyst`, and stack specialists). |
 | **Supported Agents** | 8 | Claude Code (plugin), Codex CLI, OpenCode, Cursor, Windsurf, GitHub Copilot, Gemini CLI, Antigravity. |
 | **Installers** | 2 | PowerShell (`install.ps1`) and Bash (`install.sh`) with identical options, non-destructive installs, and clean uninstall. |
 
@@ -70,7 +70,7 @@ Benchmarked against full-solution reviews on production-grade repositories:
 senior-developer-arsenal/
 ├── .agents/                     # Single source of truth (edit here only)
 │   ├── rules/                   # 12 rules with trigger/description/globs frontmatter
-│   ├── skills/<name>/           # 30 skills: SKILL.md + references/ (+ scripts/ where bundled)
+│   ├── skills/<name>/           # 46 skills: SKILL.md + references/ (+ scripts/ where bundled)
 │   ├── subagents/               # subagent-definitions.json + prompts/<name>.md
 │   └── mcp/servers.json         # Canonical MCP server definitions (CodeGraph, Hindsight)
 ├── dist/                        # GENERATED per-agent output (do not edit)
@@ -78,6 +78,7 @@ senior-developer-arsenal/
 │   ├── mcp/<flavor>/            # MCP server entries in each client's config shape
 │   └── manifest.tsv             # What each installer copies where
 ├── .claude-plugin/              # GENERATED Claude Code plugin + marketplace manifests
+├── agents/                      # GENERATED subagents for the Claude Code plugin (its default agents directory)
 ├── plugins/                     # GENERATED opt-in Claude plugins for the MCP servers
 ├── scripts/
 │   ├── build.py                 # Generator: --validate, --check, or write dist/
@@ -107,7 +108,17 @@ senior-developer-arsenal/
 /plugin install arsenal@senior-developer-arsenal
 ```
 
-Skills appear as `/arsenal:<skill>` and subagents as `arsenal:<name>`. A plugin cannot ship rules, so add them with the installer: `./install.sh --global --target claude`. Optional MCP servers: `/plugin install arsenal-codegraph@senior-developer-arsenal` and `/plugin install arsenal-hindsight@senior-developer-arsenal`.
+Inside the plugin every skill is namespaced: type `/arsenal:code-review`, not `/code-review` (a bare name runs whatever else owns it, or nothing). Subagents appear as `arsenal:<name>`. A plugin cannot ship rules, so add them with the installer: `./install.sh --global --target claude`. Optional MCP servers: `/plugin install arsenal-codegraph@senior-developer-arsenal` and `/plugin install arsenal-hindsight@senior-developer-arsenal`.
+
+If adding the marketplace fails:
+
+| Symptom | Cause | Fix |
+| :--- | :--- | :--- |
+| `Permission denied (publickey)` or a clone that hangs | The short `owner/repo` form is cloned over SSH when an SSH key for GitHub is configured, and that key is locked, missing from the agent, or belongs to another account. | Add it by HTTPS instead: `/plugin marketplace add https://github.com/abdulazeem-m0uneer/senior-developer-arsenal.git` |
+| The command is not recognised | The client is older than the plugin system, or the surface in use has no `/plugin` command. | Update Claude Code, or run it from a terminal: `claude plugin marketplace add <url>` then `claude plugin install arsenal@senior-developer-arsenal`. |
+| Installed, but skills or subagents are missing | An old copy is cached. | `/plugin marketplace update senior-developer-arsenal`, then reinstall the plugin and restart the session. |
+
+To see the real error, run `claude --debug` and repeat the command.
 
 ### Every other agent (installer)
 
@@ -217,7 +228,7 @@ Three core rules plus the testing rule are always on; the rest load by file glob
 
 ## ⚡ Active Skills & Capabilities
 
-The arsenal includes 30 specialized skills conforming to the Agent Skills standard (agentskills.io), featuring isolated progressive disclosure references (`references/`), slash commands, and negative triggers:
+The arsenal includes 46 specialized skills conforming to the Agent Skills standard (agentskills.io), featuring isolated progressive disclosure references (`references/`), slash commands, and negative triggers:
 
 ### 1. code-review (/code-review)
 - **When to use**: Auditing pull requests, reviewing recent commits, inspecting staged diffs, or evaluating branch code quality.
@@ -330,10 +341,11 @@ The arsenal includes 30 specialized skills conforming to the Agent Skills standa
 - **Includes**:
   - [audit-matrix-template.md](.agents/skills/ui-ux-audit/references/audit-matrix-template.md): Compact Markdown audit matrix template and surgical 2-5 line diff remediation workflow.
 
-### 21. agent-memory (/memory)
+### 21. agent-memory (/agent-memory)
 - **When to use**: Saving durable architectural decisions, recording resolved bug patterns from root-cause debugging, or retrieving project rules across sessions using Hindsight.
 - **Includes**:
   - [memory-architecture.md](.agents/skills/agent-memory/references/memory-architecture.md): Biomimetic memory concepts (Facts, Observations, Mental Models) and hybrid search ranking (Vector, BM25, Graph, Temporal).
+  - Bundled `scripts/memory.py` for retain, recall, and reflect without the MCP server.
 
 ### 22. codegraph (/codegraph)
 - **When to use**: Navigating codebases, finding callers/callees, assessing refactoring blast radius, or jumping to symbol definitions without full-file reading.
@@ -350,29 +362,97 @@ The arsenal includes 30 specialized skills conforming to the Agent Skills standa
 
 ### 25. test-every-change (/test-every-change)
 - **When to use**: Every code change. Maps each changed behavior to required tests: regression test first for bug fixes, happy/error/edge cases for features, characterization tests before refactors.
+- **Includes**: [change-to-test-matrix.md](.agents/skills/test-every-change/references/change-to-test-matrix.md), [bootstrap-and-exemptions.md](.agents/skills/test-every-change/references/bootstrap-and-exemptions.md).
 
 ### 26. qa-engineer (/qa-engineer)
 - **When to use**: Acceptance criteria, test plans and test cases, exploratory testing charters, bug reports, and release sign-off.
+- **Includes**: [test-design-techniques.md](.agents/skills/qa-engineer/references/test-design-techniques.md), [bug-report-and-signoff.md](.agents/skills/qa-engineer/references/bug-report-and-signoff.md).
 
 ### 27. definition-of-done (/definition-of-done)
 - **When to use**: Before reporting any feature complete. Builds the per-feature Definition of Done and verifies every item with evidence, ending in a DONE / NOT DONE verdict.
+- **Includes**: [dod-checklist.md](.agents/skills/definition-of-done/references/dod-checklist.md), [evidence-and-verdict.md](.agents/skills/definition-of-done/references/evidence-and-verdict.md).
 
 ### 28. deep-review (/deep-review)
 - **When to use**: Exhaustive, multi-pass, evidence-verified review of a whole change or subsystem, with a false-positive elimination pass and a re-review loop after fixes.
+- **Includes**: [review-passes.md](.agents/skills/deep-review/references/review-passes.md), [finding-verification.md](.agents/skills/deep-review/references/finding-verification.md).
 
 ### 29. repo-scan (/repo-scan)
 - **When to use**: Onboarding the arsenal into a repository. Detects the stack and reports which skills, rules, and subagents apply, plus gaps.
-- **Includes**: bundled `scripts/detect_stack.py`.
+- **Includes**: [signal-mapping.md](.agents/skills/repo-scan/references/signal-mapping.md), bundled `scripts/detect_stack.py`.
 
 ### 30. devops-ci (/devops-ci)
 - **When to use**: Dockerfile hardening, GitHub Actions pipelines, caching, secrets handling, deploy strategies, and rollback.
 - **Includes**: [dockerfile-hardening.md](.agents/skills/devops-ci/references/dockerfile-hardening.md), [pipeline-and-deploy.md](.agents/skills/devops-ci/references/pipeline-and-deploy.md).
 
+### 31. ci-wait (/ci-wait)
+- **When to use**: Waiting for a pull request's checks, telling an outside failure (rate limit, runner, network) from a failure of the change, and merging only the tested commit.
+- **Includes**: [outside-failures.md](.agents/skills/ci-wait/references/outside-failures.md), bundled `scripts/ci_wait.py`.
+
+### 32. quality-gate (/quality-gate)
+- **When to use**: Building or running one local command that equals CI, with checks that prove they bite and coverage of changed lines.
+- **Includes**: [gate-check-catalogue.md](.agents/skills/quality-gate/references/gate-check-catalogue.md), [checks-that-bite.md](.agents/skills/quality-gate/references/checks-that-bite.md).
+
+### 33. smoke-test (/smoke-test)
+- **When to use**: Proving a deployed API works after every release with a suite that creates its own data through the API.
+- **Includes**: [smoke-suite-design.md](.agents/skills/smoke-test/references/smoke-suite-design.md), [verdicts-and-fix-loop.md](.agents/skills/smoke-test/references/verdicts-and-fix-loop.md).
+
+### 34. provider-sdk (/provider-sdk)
+- **When to use**: Integrating a third-party provider (payments, SMS, maps, identity) as one package with mock and live modes chosen by configuration.
+- **Includes**: [package-layout.md](.agents/skills/provider-sdk/references/package-layout.md), [live-mode-hardening.md](.agents/skills/provider-sdk/references/live-mode-hardening.md).
+
+### 35. decision-log (/decision-log)
+- **When to use**: Recording a decision in one numbered log, sweeping every document that states the old rule, and parking open questions with an owner.
+- **Includes**: [entry-formats-and-sweep.md](.agents/skills/decision-log/references/entry-formats-and-sweep.md).
+
+### 36. parallel-sessions (/parallel-sessions)
+- **When to use**: Several agents or people working in one repository at once without duplicating or overwriting each other.
+- **Includes**: [worktrees-and-collisions.md](.agents/skills/parallel-sessions/references/worktrees-and-collisions.md).
+
+### 37. delivery-board-sync (/delivery-board-sync)
+- **When to use**: Keeping a task board in any tracker in step with the plan document, with evidence on every status move.
+- **Includes**: [board-config-and-evidence.md](.agents/skills/delivery-board-sync/references/board-config-and-evidence.md).
+
+### 38. autonomous-run (/autonomous-run)
+- **When to use**: A long unattended agent run: scoped authority that expires, a measured usage budget, proof the application starts, and an end report.
+- **Includes**: [authority-budget-and-report.md](.agents/skills/autonomous-run/references/authority-budget-and-report.md), bundled `scripts/usage_report.py`.
+
+### 39. shared-infra-changes (/shared-infra-changes)
+- **When to use**: Changing live infrastructure that other systems depend on: additions only, a reviewed plan, a no-changes re-plan, and a rollback written first.
+- **Includes**: [additions-only-guardrails.md](.agents/skills/shared-infra-changes/references/additions-only-guardrails.md), [plan-apply-and-rollback.md](.agents/skills/shared-infra-changes/references/plan-apply-and-rollback.md).
+
+### 40. legacy-parity (/legacy-parity)
+- **When to use**: Rebuilding or migrating a legacy system while keeping its behaviour, and a frozen interface, the same.
+- **Includes**: [behaviour-answer-template.md](.agents/skills/legacy-parity/references/behaviour-answer-template.md), [parity-checklist.md](.agents/skills/legacy-parity/references/parity-checklist.md).
+
+### 41. payments-integrity (/payments-integrity)
+- **When to use**: Anything that moves money: charges, refunds, payouts, wallet balances, gateway webhooks.
+- **Includes**: [money-traps.md](.agents/skills/payments-integrity/references/money-traps.md), [ledger-postings.md](.agents/skills/payments-integrity/references/ledger-postings.md).
+
+### 42. data-privacy (/data-privacy)
+- **When to use**: Reviewing a change for personal-data leaks into logs, traces, stored copies, responses, outside services, exports, and backups.
+- **Includes**: [data-sink-matrix.md](.agents/skills/data-privacy/references/data-sink-matrix.md), [redaction-patterns.md](.agents/skills/data-privacy/references/redaction-patterns.md).
+
+### 43. observability (/observability)
+- **When to use**: Instrumenting a service with correlated logs, metrics, and traces, defining SLO alerts, and querying telemetry with bounded questions.
+- **Includes**: [naming-sheet.md](.agents/skills/observability/references/naming-sheet.md), [query-cookbook.md](.agents/skills/observability/references/query-cookbook.md).
+
+### 44. incident-response (/incident-response)
+- **When to use**: Running a production incident: severity, roles, mitigation first, timed status updates, and a blameless postmortem.
+- **Includes**: [severity-matrix.md](.agents/skills/incident-response/references/severity-matrix.md), [incident-templates.md](.agents/skills/incident-response/references/incident-templates.md).
+
+### 45. dependency-upgrade (/dependency-upgrade)
+- **When to use**: Upgrading a library, runtime, base image, or CI action safely, one step at a time, with licence and supply-chain checks.
+- **Includes**: [ecosystem-commands.md](.agents/skills/dependency-upgrade/references/ecosystem-commands.md), [risk-triage.md](.agents/skills/dependency-upgrade/references/risk-triage.md).
+
+### 46. docs-writer (/docs-writer)
+- **When to use**: Writing a README, runbook, or API reference, keeping one home per fact, and checking docs in CI.
+- **Includes**: [templates.md](.agents/skills/docs-writer/references/templates.md), [review-checklist.md](.agents/skills/docs-writer/references/review-checklist.md).
+
 ---
 
 ## 🤖 Autonomous Subagents
 
-The arsenal defines 13 specialized subagent profiles in `.agents/subagents/subagent-definitions.json`; `scripts/build.py` converts them into each agent's native format:
+The arsenal defines 16 specialized subagent profiles in `.agents/subagents/subagent-definitions.json`; `scripts/build.py` converts them into each agent's native format:
 
 | Subagent Name | Role | Focus Area & Capabilities |
 | :--- | :--- | :--- |
@@ -385,10 +465,13 @@ The arsenal defines 13 specialized subagent profiles in `.agents/subagents/subag
 | **`db-architect`** | Senior Database Architect | Query execution plan tuning, index strategy, and zero-downtime migrations (PostgreSQL/MSSQL/SQLite). |
 | **`dotnet-specialist`** | Principal .NET & C# Engineer | .NET 8/9, Clean Architecture, EF Core profiling, Dapper, and zero-allocation async programming. |
 | **`node-specialist`** | Principal Node.js Engineer | Non-blocking event loop optimization, streams, Fastify/Express, and runtime resilience. |
-| **`security-auditor`** | Application Security Auditor | OWASP Top 10, SQLi, BOLA/IDOR, secrets audit, and secure cryptographic comparisons. Read-only. |
+| **`security-auditor`** | Application Security Auditor | OWASP Top 10, SQLi, BOLA/IDOR, secrets audit, secure cryptographic comparisons, and personal-data flow. Read-only. |
 | **`test-engineer`** | Senior Test Engineer (SDET) | Test strategy, unit/integration/e2e authoring, edge cases, flaky-test diagnosis. |
 | **`qa-engineer`** | Senior QA Engineer | Acceptance criteria, test plans, exploratory and regression testing, release sign-off. |
 | **`devops-engineer`** | Senior DevOps & Platform Engineer | Dockerfiles, GitHub Actions, caching, secrets, deploy and rollback strategies. |
+| **`spec-reviewer`** | Senior Specification Reviewer | Document changes against the decision log: contradictions, leftover old rules, invented rules, wrong citations. Read-only. |
+| **`infra-reviewer`** | Principal Infrastructure Reviewer | Infrastructure as code, Kubernetes, and deploy workflows: broken first apply, shared resources touched, holes, data loss. Read-only. |
+| **`legacy-analyst`** | Senior Legacy Systems Analyst | What a legacy system does, with `file:line`, who can reach it, and what was not found. Read-only. |
 
 ### How to Invoke Subagents
 In any agent chat, invoke subagents using natural language:
@@ -428,7 +511,7 @@ All workflows have been consolidated into first-class, token-efficient skills un
 | **Python Expert** | `/python-backend-expert` | FastAPI, asyncio TaskGroup pipelines, SQLAlchemy 2.0 async queries, Pydantic v2. | Production-grade async Python endpoints and models. |
 | **UI/UX Architect** | `/ui-ux-architect` | Architecting design systems, DTCG tokens, state-complete components, WCAG 2.2 AA. | Token-driven CSS, complete component states. |
 | **UI/UX Audit** | `/ui-ux-audit` | Executes 10 anti-slop gates, checks contrast ratios, target sizes, and state completeness. | Compact audit matrix (`[Gate]`, `[Target]`, `[Status]`, `[Fix]`) + surgical diffs. |
-| **Agent Memory** | `/memory` | Retains and recalls architectural decisions through Hindsight. | Stored and recalled project memory. |
+| **Agent Memory** | `/agent-memory` | Retains and recalls architectural decisions through Hindsight. | Stored and recalled project memory. |
 | **CodeGraph** | `/codegraph` | Structural code navigation: callers, callees, impact, symbol lookup. | Precise `file:line` pointers instead of file reads. |
 | **Security Audit** | `/security-audit` | OWASP Top 10, injection, authz, secrets, SSRF, supply chain. | Severity-ranked vulnerability table with fixes. |
 | **Test Strategy** | `/test-strategy` | Test pyramid, layering, doubles, flaky-test diagnosis. | Test plan and authored tests. |
@@ -438,6 +521,22 @@ All workflows have been consolidated into first-class, token-efficient skills un
 | **Deep Review** | `/deep-review` | Multi-pass, evidence-verified review with a re-review loop. | Verified, severity-ranked findings. |
 | **Repo Scan** | `/repo-scan` | Detects the stack and maps it to arsenal skills, rules, subagents. | Applicability report plus gaps. |
 | **DevOps & CI** | `/devops-ci` | Dockerfiles, pipelines, deploy and rollback strategies. | Hardened Dockerfile and workflow changes. |
+| **CI Wait** | `/ci-wait` | Waits for checks, classifies a red run, reruns only outside failures. | Exit code with the tested commit and the pinned merge command. |
+| **Quality Gate** | `/quality-gate` | One local command equal to CI; smallest check first; planted bad inputs. | Gate command, stage results, check-to-fix table. |
+| **Smoke Test** | `/smoke-test` | Layered API smoke suite run locally and after each release. | PASSED / FAILED / PARTIAL verdict with a layer table. |
+| **Provider SDK** | `/provider-sdk` | One package per provider, mock and live modes, one contract test through both. | Provider package, contract test, adapter and mode selector. |
+| **Decision Log** | `/decision-log` | Records decisions, propagates them, tracks open questions. | Log entry, corrected documents, open-question rows. |
+| **Parallel Sessions** | `/parallel-sessions` | Remote-first reads, one worktree per task, staging by path, numbers taken at commit time. | Isolated branch and worktree; collision report. |
+| **Delivery Board Sync** | `/delivery-board-sync` | Mirrors the plan on the board; search before create; no done on a claim. | Updated tasks with evidence; end-of-session table. |
+| **Autonomous Run** | `/autonomous-run` | Rules, budget and merge conditions for unattended work. | Merge list, parked questions, usage against budget. |
+| **Shared Infra Changes** | `/shared-infra-changes` | Additions-only changes to shared DNS, cloud accounts and clusters. | Approved plan, applied change, drift-free re-plan, rollback step. |
+| **Legacy Parity** | `/legacy-parity` | Legacy behaviour with `file:line`, characterisation tests, parity audit, legacy sync. | Behaviour answer and difference table. |
+| **Payments Integrity** | `/payments-integrity` | Minor units, double-entry ledger, idempotency, verified webhooks, reconciliation. | Trap findings with the test that proves each fix. |
+| **Data Privacy** | `/data-privacy` | Traces each personal-data item to seven sinks; access, retention, redaction. | Data-to-sink matrix and findings table. |
+| **Observability** | `/observability` | Structured logs, RED/USE metrics, OpenTelemetry traces, SLO alerts, bounded queries. | Instrumentation changes and a findings table. |
+| **Incident Response** | `/incident-response` | Declares, mitigates, communicates, and closes an incident. | Timeline, status updates, postmortem with owned actions. |
+| **Dependency Upgrade** | `/dependency-upgrade` | Official notes at exact versions, one upgrade per change, full suite plus a real start. | Upgrade change with lockfile, risk table, rollback. |
+| **Docs Writer** | `/docs-writer` | Document type by reader need; per-endpoint reference with the why. | Finished document and CI doc checks. |
 
 ---
 
@@ -477,14 +576,9 @@ Candidates not yet in the arsenal, in rough priority order:
 | Skill | Why |
 | :--- | :--- |
 | `accessibility-audit` | Dedicated WCAG 2.2 AA audit with assistive-technology test scripts, beyond the UI/UX gates. |
-| `observability` | Structured logging, metrics, tracing (OpenTelemetry), SLOs, and alert design. |
-| `incident-response` | Production triage runbook, mitigation-first workflow, and blameless postmortem template. |
-| `dependency-upgrade` | Safe major-version upgrades: changelog triage, codemods, staged rollout, CVE response. |
 | `refactor-legacy` | Characterization tests, strangler-fig migration, and seam extraction for untested code. |
 | `threat-model` | STRIDE-based design-time threat modeling to complement the code-level security audit. |
-| `docs-writer` | README, API reference, runbook, and changelog authoring to a consistent standard. |
 | `kubernetes-ops` | Manifests, Helm, resource limits, probes, and rollout debugging. |
-| `data-privacy` | PII inventory, retention, GDPR/CCPA data-subject request handling. |
 | `mobile-expert` | React Native / Flutter architecture, performance, and release pipelines. |
 
 Scaffold any of them with the `create-skill` skill.

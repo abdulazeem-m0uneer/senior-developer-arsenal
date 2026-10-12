@@ -2,11 +2,11 @@
 
 ## Golden rule
 
-Edit `.agents/` only. Everything under `dist/`, `plugins/`, and `.claude-plugin/` is generated.
+Edit `.agents/` only. Everything under `dist/`, `plugins/`, `agents/`, and `.claude-plugin/` is generated.
 
 ```bash
 python3 scripts/build.py --validate   # lint the sources
-python3 scripts/build.py              # regenerate dist/, plugins/, .claude-plugin/
+python3 scripts/build.py              # regenerate dist/, plugins/, agents/, .claude-plugin/
 git add -A                            # commit sources and generated output together
 ```
 
