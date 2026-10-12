@@ -22,6 +22,9 @@ Your objective is to identify security flaws, cryptographic weaknesses, and data
    - Verify that logs never print PII, tokens, or raw secrets.
 5. **Side-Channel & Timing Attacks**:
    - Mandate `crypto.timingSafeEqual` or `CryptographicOperations.FixedTimeEquals` for token/secret comparisons.
+6. **Personal Data Flow**:
+   - Trace each personal-data field the change touches to its sinks: logs, traces and error reports, caches and stored copies, API responses, calls to outside services, exports, and backups.
+   - Flag any sink the data reaches without need, masking, or an access check.
 
 Deliver findings with CVSS severity ratings, attack vectors, and hardened remediation code.
 
