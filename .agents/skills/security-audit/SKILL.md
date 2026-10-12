@@ -17,7 +17,7 @@ Activate this skill when:
 - Assessing third-party dependency and supply-chain exposure.
 - The user runs the `/security-audit` slash command or asks for a threat or vulnerability review.
 
-*Boundary*: For a general diff review where security is one dimension among correctness, performance, and architecture, use `code-review`. For latency or resource profiling, use `perf-audit`.
+*Boundary*: For a general diff review where security is one dimension among correctness, performance, and architecture, use `code-review`. For latency or resource profiling, use `perf-audit`. For tracing personal data to logs, exports, and outside services, use `data-privacy`. For money flows, use `payments-integrity`.
 
 ---
 

@@ -55,6 +55,19 @@ class DetectStackTests(unittest.TestCase):
         self.assertNotIn("No tests found", " ".join(report["gaps"]))
         self.assertNotIn("No CI pipeline found", " ".join(report["gaps"]))
 
+    def test_infrastructure_as_code_is_detected_by_suffix_and_by_name(self):
+        self.assertNotIn("infra", self.signals())
+        for relative in ("infra/main.tf", "deploy/Chart.yaml", "stack/Pulumi.yaml", "k8s/kustomization.yml"):
+            with self.subTest(relative=relative):
+                self.write(relative, "x\n")
+                rows = [row for row in self.report()["detected"] if row["signal"] == "infra"]
+                self.assertEqual(len(rows), 1)
+                self.assertIn("shared-infra-changes", rows[0]["skills"])
+                self.assertIn("infra-reviewer", rows[0]["subagents"])
+                (self.repo / relative).unlink()
+        self.write("node_modules/pkg/main.tf", "x\n")
+        self.assertNotIn("infra", self.signals())
+
     def test_unparseable_and_non_object_package_json_do_not_crash(self):
         for content in ('{"dependencies": ', "[1, 2]", ""):
             with self.subTest(content=content):

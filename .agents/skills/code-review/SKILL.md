@@ -29,6 +29,7 @@ Activate this skill when:
    git diff HEAD~1..HEAD
    ```
 2. Identify all modified architectural layers (Domain, Application Services, Repositories, API Endpoints, Migrations).
+3. Record the commit hash under review (`git rev-parse HEAD`); the verdict applies to that commit only.
 
 ### Step 2: Multi-Dimensional Checklist Evaluation
 Evaluate changes against the [Senior Review Checklist](./references/review-checklist.md):
@@ -46,6 +47,10 @@ Format the final review report according to the [Feedback Rubric](./references/f
   - `🏗️ [Architecture]`: Layer violations, tight coupling, leaky abstractions.
   - `💡 [Suggestion / Nit]`: Idioms, readability, naming conventions.
 - **Surgical Code Diffs**: Provide targeted 2–5 line diffs for fixes.
+- **Not Checked**: State plainly what was not reviewed (files skipped, tests not run, behaviour not exercised).
+
+### Step 4: Re-Review After Fixes
+A fix is new code. Review the new diff with the same checklist, try to refute each earlier finding against the fixed code, and reissue the verdict with the new commit hash.
 
 ---
 

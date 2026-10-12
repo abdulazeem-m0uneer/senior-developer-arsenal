@@ -1,6 +1,6 @@
 # Senior Software Engineer & Polyglot Technical Standards
 
-This file defines the authoritative engineering rules, architectural philosophies, and quality standards for AI coding agents (Claude Code, Codex, Cursor, GitHub Copilot, OpenCode, Windsurf, Gemini CLI, Antigravity) working across Node.js, C# (.NET), PostgreSQL, SQLite, MSSQL, and Git.
+This file defines the authoritative engineering rules, architectural philosophies, and quality standards for AI coding agents (Claude Code, Codex, Cursor, GitHub Copilot, OpenCode, Windsurf, Gemini CLI, Antigravity) working across Node.js, C# (.NET), Python, React and Angular frontends, UI/UX, PostgreSQL, SQLite, MSSQL, CI/CD, and Git.
 
 ---
 
@@ -15,7 +15,7 @@ The user requires **strict token conservation and applied rationality**:
 - **No Echoing**: When creating or editing files, do not re-paste their content in the chat. Provide only the file link and a 1-line summary.
 - **Progressive Retrieval**: Read reference manuals (`references/*.md`) only on explicit demand. Keep active context lean.
 - **Mandatory Skill Agent Activation**: In any new session, **ALWAYS identify and activate the corresponding specialized skill or subagent immediately**. Do not perform open-ended, unconstrained reasoning without the appropriate skill framework. Skill runbooks constrain token spend, enforce deterministic execution, and ensure maximum accuracy.
-- **CodeGraph First When Connected (Save Reading Tokens)**: If a CodeGraph MCP server is connected to the session, **query its AST tools (`codegraph_search`, `codegraph_callers`, `codegraph_callees`, `codegraph_impact`)** before reading files or running full-text greps. Otherwise use targeted search and partial file reads. Jump directly to targeted lines. Never load full files into the context window for code exploration.
+- **CodeGraph First When Connected (Save Reading Tokens)**: If a CodeGraph MCP server is connected to the session, **query its AST tools (`codegraph_explore`, or `codegraph_search`, `codegraph_callers`, `codegraph_callees`, `codegraph_impact` on older servers)** before reading files or running full-text greps. Otherwise use targeted search and partial file reads. Jump directly to targeted lines. Never load full files into the context window for code exploration.
 
 ---
 
@@ -91,6 +91,16 @@ When approaching complex tasks, utilize the dedicated skills (`.agents/skills/<n
 - **Architecture Decisions**: Activate `architecture-design-adr` skill to record ADRs and technology trade-offs.
 - **Structural Code Navigation**: Activate `codegraph` skill when a CodeGraph MCP server is connected.
 - **Long-Term Memory**: Activate `agent-memory` skill when a Hindsight server is available.
+- **CI & Quality Gate**: Activate `ci-wait` skill while a pull request waits for checks and `quality-gate` to design or run the one local command that equals CI.
+- **After a Release**: Activate `smoke-test` skill to prove a deployed API works, and `observability` to instrument or query logs, metrics, and traces.
+- **Incidents**: Activate `incident-response` skill for a production incident and its postmortem.
+- **Outside Providers & Money**: Activate `provider-sdk` skill for any third-party integration and `payments-integrity` for anything that moves money.
+- **Privacy**: Activate `data-privacy` skill when a change touches personal data.
+- **Infrastructure**: Activate `shared-infra-changes` skill before changing live shared infrastructure, or invoke `infra-reviewer` subagent.
+- **Dependencies**: Activate `dependency-upgrade` skill for runtime, framework, and package upgrades.
+- **Decisions, Plans & Docs**: Activate `decision-log` skill to record and propagate a decision, `delivery-board-sync` to keep a task board in step with the plan, `docs-writer` for README, runbook, and API reference, or invoke `spec-reviewer` subagent.
+- **Legacy Rebuilds**: Activate `legacy-parity` skill or invoke `legacy-analyst` subagent.
+- **Shared Checkouts & Unattended Runs**: Activate `parallel-sessions` skill when several agents or people work in one repository, and `autonomous-run` for a long unattended run.
 
 ---
 

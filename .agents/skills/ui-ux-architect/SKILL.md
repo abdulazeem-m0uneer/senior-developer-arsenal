@@ -18,9 +18,11 @@ Activate this skill when:
 - Auditing screens against **WCAG 2.2 AA/AAA** accessibility (contrast, target sizing, keyboard navigation).
 - Eliminating generic AI design slop (emojis in UI, em-dashes in copy, identical stat cards, harsh pure black/white).
 
+*Boundary*: For auditing an existing screen against the gates, use `ui-ux-audit`. For re-render and bundle profiling, use `frontend-audit`. Where an existing interface is frozen and must be reproduced unchanged, use `legacy-parity`.
+
 ---
 
-## 2. Architecture & Design Protocol
+## 2. Step-by-Step Execution Runbook
 
 ### Step 1: Brief Inference (Decide Before Generating)
 Before writing markup or CSS, determine and commit to:
@@ -39,7 +41,7 @@ Ensure all 6 interactive states are implemented:
 
 ---
 
-## 3. Verification Protocol (The 10 Anti-Slop Gates)
+## 3. Verification Protocol
 
 Consult: [The 10 Anti-Slop Verification Gates](./references/anti-slop-gates.md)
 

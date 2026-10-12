@@ -16,6 +16,8 @@ ROOT = Path(__file__).resolve().parent.parent
 AGENTS = ROOT / ".agents"
 DIST = "dist"
 PLUGIN_NAME = "arsenal"
+# Claude Code loads plugin subagents only from the default agents/ directory at the plugin root.
+PLUGIN_AGENTS = "agents"
 MARKETPLACE_NAME = "senior-developer-arsenal"
 OWNER = "Abdulazeem Mohammed"
 DESCRIPTION = (
@@ -452,7 +454,7 @@ def generate(sources):
     for agent in sources["subagents"]:
         for target, (extension, _, _) in AGENT_DESTINATIONS.items():
             out[f"{DIST}/{target}/agents/{agent['name']}{extension}"] = render_agent(target, agent)
-        out[f"{DIST}/claude/agents/{agent['name']}.md"] = render_agent("claude", agent)
+        out[f"{PLUGIN_AGENTS}/{agent['name']}.md"] = render_agent("claude", agent)
     for rule in sources["rules"]:
         out[f"{DIST}/claude/rules/{rule['name']}.md"] = render_rule("claude", rule)
         out[f"{DIST}/cursor/rules/{rule['name']}.mdc"] = render_rule("cursor", rule)
@@ -482,7 +484,6 @@ def generate(sources):
         "name": PLUGIN_NAME, "version": sources["version"], "description": DESCRIPTION,
         "author": {"name": OWNER}, "license": "MIT",
         "skills": ["./.agents/skills/"],
-        "agents": [f"./{DIST}/claude/agents/{agent['name']}.md" for agent in sources["subagents"]],
     }, indent=2) + "\n"
     out[".claude-plugin/marketplace.json"] = json.dumps({
         "name": MARKETPLACE_NAME, "owner": {"name": OWNER}, "description": DESCRIPTION,
@@ -497,7 +498,7 @@ def generate(sources):
 
 
 def generated_roots():
-    return [ROOT / DIST, ROOT / "plugins", ROOT / ".claude-plugin"]
+    return [ROOT / DIST, ROOT / "plugins", ROOT / ".claude-plugin", ROOT / PLUGIN_AGENTS]
 
 
 def existing_generated_files():

@@ -99,6 +99,21 @@ class RepositoryTests(unittest.TestCase):
         self.assertTrue(all(field for row in rows for field in row))
         self.assertTrue(all((ROOT / row[4]).exists() for row in rows if row[4] != "-"))
 
+    def test_plugin_ships_agents_in_the_default_directory_and_marketplace_sources_resolve(self):
+        sources = build.load_sources()
+        outputs = build.generate(sources)
+        plugin = json.loads(outputs[".claude-plugin/plugin.json"])
+        self.assertNotIn("agents", plugin, "a custom agents path is rejected or ignored by the plugin loader")
+        self.assertEqual(plugin["skills"], ["./.agents/skills/"])
+        self.assertTrue((ROOT / plugin["skills"][0]).is_dir())
+        shipped = sorted(name for name in outputs if name.startswith(f"{build.PLUGIN_AGENTS}/"))
+        self.assertEqual(shipped, sorted(f"{build.PLUGIN_AGENTS}/{agent['name']}.md" for agent in sources["subagents"]))
+        marketplace = json.loads(outputs[".claude-plugin/marketplace.json"])
+        for entry in marketplace["plugins"]:
+            with self.subTest(plugin=entry["name"]):
+                manifest = f"{entry['source'][2:]}/.claude-plugin/plugin.json".lstrip("/")
+                self.assertEqual(json.loads(outputs[manifest])["name"], entry["name"])
+
 
 class McpMergeTests(unittest.TestCase):
     def setUp(self):

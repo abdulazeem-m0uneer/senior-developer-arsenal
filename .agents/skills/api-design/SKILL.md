@@ -17,7 +17,7 @@ Activate this skill when:
 - Standardizing error responses with RFC 7807 Problem Details.
 - The user runs the `/api-design` slash command or asks to architect an API contract.
 
-*Boundary*: For end-to-end client-server synchronization, optimistic UI mutations, or OpenAPI type generation, use `fullstack-integration-master`.
+*Boundary*: For end-to-end client-server synchronization, optimistic UI mutations, or OpenAPI type generation, use `fullstack-integration-master`. For the prose of the API reference, use `docs-writer`. For calls to an outside provider, use `provider-sdk`.
 
 ---
 
@@ -42,6 +42,11 @@ Define strict schema validation rules at the HTTP boundary before domain logic e
 ### Step 4: Error Handling & RFC 7807 Format
 Standardize all 4xx/5xx responses to RFC 7807 Problem Details envelopes containing `type`, `title`, `status`, `detail`, and `errors`.
 
+### Step 5: Flow Completeness & Reference Entry
+1. Walk the whole user flow the endpoint belongs to and list every call a real client needs (create, read back, list, change, cancel). Design the missing ones in the same change; a flow that needs a database insert to be usable is incomplete.
+2. Write the reference entry with the endpoint, in the same change: what it does, why it is designed this way, who calls it, each error with its cause, and the business rules it enforces. Never guess a reason; ask or record it as open.
+3. Generate the OpenAPI document from the contracts; never edit it by hand.
+
 ---
 
 ## 3. Verification Protocol
@@ -49,6 +54,7 @@ Standardize all 4xx/5xx responses to RFC 7807 Problem Details envelopes containi
 1. Verify status codes: `201 Created` with `Location` header on resource creation, `204 No Content` on successful deletion.
 2. Verify invalid payload returns `400 Bad Request` with structured RFC 7807 validation error dictionary.
 3. Verify unauthorized requests return `401 Unauthorized` or `403 Forbidden` without leaking internal state.
+4. Verify every new endpoint has a reference entry and a smoke case (see `smoke-test`), and that the generated OpenAPI document shows no drift.
 
 ---
 

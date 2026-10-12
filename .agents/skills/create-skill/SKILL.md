@@ -38,7 +38,7 @@ Consult: [Skill Template](./references/skill-template.md)
    ├── SKILL.md
    └── references/
    ```
-2. Author `SKILL.md` with standard YAML frontmatter (`name`, `description` with third-person summary, explicit triggers, and negative triggers). Wrap `description` in single quotes: it contains `: `, which is invalid in an unquoted YAML scalar.
+2. Author `SKILL.md` with standard YAML frontmatter (`name`, `description` with third-person summary, explicit triggers, and negative triggers) and the four numbered sections of the template. Wrap `description` in single quotes: it contains `: `, which is invalid in an unquoted YAML scalar.
 3. Extract bulky manuals and checklists into `references/<name>.md`.
 
 ### Step 3: Enforce Token-Saving Guardrail
@@ -55,6 +55,7 @@ Mandate Section 4: `⚡ Token-Saving Execution Rule` in the generated `SKILL.md`
    python3 scripts/build.py --validate && python3 scripts/build.py
    ```
 4. Reinstall for the agents in use (`./install.sh --global --target all` or `.\install.ps1 -Global -Target all`) and confirm the skill is discovered.
+5. Add the skill to the indexes that are kept by hand: the README skill list and command table, and the quick reference in `AGENTS.md`.
 
 ---
 

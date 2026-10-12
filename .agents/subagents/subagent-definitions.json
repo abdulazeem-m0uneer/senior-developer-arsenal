@@ -116,6 +116,33 @@
       "enable_write_tools": true,
       "enable_subagent_tools": false,
       "recommended_model": "inherit"
+    },
+    {
+      "name": "spec-reviewer",
+      "role": "Senior Specification Reviewer",
+      "description": "Reviews changes to specifications, decision logs, and delivery plans against the recorded decisions: contradictions, leftover old rules, invented rules, broken structure, and wrong citations. Read-only.",
+      "promptFile": "./prompts/spec-reviewer.md",
+      "enable_write_tools": false,
+      "enable_subagent_tools": false,
+      "recommended_model": "inherit"
+    },
+    {
+      "name": "infra-reviewer",
+      "role": "Principal Infrastructure Reviewer",
+      "description": "Reviews infrastructure changes (infrastructure as code, Kubernetes, CI and deploy workflows, shell, DNS and cloud settings) for what would break the deploy, touch shared resources, open a hole, lose data, or pass the gate while being wrong. Read-only.",
+      "promptFile": "./prompts/infra-reviewer.md",
+      "enable_write_tools": false,
+      "enable_subagent_tools": false,
+      "recommended_model": "pro"
+    },
+    {
+      "name": "legacy-analyst",
+      "role": "Senior Legacy Systems Analyst",
+      "description": "Answers what a legacy system does at a given point from its source, with file and line, who can reach it, edge cases, and what was not found, so a rebuild keeps the behaviour. Read-only.",
+      "promptFile": "./prompts/legacy-analyst.md",
+      "enable_write_tools": false,
+      "enable_subagent_tools": false,
+      "recommended_model": "inherit"
     }
   ]
 }

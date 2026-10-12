@@ -17,7 +17,7 @@ Activate this skill when:
 - Refactoring, renaming, upgrading a dependency, or changing configuration, infrastructure, or a database migration.
 - A diff exists without matching tests, or the user runs the `/test-every-change` slash command.
 
-*Boundary*: For designing a suite, choosing layers and test doubles, or diagnosing flaky tests, use `test-strategy`. For manual test plans and test cases, use `qa-engineer`. For the final completion gate, use `definition-of-done`.
+*Boundary*: For designing a suite, choosing layers and test doubles, or diagnosing flaky tests, use `test-strategy`. For manual test plans and test cases, use `qa-engineer`. For the final completion gate, use `definition-of-done`. For enforcing these rules in one command, use `quality-gate`.
 
 ---
 
@@ -44,6 +44,8 @@ Follow [Bootstrap & Exemptions](./references/bootstrap-and-exemptions.md): set u
 ### Step 5: Prove the Tests and Run Everything
 1. Each new test has been observed failing (code reverted, branch inverted, or fix absent) and then passing.
 2. Run the full suite, not only the new tests. A failure elsewhere is caused by the change until proven otherwise; fix it or report it, never skip or delete the test.
+3. Measure coverage of the changed lines and branches against the base branch, not the global percentage; uncovered changed lines get a test or a written exemption.
+4. Leave no skipped, focused, or todo test behind (`.skip`, `.only`, `[Fact(Skip=...)]`, `@pytest.mark.skip`).
 
 ---
 

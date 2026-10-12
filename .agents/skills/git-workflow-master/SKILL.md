@@ -18,7 +18,7 @@ Activate this skill when:
 - Drafting clean Pull Request descriptions and release notes.
 - Diagnosing regressions using `git bisect`.
 
-*Boundary*: For automated SemVer calculation, release tagging, and changelog drafting, use `git-release`.
+*Boundary*: For automated SemVer calculation, release tagging, and changelog drafting, use `git-release`. For several agents or people working in one checkout, use `parallel-sessions`. For waiting on pull request checks, use `ci-wait`.
 
 ---
 
@@ -26,7 +26,7 @@ Activate this skill when:
 
 ### Step 1: Atomic Conventional Commits
 Consult: [Conventional Commits Reference](./references/conventional-commits.md)
-Format every commit message with type, optional scope, and imperative summary:
+Run `git status` first and stage by explicit path (`git add <path>`); changes that are not yours stay untouched. Format every commit message with type, optional scope, and imperative summary:
 ```bash
 git commit -m "feat(billing): support stripe webhook idempotency keys" -m "Saves processed event IDs into PostgreSQL table with unique constraint to prevent duplicate processing during network retries."
 ```
@@ -57,6 +57,14 @@ git rebase -i HEAD~4
 1. **Never guess**: Inspect both incoming (`THEIRS`) and current (`OURS`) changes.
 2. **Preserve invariants**: Ensure both intended changes coexist cleanly.
 3. **Verify build and tests**: Run tests immediately after conflict resolution before completing the rebase.
+
+### Step 5: Merge the Tested Commit
+1. Never bypass a hook (`--no-verify`) or push directly to a protected branch.
+2. Merge only the commit that was reviewed and that the checks ran on:
+```bash
+gh pr merge <number> --rebase --match-head-commit "$(git rev-parse HEAD)"
+```
+3. After the merge, delete the branch and remove its worktree.
 
 ---
 

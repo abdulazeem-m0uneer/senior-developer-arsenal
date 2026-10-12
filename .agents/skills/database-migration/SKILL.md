@@ -17,7 +17,7 @@ Activate this skill when:
 - Preparing zero-downtime database deployment scripts with rollback companions.
 - The user runs the `/database-migration` slash command.
 
-*Boundary*: For query execution plan analysis (`EXPLAIN ANALYZE`) or deep indexing architecture, use `database-architect`.
+*Boundary*: For query execution plan analysis (`EXPLAIN ANALYZE`) or deep indexing architecture, use `database-architect`. For checking these rules automatically on every change, use `quality-gate`.
 
 ---
 
@@ -33,6 +33,8 @@ Consult: [Migration Safety Reference](./references/migration-safety.md)
 1. Indexes: Use `CREATE INDEX CONCURRENTLY` in PostgreSQL (outside transaction block).
 2. Foreign Keys: Add with `NOT VALID`, then validate in a second step via `VALIDATE CONSTRAINT`.
 3. Column Renames: Use expand/contract pattern (add new column $\to$ dual-write $\to$ backfill $\to$ drop old) rather than renaming active columns.
+4. Ordering: take the migration number or timestamp at commit time; when another branch merged first, renumber rather than edit a migration that already ran anywhere.
+5. Poolers: behind a transaction-mode connection pooler, keep session state (`SET`, advisory locks, prepared statements) out of the application and run migrations on a direct connection.
 
 ### Step 3: Author Companion Rollback Script
 Ensure every migration script has an accompanying idempotent rollback file (`U{timestamp}__rollback.sql` or EF Core `Down()` method).
@@ -44,6 +46,7 @@ Ensure every migration script has an accompanying idempotent rollback file (`U{t
 1. Run migration against a local/staging database instance.
 2. Verify table locks were not held: assert duration $< 500$ms for metadata alterations.
 3. Execute the rollback script and verify schema returns cleanly to initial state without orphaned constraints.
+4. Verify the ORM model and the migrated schema agree (no drift) and that the previous application version still runs against the new schema.
 
 ---
 

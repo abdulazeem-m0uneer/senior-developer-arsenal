@@ -13,5 +13,5 @@ CodeGraph builds an AST-level symbol and relationship graph using Tree-sitter, i
 
 ## Why CodeGraph Drastically Reduces Token Spend
 - **Standard Exploration**: Agent greps for keyword -> gets 45 file matches -> opens 10 full files -> consumes 20,000+ tokens.
-- **CodeGraph**: Agent calls `codegraph_callers("ProcessPayment")` -> gets exact 4-line JSON tree of caller files and line numbers -> consumes < 250 tokens.
+- **CodeGraph**: Agent asks the graph who calls `ProcessPayment` (`codegraph_explore`, or `codegraph_callers` on older servers) -> gets the callers with files and line numbers -> consumes a few hundred tokens.
 - **Net Token Reduction**: Up to **85-90% token reduction** on code navigation and refactoring impact assessment.

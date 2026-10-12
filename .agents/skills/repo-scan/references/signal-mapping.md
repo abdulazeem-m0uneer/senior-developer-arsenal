@@ -14,12 +14,13 @@ The mapping the detector applies, what each signal is detected from, and how to 
 | Python | `pyproject.toml`, `requirements*.txt`, `Pipfile`, `setup.py`, `setup.cfg`, `*.py`; tags `fastapi`, `sqlalchemy`, `django`, `flask` | `python-backend-expert`, `python-audit` | `python-standards` | `python-specialist` |
 | SQL / database | `*.sql`, `*.prisma`, a `migrations` directory (any case, covers EF Core), ORM or driver dependencies, engine names in manifests and compose files | `database-architect`, `database-migration`, `perf-audit` | `database-standards` | `db-architect` |
 | Fullstack (frontend + backend) | Frontend signal plus a Node.js, .NET, or Python signal | `fullstack-integration-master`, `e2e-feature` | `fullstack-standards` | `fullstack-architect` |
-| OpenAPI | `openapi*` or `swagger*` with `.json`, `.yaml`, `.yml` | `api-design`, `fullstack-integration-master` | `fullstack-standards` | `fullstack-architect` |
+| OpenAPI | `openapi*` or `swagger*` with `.json`, `.yaml`, `.yml` | `api-design`, `fullstack-integration-master`, `docs-writer`, `smoke-test` | `fullstack-standards` | `fullstack-architect` |
 | UI styling | `*.css`, `*.scss`, `*.sass`, `*.less`, `tailwind.config.*` | `ui-ux-architect`, `ui-ux-audit` | `ui-ux-standards` | `ui-ux-architect` |
-| Docker | `Dockerfile`, `Dockerfile.*`, `*.dockerfile`, compose files | `devops-ci` | - | `devops-engineer` |
-| CI pipeline | `.github/workflows/`, `.circleci/`, `.gitlab-ci.yml`, `azure-pipelines.yml`, `Jenkinsfile` | `devops-ci`, `git-release` | - | `devops-engineer` |
+| Docker | `Dockerfile`, `Dockerfile.*`, `*.dockerfile`, compose files | `devops-ci`, `dependency-upgrade` | - | `devops-engineer` |
+| CI pipeline | `.github/workflows/`, `.circleci/`, `.gitlab-ci.yml`, `azure-pipelines.yml`, `Jenkinsfile` | `devops-ci`, `git-release`, `ci-wait`, `quality-gate` | - | `devops-engineer` |
+| Infrastructure as code | `*.tf`, `*.tofu`, `*.bicep`, `Pulumi.yaml`, `Chart.yaml`, `kustomization.yaml` | `shared-infra-changes`, `devops-ci` | - | `infra-reviewer`, `devops-engineer` |
 | Tests present | Vitest / Jest / Playwright config, `pytest.ini`, `conftest.py`, `*.test.*`, `*.spec.*`, `test_*`, `*Tests.cs`, test dependencies, test directories | `test-strategy`, `qa-engineer` | - | `test-engineer`, `qa-engineer` |
-| Git repository | `.git` at the scanned root | `git-workflow-master`, `git-release` | `git-standards` | - |
+| Git repository | `.git` at the scanned root | `git-workflow-master`, `git-release`, `parallel-sessions` | `git-standards` | - |
 
 Always applicable, whatever is detected:
 
@@ -41,6 +42,15 @@ Recommend these from the refinement reads, not from file markers:
 | `codegraph` | A code-graph index is configured for the repository, or the codebase is large enough that symbol queries beat text search |
 | `agent-memory` | A long-term memory server is configured for the agent |
 | `create-skill` | The repository has recurring workflows that no existing skill covers |
+| `provider-sdk` | The code calls an outside provider (payments, messaging, maps, identity) directly from business logic |
+| `payments-integrity` | Charges, refunds, payouts, wallet balances, or gateway webhooks are present |
+| `data-privacy` | Personal data is stored, logged, exported, or sent to an outside service |
+| `observability`, `incident-response` | A deployed service with users; logs, metrics, or an on-call duty exist or are missing |
+| `smoke-test` | A deployed API with no check that runs after each release |
+| `decision-log`, `delivery-board-sync` | Decisions or a delivery plan live in documents or a tracker that the work must stay in step with |
+| `legacy-parity` | The repository rebuilds or migrates an older system whose behaviour must be kept |
+| `autonomous-run` | The agent is asked to work unattended for hours with authority to merge |
+| `docs-writer` | README, runbooks, or API reference are missing or out of date |
 
 ---
 
@@ -56,6 +66,7 @@ Recommend these from the refinement reads, not from file markers:
 | Fullstack | How the frontend calls the backend | Shared types or generated client; same repository or only co-located |
 | OpenAPI | The spec header | Version; hand-written or generated; whether clients are generated from it |
 | Docker / CI | The Dockerfile and one pipeline file | What is built, tested, and deployed; missing test or lint stage |
+| Infrastructure as code | The root module or chart values; the state backend | Which live accounts it manages; whether other systems share them; how a plan is reviewed before apply |
 | Tests present | The test config and one test file | Runner, real coverage versus a placeholder, the single command that runs the suite |
 
 Corrections to apply:
