@@ -17,7 +17,7 @@ Activate this skill when:
 - Drafting structured release notes and changelog summaries.
 - The user runs the `/git-release` slash command.
 
-*Boundary*: For interactive git rebasing, commit squashing, or resolving git merge conflicts, use `git-workflow-master`.
+*Boundary*: For interactive git rebasing, commit squashing, or resolving git merge conflicts, use `git-workflow-master`. For pipelines and deploy strategy, use `devops-ci`. For the check after a deploy, use `smoke-test`.
 
 ---
 
@@ -47,6 +47,11 @@ Group commits into structured sections: `Features`, `Bug Fixes`, `Performance Im
 git tag -a vX.Y.Z -m "Release vX.Y.Z"
 ```
 
+### Step 5: Promote & Confirm the Deploy
+1. Where environments are branches, release by a promotion pull request that fast-forwards the target; list what is promoted, the migrations, the new configuration keys, and any breaking API change.
+2. Promote the artifact that was tested; never rebuild it for the next environment.
+3. A deploy is finished when the running service answers with the released commit, not when the pipeline turns green.
+
 ---
 
 ## 3. Verification Protocol
@@ -54,6 +59,7 @@ git tag -a vX.Y.Z -m "Release vX.Y.Z"
 1. Assert all tests pass with zero failures.
 2. Assert calculated SemVer adheres strictly to Conventional Commits rules.
 3. Verify git tag exists: `git tag -l "vX.Y.Z"`.
+4. Verify the deployed version: `curl -fsS https://<host>/version` returns the released commit.
 
 ---
 

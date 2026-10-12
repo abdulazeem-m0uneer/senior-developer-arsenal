@@ -20,7 +20,7 @@ This directory contains definitions and specialized prompts for domain-focused s
    - **Focus**: Non-blocking event loop, streams/backpressure, worker threads, Fastify/Express/NestJS, Zod validation.
 5. **`security-auditor`** (`prompts/security-auditor.md`):
    - **Role**: Application Security Auditor.
-   - **Focus**: OWASP Top 10, SQLi, BOLA/IDOR, prototype pollution, secrets detection.
+   - **Focus**: OWASP Top 10, SQLi, BOLA/IDOR, prototype pollution, secrets detection, personal-data flow to logs and outside services.
 6. **`frontend-architect`** (`prompts/frontend-architect.md`):
    - **Role**: Senior Frontend Architect.
    - **Focus**: React 18/19 (RSC, Zustand), Angular 17/18/19 (Signals, OnPush, @defer), a11y.
@@ -45,6 +45,15 @@ This directory contains definitions and specialized prompts for domain-focused s
 13. **`qa-engineer`** (`prompts/qa-engineer.md`):
    - **Role**: Senior QA Engineer.
    - **Focus**: Acceptance criteria, test plans, exploratory and regression testing, bug reports, release sign-off.
+14. **`spec-reviewer`** (`prompts/spec-reviewer.md`):
+   - **Role**: Senior Specification Reviewer.
+   - **Focus**: Document changes against the decision log: contradictions, leftover old rules, invented rules, broken structure, wrong citations. Read-only.
+15. **`infra-reviewer`** (`prompts/infra-reviewer.md`):
+   - **Role**: Principal Infrastructure Reviewer.
+   - **Focus**: Infrastructure as code, Kubernetes, CI and deploy workflows: broken first apply, shared resources touched, holes, lockout and data loss, checks that do not bite. Read-only.
+16. **`legacy-analyst`** (`prompts/legacy-analyst.md`):
+   - **Role**: Senior Legacy Systems Analyst.
+   - **Focus**: What the legacy system does, with `file:line`, who can reach it, edge cases, and what was not found. Read-only.
 
 ---
 
@@ -54,7 +63,7 @@ This directory contains definitions and specialized prompts for domain-focused s
 
 | Agent | Generated file | Installed to |
 | :--- | :--- | :--- |
-| Claude Code | `dist/claude/agents/<name>.md` | loaded by the `arsenal` plugin |
+| Claude Code | `agents/<name>.md` | loaded by the `arsenal` plugin |
 | Codex CLI | `dist/codex/agents/<name>.toml` | `.codex/agents/` |
 | OpenCode | `dist/opencode/agents/<name>.md` | `.opencode/agents/` |
 | Cursor | `dist/cursor/agents/<name>.md` | `.cursor/agents/` |

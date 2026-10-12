@@ -16,7 +16,7 @@ Activate this skill when:
 - Ensuring end-to-end type safety across API boundaries with optimistic UI rollbacks.
 - The user runs the `/e2e-feature` slash command.
 
-*Boundary*: For standalone backend API contracts without frontend UI, use `api-design`. For standalone design system tokens, use `ui-ux-architect`.
+*Boundary*: For standalone backend API contracts without frontend UI, use `api-design`. For standalone design system tokens, use `ui-ux-architect`. For the tests each layer needs, use `test-every-change`.
 
 ---
 
@@ -31,6 +31,8 @@ Consult: [Vertical Slice Architecture Reference](./references/vertical-slice.md)
 1. Define request/response DTOs with boundary validation (FluentValidation / Zod / Pydantic).
 2. Implement business logic handler returning domain Result types.
 3. Expose REST/RPC route with proper HTTP status codes and RFC 7807 error envelopes.
+4. Build every endpoint the whole user flow needs, not only the one the screen calls first. Test data is created through the API; a direct database insert is allowed only to force a race or a corrupt state.
+5. Write the API reference entry for each endpoint in the same change.
 
 ### Step 3: Frontend Client Integration & UI View
 1. Synchronize API types into frontend client.
@@ -44,7 +46,8 @@ Consult: [Vertical Slice Architecture Reference](./references/vertical-slice.md)
 
 1. Run backend integration tests asserting database persistence and validation boundaries.
 2. Run frontend component tests asserting loading spinner, error alert, and successful optimistic update.
-3. Output single-line verification summary: `E2E Feature verified across DB -> API -> UI`.
+3. Walk the complete flow through the real routes with data created by the API, including one error path.
+4. Output single-line verification summary: `E2E Feature verified across DB -> API -> UI`.
 
 ---
 

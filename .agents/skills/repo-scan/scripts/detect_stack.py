@@ -21,6 +21,8 @@ SOURCE_SUFFIXES = (".ts", ".tsx", ".js", ".jsx", ".cs", ".py", ".sql", ".css", "
 MANIFEST_RE = re.compile(r"^(package\.json|pyproject\.toml|pipfile|setup\.(py|cfg)|requirements.*\.txt|.*\.csproj)$")
 COMPOSE_NAMES = ("docker-compose.yml", "docker-compose.yaml", "compose.yml", "compose.yaml")
 DOCKERFILE_RE = re.compile(r"^dockerfile(\..+)?$|\.dockerfile$")
+INFRA_NAMES = ("pulumi.yaml", "pulumi.yml", "chart.yaml", "kustomization.yaml", "kustomization.yml")
+INFRA_SUFFIXES = (".tf", ".tofu", ".bicep")
 TEST_FILE_RE = re.compile(
     r"^(vitest|jest|playwright)\.config\.|^(pytest\.ini|conftest\.py)$|\.(test|spec)\.|^test_|tests\.cs$")
 TEST_DIRS = ("test", "tests", "__tests__", "spec", "specs", "e2e")
@@ -47,12 +49,14 @@ RECOMMENDATIONS = {
                  "db-architect"),
     "fullstack": ("Fullstack (frontend + backend)", "fullstack-integration-master e2e-feature",
                   "fullstack-standards", "fullstack-architect"),
-    "openapi": ("OpenAPI", "api-design fullstack-integration-master", "fullstack-standards", "fullstack-architect"),
+    "openapi": ("OpenAPI", "api-design fullstack-integration-master docs-writer smoke-test", "fullstack-standards",
+                "fullstack-architect"),
     "styling": ("UI styling", "ui-ux-architect ui-ux-audit", "ui-ux-standards", "ui-ux-architect"),
-    "docker": ("Docker", "devops-ci", "", "devops-engineer"),
-    "ci": ("CI pipeline", "devops-ci git-release", "", "devops-engineer"),
+    "docker": ("Docker", "devops-ci dependency-upgrade", "", "devops-engineer"),
+    "ci": ("CI pipeline", "devops-ci git-release ci-wait quality-gate", "", "devops-engineer"),
+    "infra": ("Infrastructure as code", "shared-infra-changes devops-ci", "", "infra-reviewer devops-engineer"),
     "tests": ("Tests present", "test-strategy qa-engineer", "", "test-engineer qa-engineer"),
-    "git": ("Git repository", "git-workflow-master git-release", "git-standards", ""),
+    "git": ("Git repository", "git-workflow-master git-release parallel-sessions", "git-standards", ""),
 }
 ALWAYS_APPLICABLE = (
     "code-review deep-review test-every-change definition-of-done investigate git-workflow-master security-audit",
@@ -198,6 +202,10 @@ def detect_ci(repo):
     return evidence(workflows + repo.named(".gitlab-ci.yml", "azure-pipelines.yml", "jenkinsfile"))
 
 
+def detect_infra(repo):
+    return evidence(repo.suffixed(*INFRA_SUFFIXES) + repo.named(*INFRA_NAMES))
+
+
 def detect_tests(repo):
     return evidence(repo.matching(TEST_FILE_RE) + repo.with_dep(*NODE_TEST_DEPS)
                     + repo.mentioning("pytest", "xunit", "nunit") + repo.in_dir(*TEST_DIRS))
@@ -210,7 +218,8 @@ def detect_git(repo):
 DETECTORS = {
     "node": detect_node, "frontend": detect_frontend, "dotnet": detect_dotnet, "python": detect_python,
     "database": detect_database, "fullstack": detect_fullstack, "openapi": detect_openapi,
-    "styling": detect_styling, "docker": detect_docker, "ci": detect_ci, "tests": detect_tests, "git": detect_git,
+    "styling": detect_styling, "docker": detect_docker, "ci": detect_ci, "infra": detect_infra, "tests": detect_tests,
+    "git": detect_git,
 }
 
 

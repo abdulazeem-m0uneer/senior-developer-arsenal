@@ -48,6 +48,11 @@ Use the commands and evidence rules in [Evidence Commands & Verdict Template](./
 - Any `FAIL` or `UNVERIFIED` item means `NOT DONE`. List the remaining work as concrete actions.
 - After fixes, re-verify the failed items and every item the fix could have affected, then reissue the table. Never carry a `PASS` forward across a code change without re-running its command.
 
+### Step 5: Review in Loops Until It Clears
+1. Re-read the whole diff as a reviewer looking for a reason to reject it, not as its author.
+2. The loop ends only when all four hold at once: no open issue (correctness, security, performance, maintainability), no unhandled edge case, no known bug or silenced error, and CI green on the final commit.
+3. Every fix reopens the loop; the new diff is reviewed and verified again.
+
 ---
 
 ## 3. Verification Protocol

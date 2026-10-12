@@ -28,6 +28,7 @@ Activate this skill when:
 2. Map the structure before reading bodies: entry points, callers and callees of changed symbols, data stores touched, external calls. Prefer a symbol or call-graph index when one is available; otherwise use your search tool.
 3. Read the intent: ticket, description, commit messages, existing tests. Record what the code is supposed to do.
 4. Establish the baseline from your shell: build, lint, type-check, and test results before any judgement.
+5. Record the commit hash under review; every round names the hash it read.
 
 ### Step 2: Run the Independent Passes
 Run each pass in [Review Passes](./references/review-passes.md) separately, over the whole scope, looking for one class of problem at a time: correctness, security, data integrity, concurrency, performance, tests, API contracts, config and infrastructure, docs. Log each suspicion as a candidate with `file:line`; do not judge severity yet. When independent reviewers are available, give each pass to a different one with the code only, never with conclusions from another pass.
@@ -61,7 +62,7 @@ After fixes land, verify each fix against its original proof, then re-run every 
 | 1 | [Blocker] | Data integrity | `src/orders/refund.ts:88` | Refund and stock update are not in one transaction | Killing the process after line 88 leaves the refund without restock; reproduced with `refund.crash.spec.ts` | Wrap lines 80-97 in a single transaction |
 | 2 | [High] | Concurrency | `src/cart/cart.service.ts:41` | Read-modify-write without a version check | Two parallel requests both pass the check at line 39 | Add optimistic concurrency on `version` |
 
-Close with: passes run, files reviewed, candidates raised / confirmed / refuted / unproven, and the loop iteration number.
+Close with: passes run, files reviewed, candidates raised / confirmed / refuted / unproven, the loop iteration number, the commit hash read, and what was not checked.
 
 ---
 

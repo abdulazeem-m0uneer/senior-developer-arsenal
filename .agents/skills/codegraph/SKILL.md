@@ -1,47 +1,68 @@
 ---
 name: codegraph
-description: 'Fast AST-based structural code intelligence via CodeGraph MCP. Replaces expensive file reading, broad greps, and blind codebase exploration with precise symbol lookups, call hierarchies, caller/callee trees, and blast radius impact analysis. Triggers on: "codegraph", "code graph", "find callers", "find callees", "blast radius", "symbol definition", "who calls", "call hierarchy". Do not use for non-code config files or when no CodeGraph MCP server is connected.'
+description: 'Fast AST-based structural code intelligence via CodeGraph MCP. Replaces expensive file reading, broad greps, and blind codebase exploration with precise symbol lookups, call paths, caller/callee trees, and blast radius impact analysis. Use when the user asks who calls a symbol, how a flow works, or what a change would break, or runs /codegraph. Triggers on: "codegraph", "code graph", "find callers", "find callees", "blast radius", "symbol definition", "who calls", "call hierarchy", "/codegraph". Do not use for non-code config files or when no CodeGraph MCP server is connected.'
 ---
 
-# CodeGraph Intelligence Skill (`codegraph`)
+# CodeGraph Structural Navigation Procedure
 
-This skill integrates **CodeGraph** AST knowledge graph queries to eliminate the repetitive "grep-read-scan" loop that wastes thousands of tokens.
-
-## 🎯 When to Use
-- **Tracing Call Hierarchies**: Finding all functions/methods that call a specific symbol (`codegraph_callers`) or all functions invoked by a method (`codegraph_callees`).
-- **Refactoring & Blast Radius Analysis**: Checking all downstream dependents before modifying, renaming, or deleting an interface, class, or endpoint (`codegraph_impact`).
-- **Symbol Lookup & Definitions**: Jumping directly to symbol definitions without full-text grep scans across directories (`codegraph_search`, `codegraph_node`).
-- **New Session Codebase Map**: Answering architectural questions about how components interact in a single query rather than reading dozens of files.
-
-## 🚫 When NOT to Use
-- Reading non-code configuration files (e.g. `yaml`, `json`, `ini`, `md`).
-- Editing or modifying code (use surgical code edit tools).
-- Natural language conceptual search without symbols (use `recall` or semantic search).
+This skill guides the agent through answering structural questions about a codebase from the CodeGraph index instead of a grep-and-read loop.
 
 ---
 
-## 🛠️ MCP Tools & Capabilities
+## 1. When to Use This Skill
 
-When CodeGraph MCP is connected to the session, the agent uses these high-precision tools:
+Activate this skill when:
+- Tracing who calls a symbol, what a function calls, or how one symbol reaches another.
+- Checking the blast radius before modifying, renaming, or deleting an interface, class, or endpoint.
+- Jumping to a definition, signature, or source without scanning directories.
+- Mapping an unfamiliar area at the start of a session.
+- The user runs the `/codegraph` slash command.
 
-| MCP Tool | Purpose | Token Saving vs Grep |
-| :--- | :--- | :---: |
-| `codegraph_callers` | Returns direct callers of a given symbol with file:line pointers. | ~80% |
-| `codegraph_callees` | Returns all functions/APIs invoked inside a function body. | ~75% |
-| `codegraph_impact` | Computes transitive dependency blast radius before refactoring. | ~90% |
-| `codegraph_search` | Finds a symbol by name with kind, location, and signature. | ~70% |
-| `codegraph_node` | Returns one symbol's signature, source, and docstring. | ~70% |
-| `codegraph_explore` | Returns the source of several related symbols in one capped call. | ~85% |
-| `codegraph_files` | Lists indexed files under a path. | ~60% |
-| `codegraph_status` | Reports index health. | n/a |
+*Boundary*: For configuration, documentation, and literal text (log messages, comments), use your search tool. For conceptual recall with no symbol name, use `agent-memory`.
 
 ---
 
-## 📋 Session Execution Protocol
+## 2. Step-by-Step Execution Runbook
 
-1. **Graph-First Navigation**: Whenever asked where a method is called, how a service works, or what depends on a class, **ALWAYS query CodeGraph tools first**. Do not run raw `grep` or recursively view files across directories.
-2. **Surgical Verification**: Query the graph, retrieve the exact `file.cs:L45-L60` pointer, and view only the specific line slice.
-3. **Auto-Sync / Indexing**: If CodeGraph is not yet initialized in the project root:
+### Step 1: Confirm the Index
+Consult: [CodeGraph Architecture & Reference Guide](./references/codegraph-guide.md)
+1. List the CodeGraph tools connected to the session; tool names differ between server versions, so use the ones that are present.
+2. If the server reports that the project is not initialised, build the index once from the project root:
    ```bash
    npx @colbymchenry/codegraph init -i
    ```
+
+### Step 2: Ask the Graph First
+1. Current servers expose one tool, `codegraph_explore`: pass a question or a list of symbol and file names; it returns the source of the relevant symbols with line numbers, the call path among them, and what depends on them.
+2. Older servers expose separate tools; map the question to the tool:
+
+| Question | Tool |
+| :--- | :--- |
+| Where is it defined, what is its signature | `codegraph_search`, `codegraph_node` |
+| Who calls it, what does it call | `codegraph_callers`, `codegraph_callees` |
+| What breaks if it changes | `codegraph_impact` |
+| Several related symbols at once | `codegraph_explore` |
+| Which files are indexed, is the index healthy | `codegraph_files`, `codegraph_status` |
+
+3. For a flow question, name the symbols at both ends of the flow in one query rather than walking it call by call.
+
+### Step 3: Act on the Result
+1. Treat returned source as already read; edit from it without reopening the file.
+2. Open a file only for a detail the graph did not return, at the cited lines.
+3. After writing a file, wait a moment before querying it again; the index trails writes by about a second.
+
+---
+
+## 3. Verification Protocol
+
+1. Every structural claim in the answer cites `file:line` taken from a graph result.
+2. Before a rename or a signature change, the list of dependents was produced and each one is covered by the change.
+3. No broad recursive grep or whole-file read was used for a question the graph answers.
+
+---
+
+## 4. ⚡ Token-Saving Execution Rule
+
+- **One Call, Many Symbols**: Put every symbol of interest in a single query instead of one call per symbol.
+- **No Re-Verification**: Do not repeat a graph result with a grep; the index comes from a full parse.
+- **Pointers, Not Dumps**: Answer with `file:line` and the decisive lines only.

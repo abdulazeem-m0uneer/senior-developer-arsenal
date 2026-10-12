@@ -1,4 +1,4 @@
-# References for agent-memory skill
+# Hindsight Memory Architecture
 
 ## Hindsight Biomimetic Architecture
 - **World Facts**: Objective system truths (e.g. "We run PostgreSQL 16 on AWS Aurora").

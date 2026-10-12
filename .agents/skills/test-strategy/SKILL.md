@@ -34,6 +34,7 @@ Consult: [Test Layering & Test Doubles](./references/test-layering-and-doubles.m
 - **Unit** (majority): pure domain rules, calculations, state machines, mappers, validators. No I/O, milliseconds each.
 - **Integration**: repositories against a real database engine, HTTP handlers through the real routing and validation stack, message consumers. Replace only third-party systems you do not own.
 - **End-to-end** (few): critical user journeys only (sign-in, checkout, core CRUD), driven through the browser with Playwright.
+- **Smoke** (after every deploy): the journeys again, against the running environment, with data the suite creates through the API; see `smoke-test`.
 - Push every case to the lowest layer that can prove it.
 
 ### Step 3: Enumerate Cases Before Writing
@@ -47,6 +48,7 @@ Consult: [Edge Cases & Flakiness](./references/edge-cases-and-flakiness.md)
 2. Assert on observable outcomes (return value, persisted state, emitted event, HTTP response), not on private calls.
 3. Control time, randomness, and network explicitly; never sleep for a fixed duration.
 4. Each test creates its own data and leaves no shared state behind.
+5. API tests go through the real routes and create their preconditions through the API; a direct database insert is kept for states the API cannot produce (a race, corrupt data).
 
 ### Step 5: Diagnose Flaky or Slow Tests
 Reproduce by repetition and order shuffling, classify the cause (timing, shared state, order dependence, real network, unawaited async), then fix the cause. Do not add retries or longer timeouts as the fix.

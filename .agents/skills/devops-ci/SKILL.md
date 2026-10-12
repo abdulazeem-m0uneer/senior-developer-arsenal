@@ -18,7 +18,7 @@ Activate this skill when:
 - Adding health checks, graceful shutdown, or environment-driven configuration.
 - The user runs the `/devops-ci` slash command.
 
-*Boundary*: For semantic version bumps, tags, and changelogs, use `git-release`. For slow queries or runtime latency inside the application, use `perf-audit`.
+*Boundary*: For semantic version bumps, tags, and changelogs, use `git-release`. For slow queries or runtime latency inside the application, use `perf-audit`. For waiting on a run and classifying its failure, use `ci-wait`. For changes to live shared infrastructure, use `shared-infra-changes`.
 
 ---
 
@@ -43,6 +43,8 @@ Consult: [Pipeline & Deployment Reference](./references/pipeline-and-deploy.md)
 3. Cache dependencies keyed on the lockfile hash; cache image layers with the `gha` cache backend.
 4. Add `concurrency` to cancel superseded pull request runs and `timeout-minutes` on every job.
 5. Build the image once, tag it with the commit SHA, and promote that same artifact through environments.
+6. Make one aggregate job the only required check, so jobs can be added, split, or sharded without editing branch protection. Never cancel a run on a protected branch.
+7. Pull base images through a registry mirror or an authenticated login so rate limits do not fail the build.
 
 ### Step 4: Secrets & Configuration
 1. Prefer OIDC federation to the cloud provider over long-lived keys; scope remaining secrets to environments with required reviewers.
