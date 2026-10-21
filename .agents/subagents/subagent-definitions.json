@@ -10,6 +10,15 @@
       "recommended_model": "pro"
     },
     {
+      "name": "code-explorer",
+      "role": "Read-Only Repository Explorer",
+      "description": "Cheap read-only localization: answers where code lives (cold-start orientation, cross-file search, failed direct search) with path:line citations only, keeping its reads out of the caller's context. Skip when the exact file or symbol is already known.",
+      "promptFile": "./prompts/code-explorer.md",
+      "enable_write_tools": false,
+      "enable_subagent_tools": false,
+      "recommended_model": "fast"
+    },
+    {
       "name": "db-architect",
       "role": "Senior Database Architect",
       "description": "Designs schemas, optimizes queries (EXPLAIN ANALYZE), builds indexing strategies, and verifies zero-downtime migrations across PostgreSQL, MSSQL, and SQLite.",

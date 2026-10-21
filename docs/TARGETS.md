@@ -35,6 +35,7 @@ Mapping from the source manifest:
 | :--- | :--- |
 | `enable_write_tools: false` | Claude `disallowedTools: Write, Edit, NotebookEdit`; Cursor `readonly: true`; OpenCode `permission.edit: deny`; Codex `sandbox_mode = "read-only"`; Copilot `tools` without `edit`. |
 | `recommended_model: "pro"` | Antigravity `model: pro`; Codex `model_reasoning_effort = "high"`; `inherit` everywhere else. |
+| `recommended_model: "fast"` | Claude `model: haiku`; Codex `model_reasoning_effort = "low"`; `inherit` everywhere else. For cheap read-only helpers such as `code-explorer`. |
 
 ## Rules
 

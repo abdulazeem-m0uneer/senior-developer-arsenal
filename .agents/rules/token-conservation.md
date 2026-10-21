@@ -1,56 +1,74 @@
 ---
 trigger: always_on
-description: 'Token conservation, surgical diffs, and skill or subagent delegation protocol.'
+description: 'Token economy: zero fluff, surgical diffs, dense reports, tool read/write discipline, mandatory skill delegation.'
 ---
 
 # Token Conservation & Context Engineering Protocol
 
-This rule enforces strict token economy across all agent responses, code generations, code reviews, and reasoning steps. The user is strictly focused on minimizing token consumption while maintaining senior engineering rigor.
+Strict token economy on every response, generation, review, reasoning step. Senior rigor stays.
 
 ---
 
 ## 1. Zero Conversational Fluff
 
-- **Eliminate Preambles & Pleasantries**: Never output introductory filler (e.g., "Certainly!", "Sure thing", "I would be happy to help", "As a senior engineer...").
-- **Direct Action**: Start responses immediately with the finding, execution command, or code diff.
-- **Omit Conversational Outros**: Do not conclude with generic sign-offs (e.g., "Let me know if you need anything else!").
+- No preamble ("Certainly", "Happy to help", "As a senior engineer").
+- Start with finding, command, or diff.
+- No outro ("Let me know if...").
 
 ---
 
 ## 2. Surgical Code Output & Minimal Diffs
 
-- **No Full-File Dumps**: Never re-print entire files (especially unchanged files or files over 50 lines).
-- **Targeted Diffs**: Show only the changed function, block, or statement with minimal surrounding context (1–3 lines).
-- **Symbolic References**: Use file path and line pointers (`file.ts:L45-L52`) rather than copy-pasting the existing code block before modifying it.
-- **No Echoing Artifacts**: When creating or modifying a file with filesystem tools, do not repeat the full file contents in the conversational text. Summarize the change in 1–2 bullet points and provide the clickable file link.
+- Never re-print whole files (esp. unchanged or >50 lines).
+- Show only changed function/block, 1–3 lines context.
+- Point with `file.ts:L45-L52` instead of pasting existing code.
+- File created/edited via tool → do not echo contents in chat. 1–2 bullets + file link.
 
 ---
 
-## 3. High Information Density
+## 3. Tool Read/Write Discipline (input tokens)
 
-- **Format in Compact Tables & Keyed Lists**: Use dense markdown formats instead of multi-paragraph prose:
-  - Format: `[Severity] path/file:L10 - Issue: <brief issue> -> Fix: <brief fix>`
-- **Progressive Disclosure**:
-  - Do NOT preload or quote reference manuals (`references/*.md`) unless strictly requested or needed for a complex decision.
-  - Rely on index pointers and on-demand reading.
+Input tokens dominate cost. Every tool result lands in context; keep results small.
+
+**Read**
+- Locate before read: `grep -n` / glob / CodeGraph → read only `offset`+`limit` around hits (≤120 lines per read). Never whole file >200 lines for exploration.
+- Never re-read file after own edit; tool error would have told you.
+- Never `cat`, `find`, `ls -R` dumps; `head`/`tail`/`wc` or targeted grep.
+- Cold-start or cross-file localization (where does X live?) → delegate to `code-explorer` subagent; it returns `path:L-L` citations only, its reads stay out of main context.
+- Reference manuals (`references/*.md`) only on demand for complex decision.
+- Build/test output: run quiet (`--quiet`, `-q`, `2>&1 | tail -30`); print only failing lines.
+
+**Write**
+- Existing file → `Edit` (targeted), not `Write` (whole file).
+- Batch related edits to one file in one call where tool allows.
+- No scratch logs, dumps, or generated artifacts left in repo; scratch dir only.
+
+**Context**
+- Do not restate tool output back to user; summarize in one line with pointer.
+- Long task → `handoff` skill before context fills; next session reads one doc, not history.
+- Memory files (`CLAUDE.md`, `AGENTS.md`, rules) stay compressed: headings + terse bullets, code/paths/commands verbatim.
 
 ---
 
-## 4. Terse Verification & Reporting
+## 4. High Information Density
 
-- **Test & Build Results**: Report build/test outcomes in a single status line:
-  - `✅ Build passed (0 errors, 0 warnings). 14/14 tests green.`
-  - Do not paste hundreds of lines of successful build logs. Only print relevant error lines when a build or test fails.
-- **Concise Reasoning**: Keep chain-of-thought and explanations dense, technical, and free of redundant restatements.
+- Compact tables, keyed lists; no multi-paragraph prose.
+- Finding format: `[Severity] path/file:L10 - Issue: <brief> -> Fix: <brief>`
+- Progressive disclosure: index pointers + on-demand reading.
 
 ---
 
-## 5. Mandatory Session Skill & Subagent Delegation
+## 5. Terse Verification & Reporting
 
-In any new session within an Arsenal-enabled project:
-- **Immediate Skill Activation**: For every incoming technical task (code review, bug diagnosis, architecture design, migration, performance profiling, UI/UX audit, feature implementation), the agent **MUST immediately activate the corresponding skill (`.agents/skills/*`) or delegate to its dedicated subagent**.
-- **Context Economy via Delegation**: Never attempt generic, multi-turn manual prompt flailing. Specialized skills and subagents contain tailored runbooks, negative triggers, and compact references that enforce token limits and eliminate hallucinated trial-and-error.
-- **CodeGraph AST Navigation When Connected**: If a CodeGraph MCP server is connected, before reading entire files or running broad recursive greps across folders, the agent **MUST query CodeGraph (`codegraph_explore`, or `codegraph_search`, `codegraph_callers`, `codegraph_callees`, `codegraph_impact` on older servers)**. Otherwise use targeted search and partial reads. Jump directly to the exact target lines (`file.cs:L45-L60`) rather than reading whole files into the context window.
-- **Biomimetic Memory Check**: Before executing architecture decisions or refactorings, query previous project memory observations (`agent-memory` / `recall`) to prevent rediscovering established context.
+- Build/test result = one status line: `✅ Build passed (0 errors, 0 warnings). 14/14 tests green.`
+- No pasting success logs; only relevant error lines on failure.
+- Reasoning dense, technical, no restatement.
 
+---
 
+## 6. Mandatory Skill & Subagent Delegation
+
+Any new session in an Arsenal project:
+- **Immediate skill activation**: every technical task (review, bug, architecture, migration, perf, UI/UX audit, feature) → activate matching skill (`.agents/skills/*`) or delegate to its subagent. No multi-turn manual flailing.
+- **CodeGraph first when connected**: before reading whole files or broad recursive greps, query CodeGraph (`codegraph_explore`, or `codegraph_search`, `codegraph_callers`, `codegraph_callees`, `codegraph_impact` on older servers). Else targeted search + partial reads. Jump to `file.cs:L45-L60`.
+- **Memory check**: before architecture decisions or refactors, query `agent-memory` / `recall`; do not rediscover known context.

@@ -213,7 +213,7 @@ def load_subagents():
         seen.add(name)
         if not entry.get("description"):
             raise SourceError(f"subagent-definitions.json: '{name}' has no description")
-        if entry.get("recommended_model") not in ("pro", "inherit"):
+        if entry.get("recommended_model") not in ("pro", "inherit", "fast"):
             raise SourceError(f"subagent-definitions.json: '{name}' has an unknown recommended_model")
         if not isinstance(entry.get("enable_write_tools"), bool):
             raise SourceError(f"subagent-definitions.json: '{name}' enable_write_tools must be a boolean")
@@ -226,6 +226,7 @@ def load_subagents():
         subagents.append({
             "name": name, "description": entry["description"], "body": body,
             "writes": entry["enable_write_tools"], "pro": entry["recommended_model"] == "pro",
+            "fast": entry["recommended_model"] == "fast",
         })
     return subagents
 
@@ -279,8 +280,9 @@ def markdown_agent(fields, body):
 
 def render_agent(target, agent):
     name, description = yaml_str(agent["name"]), yaml_str(agent["description"])
+    fast = agent.get("fast", False)
     if target == "claude":
-        fields = [("name", name), ("description", description), ("model", "inherit")]
+        fields = [("name", name), ("description", description), ("model", "haiku" if fast else "inherit")]
         if not agent["writes"]:
             fields.append(("disallowedTools", "Write, Edit, NotebookEdit"))
     elif target == "cursor":
@@ -304,6 +306,8 @@ def render_agent(target, agent):
                  f"name = {name}", f"description = {description}"]
         if agent["pro"]:
             lines.append('model_reasoning_effort = "high"')
+        elif fast:
+            lines.append('model_reasoning_effort = "low"')
         if not agent["writes"]:
             lines.append('sandbox_mode = "read-only"')
         lines.append(f"developer_instructions = {yaml_str(agent['body'])}")

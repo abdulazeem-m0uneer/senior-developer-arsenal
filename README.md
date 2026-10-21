@@ -31,9 +31,9 @@ GitHub offers no trending API, so [`scripts/trending_rank.py`](scripts/trending_
 
 | Component | Quantity | Purpose |
 | :--- | :---: | :--- |
-| **Rules** | 12 | Enforce senior engineering standards: SOLID, a 1000-line file cap, mandatory tests with every change, plus Python, Node.js, C#, Frontend, UI/UX, Databases, Git, Token Frugality, and Defensive Epistemology. |
-| **Specialized Skills** | 46 | Actionable runbooks following the Agent Skills standard (`SKILL.md` + progressive `references/`) with slash commands and negative triggers. |
-| **Autonomous Subagents** | 16 | Dedicated personas (`code-reviewer`, `qa-engineer`, `test-engineer`, `security-auditor`, `devops-engineer`, `epistemic-debugger`, `spec-reviewer`, `infra-reviewer`, `legacy-analyst`, and stack specialists). |
+| **Rules** | 13 | Enforce senior engineering standards: SOLID, a 1000-line file cap, mandatory tests with every change, minimal-change ladder, plus Python, Node.js, C#, Frontend, UI/UX, Databases, Git, Token Frugality, and Defensive Epistemology. |
+| **Specialized Skills** | 47 | Actionable runbooks following the Agent Skills standard (`SKILL.md` + progressive `references/`) with slash commands and negative triggers. |
+| **Autonomous Subagents** | 17 | Dedicated personas (`code-reviewer`, `code-explorer`, `qa-engineer`, `test-engineer`, `security-auditor`, `devops-engineer`, `epistemic-debugger`, `spec-reviewer`, `infra-reviewer`, `legacy-analyst`, and stack specialists). |
 | **Supported Agents** | 8 | Claude Code (plugin), Codex CLI, OpenCode, Cursor, Windsurf, GitHub Copilot, Gemini CLI, Antigravity. |
 | **Installers** | 2 | PowerShell (`install.ps1`) and Bash (`install.sh`) with identical options, non-destructive installs, and clean uninstall. |
 
@@ -207,11 +207,12 @@ python .agents/skills/agent-memory/scripts/memory.py recall --bank "my-project" 
 
 ## 📐 Engineering Standards & Rules (Always-On)
 
-Three core rules plus the testing rule are always on; the rest load by file glob or by relevance (see each rule's frontmatter):
+Five rules are always on (core, minimal-change, token-conservation, defensive-epistemology, testing); the rest load by file glob or by relevance (see each rule's frontmatter):
 
 | Rule File | Scope & Mandate | Red Flags / Forbidden Patterns |
 | :--- | :--- | :--- |
-| **[`token-conservation.md`](.agents/rules/token-conservation.md)** | Enforces strict token economy, zero conversational fluff, surgical 2-5 line diffs, and progressive reference loading. | Full-file reprinting, conversational filler, broad un-targeted file reads. |
+| **[`token-conservation.md`](.agents/rules/token-conservation.md)** | Strict token economy: zero fluff, surgical diffs, tool read/write discipline (grep then bounded reads, `Edit` over `Write`, quiet test output, `code-explorer` delegation), progressive reference loading. | Full-file reprinting, conversational filler, broad un-targeted file reads, re-reading after own edits. |
+| **[`minimal-change.md`](.agents/rules/minimal-change.md)** | Smallest complete change: the lazy-senior ladder (need to exist? already in repo? stdlib? installed dep? one line?), `shortcut:` comments, one test per non-trivial branch. Adapted from Ponytail (MIT). | Unrequested options, wrappers, config, "for later" code; new dependency for a few lines; cutting validation, error handling, security, a11y. |
 | **[`defensive-epistemology.md`](.agents/rules/defensive-epistemology.md)** | Applied rationality, Rule 0 failure stop, prediction protocol (`EXPECT`/`MATCHES`), Chesterton's Fence, anti-sycophancy. | Silent tool retries, "this should work" traps, deleting ununderstood code, blind flailing. |
 | **[`senior-engineer-core.md`](.agents/rules/senior-engineer-core.md)** | **SOLID always**, **1000-line file cap**, tests with every change, Clean Architecture, Result pattern error handling, defensive boundary validation. | SOLID violations, files over 1000 lines, framework bleed into Domain, silent exception swallowing. |
 | **[`testing-standards.md`](.agents/rules/testing-standards.md)** | Every feature, bug fix, refactor, or other change ships with tests; regression test first for bug fixes; deterministic, behavior-focused tests. | Untested changes, skipped or deleted tests, vacuous assertions, flaky tests. |
@@ -228,7 +229,7 @@ Three core rules plus the testing rule are always on; the rest load by file glob
 
 ## ⚡ Active Skills & Capabilities
 
-The arsenal includes 46 specialized skills conforming to the Agent Skills standard (agentskills.io), featuring isolated progressive disclosure references (`references/`), slash commands, and negative triggers:
+The arsenal includes 47 specialized skills conforming to the Agent Skills standard (agentskills.io), featuring isolated progressive disclosure references (`references/`), slash commands, and negative triggers:
 
 ### 1. code-review (/code-review)
 - **When to use**: Auditing pull requests, reviewing recent commits, inspecting staged diffs, or evaluating branch code quality.
@@ -448,15 +449,20 @@ The arsenal includes 46 specialized skills conforming to the Agent Skills standa
 - **When to use**: Writing a README, runbook, or API reference, keeping one home per fact, and checking docs in CI.
 - **Includes**: [templates.md](.agents/skills/docs-writer/references/templates.md), [review-checklist.md](.agents/skills/docs-writer/references/review-checklist.md).
 
+### 47. handoff (/handoff)
+- **When to use**: Context is nearly full or work moves to another session, agent, or machine: compact the conversation into one short document the next session reads instead of the history.
+- **Includes**: [handoff-template.md](.agents/skills/handoff/references/handoff-template.md).
+
 ---
 
 ## 🤖 Autonomous Subagents
 
-The arsenal defines 16 specialized subagent profiles in `.agents/subagents/subagent-definitions.json`; `scripts/build.py` converts them into each agent's native format:
+The arsenal defines 17 specialized subagent profiles in `.agents/subagents/subagent-definitions.json`; `scripts/build.py` converts them into each agent's native format:
 
 | Subagent Name | Role | Focus Area & Capabilities |
 | :--- | :--- | :--- |
 | **`code-reviewer`** | Senior Staff Code Reviewer | Multi-pass reviews focusing on security, performance, correctness, and architecture. |
+| **`code-explorer`** | Read-Only Repository Explorer | Cheap (`haiku`-tier) localization: where does X live, as `path:line` citations only; its reads never enter the caller's context. |
 | **`epistemic-debugger`** | Epistemic Debugger & Root Cause Specialist | Applied rationality, 5+ competing hypotheses, 5-Whys causal tree, Rule 0 failure stop. |
 | **`python-specialist`** | Principal Python Systems Engineer | Modern Python 3.11+, FastAPI, SQLAlchemy 2.0 async, Pydantic v2, and asyncio event loops. |
 | **`frontend-architect`** | Senior Frontend Architect | React 18/19 (RSC, Zustand), Angular 17/18/19 (Signals, OnPush, @defer), a11y. |

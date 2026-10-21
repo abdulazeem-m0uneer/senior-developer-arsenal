@@ -9,6 +9,9 @@ This directory contains definitions and specialized prompts for domain-focused s
 1. **`code-reviewer`** (`prompts/code-reviewer.md`):
    - **Role**: Senior Staff Code Reviewer.
    - **Focus**: Exhaustive multi-pass code reviews (Security, Performance, Layering, Edge Cases, Test Coverage).
+1. **`code-explorer`** (`prompts/code-explorer.md`):
+   - **Role**: Read-Only Repository Explorer (`recommended_model: fast`).
+   - **Focus**: Cold-start and cross-file localization; returns `path:START-END` citations only so the caller never pays for its reads.
 2. **`db-architect`** (`prompts/db-architect.md`):
    - **Role**: Senior Database Architect & Query Optimizer.
    - **Focus**: PostgreSQL (primary), SQLite, MSSQL schemas, EXPLAIN ANALYZE profiling, indexing (B-Tree, GIN, BRIN), non-blocking migrations.
