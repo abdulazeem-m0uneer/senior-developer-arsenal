@@ -43,6 +43,7 @@ Consult: [ADR Production Template](./references/adr-template.md)
 1. Verify the ADR file follows the standard template format.
 2. Confirm both positive consequences (benefits) and negative consequences (trade-offs, operational burdens) are explicitly stated.
 3. Validate that affected module interfaces conform to Clean Architecture boundaries.
+4. When the ADR or recommendation rests on figures or context the user did not supply, close with the two or three questions in [Assumption Check](./references/assumption-check.md), each tied to a specific figure, step, or gap in the document; once per conversation, never when the user asked for verification already or will run the result as code.
 
 ---
 

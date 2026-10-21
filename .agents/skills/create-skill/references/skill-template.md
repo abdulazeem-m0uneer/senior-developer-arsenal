@@ -72,3 +72,25 @@ Consult: [{{Reference Title}}](./references/{{filename}}.md)
 | Line endings | LF only. |
 | Wording | Agent-neutral: no product names or product-specific tool names. |
 | Scripts | Under `scripts/`, standard library only, covered by a test in `tests/`; SKILL.md says the path is relative to the directory that contains it. |
+
+---
+
+## Rules for Scripts Under `scripts/`
+
+An agent reads a script's stdout and stderr to decide its next step, in a shell with no terminal. Design for that reader.
+
+| Rule | Reason |
+| :--- | :--- |
+| Never prompt; take every input from flags, environment, or stdin | An interactive prompt hangs the agent forever |
+| `--help` prints purpose, flags, defaults, exit codes, and two examples in under 30 lines | It is the only interface documentation the agent will read |
+| A missing required flag fails with the options listed (`--env is required. Options: dev, staging, prod`) | A bare "invalid input" wastes a turn |
+| Data to stdout as JSON, CSV, or TSV; progress and warnings to stderr | The agent can parse stdout and pipe it; diagnostics stay out of the way |
+| Idempotent by default: "create if missing", not "create and fail on duplicate" | Agents retry |
+| Reject ambiguous input; closed sets as enums | A guess inside the script is invisible to the agent |
+| `--dry-run` on anything stateful or destructive; `--confirm` or `--force` to execute | Previews before changes |
+| Distinct exit codes per failure class (not found, bad arguments, auth, upstream), documented in `--help` | The agent branches on the code without parsing prose |
+| Bounded output: summary by default, `--limit` and `--offset` for more, or `--output <file|->` when large | Harness truncation at 10–30k characters loses the decisive line |
+| Pin versions in one-off commands (`npx tool@9.0.0`); state runtime prerequisites in SKILL.md | Same behaviour next month, no silent environment assumption |
+| Move a command into a script once it is hard to get right first time | A tested script beats a long inline command |
+
+The arsenal adds: standard library only, a test under `tests/`, and the SKILL.md path stated relative to the directory containing the skill.

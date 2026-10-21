@@ -40,9 +40,17 @@ Consult: [Skill Template](./references/skill-template.md)
    ```
 2. Author `SKILL.md` with standard YAML frontmatter (`name`, `description` with third-person summary, explicit triggers, and negative triggers) and the four numbered sections of the template. Wrap `description` in single quotes: it contains `: `, which is invalid in an unquoted YAML scalar.
 3. Extract bulky manuals and checklists into `references/<name>.md`.
+4. Draft the body against [Skill Writing Guide](./references/skill-writing-guide.md): content extracted from a real task or project artifacts, only what the agent lacks, one default per choice, prescriptive only where the operation is fragile, the reason instead of capitalised prohibitions, gotchas inline, every reference pointer stating when to read it, every step ending on a checkable completion criterion.
+5. Run the pruning pass in that guide before validating: one home per meaning, no restated environment facts, no no-op sentences.
 
 ### Step 3: Enforce Token-Saving Guardrail
 Mandate Section 4: `⚡ Token-Saving Execution Rule` in the generated `SKILL.md` to prevent conversational fluff and require surgical diffs.
+
+### Step 4: Prove It Triggers and Helps
+Consult: [Skill Eval Loop](./references/skill-eval-loop.md)
+1. Trigger: about 20 labelled queries (near-miss negatives), three runs each, 60/40 train/validation split, revise the description on train failures, keep the best validation iteration.
+2. Output: 2–3 realistic cases in `evals/evals.json`, each run with and without the skill from a clean context; assertions after the first outputs; grade with quoted evidence; keep the delta in tokens and pass rate.
+3. Skip output evals for subjective deliverables (voice, style); keep trigger evals for every skill.
 
 ---
 

@@ -91,6 +91,7 @@ Skills: `.agents/skills/<name>/SKILL.md`. Subagents: `.agents/subagents/`.
 | After release | `smoke-test`, `observability` | — |
 | Incidents | `incident-response` | — |
 | Providers, money | `provider-sdk`, `payments-integrity` | — |
+| Expose a service to agents as tools | `mcp-server` | — |
 | Privacy | `data-privacy` | — |
 | Shared infrastructure | `shared-infra-changes` | `infra-reviewer` |
 | Dependencies | `dependency-upgrade` | — |

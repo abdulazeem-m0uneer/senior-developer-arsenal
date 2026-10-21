@@ -27,6 +27,7 @@ Activate this skill when:
 2. Separate verified facts (`"I verified X via log/test"`) from assumptions (`"I assume Y"`).
 3. If a tool fails, enforce **Rule 0**: STOP immediately. Do not speculate or blindly retry.
 4. Build a red-capable loop before any hypothesis: one command, already run once, that goes red on this exact symptom. Consult: [Feedback Loop & Fix Discipline](./references/feedback-loop-and-fix-discipline.md)
+5. When the question is answered by recorded data (logs, traces, metrics, cost, benchmark runs) rather than by code, follow [Evidence Review](./references/evidence-review.md): aggregates to locate, a suspect cohort against a control to prove, record ids and the exact window in every finding, measured / inferred / verified figures kept in separate buckets, and payload bodies left unread unless the user asks.
 
 ### Step 2: Formulate 5+ Competing Hypotheses
 Consult: [Investigation Template](./references/investigation-template.md)

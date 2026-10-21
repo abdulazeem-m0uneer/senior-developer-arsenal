@@ -29,6 +29,7 @@ antigravity	global	dir	implementation-plan	.agents/skills/implementation-plan	.g
 antigravity	global	dir	incident-response	.agents/skills/incident-response	.gemini/config/skills/incident-response	-
 antigravity	global	dir	investigate	.agents/skills/investigate	.gemini/config/skills/investigate	-
 antigravity	global	dir	legacy-parity	.agents/skills/legacy-parity	.gemini/config/skills/legacy-parity	-
+antigravity	global	dir	mcp-server	.agents/skills/mcp-server	.gemini/config/skills/mcp-server	-
 antigravity	global	dir	nodejs-backend-expert	.agents/skills/nodejs-backend-expert	.gemini/config/skills/nodejs-backend-expert	-
 antigravity	global	dir	observability	.agents/skills/observability	.gemini/config/skills/observability	-
 antigravity	global	dir	parallel-sessions	.agents/skills/parallel-sessions	.gemini/config/skills/parallel-sessions	-
@@ -112,6 +113,7 @@ antigravity	project	dir	implementation-plan	.agents/skills/implementation-plan	.
 antigravity	project	dir	incident-response	.agents/skills/incident-response	.agents/skills/incident-response	-
 antigravity	project	dir	investigate	.agents/skills/investigate	.agents/skills/investigate	-
 antigravity	project	dir	legacy-parity	.agents/skills/legacy-parity	.agents/skills/legacy-parity	-
+antigravity	project	dir	mcp-server	.agents/skills/mcp-server	.agents/skills/mcp-server	-
 antigravity	project	dir	nodejs-backend-expert	.agents/skills/nodejs-backend-expert	.agents/skills/nodejs-backend-expert	-
 antigravity	project	dir	observability	.agents/skills/observability	.agents/skills/observability	-
 antigravity	project	dir	parallel-sessions	.agents/skills/parallel-sessions	.agents/skills/parallel-sessions	-
@@ -194,6 +196,7 @@ gemini	global	dir	implementation-plan	.agents/skills/implementation-plan	.agents
 gemini	global	dir	incident-response	.agents/skills/incident-response	.agents/skills/incident-response	-
 gemini	global	dir	investigate	.agents/skills/investigate	.agents/skills/investigate	-
 gemini	global	dir	legacy-parity	.agents/skills/legacy-parity	.agents/skills/legacy-parity	-
+gemini	global	dir	mcp-server	.agents/skills/mcp-server	.agents/skills/mcp-server	-
 gemini	global	dir	nodejs-backend-expert	.agents/skills/nodejs-backend-expert	.agents/skills/nodejs-backend-expert	-
 gemini	global	dir	observability	.agents/skills/observability	.agents/skills/observability	-
 gemini	global	dir	parallel-sessions	.agents/skills/parallel-sessions	.agents/skills/parallel-sessions	-
@@ -262,6 +265,7 @@ gemini	project	dir	implementation-plan	.agents/skills/implementation-plan	.agent
 gemini	project	dir	incident-response	.agents/skills/incident-response	.agents/skills/incident-response	-
 gemini	project	dir	investigate	.agents/skills/investigate	.agents/skills/investigate	-
 gemini	project	dir	legacy-parity	.agents/skills/legacy-parity	.agents/skills/legacy-parity	-
+gemini	project	dir	mcp-server	.agents/skills/mcp-server	.agents/skills/mcp-server	-
 gemini	project	dir	nodejs-backend-expert	.agents/skills/nodejs-backend-expert	.agents/skills/nodejs-backend-expert	-
 gemini	project	dir	observability	.agents/skills/observability	.agents/skills/observability	-
 gemini	project	dir	parallel-sessions	.agents/skills/parallel-sessions	.agents/skills/parallel-sessions	-
@@ -366,6 +370,7 @@ codex	global	dir	implementation-plan	.agents/skills/implementation-plan	.agents/
 codex	global	dir	incident-response	.agents/skills/incident-response	.agents/skills/incident-response	-
 codex	global	dir	investigate	.agents/skills/investigate	.agents/skills/investigate	-
 codex	global	dir	legacy-parity	.agents/skills/legacy-parity	.agents/skills/legacy-parity	-
+codex	global	dir	mcp-server	.agents/skills/mcp-server	.agents/skills/mcp-server	-
 codex	global	dir	nodejs-backend-expert	.agents/skills/nodejs-backend-expert	.agents/skills/nodejs-backend-expert	-
 codex	global	dir	observability	.agents/skills/observability	.agents/skills/observability	-
 codex	global	dir	parallel-sessions	.agents/skills/parallel-sessions	.agents/skills/parallel-sessions	-
@@ -448,6 +453,7 @@ codex	project	dir	implementation-plan	.agents/skills/implementation-plan	.agents
 codex	project	dir	incident-response	.agents/skills/incident-response	.agents/skills/incident-response	-
 codex	project	dir	investigate	.agents/skills/investigate	.agents/skills/investigate	-
 codex	project	dir	legacy-parity	.agents/skills/legacy-parity	.agents/skills/legacy-parity	-
+codex	project	dir	mcp-server	.agents/skills/mcp-server	.agents/skills/mcp-server	-
 codex	project	dir	nodejs-backend-expert	.agents/skills/nodejs-backend-expert	.agents/skills/nodejs-backend-expert	-
 codex	project	dir	observability	.agents/skills/observability	.agents/skills/observability	-
 codex	project	dir	parallel-sessions	.agents/skills/parallel-sessions	.agents/skills/parallel-sessions	-
@@ -530,6 +536,7 @@ opencode	global	dir	implementation-plan	.agents/skills/implementation-plan	.agen
 opencode	global	dir	incident-response	.agents/skills/incident-response	.agents/skills/incident-response	-
 opencode	global	dir	investigate	.agents/skills/investigate	.agents/skills/investigate	-
 opencode	global	dir	legacy-parity	.agents/skills/legacy-parity	.agents/skills/legacy-parity	-
+opencode	global	dir	mcp-server	.agents/skills/mcp-server	.agents/skills/mcp-server	-
 opencode	global	dir	nodejs-backend-expert	.agents/skills/nodejs-backend-expert	.agents/skills/nodejs-backend-expert	-
 opencode	global	dir	observability	.agents/skills/observability	.agents/skills/observability	-
 opencode	global	dir	parallel-sessions	.agents/skills/parallel-sessions	.agents/skills/parallel-sessions	-
@@ -612,6 +619,7 @@ opencode	project	dir	implementation-plan	.agents/skills/implementation-plan	.age
 opencode	project	dir	incident-response	.agents/skills/incident-response	.agents/skills/incident-response	-
 opencode	project	dir	investigate	.agents/skills/investigate	.agents/skills/investigate	-
 opencode	project	dir	legacy-parity	.agents/skills/legacy-parity	.agents/skills/legacy-parity	-
+opencode	project	dir	mcp-server	.agents/skills/mcp-server	.agents/skills/mcp-server	-
 opencode	project	dir	nodejs-backend-expert	.agents/skills/nodejs-backend-expert	.agents/skills/nodejs-backend-expert	-
 opencode	project	dir	observability	.agents/skills/observability	.agents/skills/observability	-
 opencode	project	dir	parallel-sessions	.agents/skills/parallel-sessions	.agents/skills/parallel-sessions	-
@@ -694,6 +702,7 @@ cursor	global	dir	implementation-plan	.agents/skills/implementation-plan	.agents
 cursor	global	dir	incident-response	.agents/skills/incident-response	.agents/skills/incident-response	-
 cursor	global	dir	investigate	.agents/skills/investigate	.agents/skills/investigate	-
 cursor	global	dir	legacy-parity	.agents/skills/legacy-parity	.agents/skills/legacy-parity	-
+cursor	global	dir	mcp-server	.agents/skills/mcp-server	.agents/skills/mcp-server	-
 cursor	global	dir	nodejs-backend-expert	.agents/skills/nodejs-backend-expert	.agents/skills/nodejs-backend-expert	-
 cursor	global	dir	observability	.agents/skills/observability	.agents/skills/observability	-
 cursor	global	dir	parallel-sessions	.agents/skills/parallel-sessions	.agents/skills/parallel-sessions	-
@@ -762,6 +771,7 @@ cursor	project	dir	implementation-plan	.agents/skills/implementation-plan	.agent
 cursor	project	dir	incident-response	.agents/skills/incident-response	.agents/skills/incident-response	-
 cursor	project	dir	investigate	.agents/skills/investigate	.agents/skills/investigate	-
 cursor	project	dir	legacy-parity	.agents/skills/legacy-parity	.agents/skills/legacy-parity	-
+cursor	project	dir	mcp-server	.agents/skills/mcp-server	.agents/skills/mcp-server	-
 cursor	project	dir	nodejs-backend-expert	.agents/skills/nodejs-backend-expert	.agents/skills/nodejs-backend-expert	-
 cursor	project	dir	observability	.agents/skills/observability	.agents/skills/observability	-
 cursor	project	dir	parallel-sessions	.agents/skills/parallel-sessions	.agents/skills/parallel-sessions	-
@@ -844,6 +854,7 @@ windsurf	global	dir	implementation-plan	.agents/skills/implementation-plan	.agen
 windsurf	global	dir	incident-response	.agents/skills/incident-response	.agents/skills/incident-response	-
 windsurf	global	dir	investigate	.agents/skills/investigate	.agents/skills/investigate	-
 windsurf	global	dir	legacy-parity	.agents/skills/legacy-parity	.agents/skills/legacy-parity	-
+windsurf	global	dir	mcp-server	.agents/skills/mcp-server	.agents/skills/mcp-server	-
 windsurf	global	dir	nodejs-backend-expert	.agents/skills/nodejs-backend-expert	.agents/skills/nodejs-backend-expert	-
 windsurf	global	dir	observability	.agents/skills/observability	.agents/skills/observability	-
 windsurf	global	dir	parallel-sessions	.agents/skills/parallel-sessions	.agents/skills/parallel-sessions	-
@@ -895,6 +906,7 @@ windsurf	project	dir	implementation-plan	.agents/skills/implementation-plan	.age
 windsurf	project	dir	incident-response	.agents/skills/incident-response	.agents/skills/incident-response	-
 windsurf	project	dir	investigate	.agents/skills/investigate	.agents/skills/investigate	-
 windsurf	project	dir	legacy-parity	.agents/skills/legacy-parity	.agents/skills/legacy-parity	-
+windsurf	project	dir	mcp-server	.agents/skills/mcp-server	.agents/skills/mcp-server	-
 windsurf	project	dir	nodejs-backend-expert	.agents/skills/nodejs-backend-expert	.agents/skills/nodejs-backend-expert	-
 windsurf	project	dir	observability	.agents/skills/observability	.agents/skills/observability	-
 windsurf	project	dir	parallel-sessions	.agents/skills/parallel-sessions	.agents/skills/parallel-sessions	-
@@ -960,6 +972,7 @@ copilot	global	dir	implementation-plan	.agents/skills/implementation-plan	.agent
 copilot	global	dir	incident-response	.agents/skills/incident-response	.agents/skills/incident-response	-
 copilot	global	dir	investigate	.agents/skills/investigate	.agents/skills/investigate	-
 copilot	global	dir	legacy-parity	.agents/skills/legacy-parity	.agents/skills/legacy-parity	-
+copilot	global	dir	mcp-server	.agents/skills/mcp-server	.agents/skills/mcp-server	-
 copilot	global	dir	nodejs-backend-expert	.agents/skills/nodejs-backend-expert	.agents/skills/nodejs-backend-expert	-
 copilot	global	dir	observability	.agents/skills/observability	.agents/skills/observability	-
 copilot	global	dir	parallel-sessions	.agents/skills/parallel-sessions	.agents/skills/parallel-sessions	-
@@ -1028,6 +1041,7 @@ copilot	project	dir	implementation-plan	.agents/skills/implementation-plan	.agen
 copilot	project	dir	incident-response	.agents/skills/incident-response	.agents/skills/incident-response	-
 copilot	project	dir	investigate	.agents/skills/investigate	.agents/skills/investigate	-
 copilot	project	dir	legacy-parity	.agents/skills/legacy-parity	.agents/skills/legacy-parity	-
+copilot	project	dir	mcp-server	.agents/skills/mcp-server	.agents/skills/mcp-server	-
 copilot	project	dir	nodejs-backend-expert	.agents/skills/nodejs-backend-expert	.agents/skills/nodejs-backend-expert	-
 copilot	project	dir	observability	.agents/skills/observability	.agents/skills/observability	-
 copilot	project	dir	parallel-sessions	.agents/skills/parallel-sessions	.agents/skills/parallel-sessions	-

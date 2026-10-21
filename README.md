@@ -32,7 +32,7 @@ GitHub offers no trending API, so [`scripts/trending_rank.py`](scripts/trending_
 | Component | Quantity | Purpose |
 | :--- | :---: | :--- |
 | **Rules** | 13 | Enforce senior engineering standards: SOLID, a 1000-line file cap, mandatory tests with every change, minimal-change ladder, plus Python, Node.js, C#, Frontend, UI/UX, Databases, Git, Token Frugality, and Defensive Epistemology. |
-| **Specialized Skills** | 49 | Actionable runbooks following the Agent Skills standard (`SKILL.md` + progressive `references/`) with slash commands and negative triggers. |
+| **Specialized Skills** | 50 | Actionable runbooks following the Agent Skills standard (`SKILL.md` + progressive `references/`) with slash commands and negative triggers. |
 | **Autonomous Subagents** | 17 | Dedicated personas (`code-reviewer`, `code-explorer`, `qa-engineer`, `test-engineer`, `security-auditor`, `devops-engineer`, `epistemic-debugger`, `spec-reviewer`, `infra-reviewer`, `legacy-analyst`, and stack specialists). |
 | **Supported Agents** | 8 | Claude Code (plugin), Codex CLI, OpenCode, Cursor, Windsurf, GitHub Copilot, Gemini CLI, Antigravity. |
 | **Installers** | 2 | PowerShell (`install.ps1`) and Bash (`install.sh`) with identical options, non-destructive installs, and clean uninstall. |
@@ -229,7 +229,7 @@ Five rules are always on (core, minimal-change, token-conservation, defensive-ep
 
 ## ⚡ Active Skills & Capabilities
 
-The arsenal includes 49 specialized skills conforming to the Agent Skills standard (agentskills.io), featuring isolated progressive disclosure references (`references/`), slash commands, and negative triggers:
+The arsenal includes 50 specialized skills conforming to the Agent Skills standard (agentskills.io), featuring isolated progressive disclosure references (`references/`), slash commands, and negative triggers:
 
 ### 1. code-review (/code-review)
 - **When to use**: Auditing pull requests, reviewing recent commits, inspecting staged diffs, or evaluating branch code quality.
@@ -460,6 +460,10 @@ The arsenal includes 49 specialized skills conforming to the Agent Skills standa
 ### 49. implementation-plan (/implementation-plan)
 - **When to use**: An approved brief spans more than one task: write bite-sized tasks naming exact files, signatures, and test assertions, self-review for coverage and type drift, then execute inline or with one fresh implementer and reviewer per task behind a ledger that survives context loss.
 - **Includes**: [plan-format.md](.agents/skills/implementation-plan/references/plan-format.md), [execution-loop.md](.agents/skills/implementation-plan/references/execution-loop.md).
+
+### 50. mcp-server (/mcp-server)
+- **When to use**: An outside API, database, or internal service must become callable by agents as tools: service-prefixed names, strict schemas, pagination and a response cap, result-level errors, behaviour annotations, then ten read-only evaluation questions an agent must answer through the tools alone.
+- **Includes**: [tool-design-checklist.md](.agents/skills/mcp-server/references/tool-design-checklist.md), [evaluation-questions.md](.agents/skills/mcp-server/references/evaluation-questions.md).
 
 ---
 
