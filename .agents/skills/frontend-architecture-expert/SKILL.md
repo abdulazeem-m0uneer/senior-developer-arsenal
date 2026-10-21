@@ -18,7 +18,7 @@ Activate this skill when:
 - Implementing responsive, accessible UI patterns adhering to WCAG 2.2 AA.
 - Structuring client state management (Zustand, TanStack Query, SignalStore).
 
-*Boundary*: For UI/UX design tokens and anti-slop visual auditing, use `ui-ux-architect` and `ui-ux-audit`.
+*Boundary*: For UI/UX design tokens and anti-slop visual auditing, use `ui-ux-architect` and `ui-ux-audit`. For dashboard and admin screen composition (KPIs, charts, tables, empty/loading/error states) see `ui-ux-architect/references/app-screen-rules.md`.
 
 ---
 

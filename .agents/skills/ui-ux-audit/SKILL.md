@@ -47,6 +47,11 @@ Consult the anti-slop gates reference (`references/anti-slop-gates.md`) of the `
 Consult: [Audit Matrix Template](./references/audit-matrix-template.md)
 Produce a dense Markdown table reporting status per gate with actionable, surgical fixes.
 
+### Step 4: Render Critique (when screenshots are obtainable)
+Consult: [Screenshot Critique](./references/screenshot-critique.md)
+Capture 1440 / 768 / 390, fold and full page. Run the fourteen passes on the pictures only, apply the caps, score with the Awwwards weighting, and write the critique record. Report the top three problems in fix order (idea, hierarchy, composition, type, imagery, colour, detail, motion). Three rounds maximum; a gate-clean page can still score 6 and say so.
+For app screens, substitute the tells list in `ui-ux-architect/references/app-screen-rules.md` §8 for Gate 9.
+
 ---
 
 ## 3. Verification Protocol

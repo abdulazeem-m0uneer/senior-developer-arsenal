@@ -67,6 +67,8 @@ Base font size = 16px (1rem).
 - `type.scale.xl`: 31.25px (1.953rem) - Page headers (h2).
 - `type.scale.xxl`: 39px (2.441rem) - Hero metrics, display titles (h1).
 
+Scale selection by surface (marketing vs app), `clamp()` page scale, pairing rules: [Typography System](./typography-system.md).
+
 ### C. Spacing Scale (4px Base Unit)
 - `space.1`: 4px - Tight icon gaps.
 - `space.2`: 8px - Button internal vertical padding, badge margins.
@@ -85,6 +87,12 @@ Base font size = 16px (1rem).
 - `elevation.1`: 0 1px 3px rgba(0,0,0,0.08) - Resting cards.
 - `elevation.2`: 0 4px 6px -1px rgba(0,0,0,0.1) - Dropdowns, popovers.
 - `elevation.3`: 0 10px 15px -3px rgba(0,0,0,0.15) - Modal dialogs.
+
+---
+
+### E. Motion
+
+Easing, duration, stagger tokens and the reduced-motion contract: [Motion Tokens](./motion-tokens.md).
 
 ---
 

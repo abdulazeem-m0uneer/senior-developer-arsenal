@@ -54,6 +54,9 @@ Break statistical AI defaults to deliver deliberate, human-caliber software:
 | **Pure `#000` on `#fff`** | High-glare, harsh ocular fatigue | Off-black (`#111827`) on warm/cool white surface (`#F9FAFB`). |
 | **Generic Drop Shadows** | Muddy, dated box-shadow on every card | 1px subtle borders (`border.subtle`) or layered elevation tokens. |
 | **Rainbow Accents** | Chaotic, undisciplined visual noise | 1 primary brand color, 1 accent max. Neutrals carry 80% of layout. |
+| **Eyebrow / Kicker Labels & Pill Badges** (small caps line or pill above a heading) | Generated-page chrome; information-free | Let the headline carry the subject; delete the label. |
+| **Index Numbering as Ornament** (`01`, `02`, `03` beside sections) | Agency-template tell; implies an order that does not exist | Numbers only when sequence matters (steps); otherwise none. |
+| **Cream + Terracotta, Violet / Indigo Gradients** | Two most common generated palettes; anonymous | Palette from the subject inventory (`ui-ux-architect/references/visual-registers.md`), 4-6 named hex with roles. |
 
 ---
 
@@ -66,6 +69,8 @@ Every interactive control (button, input, select, card, menu item) must explicit
 4. **Focus-Visible**: 2px outline with 2px offset (`outline-offset: 2px`). Never set `outline: none` without replacement.
 5. **Disabled**: Muted opacity ($0.4\text{--}0.5$), `pointer-events: none` or `cursor: not-allowed`, `aria-disabled="true"`.
 6. **Loading**: Maintain full container opacity, preserve layout dimensions, display inline spinner or skeleton. Never dim like disabled.
+
+Timing: press 140ms, hover 180ms, UI 240ms, reveal 800ms; ease-out for entrances, ease-in-out for travel; transform/opacity only; reduced-motion renders the finished state (`ui-ux-architect/references/motion-tokens.md`).
 
 ---
 
@@ -83,6 +88,17 @@ Every interactive control (button, input, select, card, menu item) must explicit
   - Every `<input>` must be explicitly associated with a `<label>` via `for`/`id` or `aria-labelledby`.
   - Accessible names (`aria-label`) mandatory on all icon-only buttons.
   - Error messages linked to input via `aria-describedby` and flagged with `aria-invalid="true"`.
+
+### WCAG 2.2 Additions (beyond contrast, target size, focus ring)
+- **2.4.11 Focus Not Obscured (AA)**: sticky headers, footers, banners, chat widgets must not cover the focused control. `html { scroll-padding-top: var(--header-h); }`; dismiss or move persistent overlays before focus lands behind them. AAA (2.4.12) keeps the whole component visible; do not present AAA as AA.
+- **2.4.13 Focus Appearance (AAA, adopt anyway)**: indicator area >= a 2px perimeter with 3:1 against adjacent colours; `outline: 2px solid currentColor; outline-offset: 2px`.
+- **2.5.7 Dragging Movements (AA)**: every author-made drag (reorder, resize, slider, map pan) has a single-pointer and keyboard alternative: Move up/down buttons beside the handle, arrow keys on the control.
+- **2.5.8 Target Size (AA)**: 24x24 CSS px on web is the conformance floor; 44pt/48dp are platform guidance, not substitutes. Inline links in prose are exempt; icon buttons are not.
+- **3.2.6 Consistent Help (A)**: contact, self-help, and chat entry points keep the same relative position across the page set.
+- **3.3.7 Redundant Entry (A)**: never ask for data already supplied in the same process; reuse the confirmed address, offer "same as billing".
+- **3.3.8 Accessible Authentication (AA)**: allow paste and password managers; no cognitive test (puzzle, memorised pattern) without an alternative; `autocomplete="current-password"`.
+- **1.4.10/1.4.12 Reflow and spacing**: fluid widths, content-driven heights, unitless line-height; nothing clipped in fixed boxes at 320px or with 200% text spacing.
+- **Carousels / auto-rotating content**: pause/stop control; stop on focus, hover, and reduced motion; previous/next and keyboard expose every slide; announce position.
 
 ---
 
