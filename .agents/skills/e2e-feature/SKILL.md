@@ -46,7 +46,7 @@ Consult: [Vertical Slice Architecture Reference](./references/vertical-slice.md)
 
 1. Run backend integration tests asserting database persistence and validation boundaries.
 2. Run frontend component tests asserting loading spinner, error alert, and successful optimistic update.
-3. Walk the complete flow through the real routes with data created by the API, including one error path.
+3. Walk the complete flow through the real routes in a headless browser with data created by the API, including one error path, following [Browser Verification](./references/browser-verification.md): wait for network idle before inspecting, pick selectors from the rendered page, capture console and page errors from before navigation, screenshot each state change into the scratch directory. A page error fails the walk.
 4. Output single-line verification summary: `E2E Feature verified across DB -> API -> UI`.
 
 ---

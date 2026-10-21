@@ -91,10 +91,13 @@ Skills: `.agents/skills/<name>/SKILL.md`. Subagents: `.agents/subagents/`.
 | After release | `smoke-test`, `observability` | — |
 | Incidents | `incident-response` | — |
 | Providers, money | `provider-sdk`, `payments-integrity` | — |
+| Expose a service to agents as tools | `mcp-server` | — |
 | Privacy | `data-privacy` | — |
 | Shared infrastructure | `shared-infra-changes` | `infra-reviewer` |
 | Dependencies | `dependency-upgrade` | — |
 | Decisions, plans, docs | `decision-log`, `delivery-board-sync`, `docs-writer` | `spec-reviewer` |
+| Requirements, before building | `requirements-grilling` | — |
+| Implementation plans, task execution | `implementation-plan` | `code-reviewer`, `test-engineer` |
 | Legacy rebuilds | `legacy-parity` | `legacy-analyst` |
 | Shared checkouts, unattended runs | `parallel-sessions`, `autonomous-run` | — |
 | Session handoff (context nearly full) | `handoff` | — |

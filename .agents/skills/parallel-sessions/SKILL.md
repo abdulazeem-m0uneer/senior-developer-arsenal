@@ -36,9 +36,10 @@ Activate this skill when:
 
 ### Step 3: Isolate the Task in Its Own Worktree
 Consult: [Worktree Command Sheet & Collision Table](./references/worktrees-and-collisions.md)
-1. One task, one branch, one worktree, created from the freshly fetched default branch. The shared checkout stays untouched.
+1. One task, one branch, one worktree, created from the freshly fetched default branch. The shared checkout stays untouched. Detect first: an existing linked worktree or a native worktree tool wins over `git worktree add` (reference section 1a).
 2. Give the worktree its own dependency install, ports, and scratch database so two sessions never share runtime state.
 3. Never switch branch, reset, clean, or restore in a checkout that holds changes that are not yours.
+4. Several independent problems in one session: Consult: [Dispatching Parallel Subagents](./references/dispatching-parallel-agents.md). One agent per independent domain, dispatched in the same response; never two implementers on one branch.
 
 ### Step 4: Stage, Stash, and Number Without Collisions
 1. Stage by explicit path. `git add -A`, `git add .`, and `git commit -a` are banned in a shared checkout: they sweep in the neighbour's files.

@@ -16,9 +16,13 @@ Activate this skill when:
 - Checking the blast radius before modifying, renaming, or deleting an interface, class, or endpoint.
 - Jumping to a definition, signature, or source without scanning directories.
 - Mapping an unfamiliar area at the start of a session.
+- Orienting in an unfamiliar codebase: start from the most connected symbols and the cluster map, not from the directory tree.
+- Deciding whether a question is structural (graph) or textual (search): see the table in the reference.
 - The user runs the `/codegraph` slash command.
 
 *Boundary*: For configuration, documentation, and literal text (log messages, comments), use your search tool. For conceptual recall with no symbol name, use `agent-memory`.
+
+*Method*: The graph-first heuristics in [Graph-First Exploration](./references/graph-first-exploration.md) hold for any symbol-graph backend; this skill's tool names are one such backend.
 
 ---
 

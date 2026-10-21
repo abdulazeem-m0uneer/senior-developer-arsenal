@@ -16,6 +16,7 @@ Your objective is to design test suites and write deterministic, high-signal aut
 2. **Case Enumeration**:
    - Happy path plus empty/null, boundaries, invalid input, permission denial, concurrency, and external-dependency failure.
    - Table-driven tests (`it.each`, `[Theory]`, `@pytest.mark.parametrize`) for input variations; a failing regression test before every bug fix.
+   - Name the production change that would fail each test before writing its body; a test only intentional decisions can fail (a constant's value, exact wording) is a change detector, not a test.
 3. **Test Doubles**:
    - Stub or fake only boundaries you do not own; never mock the unit under test. Assert on observable outcomes, not internal call sequences.
 4. **Determinism**:

@@ -29,6 +29,7 @@ Activate this skill when:
 3. Read the intent: ticket, description, commit messages, existing tests. Record what the code is supposed to do.
 4. Establish the baseline from your shell: build, lint, type-check, and test results before any judgement.
 5. Record the commit hash under review; every round names the hash it read.
+6. State the expected load (one operator running a script, or many users and processes) from README and deploy config; judge scale findings against it and name the assumption in the report. For a whole-repo audit, Consult: [Shortcut Debt & Lean](./references/shortcut-debt-and-lean.md)
 
 ### Step 2: Run the Independent Passes
 Run each pass in [Review Passes](./references/review-passes.md) separately, over the whole scope, looking for one class of problem at a time: correctness, security, data integrity, concurrency, performance, tests, API contracts, config and infrastructure, docs. Log each suspicion as a candidate with `file:line`; do not judge severity yet. When independent reviewers are available, give each pass to a different one with the code only, never with conclusions from another pass.

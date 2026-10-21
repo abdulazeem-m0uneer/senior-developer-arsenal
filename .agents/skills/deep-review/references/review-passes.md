@@ -68,6 +68,8 @@ One pass per dimension. Run each over the whole scope with only that dimension i
 - [ ] No duplicated logic that an existing helper already provides; no dead code, commented-out blocks, or stray debug output.
 - [ ] No file above 1000 lines; no function too long to hold in one screen without reason.
 - [ ] Comments explain why, and none contradicts the code beside it.
+- [ ] Lean: dead code, unused options and flags, interface with one implementation, wrapper that only forwards, a dependency doing what stdlib or a few lines do, near-copies that must change together, a unit doing several unrelated jobs (split by job, never by line count).
+- [ ] A `shortcut:` comment that names its ceiling is a decision, not a finding, unless the expected load already crosses the ceiling or it names no upgrade trigger.
 
 ---
 
@@ -80,5 +82,6 @@ One pass per dimension. Run each over the whole scope with only that dimension i
 | Database access or migrations | 3, 4, 5 |
 | Async, parallel, or background work | 4 |
 | Build, container, pipeline, or settings files | 8 |
+| Whole-repo audit or pre-release | 9 plus the shortcut ledger (`shortcut-debt-and-lean.md`) |
 
 Mark a pass "not applicable" only with the reason stated in the report.

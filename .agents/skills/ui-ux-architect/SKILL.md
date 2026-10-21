@@ -25,10 +25,13 @@ Activate this skill when:
 ## 2. Step-by-Step Execution Runbook
 
 ### Step 1: Brief Inference (Decide Before Generating)
-Before writing markup or CSS, determine and commit to:
-1. **Domain & Density**: Enterprise/Fintech (dense, high information ratio) vs. Consumer (spacious, focal).
-2. **Mood & Hierarchy**: "Precise", "Editorial", "Industrial", or "Utilitarian".
-3. **Layout Rhythm**: Asymmetric bento grid, hero metric leading at $\ge 2.5\times$ body size. Never 3 equal cards.
+Consult: [Visual Direction Brief](./references/visual-direction-brief.md), [Visual Registers](./references/visual-registers.md)
+Before writing markup or CSS, write and commit the brief:
+1. **Surface**: page (read once: landing, marketing, portfolio) vs app screen (worked in daily: dashboard, admin, settings). App screens follow [App Screen Rules](./references/app-screen-rules.md) and skip Gate 9's hero-metric rule.
+2. **Subject inventory** (8-12 facts only this product has) and the competitor test.
+3. **Register** from the selection table (one per product, never blended) with its token values.
+4. **Palette** (4-6 named hex with roles) and **type** ([Typography System](./references/typography-system.md): one family default, two max).
+5. **Default-check**: if a similar brief for another client would yield the same plan, revise that axis and say why.
 
 ### Step 2: Token Scaffolding
 Consult: [DTCG Design Tokens Architecture](./references/dtcg-tokens.md)
@@ -38,6 +41,7 @@ Consult: [DTCG Design Tokens Architecture](./references/dtcg-tokens.md)
 ### Step 3: State-Complete Component Engineering
 Ensure all 6 interactive states are implemented:
 - Default, Hover ($\Delta L \approx 4\text{--}8\%$), Active (scale $0.98$), Focus-Visible (2px outline + 2px offset), Disabled (`aria-disabled="true"`), and Loading (preserved dimensions + spinner).
+- Durations and curves from [Motion Tokens](./references/motion-tokens.md); every hidden state inside `prefers-reduced-motion: no-preference`.
 
 ---
 
@@ -56,6 +60,8 @@ Before marking any UI task complete, verify against the 10 gates:
 8. **Anti-AI Copy Gate**: No em-dashes (`—`), no marketing filler ("elevate", "seamless").
 9. **Visual Hierarchy Gate**: Hero metric $\ge 2.5\times$ body size; asymmetric layout.
 10. **Theme Parity Gate**: CSS variables only; zero hardcoded hex colors in components.
+11. **Tells Registry**: scan against [Generated-Page Tells](./references/generated-page-tells.md) (eyebrows, index numbering, mono labels, cream+terracotta, violet gradients, glass content panels).
+12. **Forms & WCAG 2.2**: [Forms and Feedback Contract](./references/forms-feedback-contract.md) for any screen with inputs, toasts, chips, or drag.
 
 ---
 

@@ -68,5 +68,6 @@ Every PR must provide:
 1. **Context & Problem Statement**: What business problem or technical bug is being addressed?
 2. **Implementation Summary**: Bullet points detailing the architectural or code changes.
 3. **Database Changes**: Does this PR include migrations? Are there any locking or indexing implications?
-4. **Verification & Testing**: List commands and tests executed to verify correctness.
+4. **Verification & Testing**: List commands and tests executed to verify correctness. Evidence is before/after: the failing run then the passing run, or a screenshot pair for visual changes.
 5. **Breaking Changes**: Explicit flag if public APIs, schema contracts, or environment variables have changed.
+6. **Merge Danger**: one-way or two-way door, and a one-word blast radius (layout shift, consumer breakage, data migration).

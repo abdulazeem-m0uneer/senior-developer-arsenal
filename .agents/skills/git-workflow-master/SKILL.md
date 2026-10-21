@@ -58,13 +58,16 @@ git rebase -i HEAD~4
 2. **Preserve invariants**: Ensure both intended changes coexist cleanly.
 3. **Verify build and tests**: Run tests immediately after conflict resolution before completing the rebase.
 
-### Step 5: Merge the Tested Commit
-1. Never bypass a hook (`--no-verify`) or push directly to a protected branch.
-2. Merge only the commit that was reviewed and that the checks ran on:
+### Step 5: Finish the Branch
+Consult: [Branch Finishing](./references/branch-finishing.md)
+1. Run the full suite on the tree about to be integrated; a red suite ends the step, no menu.
+2. Confirm the base branch (fork point); never assume `main`.
+3. Present exactly three options (merge locally, push and open a PR, keep as-is) and wait; discarding work happens only on an explicit typed `discard`.
+4. Never bypass a hook (`--no-verify`), push directly to a protected branch, or force-push without an explicit request. Merge only the commit that was reviewed and that the checks ran on:
 ```bash
 gh pr merge <number> --rebase --match-head-commit "$(git rev-parse HEAD)"
 ```
-3. After the merge, delete the branch and remove its worktree.
+5. After a local merge or a confirmed discard, remove the worktree and delete the branch; after a PR, keep the worktree for review fixes.
 
 ---
 

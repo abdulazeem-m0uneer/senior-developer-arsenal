@@ -49,6 +49,14 @@ Input tokens dominate cost. Every tool result lands in context; keep results sma
 - Long task → `handoff` skill before context fills; next session reads one doc, not history.
 - Memory files (`CLAUDE.md`, `AGENTS.md`, rules) stay compressed: headings + terse bullets, code/paths/commands verbatim.
 
+**Delegate**
+- A helper's reply lands in this context verbatim: delegate only when the answer is wanted in a fixed, compressed shape (locator: `path:line` rows; builder: change line + verify line or one terminal token; reviewer: one finding per line + totals).
+- Prose, judgement, architecture commentary → main thread, not a contract helper.
+- Builder only for ≤2 files already located; locator first otherwise. 3+ files or cross-cutting → main thread.
+- Parallel scouts: 2–3 locators in one message, different angles, aggregate here.
+- Contract output is for this agent; paraphrase before showing a human.
+- Patterns and contracts: `autonomous-run/references/delegation-patterns.md`.
+
 ---
 
 ## 4. High Information Density

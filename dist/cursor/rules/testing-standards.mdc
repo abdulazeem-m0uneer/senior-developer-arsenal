@@ -34,6 +34,8 @@ No framework → set up minimal standard one for stack first. Test truly impossi
 - Readable: one behavior per test, Arrange / Act / Assert, intention-revealing names.
 - Fast: unit in ms; integration/e2e only at boundaries that need them.
 - No vacuous tests: cannot fail, asserts nothing, mirrors implementation → does not count.
+- Expected values derived by hand (literal, worked example, spec); never computed by the code under test or its helpers.
+- Mutation check before finishing: for each realistic mutation (wrong constant, wrong branch, missing side effect, empty return, missing validation) at least one test fails.
 
 ---
 

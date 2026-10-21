@@ -47,6 +47,7 @@ Use the commands and evidence rules in [Evidence Commands & Verdict Template](./
 - `DONE` only when every applicable item is `PASS`.
 - Any `FAIL` or `UNVERIFIED` item means `NOT DONE`. List the remaining work as concrete actions.
 - After fixes, re-verify the failed items and every item the fix could have affected, then reissue the table. Never carry a `PASS` forward across a code change without re-running its command.
+- Stop when the proof is complete: a result still current for this repository state is reused, the focused check runs before the wide gate, and no polish, cleanup, or unrelated test is added after the criteria pass. Product code is edited only when the request included fixes.
 
 ### Step 5: Review in Loops Until It Clears
 1. Re-read the whole diff as a reviewer looking for a reason to reject it, not as its author.

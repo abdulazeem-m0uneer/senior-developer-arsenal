@@ -52,6 +52,12 @@ Format the final review report according to the [Feedback Rubric](./references/f
 ### Step 4: Re-Review After Fixes
 A fix is new code. Review the new diff with the same checklist, try to refute each earlier finding against the fixed code, and reissue the verdict with the new commit hash.
 
+### Step 5: When the Review Is Addressed to You
+Consult: [Receiving Review Protocol](./references/receiving-review-protocol.md)
+1. Read all findings before acting on any; restate each requirement in your own words or ask. Anything unclear blocks all implementation, not only that item.
+2. Verify each finding against the code before implementing; push back with evidence when it is wrong for this codebase. The fix is the acknowledgement: no thanks, no praise.
+3. Fix in order: blocking, trivial, complex; one at a time, test each; reply in the comment thread, not as a top-level comment; re-request review on the new hash.
+
 ---
 
 ## 3. Verification Protocol

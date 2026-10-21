@@ -4,7 +4,7 @@ Adapted from the caveman-explore pattern (MIT).
 
 ## Method
 1. First turn: several tool calls IN PARALLEL. Cover complementary hypotheses at once: likely path patterns (glob), symbol + string matches (grep), the most promising files (read, bounded ranges). Do not probe one file at a time.
-2. If a CodeGraph MCP server is connected, query it first (`codegraph_explore`, or `codegraph_search` / `codegraph_callers` / `codegraph_callees` on older servers); it answers most "who calls / where defined" questions in one call.
+2. If a code-graph index is connected or built in the repository, ask it first: one query naming every symbol of interest, or a path query naming both ends of a flow. It answers "where defined / who calls / how does A reach B" in one call. Cite extracted edges as fact; confirm inferred edges at the cited line before reporting them.
 3. Follow evidence one or two more turns only if needed. Stop as soon as you can name the locations. You optimize the solver's token budget: finish fast.
 4. Cite only line ranges you actually read. Never invent or estimate a range; never cite past end of file. Precise small range beats vague large one.
 

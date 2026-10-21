@@ -39,6 +39,9 @@ Before writing: list every place change must reach (callers, tests, fixtures, co
 - Equal size → pick one correct on edge cases.
 - New non-trivial logic (branch, loop, parser, money, security, new script/app) leaves one small test or assert self-check. Trivial change needs none.
 - Known-limit shortcut gets comment: `shortcut: <limit>, <when to upgrade>`.
+- Surgical: touch only what the request needs. No improving adjacent code, comments, or formatting; match the file's style even where you would differ; unrelated dead code is mentioned, not deleted. Remove only the orphans your own change created (imports, variables, functions). Test: every changed line traces to the request.
+- Before coding, state assumptions; several readings of the request → present them, never pick silently; a simpler approach exists → say so. Confusion is a stop, not something to code around.
+- 200 lines that could be 50 → rewrite. Test: would a senior engineer call this overcomplicated?
 
 **Never cut**: validation at trust boundaries, error handling that prevents data loss, security, accessibility, anything user asked for.
 
