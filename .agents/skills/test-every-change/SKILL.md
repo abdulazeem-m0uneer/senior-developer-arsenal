@@ -32,6 +32,7 @@ Activate this skill when:
 Fill the mapping using the [Change-to-Test Matrix](./references/change-to-test-matrix.md). No row may be left without a test or an explicit, justified exemption.
 
 ### Step 3: Apply the Rule for the Change Type
+Loop discipline for every type: Consult: [TDD Loop & Honest Tests](./references/tdd-loop-and-honest-tests.md). Production code written before its failing test is deleted and rewritten from the test, not kept as reference; name the production change that would fail each test before writing its body.
 - **Bug fix**: write the regression test first and run it; it must fail for the reported reason (red). Apply the fix. Run it again (green). Never write the test after the fix without proving it red against the unfixed code.
 - **New feature**: one test for the happy path of each acceptance criterion, one per error path, and the edge cases: empty / null, boundaries, invalid input, permission denial, concurrency, dependency failure.
 - **Refactor**: before touching the code, pin current behaviour with characterization tests and see them pass. Refactor. The same tests must pass unchanged.

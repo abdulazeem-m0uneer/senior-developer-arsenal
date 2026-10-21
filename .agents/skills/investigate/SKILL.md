@@ -26,6 +26,7 @@ Activate this skill when:
 1. Capture raw error output, stack traces, and failing test assertions without model editorializing.
 2. Separate verified facts (`"I verified X via log/test"`) from assumptions (`"I assume Y"`).
 3. If a tool fails, enforce **Rule 0**: STOP immediately. Do not speculate or blindly retry.
+4. Build a red-capable loop before any hypothesis: one command, already run once, that goes red on this exact symptom. Consult: [Feedback Loop & Fix Discipline](./references/feedback-loop-and-fix-discipline.md)
 
 ### Step 2: Formulate 5+ Competing Hypotheses
 Consult: [Investigation Template](./references/investigation-template.md)
@@ -40,6 +41,7 @@ Generate at least 5 distinct, competing hypotheses covering:
 1. For each test, declare expected outcome before execution (`EXPECT`).
 2. Run minimal isolating command or test script.
 3. Compare reality with expectation (`MATCHES: yes/no`). If reality diverges, debug mental model, not reality.
+4. One hypothesis, one change. A fix that did not work: return to Step 1 with the new evidence; never stack a second fix on the first. Three failed fixes: stop and question the architecture (reference section 5).
 
 ### Step 4: 5-Whys Causal Tree & Chesterton's Fence
 Consult: [Epistemic Checklist](./references/epistemic-checklist.md)
@@ -53,6 +55,7 @@ Format output using the standardized template:
 - **Root Cause (5-Whys Causal Chain)**
 - **Surgical Fix (< 10 lines)**
 - **Reproduction Test Proving Permanence**
+- **Instrumentation Removed** (`grep` the debug tag returns nothing)
 
 ---
 

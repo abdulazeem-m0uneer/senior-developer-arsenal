@@ -25,6 +25,7 @@ antigravity	global	dir	fullstack-integration-master	.agents/skills/fullstack-int
 antigravity	global	dir	git-release	.agents/skills/git-release	.gemini/config/skills/git-release	-
 antigravity	global	dir	git-workflow-master	.agents/skills/git-workflow-master	.gemini/config/skills/git-workflow-master	-
 antigravity	global	dir	handoff	.agents/skills/handoff	.gemini/config/skills/handoff	-
+antigravity	global	dir	implementation-plan	.agents/skills/implementation-plan	.gemini/config/skills/implementation-plan	-
 antigravity	global	dir	incident-response	.agents/skills/incident-response	.gemini/config/skills/incident-response	-
 antigravity	global	dir	investigate	.agents/skills/investigate	.gemini/config/skills/investigate	-
 antigravity	global	dir	legacy-parity	.agents/skills/legacy-parity	.gemini/config/skills/legacy-parity	-
@@ -39,6 +40,7 @@ antigravity	global	dir	python-backend-expert	.agents/skills/python-backend-exper
 antigravity	global	dir	qa-engineer	.agents/skills/qa-engineer	.gemini/config/skills/qa-engineer	-
 antigravity	global	dir	quality-gate	.agents/skills/quality-gate	.gemini/config/skills/quality-gate	-
 antigravity	global	dir	repo-scan	.agents/skills/repo-scan	.gemini/config/skills/repo-scan	-
+antigravity	global	dir	requirements-grilling	.agents/skills/requirements-grilling	.gemini/config/skills/requirements-grilling	-
 antigravity	global	dir	security-audit	.agents/skills/security-audit	.gemini/config/skills/security-audit	-
 antigravity	global	dir	shared-infra-changes	.agents/skills/shared-infra-changes	.gemini/config/skills/shared-infra-changes	-
 antigravity	global	dir	smoke-test	.agents/skills/smoke-test	.gemini/config/skills/smoke-test	-
@@ -106,6 +108,7 @@ antigravity	project	dir	fullstack-integration-master	.agents/skills/fullstack-in
 antigravity	project	dir	git-release	.agents/skills/git-release	.agents/skills/git-release	-
 antigravity	project	dir	git-workflow-master	.agents/skills/git-workflow-master	.agents/skills/git-workflow-master	-
 antigravity	project	dir	handoff	.agents/skills/handoff	.agents/skills/handoff	-
+antigravity	project	dir	implementation-plan	.agents/skills/implementation-plan	.agents/skills/implementation-plan	-
 antigravity	project	dir	incident-response	.agents/skills/incident-response	.agents/skills/incident-response	-
 antigravity	project	dir	investigate	.agents/skills/investigate	.agents/skills/investigate	-
 antigravity	project	dir	legacy-parity	.agents/skills/legacy-parity	.agents/skills/legacy-parity	-
@@ -120,6 +123,7 @@ antigravity	project	dir	python-backend-expert	.agents/skills/python-backend-expe
 antigravity	project	dir	qa-engineer	.agents/skills/qa-engineer	.agents/skills/qa-engineer	-
 antigravity	project	dir	quality-gate	.agents/skills/quality-gate	.agents/skills/quality-gate	-
 antigravity	project	dir	repo-scan	.agents/skills/repo-scan	.agents/skills/repo-scan	-
+antigravity	project	dir	requirements-grilling	.agents/skills/requirements-grilling	.agents/skills/requirements-grilling	-
 antigravity	project	dir	security-audit	.agents/skills/security-audit	.agents/skills/security-audit	-
 antigravity	project	dir	shared-infra-changes	.agents/skills/shared-infra-changes	.agents/skills/shared-infra-changes	-
 antigravity	project	dir	smoke-test	.agents/skills/smoke-test	.agents/skills/smoke-test	-
@@ -186,6 +190,7 @@ gemini	global	dir	fullstack-integration-master	.agents/skills/fullstack-integrat
 gemini	global	dir	git-release	.agents/skills/git-release	.agents/skills/git-release	-
 gemini	global	dir	git-workflow-master	.agents/skills/git-workflow-master	.agents/skills/git-workflow-master	-
 gemini	global	dir	handoff	.agents/skills/handoff	.agents/skills/handoff	-
+gemini	global	dir	implementation-plan	.agents/skills/implementation-plan	.agents/skills/implementation-plan	-
 gemini	global	dir	incident-response	.agents/skills/incident-response	.agents/skills/incident-response	-
 gemini	global	dir	investigate	.agents/skills/investigate	.agents/skills/investigate	-
 gemini	global	dir	legacy-parity	.agents/skills/legacy-parity	.agents/skills/legacy-parity	-
@@ -200,6 +205,7 @@ gemini	global	dir	python-backend-expert	.agents/skills/python-backend-expert	.ag
 gemini	global	dir	qa-engineer	.agents/skills/qa-engineer	.agents/skills/qa-engineer	-
 gemini	global	dir	quality-gate	.agents/skills/quality-gate	.agents/skills/quality-gate	-
 gemini	global	dir	repo-scan	.agents/skills/repo-scan	.agents/skills/repo-scan	-
+gemini	global	dir	requirements-grilling	.agents/skills/requirements-grilling	.agents/skills/requirements-grilling	-
 gemini	global	dir	security-audit	.agents/skills/security-audit	.agents/skills/security-audit	-
 gemini	global	dir	shared-infra-changes	.agents/skills/shared-infra-changes	.agents/skills/shared-infra-changes	-
 gemini	global	dir	smoke-test	.agents/skills/smoke-test	.agents/skills/smoke-test	-
@@ -252,6 +258,7 @@ gemini	project	dir	fullstack-integration-master	.agents/skills/fullstack-integra
 gemini	project	dir	git-release	.agents/skills/git-release	.agents/skills/git-release	-
 gemini	project	dir	git-workflow-master	.agents/skills/git-workflow-master	.agents/skills/git-workflow-master	-
 gemini	project	dir	handoff	.agents/skills/handoff	.agents/skills/handoff	-
+gemini	project	dir	implementation-plan	.agents/skills/implementation-plan	.agents/skills/implementation-plan	-
 gemini	project	dir	incident-response	.agents/skills/incident-response	.agents/skills/incident-response	-
 gemini	project	dir	investigate	.agents/skills/investigate	.agents/skills/investigate	-
 gemini	project	dir	legacy-parity	.agents/skills/legacy-parity	.agents/skills/legacy-parity	-
@@ -266,6 +273,7 @@ gemini	project	dir	python-backend-expert	.agents/skills/python-backend-expert	.a
 gemini	project	dir	qa-engineer	.agents/skills/qa-engineer	.agents/skills/qa-engineer	-
 gemini	project	dir	quality-gate	.agents/skills/quality-gate	.agents/skills/quality-gate	-
 gemini	project	dir	repo-scan	.agents/skills/repo-scan	.agents/skills/repo-scan	-
+gemini	project	dir	requirements-grilling	.agents/skills/requirements-grilling	.agents/skills/requirements-grilling	-
 gemini	project	dir	security-audit	.agents/skills/security-audit	.agents/skills/security-audit	-
 gemini	project	dir	shared-infra-changes	.agents/skills/shared-infra-changes	.agents/skills/shared-infra-changes	-
 gemini	project	dir	smoke-test	.agents/skills/smoke-test	.agents/skills/smoke-test	-
@@ -354,6 +362,7 @@ codex	global	dir	fullstack-integration-master	.agents/skills/fullstack-integrati
 codex	global	dir	git-release	.agents/skills/git-release	.agents/skills/git-release	-
 codex	global	dir	git-workflow-master	.agents/skills/git-workflow-master	.agents/skills/git-workflow-master	-
 codex	global	dir	handoff	.agents/skills/handoff	.agents/skills/handoff	-
+codex	global	dir	implementation-plan	.agents/skills/implementation-plan	.agents/skills/implementation-plan	-
 codex	global	dir	incident-response	.agents/skills/incident-response	.agents/skills/incident-response	-
 codex	global	dir	investigate	.agents/skills/investigate	.agents/skills/investigate	-
 codex	global	dir	legacy-parity	.agents/skills/legacy-parity	.agents/skills/legacy-parity	-
@@ -368,6 +377,7 @@ codex	global	dir	python-backend-expert	.agents/skills/python-backend-expert	.age
 codex	global	dir	qa-engineer	.agents/skills/qa-engineer	.agents/skills/qa-engineer	-
 codex	global	dir	quality-gate	.agents/skills/quality-gate	.agents/skills/quality-gate	-
 codex	global	dir	repo-scan	.agents/skills/repo-scan	.agents/skills/repo-scan	-
+codex	global	dir	requirements-grilling	.agents/skills/requirements-grilling	.agents/skills/requirements-grilling	-
 codex	global	dir	security-audit	.agents/skills/security-audit	.agents/skills/security-audit	-
 codex	global	dir	shared-infra-changes	.agents/skills/shared-infra-changes	.agents/skills/shared-infra-changes	-
 codex	global	dir	smoke-test	.agents/skills/smoke-test	.agents/skills/smoke-test	-
@@ -434,6 +444,7 @@ codex	project	dir	fullstack-integration-master	.agents/skills/fullstack-integrat
 codex	project	dir	git-release	.agents/skills/git-release	.agents/skills/git-release	-
 codex	project	dir	git-workflow-master	.agents/skills/git-workflow-master	.agents/skills/git-workflow-master	-
 codex	project	dir	handoff	.agents/skills/handoff	.agents/skills/handoff	-
+codex	project	dir	implementation-plan	.agents/skills/implementation-plan	.agents/skills/implementation-plan	-
 codex	project	dir	incident-response	.agents/skills/incident-response	.agents/skills/incident-response	-
 codex	project	dir	investigate	.agents/skills/investigate	.agents/skills/investigate	-
 codex	project	dir	legacy-parity	.agents/skills/legacy-parity	.agents/skills/legacy-parity	-
@@ -448,6 +459,7 @@ codex	project	dir	python-backend-expert	.agents/skills/python-backend-expert	.ag
 codex	project	dir	qa-engineer	.agents/skills/qa-engineer	.agents/skills/qa-engineer	-
 codex	project	dir	quality-gate	.agents/skills/quality-gate	.agents/skills/quality-gate	-
 codex	project	dir	repo-scan	.agents/skills/repo-scan	.agents/skills/repo-scan	-
+codex	project	dir	requirements-grilling	.agents/skills/requirements-grilling	.agents/skills/requirements-grilling	-
 codex	project	dir	security-audit	.agents/skills/security-audit	.agents/skills/security-audit	-
 codex	project	dir	shared-infra-changes	.agents/skills/shared-infra-changes	.agents/skills/shared-infra-changes	-
 codex	project	dir	smoke-test	.agents/skills/smoke-test	.agents/skills/smoke-test	-
@@ -514,6 +526,7 @@ opencode	global	dir	fullstack-integration-master	.agents/skills/fullstack-integr
 opencode	global	dir	git-release	.agents/skills/git-release	.agents/skills/git-release	-
 opencode	global	dir	git-workflow-master	.agents/skills/git-workflow-master	.agents/skills/git-workflow-master	-
 opencode	global	dir	handoff	.agents/skills/handoff	.agents/skills/handoff	-
+opencode	global	dir	implementation-plan	.agents/skills/implementation-plan	.agents/skills/implementation-plan	-
 opencode	global	dir	incident-response	.agents/skills/incident-response	.agents/skills/incident-response	-
 opencode	global	dir	investigate	.agents/skills/investigate	.agents/skills/investigate	-
 opencode	global	dir	legacy-parity	.agents/skills/legacy-parity	.agents/skills/legacy-parity	-
@@ -528,6 +541,7 @@ opencode	global	dir	python-backend-expert	.agents/skills/python-backend-expert	.
 opencode	global	dir	qa-engineer	.agents/skills/qa-engineer	.agents/skills/qa-engineer	-
 opencode	global	dir	quality-gate	.agents/skills/quality-gate	.agents/skills/quality-gate	-
 opencode	global	dir	repo-scan	.agents/skills/repo-scan	.agents/skills/repo-scan	-
+opencode	global	dir	requirements-grilling	.agents/skills/requirements-grilling	.agents/skills/requirements-grilling	-
 opencode	global	dir	security-audit	.agents/skills/security-audit	.agents/skills/security-audit	-
 opencode	global	dir	shared-infra-changes	.agents/skills/shared-infra-changes	.agents/skills/shared-infra-changes	-
 opencode	global	dir	smoke-test	.agents/skills/smoke-test	.agents/skills/smoke-test	-
@@ -594,6 +608,7 @@ opencode	project	dir	fullstack-integration-master	.agents/skills/fullstack-integ
 opencode	project	dir	git-release	.agents/skills/git-release	.agents/skills/git-release	-
 opencode	project	dir	git-workflow-master	.agents/skills/git-workflow-master	.agents/skills/git-workflow-master	-
 opencode	project	dir	handoff	.agents/skills/handoff	.agents/skills/handoff	-
+opencode	project	dir	implementation-plan	.agents/skills/implementation-plan	.agents/skills/implementation-plan	-
 opencode	project	dir	incident-response	.agents/skills/incident-response	.agents/skills/incident-response	-
 opencode	project	dir	investigate	.agents/skills/investigate	.agents/skills/investigate	-
 opencode	project	dir	legacy-parity	.agents/skills/legacy-parity	.agents/skills/legacy-parity	-
@@ -608,6 +623,7 @@ opencode	project	dir	python-backend-expert	.agents/skills/python-backend-expert	
 opencode	project	dir	qa-engineer	.agents/skills/qa-engineer	.agents/skills/qa-engineer	-
 opencode	project	dir	quality-gate	.agents/skills/quality-gate	.agents/skills/quality-gate	-
 opencode	project	dir	repo-scan	.agents/skills/repo-scan	.agents/skills/repo-scan	-
+opencode	project	dir	requirements-grilling	.agents/skills/requirements-grilling	.agents/skills/requirements-grilling	-
 opencode	project	dir	security-audit	.agents/skills/security-audit	.agents/skills/security-audit	-
 opencode	project	dir	shared-infra-changes	.agents/skills/shared-infra-changes	.agents/skills/shared-infra-changes	-
 opencode	project	dir	smoke-test	.agents/skills/smoke-test	.agents/skills/smoke-test	-
@@ -674,6 +690,7 @@ cursor	global	dir	fullstack-integration-master	.agents/skills/fullstack-integrat
 cursor	global	dir	git-release	.agents/skills/git-release	.agents/skills/git-release	-
 cursor	global	dir	git-workflow-master	.agents/skills/git-workflow-master	.agents/skills/git-workflow-master	-
 cursor	global	dir	handoff	.agents/skills/handoff	.agents/skills/handoff	-
+cursor	global	dir	implementation-plan	.agents/skills/implementation-plan	.agents/skills/implementation-plan	-
 cursor	global	dir	incident-response	.agents/skills/incident-response	.agents/skills/incident-response	-
 cursor	global	dir	investigate	.agents/skills/investigate	.agents/skills/investigate	-
 cursor	global	dir	legacy-parity	.agents/skills/legacy-parity	.agents/skills/legacy-parity	-
@@ -688,6 +705,7 @@ cursor	global	dir	python-backend-expert	.agents/skills/python-backend-expert	.ag
 cursor	global	dir	qa-engineer	.agents/skills/qa-engineer	.agents/skills/qa-engineer	-
 cursor	global	dir	quality-gate	.agents/skills/quality-gate	.agents/skills/quality-gate	-
 cursor	global	dir	repo-scan	.agents/skills/repo-scan	.agents/skills/repo-scan	-
+cursor	global	dir	requirements-grilling	.agents/skills/requirements-grilling	.agents/skills/requirements-grilling	-
 cursor	global	dir	security-audit	.agents/skills/security-audit	.agents/skills/security-audit	-
 cursor	global	dir	shared-infra-changes	.agents/skills/shared-infra-changes	.agents/skills/shared-infra-changes	-
 cursor	global	dir	smoke-test	.agents/skills/smoke-test	.agents/skills/smoke-test	-
@@ -740,6 +758,7 @@ cursor	project	dir	fullstack-integration-master	.agents/skills/fullstack-integra
 cursor	project	dir	git-release	.agents/skills/git-release	.agents/skills/git-release	-
 cursor	project	dir	git-workflow-master	.agents/skills/git-workflow-master	.agents/skills/git-workflow-master	-
 cursor	project	dir	handoff	.agents/skills/handoff	.agents/skills/handoff	-
+cursor	project	dir	implementation-plan	.agents/skills/implementation-plan	.agents/skills/implementation-plan	-
 cursor	project	dir	incident-response	.agents/skills/incident-response	.agents/skills/incident-response	-
 cursor	project	dir	investigate	.agents/skills/investigate	.agents/skills/investigate	-
 cursor	project	dir	legacy-parity	.agents/skills/legacy-parity	.agents/skills/legacy-parity	-
@@ -754,6 +773,7 @@ cursor	project	dir	python-backend-expert	.agents/skills/python-backend-expert	.a
 cursor	project	dir	qa-engineer	.agents/skills/qa-engineer	.agents/skills/qa-engineer	-
 cursor	project	dir	quality-gate	.agents/skills/quality-gate	.agents/skills/quality-gate	-
 cursor	project	dir	repo-scan	.agents/skills/repo-scan	.agents/skills/repo-scan	-
+cursor	project	dir	requirements-grilling	.agents/skills/requirements-grilling	.agents/skills/requirements-grilling	-
 cursor	project	dir	security-audit	.agents/skills/security-audit	.agents/skills/security-audit	-
 cursor	project	dir	shared-infra-changes	.agents/skills/shared-infra-changes	.agents/skills/shared-infra-changes	-
 cursor	project	dir	smoke-test	.agents/skills/smoke-test	.agents/skills/smoke-test	-
@@ -820,6 +840,7 @@ windsurf	global	dir	fullstack-integration-master	.agents/skills/fullstack-integr
 windsurf	global	dir	git-release	.agents/skills/git-release	.agents/skills/git-release	-
 windsurf	global	dir	git-workflow-master	.agents/skills/git-workflow-master	.agents/skills/git-workflow-master	-
 windsurf	global	dir	handoff	.agents/skills/handoff	.agents/skills/handoff	-
+windsurf	global	dir	implementation-plan	.agents/skills/implementation-plan	.agents/skills/implementation-plan	-
 windsurf	global	dir	incident-response	.agents/skills/incident-response	.agents/skills/incident-response	-
 windsurf	global	dir	investigate	.agents/skills/investigate	.agents/skills/investigate	-
 windsurf	global	dir	legacy-parity	.agents/skills/legacy-parity	.agents/skills/legacy-parity	-
@@ -834,6 +855,7 @@ windsurf	global	dir	python-backend-expert	.agents/skills/python-backend-expert	.
 windsurf	global	dir	qa-engineer	.agents/skills/qa-engineer	.agents/skills/qa-engineer	-
 windsurf	global	dir	quality-gate	.agents/skills/quality-gate	.agents/skills/quality-gate	-
 windsurf	global	dir	repo-scan	.agents/skills/repo-scan	.agents/skills/repo-scan	-
+windsurf	global	dir	requirements-grilling	.agents/skills/requirements-grilling	.agents/skills/requirements-grilling	-
 windsurf	global	dir	security-audit	.agents/skills/security-audit	.agents/skills/security-audit	-
 windsurf	global	dir	shared-infra-changes	.agents/skills/shared-infra-changes	.agents/skills/shared-infra-changes	-
 windsurf	global	dir	smoke-test	.agents/skills/smoke-test	.agents/skills/smoke-test	-
@@ -869,6 +891,7 @@ windsurf	project	dir	fullstack-integration-master	.agents/skills/fullstack-integ
 windsurf	project	dir	git-release	.agents/skills/git-release	.agents/skills/git-release	-
 windsurf	project	dir	git-workflow-master	.agents/skills/git-workflow-master	.agents/skills/git-workflow-master	-
 windsurf	project	dir	handoff	.agents/skills/handoff	.agents/skills/handoff	-
+windsurf	project	dir	implementation-plan	.agents/skills/implementation-plan	.agents/skills/implementation-plan	-
 windsurf	project	dir	incident-response	.agents/skills/incident-response	.agents/skills/incident-response	-
 windsurf	project	dir	investigate	.agents/skills/investigate	.agents/skills/investigate	-
 windsurf	project	dir	legacy-parity	.agents/skills/legacy-parity	.agents/skills/legacy-parity	-
@@ -883,6 +906,7 @@ windsurf	project	dir	python-backend-expert	.agents/skills/python-backend-expert	
 windsurf	project	dir	qa-engineer	.agents/skills/qa-engineer	.agents/skills/qa-engineer	-
 windsurf	project	dir	quality-gate	.agents/skills/quality-gate	.agents/skills/quality-gate	-
 windsurf	project	dir	repo-scan	.agents/skills/repo-scan	.agents/skills/repo-scan	-
+windsurf	project	dir	requirements-grilling	.agents/skills/requirements-grilling	.agents/skills/requirements-grilling	-
 windsurf	project	dir	security-audit	.agents/skills/security-audit	.agents/skills/security-audit	-
 windsurf	project	dir	shared-infra-changes	.agents/skills/shared-infra-changes	.agents/skills/shared-infra-changes	-
 windsurf	project	dir	smoke-test	.agents/skills/smoke-test	.agents/skills/smoke-test	-
@@ -932,6 +956,7 @@ copilot	global	dir	fullstack-integration-master	.agents/skills/fullstack-integra
 copilot	global	dir	git-release	.agents/skills/git-release	.agents/skills/git-release	-
 copilot	global	dir	git-workflow-master	.agents/skills/git-workflow-master	.agents/skills/git-workflow-master	-
 copilot	global	dir	handoff	.agents/skills/handoff	.agents/skills/handoff	-
+copilot	global	dir	implementation-plan	.agents/skills/implementation-plan	.agents/skills/implementation-plan	-
 copilot	global	dir	incident-response	.agents/skills/incident-response	.agents/skills/incident-response	-
 copilot	global	dir	investigate	.agents/skills/investigate	.agents/skills/investigate	-
 copilot	global	dir	legacy-parity	.agents/skills/legacy-parity	.agents/skills/legacy-parity	-
@@ -946,6 +971,7 @@ copilot	global	dir	python-backend-expert	.agents/skills/python-backend-expert	.a
 copilot	global	dir	qa-engineer	.agents/skills/qa-engineer	.agents/skills/qa-engineer	-
 copilot	global	dir	quality-gate	.agents/skills/quality-gate	.agents/skills/quality-gate	-
 copilot	global	dir	repo-scan	.agents/skills/repo-scan	.agents/skills/repo-scan	-
+copilot	global	dir	requirements-grilling	.agents/skills/requirements-grilling	.agents/skills/requirements-grilling	-
 copilot	global	dir	security-audit	.agents/skills/security-audit	.agents/skills/security-audit	-
 copilot	global	dir	shared-infra-changes	.agents/skills/shared-infra-changes	.agents/skills/shared-infra-changes	-
 copilot	global	dir	smoke-test	.agents/skills/smoke-test	.agents/skills/smoke-test	-
@@ -998,6 +1024,7 @@ copilot	project	dir	fullstack-integration-master	.agents/skills/fullstack-integr
 copilot	project	dir	git-release	.agents/skills/git-release	.agents/skills/git-release	-
 copilot	project	dir	git-workflow-master	.agents/skills/git-workflow-master	.agents/skills/git-workflow-master	-
 copilot	project	dir	handoff	.agents/skills/handoff	.agents/skills/handoff	-
+copilot	project	dir	implementation-plan	.agents/skills/implementation-plan	.agents/skills/implementation-plan	-
 copilot	project	dir	incident-response	.agents/skills/incident-response	.agents/skills/incident-response	-
 copilot	project	dir	investigate	.agents/skills/investigate	.agents/skills/investigate	-
 copilot	project	dir	legacy-parity	.agents/skills/legacy-parity	.agents/skills/legacy-parity	-
@@ -1012,6 +1039,7 @@ copilot	project	dir	python-backend-expert	.agents/skills/python-backend-expert	.
 copilot	project	dir	qa-engineer	.agents/skills/qa-engineer	.agents/skills/qa-engineer	-
 copilot	project	dir	quality-gate	.agents/skills/quality-gate	.agents/skills/quality-gate	-
 copilot	project	dir	repo-scan	.agents/skills/repo-scan	.agents/skills/repo-scan	-
+copilot	project	dir	requirements-grilling	.agents/skills/requirements-grilling	.agents/skills/requirements-grilling	-
 copilot	project	dir	security-audit	.agents/skills/security-audit	.agents/skills/security-audit	-
 copilot	project	dir	shared-infra-changes	.agents/skills/shared-infra-changes	.agents/skills/shared-infra-changes	-
 copilot	project	dir	smoke-test	.agents/skills/smoke-test	.agents/skills/smoke-test	-

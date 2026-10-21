@@ -95,6 +95,8 @@ Skills: `.agents/skills/<name>/SKILL.md`. Subagents: `.agents/subagents/`.
 | Shared infrastructure | `shared-infra-changes` | `infra-reviewer` |
 | Dependencies | `dependency-upgrade` | — |
 | Decisions, plans, docs | `decision-log`, `delivery-board-sync`, `docs-writer` | `spec-reviewer` |
+| Requirements, before building | `requirements-grilling` | — |
+| Implementation plans, task execution | `implementation-plan` | `code-reviewer`, `test-engineer` |
 | Legacy rebuilds | `legacy-parity` | `legacy-analyst` |
 | Shared checkouts, unattended runs | `parallel-sessions`, `autonomous-run` | — |
 | Session handoff (context nearly full) | `handoff` | — |

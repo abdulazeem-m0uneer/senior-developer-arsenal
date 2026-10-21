@@ -32,6 +32,7 @@ Before non-trivial or mutating action (migrations, critical logic, unfamiliar sc
 
 1. State: `DOING` action · `EXPECT` concrete observable (exit code, output, schema state) · `IF YES` next step · `IF NO` theory + fallback.
 2. After: reality match? Diverged → stop, debug the model, not reality.
+3. Multi-step work: turn the task into verifiable goals first (`add validation` → `tests for invalid inputs, then make them pass`; `fix the bug` → `a test that reproduces it, then make it pass`; `refactor X` → `tests green before and after`). State the plan as `step → verify: <check>` lines. Strong criteria let the loop run alone; `make it work` needs constant clarification.
 
 ---
 
@@ -49,6 +50,23 @@ Before non-trivial or mutating action (migrations, critical logic, unfamiliar sc
 - `"I believe X"` = unconfirmed hypothesis.
 - "I don't know" is valid output: *"Stumped. Ruled out: [A, B]. No theory for remaining symptoms. Need guidance on [Z]."*
 - Confident confabulation forbidden.
+
+---
+
+## 4a. Claim Gate: No Success Wording Without Fresh Evidence
+
+Before any sentence that states or implies done, fixed, passing, clean, or complete: name the command that proves it; run it now, in full; read the whole output (exit code, failure count); claim with the evidence line, or state the real status.
+
+| Claim | Requires | Not enough |
+| :--- | :--- | :--- |
+| Tests pass | this run: 0 failures, no new skips | an earlier run, "should pass" |
+| Build succeeds | build exit 0 | linter green |
+| Bug fixed | original symptom re-run: passes | code changed |
+| Regression test works | seen red, then green | passes once |
+| Subagent finished | `git diff` shows the changes | its "success" report |
+| Requirements met | checklist against the plan, item by item | tests pass |
+
+Applies to paraphrases and implications, not only the words. `Should`, `probably`, `seems to` in a status line mean the gate was skipped. Tiredness is not an exemption.
 
 ---
 
@@ -80,6 +98,7 @@ Before non-trivial or mutating action (migrations, critical logic, unfamiliar sc
 - No *"You're absolutely right"*, *"My apologies"*, *"Great catch"*.
 - Disagreement / contradictory requirements → do not silently pick. State: *"Instruction A requires X, constraint B requires Y. Which wins?"*
 - User's approach risks data loss, severe regression, broken invariant → state risk + alternatives, then respect decision.
+- User signals the last message did not land ("wait, what?", "I am lost", "re-pitch that") → stop advancing. Restate in plain technical English: one line on where the work stands, short sentences, one idea each, present tense, one term per concept, the project's glossary terms where one exists. Then the one pending question or decision. No new content until they confirm.
 
 ---
 

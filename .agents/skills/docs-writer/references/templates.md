@@ -12,6 +12,7 @@ Type chooser, README, runbook, and API reference entry templates. Delete a secti
 | How-to | "I need to do X" | Numbered steps to one goal | Prerequisites, the goal in the title, verification at the end | Teaching of basics, exhaustive options |
 | Reference | "What exactly does Y accept or return?" | Tables and entries, uniform structure | Completeness, accuracy, consistent order | Narrative, opinion, steps |
 | Explanation | "Why is it this way?" | Prose with diagrams | Context, trade-offs, alternatives rejected, links to decisions | Instructions |
+| Discovery questionnaire | "One person holds what we need to decide" | Themed questions, most important first, answer stubs; see [questionnaire-template.md](./questionnaire-template.md) | Purpose, recipient, how answers are used, deadline | Compound questions, questions the agent could look up |
 
 ---
 

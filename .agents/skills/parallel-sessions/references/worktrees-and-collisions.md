@@ -22,9 +22,29 @@ Replace `main` with the default branch printed by the second command. On a host 
 
 ---
 
+## 1a. Detect Existing Isolation Before Creating Any
+
+```bash
+GIT_DIR=$(cd "$(git rev-parse --git-dir)" && pwd -P)
+GIT_COMMON=$(cd "$(git rev-parse --git-common-dir)" && pwd -P)
+git rev-parse --show-superproject-working-tree      # non-empty: a submodule, which also makes GIT_DIR != GIT_COMMON
+git branch --show-current                           # empty: detached HEAD, host-managed workspace
+```
+
+| Result | Meaning | Action |
+| :--- | :--- | :--- |
+| `GIT_DIR != GIT_COMMON`, not a submodule, on a branch | Already in a linked worktree | Do not create another; report path and branch |
+| Same, detached HEAD | Host-managed isolated workspace | Work here; a branch is named at finish time; cleanup belongs to the host |
+| `GIT_DIR == GIT_COMMON` or submodule | Plain checkout | Ask once for consent to isolate unless the user already stated a preference; declined: work in place |
+
+Once isolation is wanted: the harness's native worktree tool (`EnterWorktree`, a `/worktree` command, a `--worktree` flag) first, since it owns placement, branch creation, and cleanup and a manual `git worktree add` beside it creates state the harness cannot see; `git worktree add` only when no native tool exists. Never start implementation on the default branch without explicit consent.
+
+---
+
 ## 2. One Worktree per Task
 
 ```bash
+git check-ignore -q .worktrees || { echo '.worktrees/' >> .gitignore; git add .gitignore; git commit -m 'chore: ignore worktrees'; }   # project-local dirs must be ignored
 git worktree add -b feat/refund-window ../wt-refund-window origin/main   # new branch from the fresh remote
 cd ../wt-refund-window && <install dependencies>                         # each worktree has its own install
 git worktree list                                                        # see every task in flight
@@ -41,6 +61,9 @@ git worktree prune                                                       # drop 
 | Separate port, database name, and cache folder per worktree | Two test runs on one database corrupt each other |
 | Environment files are copied in, never symlinked to the shared checkout | An edit in one task must not change another |
 | Remove the worktree the moment its branch merges | A leftover worktree looks like work in progress |
+| Directory: the user's stated preference, else an existing `.worktrees/` then `worktrees/`, else create `.worktrees/` | Explicit instruction beats observed layout |
+| Baseline before any edit: install as the manifest dictates, run the full suite; red baseline is reported and the user decides | Every later failure is ambiguous otherwise |
+| `git worktree add` refused by a sandbox: say so, work in place, still run setup and the baseline | A silent fallback hides where the work happened |
 
 ---
 

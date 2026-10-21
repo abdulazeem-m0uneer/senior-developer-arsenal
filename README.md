@@ -32,7 +32,7 @@ GitHub offers no trending API, so [`scripts/trending_rank.py`](scripts/trending_
 | Component | Quantity | Purpose |
 | :--- | :---: | :--- |
 | **Rules** | 13 | Enforce senior engineering standards: SOLID, a 1000-line file cap, mandatory tests with every change, minimal-change ladder, plus Python, Node.js, C#, Frontend, UI/UX, Databases, Git, Token Frugality, and Defensive Epistemology. |
-| **Specialized Skills** | 47 | Actionable runbooks following the Agent Skills standard (`SKILL.md` + progressive `references/`) with slash commands and negative triggers. |
+| **Specialized Skills** | 49 | Actionable runbooks following the Agent Skills standard (`SKILL.md` + progressive `references/`) with slash commands and negative triggers. |
 | **Autonomous Subagents** | 17 | Dedicated personas (`code-reviewer`, `code-explorer`, `qa-engineer`, `test-engineer`, `security-auditor`, `devops-engineer`, `epistemic-debugger`, `spec-reviewer`, `infra-reviewer`, `legacy-analyst`, and stack specialists). |
 | **Supported Agents** | 8 | Claude Code (plugin), Codex CLI, OpenCode, Cursor, Windsurf, GitHub Copilot, Gemini CLI, Antigravity. |
 | **Installers** | 2 | PowerShell (`install.ps1`) and Bash (`install.sh`) with identical options, non-destructive installs, and clean uninstall. |
@@ -229,7 +229,7 @@ Five rules are always on (core, minimal-change, token-conservation, defensive-ep
 
 ## ⚡ Active Skills & Capabilities
 
-The arsenal includes 47 specialized skills conforming to the Agent Skills standard (agentskills.io), featuring isolated progressive disclosure references (`references/`), slash commands, and negative triggers:
+The arsenal includes 49 specialized skills conforming to the Agent Skills standard (agentskills.io), featuring isolated progressive disclosure references (`references/`), slash commands, and negative triggers:
 
 ### 1. code-review (/code-review)
 - **When to use**: Auditing pull requests, reviewing recent commits, inspecting staged diffs, or evaluating branch code quality.
@@ -452,6 +452,14 @@ The arsenal includes 47 specialized skills conforming to the Agent Skills standa
 ### 47. handoff (/handoff)
 - **When to use**: Context is nearly full or work moves to another session, agent, or machine: compact the conversation into one short document the next session reads instead of the history.
 - **Includes**: [handoff-template.md](.agents/skills/handoff/references/handoff-template.md).
+
+### 48. requirements-grilling (/requirements-grilling)
+- **When to use**: A request leaves a non-trivial choice open: interrogate it in frontier-driven rounds with a recommended answer per question, look facts up yourself, write a design brief with your own calls marked, run a builder check, and build nothing until the brief is approved.
+- **Includes**: [question-ladder-and-brief.md](.agents/skills/requirements-grilling/references/question-ladder-and-brief.md).
+
+### 49. implementation-plan (/implementation-plan)
+- **When to use**: An approved brief spans more than one task: write bite-sized tasks naming exact files, signatures, and test assertions, self-review for coverage and type drift, then execute inline or with one fresh implementer and reviewer per task behind a ledger that survives context loss.
+- **Includes**: [plan-format.md](.agents/skills/implementation-plan/references/plan-format.md), [execution-loop.md](.agents/skills/implementation-plan/references/execution-loop.md).
 
 ---
 
