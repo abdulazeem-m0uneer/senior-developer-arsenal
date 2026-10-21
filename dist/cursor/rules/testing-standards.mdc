@@ -7,7 +7,7 @@ alwaysApply: true
 
 # Mandatory Testing Standards
 
-Tests are part of the change, not a follow-up. This rule applies to every code modification regardless of size or reason.
+Tests are part of the change, not follow-up. Applies to every modification, any size, any reason.
 
 ---
 
@@ -15,31 +15,31 @@ Tests are part of the change, not a follow-up. This rule applies to every code m
 
 | Change type | Required tests |
 | :--- | :--- |
-| **New feature** | Happy path, every error path, and edge cases (empty, null, boundary, invalid input, permission denial, concurrency, dependency failure). |
-| **Bug fix** | A regression test that fails before the fix and passes after it. Write it first. |
-| **Refactor** | Characterization tests pinning current behavior before the code moves; they must pass unchanged afterwards. |
-| **Performance change** | A benchmark or assertion that captures the improvement, plus the existing behavioral tests. |
-| **Config, schema, or migration** | A check that exercises the new configuration or migrates a representative dataset up and down. |
-| **Dependency upgrade** | The full existing suite, plus tests for any API whose behavior changed. |
+| **New feature** | Happy path, every error path, edges (empty, null, boundary, invalid, permission denial, concurrency, dependency failure). |
+| **Bug fix** | Regression test: fails before fix, passes after. Write first. |
+| **Refactor** | Characterization tests pin current behavior before move; pass unchanged after. |
+| **Performance change** | Benchmark or assertion capturing improvement + existing behavioral tests. |
+| **Config, schema, migration** | Exercise new config, or migrate representative dataset up + down. |
+| **Dependency upgrade** | Full suite + tests for any API whose behavior changed. |
 
-If no test framework exists, set up the minimal standard one for the stack before making the change. If a test is truly impossible, state why explicitly and describe the manual verification performed; never skip silently.
+No framework → set up minimal standard one for stack first. Test truly impossible → say why + manual verification done; never skip silently.
 
 ---
 
 ## 2. Quality Bar for Tests
 
-- **Behavior, not implementation**: assert on observable outcomes and contracts, not private calls.
-- **Deterministic**: no real clocks, random seeds, network, or shared mutable state without control. A flaky test is a defect.
-- **Independent**: each test sets up and tears down its own state and passes in any order.
-- **Readable**: one behavior per test, Arrange / Act / Assert, intention-revealing names.
-- **Fast feedback**: unit tests in milliseconds; reserve integration and end-to-end tests for boundaries that need them.
-- **No vacuous tests**: a test that cannot fail, asserts nothing, or only mirrors the implementation does not count.
+- Behavior, not implementation: observable outcomes + contracts, not private calls.
+- Deterministic: no real clock, random seed, network, shared mutable state. Flaky = defect.
+- Independent: own setup/teardown, any order.
+- Readable: one behavior per test, Arrange / Act / Assert, intention-revealing names.
+- Fast: unit in ms; integration/e2e only at boundaries that need them.
+- No vacuous tests: cannot fail, asserts nothing, mirrors implementation → does not count.
 
 ---
 
 ## 3. Definition of Done for Testing
 
-1. New and changed behavior is covered by tests written in the same change.
-2. The full test suite, lint, and type-check pass locally; failures are reported verbatim, never hidden.
-3. No test is skipped, disabled, or deleted to make the suite pass without an explicit, stated reason.
-4. Use the `test-every-change` skill to derive the required tests and the `definition-of-done` skill to verify completion.
+1. New + changed behavior covered in same change.
+2. Full suite, lint, type-check pass locally; failures reported verbatim.
+3. No test skipped, disabled, deleted to pass without stated reason.
+4. `test-every-change` skill derives required tests; `definition-of-done` verifies completion.

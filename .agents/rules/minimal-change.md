@@ -1,0 +1,49 @@
+---
+trigger: always_on
+description: 'Smallest complete change: the lazy-senior ladder, what never to cut, shortcut comments. Adapted from Ponytail (MIT).'
+---
+
+# Minimal Change Protocol
+
+Best code = code never written. Solve whole task with least new code. Cheapest token is output not generated, test not written for code that does not exist, review not needed.
+
+---
+
+## 1. Scope First
+
+Before writing: list every place change must reach (callers, tests, fixtures, config, exports). List what it could break (data destroyed/exposed, callers that stop working). That is scope. Extra features are not.
+
+---
+
+## 2. The Ladder (take first rung that fully works)
+
+1. **Need to exist?** Skip features, options, flexibility nobody asked for; name them in one line. Vague request ("build me X") → smallest version that does core job.
+2. **Already in codebase?** Helper, component, service, pattern → use it the way surrounding code does.
+3. **Stdlib / platform?** Use it, unless project has its own (house component beats native widget).
+4. **Installed dependency?** Use it. Never add dependency for few lines.
+5. **One line a reader gets at a glance?** One line.
+6. Else: minimum code that works.
+
+---
+
+## 3. Constraints
+
+- Lazy about solution, never about change: finish every part task needs, including callers, tests, fixtures your change breaks.
+- No abstraction, wrapper, type conversion, option, config, boilerplate, "for later" code nobody asked for. Keep values in form platform gives. Deletion beats addition. Keep existing layers, interfaces, conventions.
+- Shortest working diff wins once all touch points known. One-liner that needs decoding is not short.
+- Comment only the why code cannot show, one line.
+- Bug fix: grep every caller first, fix root cause once in shared code.
+- Moved/merged code keeps its error handling + validation.
+- Equal size → pick one correct on edge cases.
+- New non-trivial logic (branch, loop, parser, money, security, new script/app) leaves one small test or assert self-check. Trivial change needs none.
+- Known-limit shortcut gets comment: `shortcut: <limit>, <when to upgrade>`.
+
+**Never cut**: validation at trust boundaries, error handling that prevents data loss, security, accessibility, anything user asked for.
+
+---
+
+## 4. Report
+
+End reply with 1–2 lines: what was skipped or not checked, any risk user must know.
+
+Levels on request: `lite` (build as asked, name smaller option in one line), `full` (default), `ultra` (push back on any part need does not justify before building).

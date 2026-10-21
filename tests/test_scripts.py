@@ -60,6 +60,13 @@ class RenderTests(unittest.TestCase):
         self.assertNotIn("sandbox_mode", build.render_agent("codex", agent))
         self.assertIn("model: inherit", build.render_agent("antigravity", agent))
 
+    def test_fast_agent_uses_cheap_model_where_supported(self):
+        agent = dict(self.AGENT, pro=False, fast=True)
+        self.assertIn("model: haiku", build.render_agent("claude", agent))
+        self.assertIn('model_reasoning_effort = "low"', build.render_agent("codex", agent))
+        self.assertIn("model: inherit", build.render_agent("antigravity", agent))
+        self.assertIn("model: inherit", build.render_agent("cursor", agent))
+
     def test_description_with_quotes_stays_valid(self):
         self.assertIn('description: "Finds \\"bugs\\": fast"', build.render_agent("claude", self.AGENT))
         self.assertIn('description = "Finds \\"bugs\\": fast"', build.render_agent("codex", self.AGENT))
