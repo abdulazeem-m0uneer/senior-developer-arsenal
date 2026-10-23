@@ -32,7 +32,7 @@ GitHub offers no trending API, so [`scripts/trending_rank.py`](scripts/trending_
 | Component | Quantity | Purpose |
 | :--- | :---: | :--- |
 | **Rules** | 13 | Enforce senior engineering standards: SOLID, a 1000-line file cap, mandatory tests with every change, minimal-change ladder, plus Python, Node.js, C#, Frontend, UI/UX, Databases, Git, Token Frugality, and Defensive Epistemology. |
-| **Specialized Skills** | 50 | Actionable runbooks following the Agent Skills standard (`SKILL.md` + progressive `references/`) with slash commands and negative triggers. |
+| **Specialized Skills** | 51 | Actionable runbooks following the Agent Skills standard (`SKILL.md` + progressive `references/`) with slash commands and negative triggers. |
 | **Autonomous Subagents** | 17 | Dedicated personas (`code-reviewer`, `code-explorer`, `qa-engineer`, `test-engineer`, `security-auditor`, `devops-engineer`, `epistemic-debugger`, `spec-reviewer`, `infra-reviewer`, `legacy-analyst`, and stack specialists). |
 | **Supported Agents** | 8 | Claude Code (plugin), Codex CLI, OpenCode, Cursor, Windsurf, GitHub Copilot, Gemini CLI, Antigravity. |
 | **Installers** | 2 | PowerShell (`install.ps1`) and Bash (`install.sh`) with identical options, non-destructive installs, and clean uninstall. |
@@ -70,7 +70,7 @@ Benchmarked against full-solution reviews on production-grade repositories:
 senior-developer-arsenal/
 ├── .agents/                     # Single source of truth (edit here only)
 │   ├── rules/                   # 12 rules with trigger/description/globs frontmatter
-│   ├── skills/<name>/           # 46 skills: SKILL.md + references/ (+ scripts/ where bundled)
+│   ├── skills/<name>/           # 51 skills: SKILL.md + references/ (+ scripts/ where bundled)
 │   ├── subagents/               # subagent-definitions.json + prompts/<name>.md
 │   └── mcp/servers.json         # Canonical MCP server definitions (CodeGraph, Hindsight)
 ├── dist/                        # GENERATED per-agent output (do not edit)
@@ -229,7 +229,7 @@ Five rules are always on (core, minimal-change, token-conservation, defensive-ep
 
 ## ⚡ Active Skills & Capabilities
 
-The arsenal includes 50 specialized skills conforming to the Agent Skills standard (agentskills.io), featuring isolated progressive disclosure references (`references/`), slash commands, and negative triggers:
+The arsenal includes 51 specialized skills conforming to the Agent Skills standard (agentskills.io), featuring isolated progressive disclosure references (`references/`), slash commands, and negative triggers:
 
 ### 1. code-review (/code-review)
 - **When to use**: Auditing pull requests, reviewing recent commits, inspecting staged diffs, or evaluating branch code quality.
@@ -465,6 +465,10 @@ The arsenal includes 50 specialized skills conforming to the Agent Skills standa
 - **When to use**: An outside API, database, or internal service must become callable by agents as tools: service-prefixed names, strict schemas, pagination and a response cap, result-level errors, behaviour annotations, then ten read-only evaluation questions an agent must answer through the tools alone.
 - **Includes**: [tool-design-checklist.md](.agents/skills/mcp-server/references/tool-design-checklist.md), [evaluation-questions.md](.agents/skills/mcp-server/references/evaluation-questions.md).
 
+### 51. reverse-engineer (/reverse-engineer)
+- **When to use**: Understanding how one feature of a third-party application works (native binary, Electron, .NET, APK, website) with the REA MCP server, then rebuilding it clean-room with oracle tests: authorization gate, observe before reading, surface map, evidence-log rows graded proven/probable/assumed, behaviour spec as the only bridge, drift control on target updates.
+- **Includes**: [legal-boundaries.md](.agents/skills/reverse-engineer/references/legal-boundaries.md), [target-playbooks.md](.agents/skills/reverse-engineer/references/target-playbooks.md), [evidence-and-report-template.md](.agents/skills/reverse-engineer/references/evidence-and-report-template.md), [verification-checklist.md](.agents/skills/reverse-engineer/references/verification-checklist.md).
+
 ---
 
 ## 🤖 Autonomous Subagents
@@ -555,6 +559,7 @@ All workflows have been consolidated into first-class, token-efficient skills un
 | **Incident Response** | `/incident-response` | Declares, mitigates, communicates, and closes an incident. | Timeline, status updates, postmortem with owned actions. |
 | **Dependency Upgrade** | `/dependency-upgrade` | Official notes at exact versions, one upgrade per change, full suite plus a real start. | Upgrade change with lockfile, risk table, rollback. |
 | **Docs Writer** | `/docs-writer` | Document type by reader need; per-endpoint reference with the why. | Finished document and CI doc checks. |
+| **Reverse Engineer** | `/reverse-engineer` | REA-backed feature trace of a third-party app: authorization gate, oracle cases, graded evidence log, clean-room rebuild. | Evidence log, behaviour spec, oracle tests, fixed report. |
 
 ---
 

@@ -99,6 +99,7 @@ Skills: `.agents/skills/<name>/SKILL.md`. Subagents: `.agents/subagents/`.
 | Requirements, before building | `requirements-grilling` | — |
 | Implementation plans, task execution | `implementation-plan` | `code-reviewer`, `test-engineer` |
 | Legacy rebuilds | `legacy-parity` | `legacy-analyst` |
+| Third-party feature, REA trace | `reverse-engineer` | — |
 | Shared checkouts, unattended runs | `parallel-sessions`, `autonomous-run` | — |
 | Session handoff (context nearly full) | `handoff` | — |
 | New skill | `create-skill` | — |
