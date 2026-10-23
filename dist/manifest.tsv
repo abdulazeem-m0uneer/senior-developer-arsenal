@@ -42,6 +42,7 @@ antigravity	global	dir	qa-engineer	.agents/skills/qa-engineer	.gemini/config/ski
 antigravity	global	dir	quality-gate	.agents/skills/quality-gate	.gemini/config/skills/quality-gate	-
 antigravity	global	dir	repo-scan	.agents/skills/repo-scan	.gemini/config/skills/repo-scan	-
 antigravity	global	dir	requirements-grilling	.agents/skills/requirements-grilling	.gemini/config/skills/requirements-grilling	-
+antigravity	global	dir	reverse-engineer	.agents/skills/reverse-engineer	.gemini/config/skills/reverse-engineer	-
 antigravity	global	dir	security-audit	.agents/skills/security-audit	.gemini/config/skills/security-audit	-
 antigravity	global	dir	shared-infra-changes	.agents/skills/shared-infra-changes	.gemini/config/skills/shared-infra-changes	-
 antigravity	global	dir	smoke-test	.agents/skills/smoke-test	.gemini/config/skills/smoke-test	-
@@ -126,6 +127,7 @@ antigravity	project	dir	qa-engineer	.agents/skills/qa-engineer	.agents/skills/qa
 antigravity	project	dir	quality-gate	.agents/skills/quality-gate	.agents/skills/quality-gate	-
 antigravity	project	dir	repo-scan	.agents/skills/repo-scan	.agents/skills/repo-scan	-
 antigravity	project	dir	requirements-grilling	.agents/skills/requirements-grilling	.agents/skills/requirements-grilling	-
+antigravity	project	dir	reverse-engineer	.agents/skills/reverse-engineer	.agents/skills/reverse-engineer	-
 antigravity	project	dir	security-audit	.agents/skills/security-audit	.agents/skills/security-audit	-
 antigravity	project	dir	shared-infra-changes	.agents/skills/shared-infra-changes	.agents/skills/shared-infra-changes	-
 antigravity	project	dir	smoke-test	.agents/skills/smoke-test	.agents/skills/smoke-test	-
@@ -209,6 +211,7 @@ gemini	global	dir	qa-engineer	.agents/skills/qa-engineer	.agents/skills/qa-engin
 gemini	global	dir	quality-gate	.agents/skills/quality-gate	.agents/skills/quality-gate	-
 gemini	global	dir	repo-scan	.agents/skills/repo-scan	.agents/skills/repo-scan	-
 gemini	global	dir	requirements-grilling	.agents/skills/requirements-grilling	.agents/skills/requirements-grilling	-
+gemini	global	dir	reverse-engineer	.agents/skills/reverse-engineer	.agents/skills/reverse-engineer	-
 gemini	global	dir	security-audit	.agents/skills/security-audit	.agents/skills/security-audit	-
 gemini	global	dir	shared-infra-changes	.agents/skills/shared-infra-changes	.agents/skills/shared-infra-changes	-
 gemini	global	dir	smoke-test	.agents/skills/smoke-test	.agents/skills/smoke-test	-
@@ -278,6 +281,7 @@ gemini	project	dir	qa-engineer	.agents/skills/qa-engineer	.agents/skills/qa-engi
 gemini	project	dir	quality-gate	.agents/skills/quality-gate	.agents/skills/quality-gate	-
 gemini	project	dir	repo-scan	.agents/skills/repo-scan	.agents/skills/repo-scan	-
 gemini	project	dir	requirements-grilling	.agents/skills/requirements-grilling	.agents/skills/requirements-grilling	-
+gemini	project	dir	reverse-engineer	.agents/skills/reverse-engineer	.agents/skills/reverse-engineer	-
 gemini	project	dir	security-audit	.agents/skills/security-audit	.agents/skills/security-audit	-
 gemini	project	dir	shared-infra-changes	.agents/skills/shared-infra-changes	.agents/skills/shared-infra-changes	-
 gemini	project	dir	smoke-test	.agents/skills/smoke-test	.agents/skills/smoke-test	-
@@ -383,6 +387,7 @@ codex	global	dir	qa-engineer	.agents/skills/qa-engineer	.agents/skills/qa-engine
 codex	global	dir	quality-gate	.agents/skills/quality-gate	.agents/skills/quality-gate	-
 codex	global	dir	repo-scan	.agents/skills/repo-scan	.agents/skills/repo-scan	-
 codex	global	dir	requirements-grilling	.agents/skills/requirements-grilling	.agents/skills/requirements-grilling	-
+codex	global	dir	reverse-engineer	.agents/skills/reverse-engineer	.agents/skills/reverse-engineer	-
 codex	global	dir	security-audit	.agents/skills/security-audit	.agents/skills/security-audit	-
 codex	global	dir	shared-infra-changes	.agents/skills/shared-infra-changes	.agents/skills/shared-infra-changes	-
 codex	global	dir	smoke-test	.agents/skills/smoke-test	.agents/skills/smoke-test	-
@@ -466,6 +471,7 @@ codex	project	dir	qa-engineer	.agents/skills/qa-engineer	.agents/skills/qa-engin
 codex	project	dir	quality-gate	.agents/skills/quality-gate	.agents/skills/quality-gate	-
 codex	project	dir	repo-scan	.agents/skills/repo-scan	.agents/skills/repo-scan	-
 codex	project	dir	requirements-grilling	.agents/skills/requirements-grilling	.agents/skills/requirements-grilling	-
+codex	project	dir	reverse-engineer	.agents/skills/reverse-engineer	.agents/skills/reverse-engineer	-
 codex	project	dir	security-audit	.agents/skills/security-audit	.agents/skills/security-audit	-
 codex	project	dir	shared-infra-changes	.agents/skills/shared-infra-changes	.agents/skills/shared-infra-changes	-
 codex	project	dir	smoke-test	.agents/skills/smoke-test	.agents/skills/smoke-test	-
@@ -549,6 +555,7 @@ opencode	global	dir	qa-engineer	.agents/skills/qa-engineer	.agents/skills/qa-eng
 opencode	global	dir	quality-gate	.agents/skills/quality-gate	.agents/skills/quality-gate	-
 opencode	global	dir	repo-scan	.agents/skills/repo-scan	.agents/skills/repo-scan	-
 opencode	global	dir	requirements-grilling	.agents/skills/requirements-grilling	.agents/skills/requirements-grilling	-
+opencode	global	dir	reverse-engineer	.agents/skills/reverse-engineer	.agents/skills/reverse-engineer	-
 opencode	global	dir	security-audit	.agents/skills/security-audit	.agents/skills/security-audit	-
 opencode	global	dir	shared-infra-changes	.agents/skills/shared-infra-changes	.agents/skills/shared-infra-changes	-
 opencode	global	dir	smoke-test	.agents/skills/smoke-test	.agents/skills/smoke-test	-
@@ -632,6 +639,7 @@ opencode	project	dir	qa-engineer	.agents/skills/qa-engineer	.agents/skills/qa-en
 opencode	project	dir	quality-gate	.agents/skills/quality-gate	.agents/skills/quality-gate	-
 opencode	project	dir	repo-scan	.agents/skills/repo-scan	.agents/skills/repo-scan	-
 opencode	project	dir	requirements-grilling	.agents/skills/requirements-grilling	.agents/skills/requirements-grilling	-
+opencode	project	dir	reverse-engineer	.agents/skills/reverse-engineer	.agents/skills/reverse-engineer	-
 opencode	project	dir	security-audit	.agents/skills/security-audit	.agents/skills/security-audit	-
 opencode	project	dir	shared-infra-changes	.agents/skills/shared-infra-changes	.agents/skills/shared-infra-changes	-
 opencode	project	dir	smoke-test	.agents/skills/smoke-test	.agents/skills/smoke-test	-
@@ -715,6 +723,7 @@ cursor	global	dir	qa-engineer	.agents/skills/qa-engineer	.agents/skills/qa-engin
 cursor	global	dir	quality-gate	.agents/skills/quality-gate	.agents/skills/quality-gate	-
 cursor	global	dir	repo-scan	.agents/skills/repo-scan	.agents/skills/repo-scan	-
 cursor	global	dir	requirements-grilling	.agents/skills/requirements-grilling	.agents/skills/requirements-grilling	-
+cursor	global	dir	reverse-engineer	.agents/skills/reverse-engineer	.agents/skills/reverse-engineer	-
 cursor	global	dir	security-audit	.agents/skills/security-audit	.agents/skills/security-audit	-
 cursor	global	dir	shared-infra-changes	.agents/skills/shared-infra-changes	.agents/skills/shared-infra-changes	-
 cursor	global	dir	smoke-test	.agents/skills/smoke-test	.agents/skills/smoke-test	-
@@ -784,6 +793,7 @@ cursor	project	dir	qa-engineer	.agents/skills/qa-engineer	.agents/skills/qa-engi
 cursor	project	dir	quality-gate	.agents/skills/quality-gate	.agents/skills/quality-gate	-
 cursor	project	dir	repo-scan	.agents/skills/repo-scan	.agents/skills/repo-scan	-
 cursor	project	dir	requirements-grilling	.agents/skills/requirements-grilling	.agents/skills/requirements-grilling	-
+cursor	project	dir	reverse-engineer	.agents/skills/reverse-engineer	.agents/skills/reverse-engineer	-
 cursor	project	dir	security-audit	.agents/skills/security-audit	.agents/skills/security-audit	-
 cursor	project	dir	shared-infra-changes	.agents/skills/shared-infra-changes	.agents/skills/shared-infra-changes	-
 cursor	project	dir	smoke-test	.agents/skills/smoke-test	.agents/skills/smoke-test	-
@@ -867,6 +877,7 @@ windsurf	global	dir	qa-engineer	.agents/skills/qa-engineer	.agents/skills/qa-eng
 windsurf	global	dir	quality-gate	.agents/skills/quality-gate	.agents/skills/quality-gate	-
 windsurf	global	dir	repo-scan	.agents/skills/repo-scan	.agents/skills/repo-scan	-
 windsurf	global	dir	requirements-grilling	.agents/skills/requirements-grilling	.agents/skills/requirements-grilling	-
+windsurf	global	dir	reverse-engineer	.agents/skills/reverse-engineer	.agents/skills/reverse-engineer	-
 windsurf	global	dir	security-audit	.agents/skills/security-audit	.agents/skills/security-audit	-
 windsurf	global	dir	shared-infra-changes	.agents/skills/shared-infra-changes	.agents/skills/shared-infra-changes	-
 windsurf	global	dir	smoke-test	.agents/skills/smoke-test	.agents/skills/smoke-test	-
@@ -919,6 +930,7 @@ windsurf	project	dir	qa-engineer	.agents/skills/qa-engineer	.agents/skills/qa-en
 windsurf	project	dir	quality-gate	.agents/skills/quality-gate	.agents/skills/quality-gate	-
 windsurf	project	dir	repo-scan	.agents/skills/repo-scan	.agents/skills/repo-scan	-
 windsurf	project	dir	requirements-grilling	.agents/skills/requirements-grilling	.agents/skills/requirements-grilling	-
+windsurf	project	dir	reverse-engineer	.agents/skills/reverse-engineer	.agents/skills/reverse-engineer	-
 windsurf	project	dir	security-audit	.agents/skills/security-audit	.agents/skills/security-audit	-
 windsurf	project	dir	shared-infra-changes	.agents/skills/shared-infra-changes	.agents/skills/shared-infra-changes	-
 windsurf	project	dir	smoke-test	.agents/skills/smoke-test	.agents/skills/smoke-test	-
@@ -985,6 +997,7 @@ copilot	global	dir	qa-engineer	.agents/skills/qa-engineer	.agents/skills/qa-engi
 copilot	global	dir	quality-gate	.agents/skills/quality-gate	.agents/skills/quality-gate	-
 copilot	global	dir	repo-scan	.agents/skills/repo-scan	.agents/skills/repo-scan	-
 copilot	global	dir	requirements-grilling	.agents/skills/requirements-grilling	.agents/skills/requirements-grilling	-
+copilot	global	dir	reverse-engineer	.agents/skills/reverse-engineer	.agents/skills/reverse-engineer	-
 copilot	global	dir	security-audit	.agents/skills/security-audit	.agents/skills/security-audit	-
 copilot	global	dir	shared-infra-changes	.agents/skills/shared-infra-changes	.agents/skills/shared-infra-changes	-
 copilot	global	dir	smoke-test	.agents/skills/smoke-test	.agents/skills/smoke-test	-
@@ -1054,6 +1067,7 @@ copilot	project	dir	qa-engineer	.agents/skills/qa-engineer	.agents/skills/qa-eng
 copilot	project	dir	quality-gate	.agents/skills/quality-gate	.agents/skills/quality-gate	-
 copilot	project	dir	repo-scan	.agents/skills/repo-scan	.agents/skills/repo-scan	-
 copilot	project	dir	requirements-grilling	.agents/skills/requirements-grilling	.agents/skills/requirements-grilling	-
+copilot	project	dir	reverse-engineer	.agents/skills/reverse-engineer	.agents/skills/reverse-engineer	-
 copilot	project	dir	security-audit	.agents/skills/security-audit	.agents/skills/security-audit	-
 copilot	project	dir	shared-infra-changes	.agents/skills/shared-infra-changes	.agents/skills/shared-infra-changes	-
 copilot	project	dir	smoke-test	.agents/skills/smoke-test	.agents/skills/smoke-test	-
