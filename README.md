@@ -32,7 +32,7 @@ GitHub offers no trending API, so [`scripts/trending_rank.py`](scripts/trending_
 | Component | Quantity | Purpose |
 | :--- | :---: | :--- |
 | **Rules** | 13 | Enforce senior engineering standards: SOLID, a 1000-line file cap, mandatory tests with every change, minimal-change ladder, plus Python, Node.js, C#, Frontend, UI/UX, Databases, Git, Token Frugality, and Defensive Epistemology. |
-| **Specialized Skills** | 52 | Actionable runbooks following the Agent Skills standard (`SKILL.md` + progressive `references/`) with slash commands and negative triggers. |
+| **Specialized Skills** | 57 | Actionable runbooks following the Agent Skills standard (`SKILL.md` + progressive `references/`) with slash commands and negative triggers. |
 | **Autonomous Subagents** | 17 | Dedicated personas (`code-reviewer`, `code-explorer`, `qa-engineer`, `test-engineer`, `security-auditor`, `devops-engineer`, `epistemic-debugger`, `spec-reviewer`, `infra-reviewer`, `legacy-analyst`, and stack specialists). |
 | **Supported Agents** | 8 | Claude Code (plugin), Codex CLI, OpenCode, Cursor, Windsurf, GitHub Copilot, Gemini CLI, Antigravity. |
 | **Installers** | 2 | PowerShell (`install.ps1`) and Bash (`install.sh`) with identical options, non-destructive installs, and clean uninstall. |
@@ -70,7 +70,7 @@ Benchmarked against full-solution reviews on production-grade repositories:
 senior-developer-arsenal/
 ├── .agents/                     # Single source of truth (edit here only)
 │   ├── rules/                   # 13 rules with trigger/description/globs frontmatter
-│   ├── skills/<name>/           # 52 skills: SKILL.md + references/ (+ scripts/ where bundled)
+│   ├── skills/<name>/           # 57 skills: SKILL.md + references/ (+ scripts/ where bundled)
 │   ├── subagents/               # subagent-definitions.json + prompts/<name>.md
 │   └── mcp/servers.json         # Canonical MCP server definitions (CodeGraph, Hindsight)
 ├── dist/                        # GENERATED per-agent output (do not edit)
@@ -230,7 +230,7 @@ Five rules are always on (core, minimal-change, token-conservation, defensive-ep
 
 ## ⚡ Active Skills & Capabilities
 
-The arsenal includes 52 specialized skills conforming to the Agent Skills standard (agentskills.io), featuring isolated progressive disclosure references (`references/`), slash commands, and negative triggers:
+The arsenal includes 57 specialized skills conforming to the Agent Skills standard (agentskills.io), featuring isolated progressive disclosure references (`references/`), slash commands, and negative triggers:
 
 ### 1. code-review (/code-review)
 - **When to use**: Auditing pull requests, reviewing recent commits, inspecting staged diffs, or evaluating branch code quality.
@@ -474,6 +474,26 @@ The arsenal includes 52 specialized skills conforming to the Agent Skills standa
 - **When to use**: The agent erred, was corrected, or caught its own mistake in a pre-done self-audit, and the cause is verified: record it as one capped, deduplicated line (mistake, cause, rule, check) in a project ledger, load the Active list automatically at every session start (plugin `SessionStart` hook in `hooks/hooks.json`, also after compaction), and promote repeated mistakes into a test, lint, hook, or rule.
 - **Includes**: [lesson-format-and-promotion.md](.agents/skills/lessons-learned/references/lesson-format-and-promotion.md), [lessons.py](.agents/skills/lessons-learned/scripts/lessons.py).
 
+### 53. accessibility-audit (/accessibility-audit)
+- **When to use**: WCAG 2.2 AA conformance audit of a running page, app, or screen: scoped states, automated axe pass, keyboard-only pass, screen reader scripts (NVDA, VoiceOver, TalkBack), and a severity-ranked report with fixes.
+- **Includes**: [audit-report-template.md](.agents/skills/accessibility-audit/references/audit-report-template.md), [screen-reader-scripts.md](.agents/skills/accessibility-audit/references/screen-reader-scripts.md), [wcag22-test-matrix.md](.agents/skills/accessibility-audit/references/wcag22-test-matrix.md).
+
+### 54. refactor-legacy (/refactor-legacy)
+- **When to use**: Change untested existing code safely in place: pin current behaviour with characterization tests, cut a seam, then make small reversible steps (strangler-fig for larger moves).
+- **Includes**: [safe-step-checklist.md](.agents/skills/refactor-legacy/references/safe-step-checklist.md), [seams-and-characterization.md](.agents/skills/refactor-legacy/references/seams-and-characterization.md), [strangler-fig-playbook.md](.agents/skills/refactor-legacy/references/strangler-fig-playbook.md).
+
+### 55. threat-model (/threat-model)
+- **When to use**: Design-time threat modelling before building: data-flow diagram with trust boundaries, STRIDE per element, abuse cases, rated risks, and mitigations that become tests.
+- **Includes**: [stride-catalogue.md](.agents/skills/threat-model/references/stride-catalogue.md), [threat-model-template.md](.agents/skills/threat-model/references/threat-model-template.md).
+
+### 56. kubernetes-ops (/kubernetes-ops)
+- **When to use**: Author, review, and debug Kubernetes workloads: manifest checklist (resources, probes, securityContext, PDB, HPA, shutdown), Helm and schema validation, and a rollout-debugging runbook.
+- **Includes**: [debugging-runbook.md](.agents/skills/kubernetes-ops/references/debugging-runbook.md), [helm-and-validation.md](.agents/skills/kubernetes-ops/references/helm-and-validation.md), [manifest-checklist.md](.agents/skills/kubernetes-ops/references/manifest-checklist.md).
+
+### 57. mobile-expert (/mobile-expert)
+- **When to use**: React Native (Expo and bare) and Flutter work: project shape, navigation, state, offline sync, performance, mobile security, and store release pipelines.
+- **Includes**: [flutter-guide.md](.agents/skills/mobile-expert/references/flutter-guide.md), [mobile-security-checklist.md](.agents/skills/mobile-expert/references/mobile-security-checklist.md), [react-native-guide.md](.agents/skills/mobile-expert/references/react-native-guide.md), [release-pipeline.md](.agents/skills/mobile-expert/references/release-pipeline.md).
+
 ---
 
 ## 🤖 Autonomous Subagents
@@ -594,22 +614,6 @@ git pull && ./install.sh --global --target all
 Claude Code plugin users: `/plugin marketplace update senior-developer-arsenal`.
 
 Contributors edit `.agents/` only, then run `python3 scripts/build.py` and commit the regenerated `dist/`. See [CONTRIBUTING.md](CONTRIBUTING.md).
-
----
-
-## 🧭 Recommended Next Skills
-
-Candidates not yet in the arsenal, in rough priority order:
-
-| Skill | Why |
-| :--- | :--- |
-| `accessibility-audit` | Dedicated WCAG 2.2 AA audit with assistive-technology test scripts, beyond the UI/UX gates. |
-| `refactor-legacy` | Characterization tests, strangler-fig migration, and seam extraction for untested code. |
-| `threat-model` | STRIDE-based design-time threat modeling to complement the code-level security audit. |
-| `kubernetes-ops` | Manifests, Helm, resource limits, probes, and rollout debugging. |
-| `mobile-expert` | React Native / Flutter architecture, performance, and release pipelines. |
-
-Scaffold any of them with the `create-skill` skill.
 
 ---
 

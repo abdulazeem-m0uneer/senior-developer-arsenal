@@ -1,4 +1,5 @@
 target	scope	kind	name	source	destination	extra
+antigravity	global	dir	accessibility-audit	.agents/skills/accessibility-audit	.gemini/config/skills/accessibility-audit	-
 antigravity	global	dir	agent-memory	.agents/skills/agent-memory	.gemini/config/skills/agent-memory	-
 antigravity	global	dir	api-design	.agents/skills/api-design	.gemini/config/skills/api-design	-
 antigravity	global	dir	architecture-design-adr	.agents/skills/architecture-design-adr	.gemini/config/skills/architecture-design-adr	-
@@ -28,9 +29,11 @@ antigravity	global	dir	handoff	.agents/skills/handoff	.gemini/config/skills/hand
 antigravity	global	dir	implementation-plan	.agents/skills/implementation-plan	.gemini/config/skills/implementation-plan	-
 antigravity	global	dir	incident-response	.agents/skills/incident-response	.gemini/config/skills/incident-response	-
 antigravity	global	dir	investigate	.agents/skills/investigate	.gemini/config/skills/investigate	-
+antigravity	global	dir	kubernetes-ops	.agents/skills/kubernetes-ops	.gemini/config/skills/kubernetes-ops	-
 antigravity	global	dir	legacy-parity	.agents/skills/legacy-parity	.gemini/config/skills/legacy-parity	-
 antigravity	global	dir	lessons-learned	.agents/skills/lessons-learned	.gemini/config/skills/lessons-learned	-
 antigravity	global	dir	mcp-server	.agents/skills/mcp-server	.gemini/config/skills/mcp-server	-
+antigravity	global	dir	mobile-expert	.agents/skills/mobile-expert	.gemini/config/skills/mobile-expert	-
 antigravity	global	dir	nodejs-backend-expert	.agents/skills/nodejs-backend-expert	.gemini/config/skills/nodejs-backend-expert	-
 antigravity	global	dir	observability	.agents/skills/observability	.gemini/config/skills/observability	-
 antigravity	global	dir	parallel-sessions	.agents/skills/parallel-sessions	.gemini/config/skills/parallel-sessions	-
@@ -41,6 +44,7 @@ antigravity	global	dir	python-audit	.agents/skills/python-audit	.gemini/config/s
 antigravity	global	dir	python-backend-expert	.agents/skills/python-backend-expert	.gemini/config/skills/python-backend-expert	-
 antigravity	global	dir	qa-engineer	.agents/skills/qa-engineer	.gemini/config/skills/qa-engineer	-
 antigravity	global	dir	quality-gate	.agents/skills/quality-gate	.gemini/config/skills/quality-gate	-
+antigravity	global	dir	refactor-legacy	.agents/skills/refactor-legacy	.gemini/config/skills/refactor-legacy	-
 antigravity	global	dir	repo-scan	.agents/skills/repo-scan	.gemini/config/skills/repo-scan	-
 antigravity	global	dir	requirements-grilling	.agents/skills/requirements-grilling	.gemini/config/skills/requirements-grilling	-
 antigravity	global	dir	reverse-engineer	.agents/skills/reverse-engineer	.gemini/config/skills/reverse-engineer	-
@@ -49,6 +53,7 @@ antigravity	global	dir	shared-infra-changes	.agents/skills/shared-infra-changes	
 antigravity	global	dir	smoke-test	.agents/skills/smoke-test	.gemini/config/skills/smoke-test	-
 antigravity	global	dir	test-every-change	.agents/skills/test-every-change	.gemini/config/skills/test-every-change	-
 antigravity	global	dir	test-strategy	.agents/skills/test-strategy	.gemini/config/skills/test-strategy	-
+antigravity	global	dir	threat-model	.agents/skills/threat-model	.gemini/config/skills/threat-model	-
 antigravity	global	dir	ui-ux-architect	.agents/skills/ui-ux-architect	.gemini/config/skills/ui-ux-architect	-
 antigravity	global	dir	ui-ux-audit	.agents/skills/ui-ux-audit	.gemini/config/skills/ui-ux-audit	-
 antigravity	global	file	code-reviewer.md	dist/antigravity/agents/code-reviewer.md	.gemini/config/agents/code-reviewer.md	-
@@ -85,6 +90,7 @@ antigravity	global	mcp	codegraph	dist/mcp/serverurl/codegraph.json	.gemini/confi
 antigravity	global	mcp-if-exists	codegraph	dist/mcp/serverurl/codegraph.json	.gemini/antigravity/mcp.json	mcpServers:json
 antigravity	global	mcp	hindsight	dist/mcp/serverurl/hindsight.json	.gemini/config/mcp_config.json	mcpServers:json
 antigravity	global	mcp-if-exists	hindsight	dist/mcp/serverurl/hindsight.json	.gemini/antigravity/mcp.json	mcpServers:json
+antigravity	project	dir	accessibility-audit	.agents/skills/accessibility-audit	.agents/skills/accessibility-audit	-
 antigravity	project	dir	agent-memory	.agents/skills/agent-memory	.agents/skills/agent-memory	-
 antigravity	project	dir	api-design	.agents/skills/api-design	.agents/skills/api-design	-
 antigravity	project	dir	architecture-design-adr	.agents/skills/architecture-design-adr	.agents/skills/architecture-design-adr	-
@@ -114,9 +120,11 @@ antigravity	project	dir	handoff	.agents/skills/handoff	.agents/skills/handoff	-
 antigravity	project	dir	implementation-plan	.agents/skills/implementation-plan	.agents/skills/implementation-plan	-
 antigravity	project	dir	incident-response	.agents/skills/incident-response	.agents/skills/incident-response	-
 antigravity	project	dir	investigate	.agents/skills/investigate	.agents/skills/investigate	-
+antigravity	project	dir	kubernetes-ops	.agents/skills/kubernetes-ops	.agents/skills/kubernetes-ops	-
 antigravity	project	dir	legacy-parity	.agents/skills/legacy-parity	.agents/skills/legacy-parity	-
 antigravity	project	dir	lessons-learned	.agents/skills/lessons-learned	.agents/skills/lessons-learned	-
 antigravity	project	dir	mcp-server	.agents/skills/mcp-server	.agents/skills/mcp-server	-
+antigravity	project	dir	mobile-expert	.agents/skills/mobile-expert	.agents/skills/mobile-expert	-
 antigravity	project	dir	nodejs-backend-expert	.agents/skills/nodejs-backend-expert	.agents/skills/nodejs-backend-expert	-
 antigravity	project	dir	observability	.agents/skills/observability	.agents/skills/observability	-
 antigravity	project	dir	parallel-sessions	.agents/skills/parallel-sessions	.agents/skills/parallel-sessions	-
@@ -127,6 +135,7 @@ antigravity	project	dir	python-audit	.agents/skills/python-audit	.agents/skills/
 antigravity	project	dir	python-backend-expert	.agents/skills/python-backend-expert	.agents/skills/python-backend-expert	-
 antigravity	project	dir	qa-engineer	.agents/skills/qa-engineer	.agents/skills/qa-engineer	-
 antigravity	project	dir	quality-gate	.agents/skills/quality-gate	.agents/skills/quality-gate	-
+antigravity	project	dir	refactor-legacy	.agents/skills/refactor-legacy	.agents/skills/refactor-legacy	-
 antigravity	project	dir	repo-scan	.agents/skills/repo-scan	.agents/skills/repo-scan	-
 antigravity	project	dir	requirements-grilling	.agents/skills/requirements-grilling	.agents/skills/requirements-grilling	-
 antigravity	project	dir	reverse-engineer	.agents/skills/reverse-engineer	.agents/skills/reverse-engineer	-
@@ -135,6 +144,7 @@ antigravity	project	dir	shared-infra-changes	.agents/skills/shared-infra-changes
 antigravity	project	dir	smoke-test	.agents/skills/smoke-test	.agents/skills/smoke-test	-
 antigravity	project	dir	test-every-change	.agents/skills/test-every-change	.agents/skills/test-every-change	-
 antigravity	project	dir	test-strategy	.agents/skills/test-strategy	.agents/skills/test-strategy	-
+antigravity	project	dir	threat-model	.agents/skills/threat-model	.agents/skills/threat-model	-
 antigravity	project	dir	ui-ux-architect	.agents/skills/ui-ux-architect	.agents/skills/ui-ux-architect	-
 antigravity	project	dir	ui-ux-audit	.agents/skills/ui-ux-audit	.agents/skills/ui-ux-audit	-
 antigravity	project	file	code-reviewer.md	dist/antigravity/agents/code-reviewer.md	.agents/agents/code-reviewer.md	-
@@ -170,6 +180,7 @@ antigravity	project	file	ui-ux-standards.md	.agents/rules/ui-ux-standards.md	.ag
 antigravity	project	block	AGENTS.md	AGENTS.md	AGENTS.md	-
 antigravity	project	mcp	codegraph	dist/mcp/serverurl/codegraph.json	.agents/mcp_config.json	mcpServers:json
 antigravity	project	mcp	hindsight	dist/mcp/serverurl/hindsight.json	.agents/mcp_config.json	mcpServers:json
+gemini	global	dir	accessibility-audit	.agents/skills/accessibility-audit	.agents/skills/accessibility-audit	-
 gemini	global	dir	agent-memory	.agents/skills/agent-memory	.agents/skills/agent-memory	-
 gemini	global	dir	api-design	.agents/skills/api-design	.agents/skills/api-design	-
 gemini	global	dir	architecture-design-adr	.agents/skills/architecture-design-adr	.agents/skills/architecture-design-adr	-
@@ -199,9 +210,11 @@ gemini	global	dir	handoff	.agents/skills/handoff	.agents/skills/handoff	-
 gemini	global	dir	implementation-plan	.agents/skills/implementation-plan	.agents/skills/implementation-plan	-
 gemini	global	dir	incident-response	.agents/skills/incident-response	.agents/skills/incident-response	-
 gemini	global	dir	investigate	.agents/skills/investigate	.agents/skills/investigate	-
+gemini	global	dir	kubernetes-ops	.agents/skills/kubernetes-ops	.agents/skills/kubernetes-ops	-
 gemini	global	dir	legacy-parity	.agents/skills/legacy-parity	.agents/skills/legacy-parity	-
 gemini	global	dir	lessons-learned	.agents/skills/lessons-learned	.agents/skills/lessons-learned	-
 gemini	global	dir	mcp-server	.agents/skills/mcp-server	.agents/skills/mcp-server	-
+gemini	global	dir	mobile-expert	.agents/skills/mobile-expert	.agents/skills/mobile-expert	-
 gemini	global	dir	nodejs-backend-expert	.agents/skills/nodejs-backend-expert	.agents/skills/nodejs-backend-expert	-
 gemini	global	dir	observability	.agents/skills/observability	.agents/skills/observability	-
 gemini	global	dir	parallel-sessions	.agents/skills/parallel-sessions	.agents/skills/parallel-sessions	-
@@ -212,6 +225,7 @@ gemini	global	dir	python-audit	.agents/skills/python-audit	.agents/skills/python
 gemini	global	dir	python-backend-expert	.agents/skills/python-backend-expert	.agents/skills/python-backend-expert	-
 gemini	global	dir	qa-engineer	.agents/skills/qa-engineer	.agents/skills/qa-engineer	-
 gemini	global	dir	quality-gate	.agents/skills/quality-gate	.agents/skills/quality-gate	-
+gemini	global	dir	refactor-legacy	.agents/skills/refactor-legacy	.agents/skills/refactor-legacy	-
 gemini	global	dir	repo-scan	.agents/skills/repo-scan	.agents/skills/repo-scan	-
 gemini	global	dir	requirements-grilling	.agents/skills/requirements-grilling	.agents/skills/requirements-grilling	-
 gemini	global	dir	reverse-engineer	.agents/skills/reverse-engineer	.agents/skills/reverse-engineer	-
@@ -220,6 +234,7 @@ gemini	global	dir	shared-infra-changes	.agents/skills/shared-infra-changes	.agen
 gemini	global	dir	smoke-test	.agents/skills/smoke-test	.agents/skills/smoke-test	-
 gemini	global	dir	test-every-change	.agents/skills/test-every-change	.agents/skills/test-every-change	-
 gemini	global	dir	test-strategy	.agents/skills/test-strategy	.agents/skills/test-strategy	-
+gemini	global	dir	threat-model	.agents/skills/threat-model	.agents/skills/threat-model	-
 gemini	global	dir	ui-ux-architect	.agents/skills/ui-ux-architect	.agents/skills/ui-ux-architect	-
 gemini	global	dir	ui-ux-audit	.agents/skills/ui-ux-audit	.agents/skills/ui-ux-audit	-
 gemini	global	file	code-reviewer.md	dist/gemini/agents/code-reviewer.md	.gemini/agents/code-reviewer.md	-
@@ -241,6 +256,7 @@ gemini	global	file	infra-reviewer.md	dist/gemini/agents/infra-reviewer.md	.gemin
 gemini	global	file	legacy-analyst.md	dist/gemini/agents/legacy-analyst.md	.gemini/agents/legacy-analyst.md	-
 gemini	global	mcp	codegraph	dist/mcp/gemini/codegraph.json	.gemini/settings.json	mcpServers:json
 gemini	global	mcp	hindsight	dist/mcp/gemini/hindsight.json	.gemini/settings.json	mcpServers:json
+gemini	project	dir	accessibility-audit	.agents/skills/accessibility-audit	.agents/skills/accessibility-audit	-
 gemini	project	dir	agent-memory	.agents/skills/agent-memory	.agents/skills/agent-memory	-
 gemini	project	dir	api-design	.agents/skills/api-design	.agents/skills/api-design	-
 gemini	project	dir	architecture-design-adr	.agents/skills/architecture-design-adr	.agents/skills/architecture-design-adr	-
@@ -270,9 +286,11 @@ gemini	project	dir	handoff	.agents/skills/handoff	.agents/skills/handoff	-
 gemini	project	dir	implementation-plan	.agents/skills/implementation-plan	.agents/skills/implementation-plan	-
 gemini	project	dir	incident-response	.agents/skills/incident-response	.agents/skills/incident-response	-
 gemini	project	dir	investigate	.agents/skills/investigate	.agents/skills/investigate	-
+gemini	project	dir	kubernetes-ops	.agents/skills/kubernetes-ops	.agents/skills/kubernetes-ops	-
 gemini	project	dir	legacy-parity	.agents/skills/legacy-parity	.agents/skills/legacy-parity	-
 gemini	project	dir	lessons-learned	.agents/skills/lessons-learned	.agents/skills/lessons-learned	-
 gemini	project	dir	mcp-server	.agents/skills/mcp-server	.agents/skills/mcp-server	-
+gemini	project	dir	mobile-expert	.agents/skills/mobile-expert	.agents/skills/mobile-expert	-
 gemini	project	dir	nodejs-backend-expert	.agents/skills/nodejs-backend-expert	.agents/skills/nodejs-backend-expert	-
 gemini	project	dir	observability	.agents/skills/observability	.agents/skills/observability	-
 gemini	project	dir	parallel-sessions	.agents/skills/parallel-sessions	.agents/skills/parallel-sessions	-
@@ -283,6 +301,7 @@ gemini	project	dir	python-audit	.agents/skills/python-audit	.agents/skills/pytho
 gemini	project	dir	python-backend-expert	.agents/skills/python-backend-expert	.agents/skills/python-backend-expert	-
 gemini	project	dir	qa-engineer	.agents/skills/qa-engineer	.agents/skills/qa-engineer	-
 gemini	project	dir	quality-gate	.agents/skills/quality-gate	.agents/skills/quality-gate	-
+gemini	project	dir	refactor-legacy	.agents/skills/refactor-legacy	.agents/skills/refactor-legacy	-
 gemini	project	dir	repo-scan	.agents/skills/repo-scan	.agents/skills/repo-scan	-
 gemini	project	dir	requirements-grilling	.agents/skills/requirements-grilling	.agents/skills/requirements-grilling	-
 gemini	project	dir	reverse-engineer	.agents/skills/reverse-engineer	.agents/skills/reverse-engineer	-
@@ -291,6 +310,7 @@ gemini	project	dir	shared-infra-changes	.agents/skills/shared-infra-changes	.age
 gemini	project	dir	smoke-test	.agents/skills/smoke-test	.agents/skills/smoke-test	-
 gemini	project	dir	test-every-change	.agents/skills/test-every-change	.agents/skills/test-every-change	-
 gemini	project	dir	test-strategy	.agents/skills/test-strategy	.agents/skills/test-strategy	-
+gemini	project	dir	threat-model	.agents/skills/threat-model	.agents/skills/threat-model	-
 gemini	project	dir	ui-ux-architect	.agents/skills/ui-ux-architect	.agents/skills/ui-ux-architect	-
 gemini	project	dir	ui-ux-audit	.agents/skills/ui-ux-audit	.agents/skills/ui-ux-audit	-
 gemini	project	file	code-reviewer.md	dist/gemini/agents/code-reviewer.md	.gemini/agents/code-reviewer.md	-
@@ -348,6 +368,7 @@ claude	project	mcp	codegraph	dist/mcp/standard/codegraph.json	.mcp.json	mcpServe
 claude	project	mcp	hindsight	dist/mcp/standard/hindsight.json	.mcp.json	mcpServers:json
 claude	global	note	plugin	-	-	Skills and subagents load through the Claude Code plugin: /plugin marketplace add <path-or-repo> then /plugin install arsenal@senior-developer-arsenal
 claude	project	note	plugin	-	-	Skills and subagents load through the Claude Code plugin: /plugin marketplace add <path-or-repo> then /plugin install arsenal@senior-developer-arsenal
+codex	global	dir	accessibility-audit	.agents/skills/accessibility-audit	.agents/skills/accessibility-audit	-
 codex	global	dir	agent-memory	.agents/skills/agent-memory	.agents/skills/agent-memory	-
 codex	global	dir	api-design	.agents/skills/api-design	.agents/skills/api-design	-
 codex	global	dir	architecture-design-adr	.agents/skills/architecture-design-adr	.agents/skills/architecture-design-adr	-
@@ -377,9 +398,11 @@ codex	global	dir	handoff	.agents/skills/handoff	.agents/skills/handoff	-
 codex	global	dir	implementation-plan	.agents/skills/implementation-plan	.agents/skills/implementation-plan	-
 codex	global	dir	incident-response	.agents/skills/incident-response	.agents/skills/incident-response	-
 codex	global	dir	investigate	.agents/skills/investigate	.agents/skills/investigate	-
+codex	global	dir	kubernetes-ops	.agents/skills/kubernetes-ops	.agents/skills/kubernetes-ops	-
 codex	global	dir	legacy-parity	.agents/skills/legacy-parity	.agents/skills/legacy-parity	-
 codex	global	dir	lessons-learned	.agents/skills/lessons-learned	.agents/skills/lessons-learned	-
 codex	global	dir	mcp-server	.agents/skills/mcp-server	.agents/skills/mcp-server	-
+codex	global	dir	mobile-expert	.agents/skills/mobile-expert	.agents/skills/mobile-expert	-
 codex	global	dir	nodejs-backend-expert	.agents/skills/nodejs-backend-expert	.agents/skills/nodejs-backend-expert	-
 codex	global	dir	observability	.agents/skills/observability	.agents/skills/observability	-
 codex	global	dir	parallel-sessions	.agents/skills/parallel-sessions	.agents/skills/parallel-sessions	-
@@ -390,6 +413,7 @@ codex	global	dir	python-audit	.agents/skills/python-audit	.agents/skills/python-
 codex	global	dir	python-backend-expert	.agents/skills/python-backend-expert	.agents/skills/python-backend-expert	-
 codex	global	dir	qa-engineer	.agents/skills/qa-engineer	.agents/skills/qa-engineer	-
 codex	global	dir	quality-gate	.agents/skills/quality-gate	.agents/skills/quality-gate	-
+codex	global	dir	refactor-legacy	.agents/skills/refactor-legacy	.agents/skills/refactor-legacy	-
 codex	global	dir	repo-scan	.agents/skills/repo-scan	.agents/skills/repo-scan	-
 codex	global	dir	requirements-grilling	.agents/skills/requirements-grilling	.agents/skills/requirements-grilling	-
 codex	global	dir	reverse-engineer	.agents/skills/reverse-engineer	.agents/skills/reverse-engineer	-
@@ -398,6 +422,7 @@ codex	global	dir	shared-infra-changes	.agents/skills/shared-infra-changes	.agent
 codex	global	dir	smoke-test	.agents/skills/smoke-test	.agents/skills/smoke-test	-
 codex	global	dir	test-every-change	.agents/skills/test-every-change	.agents/skills/test-every-change	-
 codex	global	dir	test-strategy	.agents/skills/test-strategy	.agents/skills/test-strategy	-
+codex	global	dir	threat-model	.agents/skills/threat-model	.agents/skills/threat-model	-
 codex	global	dir	ui-ux-architect	.agents/skills/ui-ux-architect	.agents/skills/ui-ux-architect	-
 codex	global	dir	ui-ux-audit	.agents/skills/ui-ux-audit	.agents/skills/ui-ux-audit	-
 codex	global	file	code-reviewer.toml	dist/codex/agents/code-reviewer.toml	.codex/agents/code-reviewer.toml	-
@@ -433,6 +458,7 @@ codex	global	file	ui-ux-standards.md	.agents/rules/ui-ux-standards.md	.agents/ru
 codex	global	block	AGENTS.md	AGENTS.md	.codex/AGENTS.md	-
 codex	global	mcp	codegraph	dist/mcp/codex/codegraph.toml	.codex/config.toml	mcp_servers:toml
 codex	global	mcp	hindsight	dist/mcp/codex/hindsight.toml	.codex/config.toml	mcp_servers:toml
+codex	project	dir	accessibility-audit	.agents/skills/accessibility-audit	.agents/skills/accessibility-audit	-
 codex	project	dir	agent-memory	.agents/skills/agent-memory	.agents/skills/agent-memory	-
 codex	project	dir	api-design	.agents/skills/api-design	.agents/skills/api-design	-
 codex	project	dir	architecture-design-adr	.agents/skills/architecture-design-adr	.agents/skills/architecture-design-adr	-
@@ -462,9 +488,11 @@ codex	project	dir	handoff	.agents/skills/handoff	.agents/skills/handoff	-
 codex	project	dir	implementation-plan	.agents/skills/implementation-plan	.agents/skills/implementation-plan	-
 codex	project	dir	incident-response	.agents/skills/incident-response	.agents/skills/incident-response	-
 codex	project	dir	investigate	.agents/skills/investigate	.agents/skills/investigate	-
+codex	project	dir	kubernetes-ops	.agents/skills/kubernetes-ops	.agents/skills/kubernetes-ops	-
 codex	project	dir	legacy-parity	.agents/skills/legacy-parity	.agents/skills/legacy-parity	-
 codex	project	dir	lessons-learned	.agents/skills/lessons-learned	.agents/skills/lessons-learned	-
 codex	project	dir	mcp-server	.agents/skills/mcp-server	.agents/skills/mcp-server	-
+codex	project	dir	mobile-expert	.agents/skills/mobile-expert	.agents/skills/mobile-expert	-
 codex	project	dir	nodejs-backend-expert	.agents/skills/nodejs-backend-expert	.agents/skills/nodejs-backend-expert	-
 codex	project	dir	observability	.agents/skills/observability	.agents/skills/observability	-
 codex	project	dir	parallel-sessions	.agents/skills/parallel-sessions	.agents/skills/parallel-sessions	-
@@ -475,6 +503,7 @@ codex	project	dir	python-audit	.agents/skills/python-audit	.agents/skills/python
 codex	project	dir	python-backend-expert	.agents/skills/python-backend-expert	.agents/skills/python-backend-expert	-
 codex	project	dir	qa-engineer	.agents/skills/qa-engineer	.agents/skills/qa-engineer	-
 codex	project	dir	quality-gate	.agents/skills/quality-gate	.agents/skills/quality-gate	-
+codex	project	dir	refactor-legacy	.agents/skills/refactor-legacy	.agents/skills/refactor-legacy	-
 codex	project	dir	repo-scan	.agents/skills/repo-scan	.agents/skills/repo-scan	-
 codex	project	dir	requirements-grilling	.agents/skills/requirements-grilling	.agents/skills/requirements-grilling	-
 codex	project	dir	reverse-engineer	.agents/skills/reverse-engineer	.agents/skills/reverse-engineer	-
@@ -483,6 +512,7 @@ codex	project	dir	shared-infra-changes	.agents/skills/shared-infra-changes	.agen
 codex	project	dir	smoke-test	.agents/skills/smoke-test	.agents/skills/smoke-test	-
 codex	project	dir	test-every-change	.agents/skills/test-every-change	.agents/skills/test-every-change	-
 codex	project	dir	test-strategy	.agents/skills/test-strategy	.agents/skills/test-strategy	-
+codex	project	dir	threat-model	.agents/skills/threat-model	.agents/skills/threat-model	-
 codex	project	dir	ui-ux-architect	.agents/skills/ui-ux-architect	.agents/skills/ui-ux-architect	-
 codex	project	dir	ui-ux-audit	.agents/skills/ui-ux-audit	.agents/skills/ui-ux-audit	-
 codex	project	file	code-reviewer.toml	dist/codex/agents/code-reviewer.toml	.codex/agents/code-reviewer.toml	-
@@ -518,6 +548,7 @@ codex	project	file	ui-ux-standards.md	.agents/rules/ui-ux-standards.md	.agents/r
 codex	project	block	AGENTS.md	AGENTS.md	AGENTS.md	-
 codex	project	mcp	codegraph	dist/mcp/codex/codegraph.toml	.codex/config.toml	mcp_servers:toml
 codex	project	mcp	hindsight	dist/mcp/codex/hindsight.toml	.codex/config.toml	mcp_servers:toml
+opencode	global	dir	accessibility-audit	.agents/skills/accessibility-audit	.agents/skills/accessibility-audit	-
 opencode	global	dir	agent-memory	.agents/skills/agent-memory	.agents/skills/agent-memory	-
 opencode	global	dir	api-design	.agents/skills/api-design	.agents/skills/api-design	-
 opencode	global	dir	architecture-design-adr	.agents/skills/architecture-design-adr	.agents/skills/architecture-design-adr	-
@@ -547,9 +578,11 @@ opencode	global	dir	handoff	.agents/skills/handoff	.agents/skills/handoff	-
 opencode	global	dir	implementation-plan	.agents/skills/implementation-plan	.agents/skills/implementation-plan	-
 opencode	global	dir	incident-response	.agents/skills/incident-response	.agents/skills/incident-response	-
 opencode	global	dir	investigate	.agents/skills/investigate	.agents/skills/investigate	-
+opencode	global	dir	kubernetes-ops	.agents/skills/kubernetes-ops	.agents/skills/kubernetes-ops	-
 opencode	global	dir	legacy-parity	.agents/skills/legacy-parity	.agents/skills/legacy-parity	-
 opencode	global	dir	lessons-learned	.agents/skills/lessons-learned	.agents/skills/lessons-learned	-
 opencode	global	dir	mcp-server	.agents/skills/mcp-server	.agents/skills/mcp-server	-
+opencode	global	dir	mobile-expert	.agents/skills/mobile-expert	.agents/skills/mobile-expert	-
 opencode	global	dir	nodejs-backend-expert	.agents/skills/nodejs-backend-expert	.agents/skills/nodejs-backend-expert	-
 opencode	global	dir	observability	.agents/skills/observability	.agents/skills/observability	-
 opencode	global	dir	parallel-sessions	.agents/skills/parallel-sessions	.agents/skills/parallel-sessions	-
@@ -560,6 +593,7 @@ opencode	global	dir	python-audit	.agents/skills/python-audit	.agents/skills/pyth
 opencode	global	dir	python-backend-expert	.agents/skills/python-backend-expert	.agents/skills/python-backend-expert	-
 opencode	global	dir	qa-engineer	.agents/skills/qa-engineer	.agents/skills/qa-engineer	-
 opencode	global	dir	quality-gate	.agents/skills/quality-gate	.agents/skills/quality-gate	-
+opencode	global	dir	refactor-legacy	.agents/skills/refactor-legacy	.agents/skills/refactor-legacy	-
 opencode	global	dir	repo-scan	.agents/skills/repo-scan	.agents/skills/repo-scan	-
 opencode	global	dir	requirements-grilling	.agents/skills/requirements-grilling	.agents/skills/requirements-grilling	-
 opencode	global	dir	reverse-engineer	.agents/skills/reverse-engineer	.agents/skills/reverse-engineer	-
@@ -568,6 +602,7 @@ opencode	global	dir	shared-infra-changes	.agents/skills/shared-infra-changes	.ag
 opencode	global	dir	smoke-test	.agents/skills/smoke-test	.agents/skills/smoke-test	-
 opencode	global	dir	test-every-change	.agents/skills/test-every-change	.agents/skills/test-every-change	-
 opencode	global	dir	test-strategy	.agents/skills/test-strategy	.agents/skills/test-strategy	-
+opencode	global	dir	threat-model	.agents/skills/threat-model	.agents/skills/threat-model	-
 opencode	global	dir	ui-ux-architect	.agents/skills/ui-ux-architect	.agents/skills/ui-ux-architect	-
 opencode	global	dir	ui-ux-audit	.agents/skills/ui-ux-audit	.agents/skills/ui-ux-audit	-
 opencode	global	file	code-reviewer.md	dist/opencode/agents/code-reviewer.md	.config/opencode/agents/code-reviewer.md	-
@@ -603,6 +638,7 @@ opencode	global	file	ui-ux-standards.md	.agents/rules/ui-ux-standards.md	.agents
 opencode	global	block	AGENTS.md	AGENTS.md	.config/opencode/AGENTS.md	-
 opencode	global	mcp	codegraph	dist/mcp/opencode/codegraph.json	.config/opencode/opencode.json	mcp:json
 opencode	global	mcp	hindsight	dist/mcp/opencode/hindsight.json	.config/opencode/opencode.json	mcp:json
+opencode	project	dir	accessibility-audit	.agents/skills/accessibility-audit	.agents/skills/accessibility-audit	-
 opencode	project	dir	agent-memory	.agents/skills/agent-memory	.agents/skills/agent-memory	-
 opencode	project	dir	api-design	.agents/skills/api-design	.agents/skills/api-design	-
 opencode	project	dir	architecture-design-adr	.agents/skills/architecture-design-adr	.agents/skills/architecture-design-adr	-
@@ -632,9 +668,11 @@ opencode	project	dir	handoff	.agents/skills/handoff	.agents/skills/handoff	-
 opencode	project	dir	implementation-plan	.agents/skills/implementation-plan	.agents/skills/implementation-plan	-
 opencode	project	dir	incident-response	.agents/skills/incident-response	.agents/skills/incident-response	-
 opencode	project	dir	investigate	.agents/skills/investigate	.agents/skills/investigate	-
+opencode	project	dir	kubernetes-ops	.agents/skills/kubernetes-ops	.agents/skills/kubernetes-ops	-
 opencode	project	dir	legacy-parity	.agents/skills/legacy-parity	.agents/skills/legacy-parity	-
 opencode	project	dir	lessons-learned	.agents/skills/lessons-learned	.agents/skills/lessons-learned	-
 opencode	project	dir	mcp-server	.agents/skills/mcp-server	.agents/skills/mcp-server	-
+opencode	project	dir	mobile-expert	.agents/skills/mobile-expert	.agents/skills/mobile-expert	-
 opencode	project	dir	nodejs-backend-expert	.agents/skills/nodejs-backend-expert	.agents/skills/nodejs-backend-expert	-
 opencode	project	dir	observability	.agents/skills/observability	.agents/skills/observability	-
 opencode	project	dir	parallel-sessions	.agents/skills/parallel-sessions	.agents/skills/parallel-sessions	-
@@ -645,6 +683,7 @@ opencode	project	dir	python-audit	.agents/skills/python-audit	.agents/skills/pyt
 opencode	project	dir	python-backend-expert	.agents/skills/python-backend-expert	.agents/skills/python-backend-expert	-
 opencode	project	dir	qa-engineer	.agents/skills/qa-engineer	.agents/skills/qa-engineer	-
 opencode	project	dir	quality-gate	.agents/skills/quality-gate	.agents/skills/quality-gate	-
+opencode	project	dir	refactor-legacy	.agents/skills/refactor-legacy	.agents/skills/refactor-legacy	-
 opencode	project	dir	repo-scan	.agents/skills/repo-scan	.agents/skills/repo-scan	-
 opencode	project	dir	requirements-grilling	.agents/skills/requirements-grilling	.agents/skills/requirements-grilling	-
 opencode	project	dir	reverse-engineer	.agents/skills/reverse-engineer	.agents/skills/reverse-engineer	-
@@ -653,6 +692,7 @@ opencode	project	dir	shared-infra-changes	.agents/skills/shared-infra-changes	.a
 opencode	project	dir	smoke-test	.agents/skills/smoke-test	.agents/skills/smoke-test	-
 opencode	project	dir	test-every-change	.agents/skills/test-every-change	.agents/skills/test-every-change	-
 opencode	project	dir	test-strategy	.agents/skills/test-strategy	.agents/skills/test-strategy	-
+opencode	project	dir	threat-model	.agents/skills/threat-model	.agents/skills/threat-model	-
 opencode	project	dir	ui-ux-architect	.agents/skills/ui-ux-architect	.agents/skills/ui-ux-architect	-
 opencode	project	dir	ui-ux-audit	.agents/skills/ui-ux-audit	.agents/skills/ui-ux-audit	-
 opencode	project	file	code-reviewer.md	dist/opencode/agents/code-reviewer.md	.opencode/agents/code-reviewer.md	-
@@ -688,6 +728,7 @@ opencode	project	file	ui-ux-standards.md	.agents/rules/ui-ux-standards.md	.agent
 opencode	project	block	AGENTS.md	AGENTS.md	AGENTS.md	-
 opencode	project	mcp	codegraph	dist/mcp/opencode/codegraph.json	opencode.json	mcp:json
 opencode	project	mcp	hindsight	dist/mcp/opencode/hindsight.json	opencode.json	mcp:json
+cursor	global	dir	accessibility-audit	.agents/skills/accessibility-audit	.agents/skills/accessibility-audit	-
 cursor	global	dir	agent-memory	.agents/skills/agent-memory	.agents/skills/agent-memory	-
 cursor	global	dir	api-design	.agents/skills/api-design	.agents/skills/api-design	-
 cursor	global	dir	architecture-design-adr	.agents/skills/architecture-design-adr	.agents/skills/architecture-design-adr	-
@@ -717,9 +758,11 @@ cursor	global	dir	handoff	.agents/skills/handoff	.agents/skills/handoff	-
 cursor	global	dir	implementation-plan	.agents/skills/implementation-plan	.agents/skills/implementation-plan	-
 cursor	global	dir	incident-response	.agents/skills/incident-response	.agents/skills/incident-response	-
 cursor	global	dir	investigate	.agents/skills/investigate	.agents/skills/investigate	-
+cursor	global	dir	kubernetes-ops	.agents/skills/kubernetes-ops	.agents/skills/kubernetes-ops	-
 cursor	global	dir	legacy-parity	.agents/skills/legacy-parity	.agents/skills/legacy-parity	-
 cursor	global	dir	lessons-learned	.agents/skills/lessons-learned	.agents/skills/lessons-learned	-
 cursor	global	dir	mcp-server	.agents/skills/mcp-server	.agents/skills/mcp-server	-
+cursor	global	dir	mobile-expert	.agents/skills/mobile-expert	.agents/skills/mobile-expert	-
 cursor	global	dir	nodejs-backend-expert	.agents/skills/nodejs-backend-expert	.agents/skills/nodejs-backend-expert	-
 cursor	global	dir	observability	.agents/skills/observability	.agents/skills/observability	-
 cursor	global	dir	parallel-sessions	.agents/skills/parallel-sessions	.agents/skills/parallel-sessions	-
@@ -730,6 +773,7 @@ cursor	global	dir	python-audit	.agents/skills/python-audit	.agents/skills/python
 cursor	global	dir	python-backend-expert	.agents/skills/python-backend-expert	.agents/skills/python-backend-expert	-
 cursor	global	dir	qa-engineer	.agents/skills/qa-engineer	.agents/skills/qa-engineer	-
 cursor	global	dir	quality-gate	.agents/skills/quality-gate	.agents/skills/quality-gate	-
+cursor	global	dir	refactor-legacy	.agents/skills/refactor-legacy	.agents/skills/refactor-legacy	-
 cursor	global	dir	repo-scan	.agents/skills/repo-scan	.agents/skills/repo-scan	-
 cursor	global	dir	requirements-grilling	.agents/skills/requirements-grilling	.agents/skills/requirements-grilling	-
 cursor	global	dir	reverse-engineer	.agents/skills/reverse-engineer	.agents/skills/reverse-engineer	-
@@ -738,6 +782,7 @@ cursor	global	dir	shared-infra-changes	.agents/skills/shared-infra-changes	.agen
 cursor	global	dir	smoke-test	.agents/skills/smoke-test	.agents/skills/smoke-test	-
 cursor	global	dir	test-every-change	.agents/skills/test-every-change	.agents/skills/test-every-change	-
 cursor	global	dir	test-strategy	.agents/skills/test-strategy	.agents/skills/test-strategy	-
+cursor	global	dir	threat-model	.agents/skills/threat-model	.agents/skills/threat-model	-
 cursor	global	dir	ui-ux-architect	.agents/skills/ui-ux-architect	.agents/skills/ui-ux-architect	-
 cursor	global	dir	ui-ux-audit	.agents/skills/ui-ux-audit	.agents/skills/ui-ux-audit	-
 cursor	global	file	code-reviewer.md	dist/cursor/agents/code-reviewer.md	.cursor/agents/code-reviewer.md	-
@@ -759,6 +804,7 @@ cursor	global	file	infra-reviewer.md	dist/cursor/agents/infra-reviewer.md	.curso
 cursor	global	file	legacy-analyst.md	dist/cursor/agents/legacy-analyst.md	.cursor/agents/legacy-analyst.md	-
 cursor	global	mcp	codegraph	dist/mcp/cursor/codegraph.json	.cursor/mcp.json	mcpServers:json
 cursor	global	mcp	hindsight	dist/mcp/cursor/hindsight.json	.cursor/mcp.json	mcpServers:json
+cursor	project	dir	accessibility-audit	.agents/skills/accessibility-audit	.agents/skills/accessibility-audit	-
 cursor	project	dir	agent-memory	.agents/skills/agent-memory	.agents/skills/agent-memory	-
 cursor	project	dir	api-design	.agents/skills/api-design	.agents/skills/api-design	-
 cursor	project	dir	architecture-design-adr	.agents/skills/architecture-design-adr	.agents/skills/architecture-design-adr	-
@@ -788,9 +834,11 @@ cursor	project	dir	handoff	.agents/skills/handoff	.agents/skills/handoff	-
 cursor	project	dir	implementation-plan	.agents/skills/implementation-plan	.agents/skills/implementation-plan	-
 cursor	project	dir	incident-response	.agents/skills/incident-response	.agents/skills/incident-response	-
 cursor	project	dir	investigate	.agents/skills/investigate	.agents/skills/investigate	-
+cursor	project	dir	kubernetes-ops	.agents/skills/kubernetes-ops	.agents/skills/kubernetes-ops	-
 cursor	project	dir	legacy-parity	.agents/skills/legacy-parity	.agents/skills/legacy-parity	-
 cursor	project	dir	lessons-learned	.agents/skills/lessons-learned	.agents/skills/lessons-learned	-
 cursor	project	dir	mcp-server	.agents/skills/mcp-server	.agents/skills/mcp-server	-
+cursor	project	dir	mobile-expert	.agents/skills/mobile-expert	.agents/skills/mobile-expert	-
 cursor	project	dir	nodejs-backend-expert	.agents/skills/nodejs-backend-expert	.agents/skills/nodejs-backend-expert	-
 cursor	project	dir	observability	.agents/skills/observability	.agents/skills/observability	-
 cursor	project	dir	parallel-sessions	.agents/skills/parallel-sessions	.agents/skills/parallel-sessions	-
@@ -801,6 +849,7 @@ cursor	project	dir	python-audit	.agents/skills/python-audit	.agents/skills/pytho
 cursor	project	dir	python-backend-expert	.agents/skills/python-backend-expert	.agents/skills/python-backend-expert	-
 cursor	project	dir	qa-engineer	.agents/skills/qa-engineer	.agents/skills/qa-engineer	-
 cursor	project	dir	quality-gate	.agents/skills/quality-gate	.agents/skills/quality-gate	-
+cursor	project	dir	refactor-legacy	.agents/skills/refactor-legacy	.agents/skills/refactor-legacy	-
 cursor	project	dir	repo-scan	.agents/skills/repo-scan	.agents/skills/repo-scan	-
 cursor	project	dir	requirements-grilling	.agents/skills/requirements-grilling	.agents/skills/requirements-grilling	-
 cursor	project	dir	reverse-engineer	.agents/skills/reverse-engineer	.agents/skills/reverse-engineer	-
@@ -809,6 +858,7 @@ cursor	project	dir	shared-infra-changes	.agents/skills/shared-infra-changes	.age
 cursor	project	dir	smoke-test	.agents/skills/smoke-test	.agents/skills/smoke-test	-
 cursor	project	dir	test-every-change	.agents/skills/test-every-change	.agents/skills/test-every-change	-
 cursor	project	dir	test-strategy	.agents/skills/test-strategy	.agents/skills/test-strategy	-
+cursor	project	dir	threat-model	.agents/skills/threat-model	.agents/skills/threat-model	-
 cursor	project	dir	ui-ux-architect	.agents/skills/ui-ux-architect	.agents/skills/ui-ux-architect	-
 cursor	project	dir	ui-ux-audit	.agents/skills/ui-ux-audit	.agents/skills/ui-ux-audit	-
 cursor	project	file	code-reviewer.md	dist/cursor/agents/code-reviewer.md	.cursor/agents/code-reviewer.md	-
@@ -844,6 +894,7 @@ cursor	project	file	ui-ux-standards.mdc	dist/cursor/rules/ui-ux-standards.mdc	.c
 cursor	project	block	AGENTS.md	AGENTS.md	AGENTS.md	-
 cursor	project	mcp	codegraph	dist/mcp/cursor/codegraph.json	.cursor/mcp.json	mcpServers:json
 cursor	project	mcp	hindsight	dist/mcp/cursor/hindsight.json	.cursor/mcp.json	mcpServers:json
+windsurf	global	dir	accessibility-audit	.agents/skills/accessibility-audit	.agents/skills/accessibility-audit	-
 windsurf	global	dir	agent-memory	.agents/skills/agent-memory	.agents/skills/agent-memory	-
 windsurf	global	dir	api-design	.agents/skills/api-design	.agents/skills/api-design	-
 windsurf	global	dir	architecture-design-adr	.agents/skills/architecture-design-adr	.agents/skills/architecture-design-adr	-
@@ -873,9 +924,11 @@ windsurf	global	dir	handoff	.agents/skills/handoff	.agents/skills/handoff	-
 windsurf	global	dir	implementation-plan	.agents/skills/implementation-plan	.agents/skills/implementation-plan	-
 windsurf	global	dir	incident-response	.agents/skills/incident-response	.agents/skills/incident-response	-
 windsurf	global	dir	investigate	.agents/skills/investigate	.agents/skills/investigate	-
+windsurf	global	dir	kubernetes-ops	.agents/skills/kubernetes-ops	.agents/skills/kubernetes-ops	-
 windsurf	global	dir	legacy-parity	.agents/skills/legacy-parity	.agents/skills/legacy-parity	-
 windsurf	global	dir	lessons-learned	.agents/skills/lessons-learned	.agents/skills/lessons-learned	-
 windsurf	global	dir	mcp-server	.agents/skills/mcp-server	.agents/skills/mcp-server	-
+windsurf	global	dir	mobile-expert	.agents/skills/mobile-expert	.agents/skills/mobile-expert	-
 windsurf	global	dir	nodejs-backend-expert	.agents/skills/nodejs-backend-expert	.agents/skills/nodejs-backend-expert	-
 windsurf	global	dir	observability	.agents/skills/observability	.agents/skills/observability	-
 windsurf	global	dir	parallel-sessions	.agents/skills/parallel-sessions	.agents/skills/parallel-sessions	-
@@ -886,6 +939,7 @@ windsurf	global	dir	python-audit	.agents/skills/python-audit	.agents/skills/pyth
 windsurf	global	dir	python-backend-expert	.agents/skills/python-backend-expert	.agents/skills/python-backend-expert	-
 windsurf	global	dir	qa-engineer	.agents/skills/qa-engineer	.agents/skills/qa-engineer	-
 windsurf	global	dir	quality-gate	.agents/skills/quality-gate	.agents/skills/quality-gate	-
+windsurf	global	dir	refactor-legacy	.agents/skills/refactor-legacy	.agents/skills/refactor-legacy	-
 windsurf	global	dir	repo-scan	.agents/skills/repo-scan	.agents/skills/repo-scan	-
 windsurf	global	dir	requirements-grilling	.agents/skills/requirements-grilling	.agents/skills/requirements-grilling	-
 windsurf	global	dir	reverse-engineer	.agents/skills/reverse-engineer	.agents/skills/reverse-engineer	-
@@ -894,10 +948,12 @@ windsurf	global	dir	shared-infra-changes	.agents/skills/shared-infra-changes	.ag
 windsurf	global	dir	smoke-test	.agents/skills/smoke-test	.agents/skills/smoke-test	-
 windsurf	global	dir	test-every-change	.agents/skills/test-every-change	.agents/skills/test-every-change	-
 windsurf	global	dir	test-strategy	.agents/skills/test-strategy	.agents/skills/test-strategy	-
+windsurf	global	dir	threat-model	.agents/skills/threat-model	.agents/skills/threat-model	-
 windsurf	global	dir	ui-ux-architect	.agents/skills/ui-ux-architect	.agents/skills/ui-ux-architect	-
 windsurf	global	dir	ui-ux-audit	.agents/skills/ui-ux-audit	.agents/skills/ui-ux-audit	-
 windsurf	global	mcp	codegraph	dist/mcp/serverurl/codegraph.json	.codeium/windsurf/mcp_config.json	mcpServers:json
 windsurf	global	mcp	hindsight	dist/mcp/serverurl/hindsight.json	.codeium/windsurf/mcp_config.json	mcpServers:json
+windsurf	project	dir	accessibility-audit	.agents/skills/accessibility-audit	.agents/skills/accessibility-audit	-
 windsurf	project	dir	agent-memory	.agents/skills/agent-memory	.agents/skills/agent-memory	-
 windsurf	project	dir	api-design	.agents/skills/api-design	.agents/skills/api-design	-
 windsurf	project	dir	architecture-design-adr	.agents/skills/architecture-design-adr	.agents/skills/architecture-design-adr	-
@@ -927,9 +983,11 @@ windsurf	project	dir	handoff	.agents/skills/handoff	.agents/skills/handoff	-
 windsurf	project	dir	implementation-plan	.agents/skills/implementation-plan	.agents/skills/implementation-plan	-
 windsurf	project	dir	incident-response	.agents/skills/incident-response	.agents/skills/incident-response	-
 windsurf	project	dir	investigate	.agents/skills/investigate	.agents/skills/investigate	-
+windsurf	project	dir	kubernetes-ops	.agents/skills/kubernetes-ops	.agents/skills/kubernetes-ops	-
 windsurf	project	dir	legacy-parity	.agents/skills/legacy-parity	.agents/skills/legacy-parity	-
 windsurf	project	dir	lessons-learned	.agents/skills/lessons-learned	.agents/skills/lessons-learned	-
 windsurf	project	dir	mcp-server	.agents/skills/mcp-server	.agents/skills/mcp-server	-
+windsurf	project	dir	mobile-expert	.agents/skills/mobile-expert	.agents/skills/mobile-expert	-
 windsurf	project	dir	nodejs-backend-expert	.agents/skills/nodejs-backend-expert	.agents/skills/nodejs-backend-expert	-
 windsurf	project	dir	observability	.agents/skills/observability	.agents/skills/observability	-
 windsurf	project	dir	parallel-sessions	.agents/skills/parallel-sessions	.agents/skills/parallel-sessions	-
@@ -940,6 +998,7 @@ windsurf	project	dir	python-audit	.agents/skills/python-audit	.agents/skills/pyt
 windsurf	project	dir	python-backend-expert	.agents/skills/python-backend-expert	.agents/skills/python-backend-expert	-
 windsurf	project	dir	qa-engineer	.agents/skills/qa-engineer	.agents/skills/qa-engineer	-
 windsurf	project	dir	quality-gate	.agents/skills/quality-gate	.agents/skills/quality-gate	-
+windsurf	project	dir	refactor-legacy	.agents/skills/refactor-legacy	.agents/skills/refactor-legacy	-
 windsurf	project	dir	repo-scan	.agents/skills/repo-scan	.agents/skills/repo-scan	-
 windsurf	project	dir	requirements-grilling	.agents/skills/requirements-grilling	.agents/skills/requirements-grilling	-
 windsurf	project	dir	reverse-engineer	.agents/skills/reverse-engineer	.agents/skills/reverse-engineer	-
@@ -948,6 +1007,7 @@ windsurf	project	dir	shared-infra-changes	.agents/skills/shared-infra-changes	.a
 windsurf	project	dir	smoke-test	.agents/skills/smoke-test	.agents/skills/smoke-test	-
 windsurf	project	dir	test-every-change	.agents/skills/test-every-change	.agents/skills/test-every-change	-
 windsurf	project	dir	test-strategy	.agents/skills/test-strategy	.agents/skills/test-strategy	-
+windsurf	project	dir	threat-model	.agents/skills/threat-model	.agents/skills/threat-model	-
 windsurf	project	dir	ui-ux-architect	.agents/skills/ui-ux-architect	.agents/skills/ui-ux-architect	-
 windsurf	project	dir	ui-ux-audit	.agents/skills/ui-ux-audit	.agents/skills/ui-ux-audit	-
 windsurf	project	file	csharp-dotnet-standards.md	.agents/rules/csharp-dotnet-standards.md	.windsurf/rules/csharp-dotnet-standards.md	-
@@ -966,6 +1026,7 @@ windsurf	project	file	ui-ux-standards.md	.agents/rules/ui-ux-standards.md	.winds
 windsurf	project	block	AGENTS.md	AGENTS.md	AGENTS.md	-
 windsurf	project	mcp-note	codegraph	-	-	windsurf has no project-level MCP config file; use the other scope for 'codegraph'.
 windsurf	project	mcp-note	hindsight	-	-	windsurf has no project-level MCP config file; use the other scope for 'hindsight'.
+copilot	global	dir	accessibility-audit	.agents/skills/accessibility-audit	.agents/skills/accessibility-audit	-
 copilot	global	dir	agent-memory	.agents/skills/agent-memory	.agents/skills/agent-memory	-
 copilot	global	dir	api-design	.agents/skills/api-design	.agents/skills/api-design	-
 copilot	global	dir	architecture-design-adr	.agents/skills/architecture-design-adr	.agents/skills/architecture-design-adr	-
@@ -995,9 +1056,11 @@ copilot	global	dir	handoff	.agents/skills/handoff	.agents/skills/handoff	-
 copilot	global	dir	implementation-plan	.agents/skills/implementation-plan	.agents/skills/implementation-plan	-
 copilot	global	dir	incident-response	.agents/skills/incident-response	.agents/skills/incident-response	-
 copilot	global	dir	investigate	.agents/skills/investigate	.agents/skills/investigate	-
+copilot	global	dir	kubernetes-ops	.agents/skills/kubernetes-ops	.agents/skills/kubernetes-ops	-
 copilot	global	dir	legacy-parity	.agents/skills/legacy-parity	.agents/skills/legacy-parity	-
 copilot	global	dir	lessons-learned	.agents/skills/lessons-learned	.agents/skills/lessons-learned	-
 copilot	global	dir	mcp-server	.agents/skills/mcp-server	.agents/skills/mcp-server	-
+copilot	global	dir	mobile-expert	.agents/skills/mobile-expert	.agents/skills/mobile-expert	-
 copilot	global	dir	nodejs-backend-expert	.agents/skills/nodejs-backend-expert	.agents/skills/nodejs-backend-expert	-
 copilot	global	dir	observability	.agents/skills/observability	.agents/skills/observability	-
 copilot	global	dir	parallel-sessions	.agents/skills/parallel-sessions	.agents/skills/parallel-sessions	-
@@ -1008,6 +1071,7 @@ copilot	global	dir	python-audit	.agents/skills/python-audit	.agents/skills/pytho
 copilot	global	dir	python-backend-expert	.agents/skills/python-backend-expert	.agents/skills/python-backend-expert	-
 copilot	global	dir	qa-engineer	.agents/skills/qa-engineer	.agents/skills/qa-engineer	-
 copilot	global	dir	quality-gate	.agents/skills/quality-gate	.agents/skills/quality-gate	-
+copilot	global	dir	refactor-legacy	.agents/skills/refactor-legacy	.agents/skills/refactor-legacy	-
 copilot	global	dir	repo-scan	.agents/skills/repo-scan	.agents/skills/repo-scan	-
 copilot	global	dir	requirements-grilling	.agents/skills/requirements-grilling	.agents/skills/requirements-grilling	-
 copilot	global	dir	reverse-engineer	.agents/skills/reverse-engineer	.agents/skills/reverse-engineer	-
@@ -1016,6 +1080,7 @@ copilot	global	dir	shared-infra-changes	.agents/skills/shared-infra-changes	.age
 copilot	global	dir	smoke-test	.agents/skills/smoke-test	.agents/skills/smoke-test	-
 copilot	global	dir	test-every-change	.agents/skills/test-every-change	.agents/skills/test-every-change	-
 copilot	global	dir	test-strategy	.agents/skills/test-strategy	.agents/skills/test-strategy	-
+copilot	global	dir	threat-model	.agents/skills/threat-model	.agents/skills/threat-model	-
 copilot	global	dir	ui-ux-architect	.agents/skills/ui-ux-architect	.agents/skills/ui-ux-architect	-
 copilot	global	dir	ui-ux-audit	.agents/skills/ui-ux-audit	.agents/skills/ui-ux-audit	-
 copilot	global	file	code-reviewer.agent.md	dist/copilot/agents/code-reviewer.agent.md	.copilot/agents/code-reviewer.agent.md	-
@@ -1037,6 +1102,7 @@ copilot	global	file	infra-reviewer.agent.md	dist/copilot/agents/infra-reviewer.a
 copilot	global	file	legacy-analyst.agent.md	dist/copilot/agents/legacy-analyst.agent.md	.copilot/agents/legacy-analyst.agent.md	-
 copilot	global	mcp	codegraph	dist/mcp/copilot-cli/codegraph.json	.copilot/mcp-config.json	mcpServers:json
 copilot	global	mcp	hindsight	dist/mcp/copilot-cli/hindsight.json	.copilot/mcp-config.json	mcpServers:json
+copilot	project	dir	accessibility-audit	.agents/skills/accessibility-audit	.agents/skills/accessibility-audit	-
 copilot	project	dir	agent-memory	.agents/skills/agent-memory	.agents/skills/agent-memory	-
 copilot	project	dir	api-design	.agents/skills/api-design	.agents/skills/api-design	-
 copilot	project	dir	architecture-design-adr	.agents/skills/architecture-design-adr	.agents/skills/architecture-design-adr	-
@@ -1066,9 +1132,11 @@ copilot	project	dir	handoff	.agents/skills/handoff	.agents/skills/handoff	-
 copilot	project	dir	implementation-plan	.agents/skills/implementation-plan	.agents/skills/implementation-plan	-
 copilot	project	dir	incident-response	.agents/skills/incident-response	.agents/skills/incident-response	-
 copilot	project	dir	investigate	.agents/skills/investigate	.agents/skills/investigate	-
+copilot	project	dir	kubernetes-ops	.agents/skills/kubernetes-ops	.agents/skills/kubernetes-ops	-
 copilot	project	dir	legacy-parity	.agents/skills/legacy-parity	.agents/skills/legacy-parity	-
 copilot	project	dir	lessons-learned	.agents/skills/lessons-learned	.agents/skills/lessons-learned	-
 copilot	project	dir	mcp-server	.agents/skills/mcp-server	.agents/skills/mcp-server	-
+copilot	project	dir	mobile-expert	.agents/skills/mobile-expert	.agents/skills/mobile-expert	-
 copilot	project	dir	nodejs-backend-expert	.agents/skills/nodejs-backend-expert	.agents/skills/nodejs-backend-expert	-
 copilot	project	dir	observability	.agents/skills/observability	.agents/skills/observability	-
 copilot	project	dir	parallel-sessions	.agents/skills/parallel-sessions	.agents/skills/parallel-sessions	-
@@ -1079,6 +1147,7 @@ copilot	project	dir	python-audit	.agents/skills/python-audit	.agents/skills/pyth
 copilot	project	dir	python-backend-expert	.agents/skills/python-backend-expert	.agents/skills/python-backend-expert	-
 copilot	project	dir	qa-engineer	.agents/skills/qa-engineer	.agents/skills/qa-engineer	-
 copilot	project	dir	quality-gate	.agents/skills/quality-gate	.agents/skills/quality-gate	-
+copilot	project	dir	refactor-legacy	.agents/skills/refactor-legacy	.agents/skills/refactor-legacy	-
 copilot	project	dir	repo-scan	.agents/skills/repo-scan	.agents/skills/repo-scan	-
 copilot	project	dir	requirements-grilling	.agents/skills/requirements-grilling	.agents/skills/requirements-grilling	-
 copilot	project	dir	reverse-engineer	.agents/skills/reverse-engineer	.agents/skills/reverse-engineer	-
@@ -1087,6 +1156,7 @@ copilot	project	dir	shared-infra-changes	.agents/skills/shared-infra-changes	.ag
 copilot	project	dir	smoke-test	.agents/skills/smoke-test	.agents/skills/smoke-test	-
 copilot	project	dir	test-every-change	.agents/skills/test-every-change	.agents/skills/test-every-change	-
 copilot	project	dir	test-strategy	.agents/skills/test-strategy	.agents/skills/test-strategy	-
+copilot	project	dir	threat-model	.agents/skills/threat-model	.agents/skills/threat-model	-
 copilot	project	dir	ui-ux-architect	.agents/skills/ui-ux-architect	.agents/skills/ui-ux-architect	-
 copilot	project	dir	ui-ux-audit	.agents/skills/ui-ux-audit	.agents/skills/ui-ux-audit	-
 copilot	project	file	code-reviewer.agent.md	dist/copilot/agents/code-reviewer.agent.md	.github/agents/code-reviewer.agent.md	-

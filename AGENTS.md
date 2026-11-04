@@ -103,6 +103,11 @@ Skills: `.agents/skills/<name>/SKILL.md`. Subagents: `.agents/subagents/`.
 | Shared checkouts, unattended runs | `parallel-sessions`, `autonomous-run` | — |
 | Session handoff (context nearly full) | `handoff` | — |
 | Learn from mistakes (corrected, confirmed root cause) | `lessons-learned` (load `active` at session start) | — |
+| Accessibility audit (WCAG 2.2 AA) | `accessibility-audit` | `ui-ux-architect` |
+| Change untested legacy code in place | `refactor-legacy` | — |
+| Design-time threats, new trust boundary | `threat-model` | `security-auditor` |
+| Kubernetes manifests, Helm, rollout debugging | `kubernetes-ops` | `infra-reviewer`, `devops-engineer` |
+| React Native / Flutter apps | `mobile-expert` | — |
 | New skill | `create-skill` | — |
 
 ---

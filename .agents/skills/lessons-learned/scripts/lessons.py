@@ -3,7 +3,7 @@
 
 Usage:
   lessons.py add --tags a,b --mistake M --cause C --rule R [--check K]
-  lessons.py active [--hook]         # the Active section; --hook adds the self-recording instructions
+  lessons.py active [--hook]         # the Active section; --hook emits SessionStart hook JSON (additionalContext)
   lessons.py search WORD [WORD...]   # lessons (Active + Archive) containing every word
   lessons.py bump ID                 # the mistake happened again
   lessons.py archive ID              # retire a lesson (fixed by a test, rule, or tool)
@@ -12,6 +12,7 @@ Options: --file PATH (default: $LESSONS_FILE or .agents/lessons.md)
 Exit codes: 0 ok, 1 check found problems, 2 usage or unreadable file.
 """
 import argparse
+import json
 import os
 import re
 import sys
@@ -139,12 +140,14 @@ HOOK_HEADER = ("Lessons ledger for this project: obey the lessons below. If you 
 
 def cmd_active(ledger, args):
     active = ledger.section("active")
+    lines = [ledger.render(lesson) for lesson in active]
     if args.hook:
-        print(HOOK_HEADER.format(script=Path(__file__).resolve()))
-        if not active:
-            print("(no lessons yet)")
-    for lesson in active:
-        print(ledger.render(lesson))
+        lines = [HOOK_HEADER.format(script=Path(__file__).resolve())] + (lines or ["(no lessons yet)"])
+        print(json.dumps({"hookSpecificOutput": {"hookEventName": "SessionStart",
+                                                 "additionalContext": "\n".join(lines)}}))
+        return 0
+    for line in lines:
+        print(line)
     return 0
 
 
