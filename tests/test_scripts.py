@@ -67,6 +67,13 @@ class RenderTests(unittest.TestCase):
         self.assertIn("model: inherit", build.render_agent("antigravity", agent))
         self.assertIn("model: inherit", build.render_agent("cursor", agent))
 
+    def test_balanced_agent_uses_mid_model_on_claude_only(self):
+        agent = dict(self.AGENT, pro=False, balanced=True)
+        self.assertIn("model: sonnet", build.render_agent("claude", agent))
+        self.assertNotIn("model_reasoning_effort", build.render_agent("codex", agent))
+        self.assertIn("model: inherit", build.render_agent("antigravity", agent))
+        self.assertIn("model: inherit", build.render_agent("cursor", agent))
+
     def test_description_with_quotes_stays_valid(self):
         self.assertIn('description: "Finds \\"bugs\\": fast"', build.render_agent("claude", self.AGENT))
         self.assertIn('description = "Finds \\"bugs\\": fast"', build.render_agent("codex", self.AGENT))

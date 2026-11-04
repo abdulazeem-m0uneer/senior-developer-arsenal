@@ -43,7 +43,7 @@
       "promptFile": "./prompts/node-specialist.md",
       "enable_write_tools": true,
       "enable_subagent_tools": false,
-      "recommended_model": "inherit"
+      "recommended_model": "balanced"
     },
     {
       "name": "security-auditor",
