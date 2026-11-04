@@ -18,7 +18,7 @@ MAX_READ_BYTES = 8_000_000
 LONG_FILE_LINES = 1000
 WORST_FILES = 10
 SOURCE_SUFFIXES = (".ts", ".tsx", ".js", ".jsx", ".cs", ".py", ".sql", ".css", ".scss", ".html", ".vue", ".go", ".java")
-MANIFEST_RE = re.compile(r"^(package\.json|pyproject\.toml|pipfile|setup\.(py|cfg)|requirements.*\.txt|.*\.csproj)$")
+MANIFEST_RE = re.compile(r"^(package\.json|pyproject\.toml|pipfile|setup\.(py|cfg)|requirements.*\.txt|.*\.csproj|pubspec\.yaml)$")
 COMPOSE_NAMES = ("docker-compose.yml", "docker-compose.yaml", "compose.yml", "compose.yaml")
 DOCKERFILE_RE = re.compile(r"^dockerfile(\..+)?$|\.dockerfile$")
 INFRA_NAMES = ("pulumi.yaml", "pulumi.yml", "chart.yaml", "kustomization.yaml", "kustomization.yml")
@@ -30,6 +30,11 @@ DEP_SECTIONS = ("dependencies", "devDependencies", "peerDependencies")
 FRONTEND_DEPS = {"react": "react", "next": "react", "@angular/core": "angular"}
 NODE_BACKEND_DEPS = ("express", "fastify", "@nestjs/core", "koa", "hono", "@hapi/hapi")
 NODE_DATA_DEPS = ("@prisma/client", "typeorm", "knex", "sequelize", "drizzle-orm", "pg", "mssql", "better-sqlite3")
+MOBILE_DEPS = ("react-native", "expo")
+K8S_KIND_RE = re.compile(r"^kind:\s*(Deployment|StatefulSet|DaemonSet|Job|CronJob|Pod|Service|Ingress|ConfigMap|HorizontalPodAutoscaler)\s*$", re.M)
+K8S_API_RE = re.compile(r"^apiVersion:\s*\S+", re.M)
+K8S_MAX_FILES = 300
+K8S_READ_BYTES = 8192
 NODE_TEST_DEPS = ("vitest", "jest", "mocha", "@playwright/test", "cypress")
 PYTHON_FRAMEWORKS = ("fastapi", "sqlalchemy", "django", "flask")
 ENGINE_HINTS = {
@@ -41,8 +46,9 @@ KINDS = ("skills", "rules", "subagents")
 # signal -> (label, skills, rules, subagents); names are space-separated and must exist in the arsenal.
 RECOMMENDATIONS = {
     "node": ("Node.js project", "nodejs-backend-expert api-design perf-audit", "nodejs-standards", "node-specialist"),
-    "frontend": ("Frontend (React / Angular)", "frontend-architecture-expert frontend-audit", "frontend-standards",
-                 "frontend-architect"),
+    "frontend": ("Frontend (React / Angular)", "frontend-architecture-expert frontend-audit accessibility-audit",
+                 "frontend-standards", "frontend-architect"),
+    "mobile": ("Mobile (React Native / Flutter)", "mobile-expert accessibility-audit threat-model", "", ""),
     "dotnet": ("C#/.NET", "csharp-dotnet-expert api-design perf-audit", "csharp-dotnet-standards", "dotnet-specialist"),
     "python": ("Python", "python-backend-expert python-audit", "python-standards", "python-specialist"),
     "database": ("SQL / database", "database-architect database-migration perf-audit", "database-standards",
@@ -55,12 +61,14 @@ RECOMMENDATIONS = {
     "docker": ("Docker", "devops-ci dependency-upgrade", "", "devops-engineer"),
     "ci": ("CI pipeline", "devops-ci git-release ci-wait quality-gate", "", "devops-engineer"),
     "infra": ("Infrastructure as code", "shared-infra-changes devops-ci", "", "infra-reviewer devops-engineer"),
+    "kubernetes": ("Kubernetes", "kubernetes-ops shared-infra-changes devops-ci", "", "infra-reviewer devops-engineer"),
     "tests": ("Tests present", "test-strategy qa-engineer", "", "test-engineer qa-engineer"),
     "git": ("Git repository", "git-workflow-master git-release parallel-sessions", "git-standards", ""),
 }
 ALWAYS_APPLICABLE = (
-    "code-review deep-review test-every-change definition-of-done investigate git-workflow-master security-audit",
-    "senior-engineer-core defensive-epistemology token-conservation testing-standards",
+    "code-review deep-review test-every-change definition-of-done investigate git-workflow-master security-audit "
+    "requirements-grilling implementation-plan lessons-learned handoff",
+    "senior-engineer-core minimal-change defensive-epistemology token-conservation testing-standards",
     "code-reviewer epistemic-debugger security-auditor",
 )
 
@@ -193,6 +201,23 @@ def detect_styling(repo):
     return evidence(tailwind + repo.suffixed(".css", ".scss", ".sass", ".less"), ["tailwind"] if tailwind else ())
 
 
+def detect_mobile(repo):
+    pubspecs = [path for path, text in repo.manifests.items() if basename(path) == "pubspec.yaml" and "flutter" in text]
+    deps = [dep for dep in MOBILE_DEPS if dep in repo.node_deps]
+    tags = (["react-native" if "react-native" in deps else "expo"] if deps else []) + (["flutter"] if pubspecs else [])
+    return evidence(repo.with_dep(*MOBILE_DEPS) + pubspecs, tags)
+
+
+def detect_kubernetes(repo):
+    paths = [f for f in repo.suffixed(".yaml", ".yml") if basename(f) not in COMPOSE_NAMES][:K8S_MAX_FILES]
+    found = []
+    for path in paths:
+        head = read_bytes(repo.root / path)[:K8S_READ_BYTES].decode("utf-8", errors="replace")
+        if K8S_API_RE.search(head) and K8S_KIND_RE.search(head):
+            found.append(path)
+    return evidence(found + repo.named("kustomization.yaml", "kustomization.yml", "skaffold.yaml"))
+
+
 def detect_docker(repo):
     return evidence(repo.matching(DOCKERFILE_RE) + repo.named(*COMPOSE_NAMES))
 
@@ -217,9 +242,9 @@ def detect_git(repo):
 
 DETECTORS = {
     "node": detect_node, "frontend": detect_frontend, "dotnet": detect_dotnet, "python": detect_python,
-    "database": detect_database, "fullstack": detect_fullstack, "openapi": detect_openapi,
-    "styling": detect_styling, "docker": detect_docker, "ci": detect_ci, "infra": detect_infra, "tests": detect_tests,
-    "git": detect_git,
+    "mobile": detect_mobile, "database": detect_database, "fullstack": detect_fullstack, "openapi": detect_openapi,
+    "styling": detect_styling, "docker": detect_docker, "ci": detect_ci, "infra": detect_infra,
+    "kubernetes": detect_kubernetes, "tests": detect_tests, "git": detect_git,
 }
 
 

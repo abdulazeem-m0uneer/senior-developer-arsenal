@@ -84,16 +84,22 @@ class LessonsTests(unittest.TestCase):
         self.assertEqual(self.run_cli("check")[0], 1)
         self.assertEqual(self.run_cli("bump", "L001")[0], 2)
 
-    def test_hook_mode_explains_how_to_self_record_even_with_no_lessons(self):
+    def hook_context(self):
         code, out, _ = self.run_cli("active", "--hook")
         self.assertEqual(code, 0)
-        self.assertIn("If you catch your own mistake", out)
-        self.assertIn("lessons.py add", out)
-        self.assertIn("(no lessons yet)", out)
+        payload = json.loads(out)["hookSpecificOutput"]
+        self.assertEqual(payload["hookEventName"], "SessionStart")
+        return payload["additionalContext"]
+
+    def test_hook_mode_emits_session_start_json_with_self_recording_instruction(self):
+        context = self.hook_context()
+        self.assertIn("If you catch your own mistake", context)
+        self.assertIn("lessons.py add", context)
+        self.assertIn("(no lessons yet)", context)
         self.add("Dropped a column without a dry run")
-        out = self.run_cli("active", "--hook")[1]
-        self.assertIn("L001 [sql]", out)
-        self.assertNotIn("(no lessons yet)", out)
+        context = self.hook_context()
+        self.assertIn("L001 [sql]", context)
+        self.assertNotIn("(no lessons yet)", context)
 
     def test_shipped_session_hook_points_at_this_script(self):
         config = json.loads((ROOT / "hooks" / "hooks.json").read_text(encoding="utf-8"))

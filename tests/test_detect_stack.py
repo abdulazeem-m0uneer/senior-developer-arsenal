@@ -30,6 +30,9 @@ class DetectStackTests(unittest.TestCase):
     def signals(self):
         return {row["signal"] for row in self.report()["detected"]}
 
+    def report_signal(self, name):
+        return next(row for row in self.report()["detected"] if row["signal"] == name)
+
     def test_empty_directory_detects_nothing_and_reports_gaps(self):
         report = self.report()
         self.assertEqual(report["detected"], [])
@@ -67,6 +70,30 @@ class DetectStackTests(unittest.TestCase):
                 (self.repo / relative).unlink()
         self.write("node_modules/pkg/main.tf", "x\n")
         self.assertNotIn("infra", self.signals())
+
+    def test_mobile_is_detected_from_react_native_expo_and_flutter(self):
+        self.write("package.json", json.dumps({"dependencies": {"react": "18", "react-native": "0.76"}}))
+        self.assertIn("mobile", self.signals())
+        self.assertIn("react-native", self.report_signal("mobile")["evidence"])
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        flutter = Path(directory.name)
+        (flutter / "pubspec.yaml").write_text("name: app\ndependencies:\n  flutter:\n    sdk: flutter\n", encoding="utf-8")
+        self.assertIn("flutter", detect_stack.build_report(flutter)["detected"][0]["evidence"])
+
+    def test_plain_dart_package_is_not_mobile(self):
+        self.write("pubspec.yaml", "name: lib\ndependencies:\n  collection: ^1.0.0\n")
+        self.assertNotIn("mobile", self.signals())
+
+    def test_kubernetes_is_detected_from_manifest_content_not_just_names(self):
+        self.write("deploy/app.yaml", "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: app\n")
+        self.assertIn("kubernetes", self.signals())
+        self.assertEqual(self.report_signal("kubernetes")["skills"][0], "kubernetes-ops")
+
+    def test_plain_yaml_config_is_not_kubernetes(self):
+        self.write("config/settings.yaml", "name: demo\nkind: example\n")
+        self.write("docker-compose.yml", "services:\n  web:\n    image: nginx\n")
+        self.assertNotIn("kubernetes", self.signals())
 
     def test_unparseable_and_non_object_package_json_do_not_crash(self):
         for content in ('{"dependencies": ', "[1, 2]", ""):

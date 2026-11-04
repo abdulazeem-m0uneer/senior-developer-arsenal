@@ -9,7 +9,8 @@ The mapping the detector applies, what each signal is detected from, and how to 
 | Signal | Detected from | Skills | Rules | Subagents |
 | :--- | :--- | :--- | :--- | :--- |
 | Node.js project | `package.json` with `express`, `fastify`, `@nestjs/core`, `koa`, `hono`, or `@hapi/hapi`; otherwise `package.json` / `tsconfig.json` with no frontend framework | `nodejs-backend-expert`, `api-design`, `perf-audit` | `nodejs-standards` | `node-specialist` |
-| Frontend (React / Angular) | `react`, `next`, or `@angular/core` dependency; `angular.json` | `frontend-architecture-expert`, `frontend-audit` | `frontend-standards` | `frontend-architect` |
+| Frontend (React / Angular) | `react`, `next`, or `@angular/core` dependency; `angular.json` | `frontend-architecture-expert`, `frontend-audit`, `accessibility-audit` | `frontend-standards` | `frontend-architect` |
+| Mobile (React Native / Flutter) | `react-native` or `expo` dependency in `package.json`; `pubspec.yaml` that mentions `flutter` | `mobile-expert`, `accessibility-audit`, `threat-model` | - | - |
 | C#/.NET | `*.csproj`, `*.sln` | `csharp-dotnet-expert`, `api-design`, `perf-audit` | `csharp-dotnet-standards` | `dotnet-specialist` |
 | Python | `pyproject.toml`, `requirements*.txt`, `Pipfile`, `setup.py`, `setup.cfg`, `*.py`; tags `fastapi`, `sqlalchemy`, `django`, `flask` | `python-backend-expert`, `python-audit` | `python-standards` | `python-specialist` |
 | SQL / database | `*.sql`, `*.prisma`, a `migrations` directory (any case, covers EF Core), ORM or driver dependencies, engine names in manifests and compose files | `database-architect`, `database-migration`, `perf-audit` | `database-standards` | `db-architect` |
@@ -19,6 +20,7 @@ The mapping the detector applies, what each signal is detected from, and how to 
 | Docker | `Dockerfile`, `Dockerfile.*`, `*.dockerfile`, compose files | `devops-ci`, `dependency-upgrade` | - | `devops-engineer` |
 | CI pipeline | `.github/workflows/`, `.circleci/`, `.gitlab-ci.yml`, `azure-pipelines.yml`, `Jenkinsfile` | `devops-ci`, `git-release`, `ci-wait`, `quality-gate` | - | `devops-engineer` |
 | Infrastructure as code | `*.tf`, `*.tofu`, `*.bicep`, `Pulumi.yaml`, `Chart.yaml`, `kustomization.yaml` | `shared-infra-changes`, `devops-ci` | - | `infra-reviewer`, `devops-engineer` |
+| Kubernetes | Up to 300 `*.yaml` / `*.yml` files whose first 8 KB has an `apiVersion:` and a workload, service, ingress, config, or autoscaler `kind:`; `kustomization.yaml`, `skaffold.yaml` | `kubernetes-ops`, `shared-infra-changes`, `devops-ci` | - | `infra-reviewer`, `devops-engineer` |
 | Tests present | Vitest / Jest / Playwright config, `pytest.ini`, `conftest.py`, `*.test.*`, `*.spec.*`, `test_*`, `*Tests.cs`, test dependencies, test directories | `test-strategy`, `qa-engineer` | - | `test-engineer`, `qa-engineer` |
 | Git repository | `.git` at the scanned root | `git-workflow-master`, `git-release`, `parallel-sessions` | `git-standards` | - |
 
@@ -26,8 +28,8 @@ Always applicable, whatever is detected:
 
 | Kind | Names |
 | :--- | :--- |
-| Skills | `code-review`, `deep-review`, `test-every-change`, `definition-of-done`, `investigate`, `git-workflow-master`, `security-audit` |
-| Rules | `senior-engineer-core`, `defensive-epistemology`, `token-conservation`, `testing-standards` |
+| Skills | `code-review`, `deep-review`, `test-every-change`, `definition-of-done`, `investigate`, `git-workflow-master`, `security-audit`, `requirements-grilling`, `implementation-plan`, `lessons-learned`, `handoff` |
+| Rules | `senior-engineer-core`, `minimal-change`, `defensive-epistemology`, `token-conservation`, `testing-standards` |
 | Subagents | `code-reviewer`, `epistemic-debugger`, `security-auditor` |
 
 ---
@@ -49,6 +51,10 @@ Recommend these from the refinement reads, not from file markers:
 | `smoke-test` | A deployed API with no check that runs after each release |
 | `decision-log`, `delivery-board-sync` | Decisions or a delivery plan live in documents or a tracker that the work must stay in step with |
 | `legacy-parity` | The repository rebuilds or migrates an older system whose behaviour must be kept |
+| `refactor-legacy` | Untested code must be changed in place: a long file with no tests around it, or a fix that touches code nobody dares to edit |
+| `threat-model` | A new service, API, auth flow, or third-party integration is being designed, or a new trust boundary or data class appears |
+| `mcp-server` | A service must become callable by agents as tools |
+| `reverse-engineer` | The task is to understand how a third-party application implements a feature, with authorization to do so |
 | `autonomous-run` | The agent is asked to work unattended for hours with authority to merge |
 | `docs-writer` | README, runbooks, or API reference are missing or out of date |
 
@@ -66,6 +72,8 @@ Recommend these from the refinement reads, not from file markers:
 | Fullstack | How the frontend calls the backend | Shared types or generated client; same repository or only co-located |
 | OpenAPI | The spec header | Version; hand-written or generated; whether clients are generated from it |
 | Docker / CI | The Dockerfile and one pipeline file | What is built, tested, and deployed; missing test or lint stage |
+| Mobile | The manifest; the app entry and navigation setup | Expo managed, Expo bare, React Native CLI, or Flutter; navigation, state and storage libraries; how releases are built and signed |
+| Kubernetes | One workload manifest and the chart or overlay that renders it | Namespaces and clusters it targets; resource requests and probes present; whether the cluster is shared (then `shared-infra-changes` gates every apply) |
 | Infrastructure as code | The root module or chart values; the state backend | Which live accounts it manages; whether other systems share them; how a plan is reviewed before apply |
 | Tests present | The test config and one test file | Runner, real coverage versus a placeholder, the single command that runs the suite |
 

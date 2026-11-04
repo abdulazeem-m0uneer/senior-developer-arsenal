@@ -89,7 +89,7 @@ A lesson nobody loads teaches nothing.
 - **Agents without hooks**: one line in `AGENTS.md`, "At session start run `python .agents/skills/lessons-learned/scripts/lessons.py active --hook`."
 - **Manual**: the user runs `/lessons-learned`.
 
-`--hook` prints a two-line instruction (how the agent records its own mistakes) followed by the Active lessons, or `(no lessons yet)`, so a new project still gets the instruction.
+`--hook` emits the JSON a `SessionStart` hook uses to add context (`hookSpecificOutput.additionalContext`): a two-line instruction on how the agent records its own mistakes, then the Active lessons, or `(no lessons yet)`, so a new project still gets the instruction. Plain `active` (no flag) prints the lessons as text for manual use.
 
 Cost: about 70 tokens for the instruction plus at most 15 short lines, once per session start.
 
