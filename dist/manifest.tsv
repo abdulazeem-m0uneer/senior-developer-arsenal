@@ -34,6 +34,7 @@ antigravity	global	dir	legacy-parity	.agents/skills/legacy-parity	.gemini/config
 antigravity	global	dir	lessons-learned	.agents/skills/lessons-learned	.gemini/config/skills/lessons-learned	-
 antigravity	global	dir	mcp-server	.agents/skills/mcp-server	.gemini/config/skills/mcp-server	-
 antigravity	global	dir	mobile-expert	.agents/skills/mobile-expert	.gemini/config/skills/mobile-expert	-
+antigravity	global	dir	multi-session-delivery	.agents/skills/multi-session-delivery	.gemini/config/skills/multi-session-delivery	-
 antigravity	global	dir	nodejs-backend-expert	.agents/skills/nodejs-backend-expert	.gemini/config/skills/nodejs-backend-expert	-
 antigravity	global	dir	observability	.agents/skills/observability	.gemini/config/skills/observability	-
 antigravity	global	dir	parallel-sessions	.agents/skills/parallel-sessions	.gemini/config/skills/parallel-sessions	-
@@ -125,6 +126,7 @@ antigravity	project	dir	legacy-parity	.agents/skills/legacy-parity	.agents/skill
 antigravity	project	dir	lessons-learned	.agents/skills/lessons-learned	.agents/skills/lessons-learned	-
 antigravity	project	dir	mcp-server	.agents/skills/mcp-server	.agents/skills/mcp-server	-
 antigravity	project	dir	mobile-expert	.agents/skills/mobile-expert	.agents/skills/mobile-expert	-
+antigravity	project	dir	multi-session-delivery	.agents/skills/multi-session-delivery	.agents/skills/multi-session-delivery	-
 antigravity	project	dir	nodejs-backend-expert	.agents/skills/nodejs-backend-expert	.agents/skills/nodejs-backend-expert	-
 antigravity	project	dir	observability	.agents/skills/observability	.agents/skills/observability	-
 antigravity	project	dir	parallel-sessions	.agents/skills/parallel-sessions	.agents/skills/parallel-sessions	-
@@ -215,6 +217,7 @@ gemini	global	dir	legacy-parity	.agents/skills/legacy-parity	.agents/skills/lega
 gemini	global	dir	lessons-learned	.agents/skills/lessons-learned	.agents/skills/lessons-learned	-
 gemini	global	dir	mcp-server	.agents/skills/mcp-server	.agents/skills/mcp-server	-
 gemini	global	dir	mobile-expert	.agents/skills/mobile-expert	.agents/skills/mobile-expert	-
+gemini	global	dir	multi-session-delivery	.agents/skills/multi-session-delivery	.agents/skills/multi-session-delivery	-
 gemini	global	dir	nodejs-backend-expert	.agents/skills/nodejs-backend-expert	.agents/skills/nodejs-backend-expert	-
 gemini	global	dir	observability	.agents/skills/observability	.agents/skills/observability	-
 gemini	global	dir	parallel-sessions	.agents/skills/parallel-sessions	.agents/skills/parallel-sessions	-
@@ -291,6 +294,7 @@ gemini	project	dir	legacy-parity	.agents/skills/legacy-parity	.agents/skills/leg
 gemini	project	dir	lessons-learned	.agents/skills/lessons-learned	.agents/skills/lessons-learned	-
 gemini	project	dir	mcp-server	.agents/skills/mcp-server	.agents/skills/mcp-server	-
 gemini	project	dir	mobile-expert	.agents/skills/mobile-expert	.agents/skills/mobile-expert	-
+gemini	project	dir	multi-session-delivery	.agents/skills/multi-session-delivery	.agents/skills/multi-session-delivery	-
 gemini	project	dir	nodejs-backend-expert	.agents/skills/nodejs-backend-expert	.agents/skills/nodejs-backend-expert	-
 gemini	project	dir	observability	.agents/skills/observability	.agents/skills/observability	-
 gemini	project	dir	parallel-sessions	.agents/skills/parallel-sessions	.agents/skills/parallel-sessions	-
@@ -403,6 +407,7 @@ codex	global	dir	legacy-parity	.agents/skills/legacy-parity	.agents/skills/legac
 codex	global	dir	lessons-learned	.agents/skills/lessons-learned	.agents/skills/lessons-learned	-
 codex	global	dir	mcp-server	.agents/skills/mcp-server	.agents/skills/mcp-server	-
 codex	global	dir	mobile-expert	.agents/skills/mobile-expert	.agents/skills/mobile-expert	-
+codex	global	dir	multi-session-delivery	.agents/skills/multi-session-delivery	.agents/skills/multi-session-delivery	-
 codex	global	dir	nodejs-backend-expert	.agents/skills/nodejs-backend-expert	.agents/skills/nodejs-backend-expert	-
 codex	global	dir	observability	.agents/skills/observability	.agents/skills/observability	-
 codex	global	dir	parallel-sessions	.agents/skills/parallel-sessions	.agents/skills/parallel-sessions	-
@@ -493,6 +498,7 @@ codex	project	dir	legacy-parity	.agents/skills/legacy-parity	.agents/skills/lega
 codex	project	dir	lessons-learned	.agents/skills/lessons-learned	.agents/skills/lessons-learned	-
 codex	project	dir	mcp-server	.agents/skills/mcp-server	.agents/skills/mcp-server	-
 codex	project	dir	mobile-expert	.agents/skills/mobile-expert	.agents/skills/mobile-expert	-
+codex	project	dir	multi-session-delivery	.agents/skills/multi-session-delivery	.agents/skills/multi-session-delivery	-
 codex	project	dir	nodejs-backend-expert	.agents/skills/nodejs-backend-expert	.agents/skills/nodejs-backend-expert	-
 codex	project	dir	observability	.agents/skills/observability	.agents/skills/observability	-
 codex	project	dir	parallel-sessions	.agents/skills/parallel-sessions	.agents/skills/parallel-sessions	-
@@ -583,6 +589,7 @@ opencode	global	dir	legacy-parity	.agents/skills/legacy-parity	.agents/skills/le
 opencode	global	dir	lessons-learned	.agents/skills/lessons-learned	.agents/skills/lessons-learned	-
 opencode	global	dir	mcp-server	.agents/skills/mcp-server	.agents/skills/mcp-server	-
 opencode	global	dir	mobile-expert	.agents/skills/mobile-expert	.agents/skills/mobile-expert	-
+opencode	global	dir	multi-session-delivery	.agents/skills/multi-session-delivery	.agents/skills/multi-session-delivery	-
 opencode	global	dir	nodejs-backend-expert	.agents/skills/nodejs-backend-expert	.agents/skills/nodejs-backend-expert	-
 opencode	global	dir	observability	.agents/skills/observability	.agents/skills/observability	-
 opencode	global	dir	parallel-sessions	.agents/skills/parallel-sessions	.agents/skills/parallel-sessions	-
@@ -673,6 +680,7 @@ opencode	project	dir	legacy-parity	.agents/skills/legacy-parity	.agents/skills/l
 opencode	project	dir	lessons-learned	.agents/skills/lessons-learned	.agents/skills/lessons-learned	-
 opencode	project	dir	mcp-server	.agents/skills/mcp-server	.agents/skills/mcp-server	-
 opencode	project	dir	mobile-expert	.agents/skills/mobile-expert	.agents/skills/mobile-expert	-
+opencode	project	dir	multi-session-delivery	.agents/skills/multi-session-delivery	.agents/skills/multi-session-delivery	-
 opencode	project	dir	nodejs-backend-expert	.agents/skills/nodejs-backend-expert	.agents/skills/nodejs-backend-expert	-
 opencode	project	dir	observability	.agents/skills/observability	.agents/skills/observability	-
 opencode	project	dir	parallel-sessions	.agents/skills/parallel-sessions	.agents/skills/parallel-sessions	-
@@ -763,6 +771,7 @@ cursor	global	dir	legacy-parity	.agents/skills/legacy-parity	.agents/skills/lega
 cursor	global	dir	lessons-learned	.agents/skills/lessons-learned	.agents/skills/lessons-learned	-
 cursor	global	dir	mcp-server	.agents/skills/mcp-server	.agents/skills/mcp-server	-
 cursor	global	dir	mobile-expert	.agents/skills/mobile-expert	.agents/skills/mobile-expert	-
+cursor	global	dir	multi-session-delivery	.agents/skills/multi-session-delivery	.agents/skills/multi-session-delivery	-
 cursor	global	dir	nodejs-backend-expert	.agents/skills/nodejs-backend-expert	.agents/skills/nodejs-backend-expert	-
 cursor	global	dir	observability	.agents/skills/observability	.agents/skills/observability	-
 cursor	global	dir	parallel-sessions	.agents/skills/parallel-sessions	.agents/skills/parallel-sessions	-
@@ -839,6 +848,7 @@ cursor	project	dir	legacy-parity	.agents/skills/legacy-parity	.agents/skills/leg
 cursor	project	dir	lessons-learned	.agents/skills/lessons-learned	.agents/skills/lessons-learned	-
 cursor	project	dir	mcp-server	.agents/skills/mcp-server	.agents/skills/mcp-server	-
 cursor	project	dir	mobile-expert	.agents/skills/mobile-expert	.agents/skills/mobile-expert	-
+cursor	project	dir	multi-session-delivery	.agents/skills/multi-session-delivery	.agents/skills/multi-session-delivery	-
 cursor	project	dir	nodejs-backend-expert	.agents/skills/nodejs-backend-expert	.agents/skills/nodejs-backend-expert	-
 cursor	project	dir	observability	.agents/skills/observability	.agents/skills/observability	-
 cursor	project	dir	parallel-sessions	.agents/skills/parallel-sessions	.agents/skills/parallel-sessions	-
@@ -929,6 +939,7 @@ windsurf	global	dir	legacy-parity	.agents/skills/legacy-parity	.agents/skills/le
 windsurf	global	dir	lessons-learned	.agents/skills/lessons-learned	.agents/skills/lessons-learned	-
 windsurf	global	dir	mcp-server	.agents/skills/mcp-server	.agents/skills/mcp-server	-
 windsurf	global	dir	mobile-expert	.agents/skills/mobile-expert	.agents/skills/mobile-expert	-
+windsurf	global	dir	multi-session-delivery	.agents/skills/multi-session-delivery	.agents/skills/multi-session-delivery	-
 windsurf	global	dir	nodejs-backend-expert	.agents/skills/nodejs-backend-expert	.agents/skills/nodejs-backend-expert	-
 windsurf	global	dir	observability	.agents/skills/observability	.agents/skills/observability	-
 windsurf	global	dir	parallel-sessions	.agents/skills/parallel-sessions	.agents/skills/parallel-sessions	-
@@ -988,6 +999,7 @@ windsurf	project	dir	legacy-parity	.agents/skills/legacy-parity	.agents/skills/l
 windsurf	project	dir	lessons-learned	.agents/skills/lessons-learned	.agents/skills/lessons-learned	-
 windsurf	project	dir	mcp-server	.agents/skills/mcp-server	.agents/skills/mcp-server	-
 windsurf	project	dir	mobile-expert	.agents/skills/mobile-expert	.agents/skills/mobile-expert	-
+windsurf	project	dir	multi-session-delivery	.agents/skills/multi-session-delivery	.agents/skills/multi-session-delivery	-
 windsurf	project	dir	nodejs-backend-expert	.agents/skills/nodejs-backend-expert	.agents/skills/nodejs-backend-expert	-
 windsurf	project	dir	observability	.agents/skills/observability	.agents/skills/observability	-
 windsurf	project	dir	parallel-sessions	.agents/skills/parallel-sessions	.agents/skills/parallel-sessions	-
@@ -1061,6 +1073,7 @@ copilot	global	dir	legacy-parity	.agents/skills/legacy-parity	.agents/skills/leg
 copilot	global	dir	lessons-learned	.agents/skills/lessons-learned	.agents/skills/lessons-learned	-
 copilot	global	dir	mcp-server	.agents/skills/mcp-server	.agents/skills/mcp-server	-
 copilot	global	dir	mobile-expert	.agents/skills/mobile-expert	.agents/skills/mobile-expert	-
+copilot	global	dir	multi-session-delivery	.agents/skills/multi-session-delivery	.agents/skills/multi-session-delivery	-
 copilot	global	dir	nodejs-backend-expert	.agents/skills/nodejs-backend-expert	.agents/skills/nodejs-backend-expert	-
 copilot	global	dir	observability	.agents/skills/observability	.agents/skills/observability	-
 copilot	global	dir	parallel-sessions	.agents/skills/parallel-sessions	.agents/skills/parallel-sessions	-
@@ -1137,6 +1150,7 @@ copilot	project	dir	legacy-parity	.agents/skills/legacy-parity	.agents/skills/le
 copilot	project	dir	lessons-learned	.agents/skills/lessons-learned	.agents/skills/lessons-learned	-
 copilot	project	dir	mcp-server	.agents/skills/mcp-server	.agents/skills/mcp-server	-
 copilot	project	dir	mobile-expert	.agents/skills/mobile-expert	.agents/skills/mobile-expert	-
+copilot	project	dir	multi-session-delivery	.agents/skills/multi-session-delivery	.agents/skills/multi-session-delivery	-
 copilot	project	dir	nodejs-backend-expert	.agents/skills/nodejs-backend-expert	.agents/skills/nodejs-backend-expert	-
 copilot	project	dir	observability	.agents/skills/observability	.agents/skills/observability	-
 copilot	project	dir	parallel-sessions	.agents/skills/parallel-sessions	.agents/skills/parallel-sessions	-

@@ -101,6 +101,7 @@ Skills: `.agents/skills/<name>/SKILL.md`. Subagents: `.agents/subagents/`.
 | Legacy rebuilds | `legacy-parity` | `legacy-analyst` |
 | Third-party feature, REA trace | `reverse-engineer` | — |
 | Shared checkouts, unattended runs | `parallel-sessions`, `autonomous-run` | — |
+| Several sessions delivering one product (coordinator + lanes) | `multi-session-delivery` | — |
 | Session handoff (context nearly full) | `handoff` | — |
 | Learn from mistakes (corrected, confirmed root cause) | `lessons-learned` (load `active` at session start) | — |
 | Accessibility audit (WCAG 2.2 AA) | `accessibility-audit` | `ui-ux-architect` |

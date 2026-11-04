@@ -26,6 +26,10 @@ INFRA_SUFFIXES = (".tf", ".tofu", ".bicep")
 TEST_FILE_RE = re.compile(
     r"^(vitest|jest|playwright)\.config\.|^(pytest\.ini|conftest\.py)$|\.(test|spec)\.|^test_|tests\.cs$")
 TEST_DIRS = ("test", "tests", "__tests__", "spec", "specs", "e2e")
+APP_MANIFESTS = ("package.json", "pyproject.toml", "pubspec.yaml", "go.mod", "pom.xml", "build.gradle", "build.gradle.kts",
+                 "cargo.toml", "composer.json", "gemfile")
+NON_APP_DIRS = set(TEST_DIRS) | {"examples", "example", "samples", "sample", "fixtures", "docs", "packages", "libs",
+                                 "tools", "scripts"}
 DEP_SECTIONS = ("dependencies", "devDependencies", "peerDependencies")
 FRONTEND_DEPS = {"react": "react", "next": "react", "@angular/core": "angular"}
 NODE_BACKEND_DEPS = ("express", "fastify", "@nestjs/core", "koa", "hono", "@hapi/hapi")
@@ -64,6 +68,7 @@ RECOMMENDATIONS = {
     "kubernetes": ("Kubernetes", "kubernetes-ops shared-infra-changes devops-ci", "", "infra-reviewer devops-engineer"),
     "tests": ("Tests present", "test-strategy qa-engineer", "", "test-engineer qa-engineer"),
     "git": ("Git repository", "git-workflow-master git-release parallel-sessions", "git-standards", ""),
+    "multi_app": ("Several deliverable apps", "multi-session-delivery parallel-sessions delivery-board-sync", "", ""),
 }
 ALWAYS_APPLICABLE = (
     "code-review deep-review test-every-change definition-of-done investigate git-workflow-master security-audit "
@@ -236,6 +241,18 @@ def detect_tests(repo):
                     + repo.mentioning("pytest", "xunit", "nunit") + repo.in_dir(*TEST_DIRS))
 
 
+def detect_multi_app(repo):
+    """Two or more app manifests in distinct non-root folders suggest several sessions delivering in parallel."""
+    # A .NET solution holds many projects, so its *.csproj files count once per top-level folder.
+    roots = [path.rsplit("/", 1)[0] for path in repo.named(*APP_MANIFESTS) if "/" in path]
+    roots += [path.split("/", 1)[0] for path in repo.suffixed(".csproj") if "/" in path]
+    roots = {root for root in roots
+             if not any(part in NON_APP_DIRS or part.startswith(".") for part in root.lower().split("/"))}
+    # A manifest nested inside another app (an SPA folder inside an API project) is part of that app.
+    folders = sorted(root for root in roots if not any(root.startswith(other + "/") for other in roots))
+    return evidence(folders, [f"{len(folders)} app folders"]) if len(folders) >= 2 else None
+
+
 def detect_git(repo):
     return ".git" if (repo.root / ".git").exists() else None
 
@@ -244,7 +261,7 @@ DETECTORS = {
     "node": detect_node, "frontend": detect_frontend, "dotnet": detect_dotnet, "python": detect_python,
     "mobile": detect_mobile, "database": detect_database, "fullstack": detect_fullstack, "openapi": detect_openapi,
     "styling": detect_styling, "docker": detect_docker, "ci": detect_ci, "infra": detect_infra,
-    "kubernetes": detect_kubernetes, "tests": detect_tests, "git": detect_git,
+    "kubernetes": detect_kubernetes, "tests": detect_tests, "git": detect_git, "multi_app": detect_multi_app,
 }
 
 
