@@ -67,7 +67,7 @@ Consult: [Routines & Timers](./references/routines.md)
 
 ### Step 7: Guards Against Repeated Mistakes
 1. Merge only through [merge_green.py](./scripts/merge_green.py): a dry run unless `--yes`, the full 40-character head pinned, checks green (pass `--expect` with the required check names so a workflow that has not started cannot be missed), an independent review on that exact head and no reviewer's latest verdict objecting. Its review line is a convention between honest agents, not an identity check, so keep branch protection on as well. Never run it with `--yes` while testing; test the dry run against a merged pull request.
-2. Each lane loads its lessons ledger before every task and records a mistake the same turn; a mistake seen twice becomes a test, lint rule, hook or script guard (`lessons-learned`).
+2. Each lane loads its lessons ledger before every task and records a mistake the same turn; a mistake seen twice becomes a test, lint rule, hook or script guard (`lessons-learned`). Every red CI run counts: a check that could have run locally joins the pre-push gate, and a flaky test is fixed at its cause, so no failure costs pipeline minutes twice.
 3. No sentence says done, merged, fixed or recovered without the command output, pull request or commit hash that proves it.
 
 ---

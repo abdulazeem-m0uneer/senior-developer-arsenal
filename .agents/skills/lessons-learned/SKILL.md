@@ -17,6 +17,7 @@ Activate this skill when:
 - The agent is about to report a task done (the self-audit in Step 5).
 - A failure's root cause is confirmed (Rule 0 on failure ended in a verified cause, not a guess).
 - A build or test failed because of an assumption the agent made without checking.
+- A CI/CD run went red on the agent's change, whether the cause was the change, a check the agent could have run locally first, or a flaky test or pipeline step (Step 4a).
 - A review raised a `[Blocker]` or `[Performance]` finding on the agent's own change.
 - A session starts or a new area is entered, to load the lessons that apply.
 - The user runs the `/lessons-learned` slash command.
@@ -53,6 +54,14 @@ Consult: [Lesson Format, Triggers & Promotion](./references/lesson-format-and-pr
 2. Prefer the strongest enforcement available: a failing test, a lint rule, a CI check, or a hook; then a line in the matching file under `.agents/rules/`; then a line in `AGENTS.md`.
 3. After promoting, `python scripts/lessons.py archive <id>` and name the guard in the commit message.
 4. When the user mentions the same mistake recurred, `python scripts/lessons.py bump <id>` instead of adding.
+
+### Step 4a: Learn From Every Red CI Run
+A red run costs pipeline minutes and a review cycle. Every one is a lesson, the first time:
+1. **The change failed a check that runs locally** (lint, type check, unit test, format, coverage, migration order): record the lesson with the exact local command as its `--check`, and add that command to the pre-push gate (`quality-gate`) in the same change, so the next push is stopped on the machine, not in CI.
+2. **The change failed only in CI** (another OS, shell or runtime version, a service the laptop lacks): record which environment differs, and add the cheapest local stand-in (a container, the other shell, a matrix entry run locally) or a note in the gate saying the check exists only in CI.
+3. **A flaky test or step**, not the change: rerun once to unblock (`ci-wait`), then find the cause (timing, ordering, shared state, clock) and fix it in the same pull request or a linked one. A rerun is not a fix; a flake left in place wastes every later run.
+4. **An outside fault** (registry, network, billing): no lesson unless the agent could have prevented it; a repeat is a pipeline defect for `devops-ci`.
+5. Before pushing, read the Active lessons tagged `ci` and run each `--check`. Tag CI lessons `ci` plus the stack, so the list stays searchable.
 
 ### Step 5: Self-Audit Before Saying Done
 Run these checks on your own work with evidence, not memory, before reporting a task complete:

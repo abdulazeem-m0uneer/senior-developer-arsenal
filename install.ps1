@@ -470,7 +470,13 @@ function Test-ServerEnabled([string]$Name) {
     return (($Name -eq "hindsight" -and $Hindsight) -or ($Name -eq "codegraph" -and $CodeGraph))
 }
 
+$Script:BackedUpFiles = @{}
+
 function Backup-File([string]$Path) {
+    # One backup per file per run: the pre-run original. A second write in a later second used to add a
+    # second backup, which made the smoke test flaky on slow runners.
+    if ($Script:BackedUpFiles.ContainsKey($Path)) { return }
+    $Script:BackedUpFiles[$Path] = $true
     if (Test-Path -LiteralPath $Path -PathType Leaf) {
         Copy-Item -LiteralPath $Path -Destination ("$Path.bak-" + (Get-Date -Format "yyyyMMddHHmmss")) -Force
     }
