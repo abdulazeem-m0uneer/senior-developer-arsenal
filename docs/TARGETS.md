@@ -51,6 +51,15 @@ Source: `.agents/rules/*.md` with `trigger` (`always_on`, `model_decision`, `glo
 | Codex CLI, OpenCode | canonical file, reached through the rules index in `AGENTS.md` | `~/.agents/rules/` | `P/.agents/rules/` |
 | Gemini CLI | reached through `GEMINI.md` importing `AGENTS.md` | not installed | `P/GEMINI.md` block |
 
+## Hooks
+
+| Agent | Hook shipped | What it does |
+| :--- | :--- | :--- |
+| Claude Code (plugin) | `hooks/hooks.json`: `SessionStart` on `startup\|resume\|clear\|compact` | Runs `lessons.py active --hook` from the `lessons-learned` skill: prints the self-recording instruction and the project's Active lessons. Silent about lessons if `.agents/lessons.md` does not exist. |
+| Every other agent, and Claude Code without the plugin | none | Wire it by hand (Claude Code `.claude/settings.json` snippet) or add one line to `AGENTS.md`; see the `lessons-learned` skill reference, section 5. |
+
+The hook needs `python3` (or `python`) on `PATH`. It reads and prints only; it never writes.
+
 ## Instruction files
 
 A marked block (`<!-- BEGIN senior-developer-arsenal -->` ... `<!-- END senior-developer-arsenal -->`) is added to, never substituted for, these files:
