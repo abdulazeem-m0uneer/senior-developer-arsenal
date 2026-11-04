@@ -102,6 +102,7 @@ Skills: `.agents/skills/<name>/SKILL.md`. Subagents: `.agents/subagents/`.
 | Third-party feature, REA trace | `reverse-engineer` | — |
 | Shared checkouts, unattended runs | `parallel-sessions`, `autonomous-run` | — |
 | Session handoff (context nearly full) | `handoff` | — |
+| Learn from mistakes (corrected, confirmed root cause) | `lessons-learned` (load `active` at session start) | — |
 | New skill | `create-skill` | — |
 
 ---

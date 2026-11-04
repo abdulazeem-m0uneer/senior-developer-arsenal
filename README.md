@@ -32,7 +32,7 @@ GitHub offers no trending API, so [`scripts/trending_rank.py`](scripts/trending_
 | Component | Quantity | Purpose |
 | :--- | :---: | :--- |
 | **Rules** | 13 | Enforce senior engineering standards: SOLID, a 1000-line file cap, mandatory tests with every change, minimal-change ladder, plus Python, Node.js, C#, Frontend, UI/UX, Databases, Git, Token Frugality, and Defensive Epistemology. |
-| **Specialized Skills** | 51 | Actionable runbooks following the Agent Skills standard (`SKILL.md` + progressive `references/`) with slash commands and negative triggers. |
+| **Specialized Skills** | 52 | Actionable runbooks following the Agent Skills standard (`SKILL.md` + progressive `references/`) with slash commands and negative triggers. |
 | **Autonomous Subagents** | 17 | Dedicated personas (`code-reviewer`, `code-explorer`, `qa-engineer`, `test-engineer`, `security-auditor`, `devops-engineer`, `epistemic-debugger`, `spec-reviewer`, `infra-reviewer`, `legacy-analyst`, and stack specialists). |
 | **Supported Agents** | 8 | Claude Code (plugin), Codex CLI, OpenCode, Cursor, Windsurf, GitHub Copilot, Gemini CLI, Antigravity. |
 | **Installers** | 2 | PowerShell (`install.ps1`) and Bash (`install.sh`) with identical options, non-destructive installs, and clean uninstall. |
@@ -229,7 +229,7 @@ Five rules are always on (core, minimal-change, token-conservation, defensive-ep
 
 ## ⚡ Active Skills & Capabilities
 
-The arsenal includes 51 specialized skills conforming to the Agent Skills standard (agentskills.io), featuring isolated progressive disclosure references (`references/`), slash commands, and negative triggers:
+The arsenal includes 52 specialized skills conforming to the Agent Skills standard (agentskills.io), featuring isolated progressive disclosure references (`references/`), slash commands, and negative triggers:
 
 ### 1. code-review (/code-review)
 - **When to use**: Auditing pull requests, reviewing recent commits, inspecting staged diffs, or evaluating branch code quality.
@@ -468,6 +468,10 @@ The arsenal includes 51 specialized skills conforming to the Agent Skills standa
 ### 51. reverse-engineer (/reverse-engineer)
 - **When to use**: Understanding how one feature of a third-party application works (native binary, Electron, .NET, APK, website) with the REA MCP server, then rebuilding it clean-room with oracle tests: authorization gate, observe before reading, surface map, evidence-log rows graded proven/probable/assumed, behaviour spec as the only bridge, drift control on target updates.
 - **Includes**: [legal-boundaries.md](.agents/skills/reverse-engineer/references/legal-boundaries.md), [target-playbooks.md](.agents/skills/reverse-engineer/references/target-playbooks.md), [evidence-and-report-template.md](.agents/skills/reverse-engineer/references/evidence-and-report-template.md), [verification-checklist.md](.agents/skills/reverse-engineer/references/verification-checklist.md).
+
+### 52. lessons-learned (/lessons-learned)
+- **When to use**: The agent erred or was corrected and the cause is verified: record it as one capped, deduplicated line (mistake, cause, rule, check) in a project ledger, load only the Active list at session start, and promote repeated mistakes into a test, lint, hook, or rule.
+- **Includes**: [lesson-format-and-promotion.md](.agents/skills/lessons-learned/references/lesson-format-and-promotion.md), [lessons.py](.agents/skills/lessons-learned/scripts/lessons.py).
 
 ---
 

@@ -24,6 +24,7 @@ How the agent reasons, hypothesizes, handles uncertainty + failure. Principle: *
 ```
 
 - Hidden failure / chained retries destroy information + burn context.
+- Root cause confirmed or user corrected you → record it with `lessons-learned` so the mistake is not repeated.
 - Fix you don't understand = debt timebomb.
 - Slow is smooth, smooth is fast.
 
