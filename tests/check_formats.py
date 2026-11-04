@@ -36,7 +36,8 @@ def main():
         tomllib.loads(text)
         checked += 1
     json_files = [*ROOT.glob("dist/**/*.json"), *ROOT.glob("plugins/**/*.json"),
-                  *ROOT.glob(".claude-plugin/*.json"), *ROOT.glob(".agents/**/*.json")]
+                  *ROOT.glob(".claude-plugin/*.json"), *ROOT.glob(".agents/**/*.json"),
+                  *ROOT.glob("hooks/*.json")]
     for path in json_files:
         json.loads(path.read_text(encoding="utf-8"))
         checked += 1
