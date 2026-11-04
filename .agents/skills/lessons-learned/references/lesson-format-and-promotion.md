@@ -31,6 +31,9 @@ One lesson per line. Fields are separated by ` | `; the script replaces any `|` 
 | Blocker review finding | `[Blocker]` or `[Performance]` on the agent's own change | did not run the check the reviewer ran |
 | Claim gate breach | The agent said done or passing without fresh evidence | reported from an earlier run |
 | Same tool error twice | A repeated invocation mistake | wrong flag, path, or order |
+| Self-detected rework | The agent reverted or redid its own edit | first attempt rested on an unchecked assumption |
+| Self-detected false statement | The agent finds an earlier claim was wrong | stated from memory instead of reading the file |
+| Lesson broken again | A loaded lesson was violated | read the lesson but did not apply it: `bump`, and consider promotion |
 
 Do not record: typos, a flaky network, the user's taste ("prefers tabs"), a decision (use `decision-log`), a guess about the cause, or anything naming a person as the fault.
 
@@ -66,25 +69,31 @@ After promoting, `archive <id>` and mention the guard in the commit message so t
 
 ## 5. Loading Automatically
 
-A lesson nobody loads teaches nothing. Pick one:
+A lesson nobody loads teaches nothing.
 
-- **Hook (Claude Code)**: add to `.claude/settings.json` so the Active list is printed into every session's context. Adjust the script path to where the skill is installed.
+- **Plugin install (Claude Code)**: nothing to do. `hooks/hooks.json` runs `lessons.py active --hook` on session startup, resume, clear and compact. The last matters: compaction drops context, and the hook puts the lessons back.
+- **Other installs**: add the same to the project's `.claude/settings.json`, with the script path where the skill is installed:
 
 ```json
 {
   "hooks": {
     "SessionStart": [
-      { "hooks": [ { "type": "command",
-        "command": "python3 .agents/skills/lessons-learned/scripts/lessons.py active" } ] }
+      { "matcher": "startup|resume|clear|compact",
+        "hooks": [ { "type": "command",
+        "command": "python3 .agents/skills/lessons-learned/scripts/lessons.py active --hook" } ] }
     ]
   }
 }
 ```
 
-- **Pointer in `AGENTS.md`**: one line, "At session start run `python .agents/skills/lessons-learned/scripts/lessons.py active`."
+- **Agents without hooks**: one line in `AGENTS.md`, "At session start run `python .agents/skills/lessons-learned/scripts/lessons.py active --hook`."
 - **Manual**: the user runs `/lessons-learned`.
 
-Cost: at most 15 short lines per session.
+`--hook` prints a two-line instruction (how the agent records its own mistakes) followed by the Active lessons, or `(no lessons yet)`, so a new project still gets the instruction.
+
+Cost: about 70 tokens for the instruction plus at most 15 short lines, once per session start.
+
+Not shipped on purpose: a `Stop` hook that forces a reflection every turn. It would spend tokens on turns with nothing to learn and can loop. The self-audit in Step 5 of the skill does the same job once per task.
 
 ---
 

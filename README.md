@@ -470,7 +470,7 @@ The arsenal includes 52 specialized skills conforming to the Agent Skills standa
 - **Includes**: [legal-boundaries.md](.agents/skills/reverse-engineer/references/legal-boundaries.md), [target-playbooks.md](.agents/skills/reverse-engineer/references/target-playbooks.md), [evidence-and-report-template.md](.agents/skills/reverse-engineer/references/evidence-and-report-template.md), [verification-checklist.md](.agents/skills/reverse-engineer/references/verification-checklist.md).
 
 ### 52. lessons-learned (/lessons-learned)
-- **When to use**: The agent erred or was corrected and the cause is verified: record it as one capped, deduplicated line (mistake, cause, rule, check) in a project ledger, load only the Active list at session start, and promote repeated mistakes into a test, lint, hook, or rule.
+- **When to use**: The agent erred, was corrected, or caught its own mistake in a pre-done self-audit, and the cause is verified: record it as one capped, deduplicated line (mistake, cause, rule, check) in a project ledger, load the Active list automatically at every session start (plugin `SessionStart` hook in `hooks/hooks.json`, also after compaction), and promote repeated mistakes into a test, lint, hook, or rule.
 - **Includes**: [lesson-format-and-promotion.md](.agents/skills/lessons-learned/references/lesson-format-and-promotion.md), [lessons.py](.agents/skills/lessons-learned/scripts/lessons.py).
 
 ---

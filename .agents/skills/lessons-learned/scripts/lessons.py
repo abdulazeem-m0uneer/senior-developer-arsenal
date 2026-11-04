@@ -3,7 +3,7 @@
 
 Usage:
   lessons.py add --tags a,b --mistake M --cause C --rule R [--check K]
-  lessons.py active                  # the Active section, for session start
+  lessons.py active [--hook]         # the Active section; --hook adds the self-recording instructions
   lessons.py search WORD [WORD...]   # lessons (Active + Archive) containing every word
   lessons.py bump ID                 # the mistake happened again
   lessons.py archive ID              # retire a lesson (fixed by a test, rule, or tool)
@@ -132,8 +132,18 @@ def promote_hint(lesson):
             f"or move the rule into a rules file, then `archive {lesson['id']}`.") if lesson["hits"] >= PROMOTE_AT else ""
 
 
-def cmd_active(ledger, _args):
-    for lesson in ledger.section("active"):
+HOOK_HEADER = ("Lessons ledger for this project: obey the lessons below. If you catch your own mistake, or repeat one "
+               "listed here, verify the cause, then run `python3 {script} add --tags T --mistake M --cause C --rule R "
+               "--check K` (a repeat: `bump ID`). Self-audit before saying a task is done.")
+
+
+def cmd_active(ledger, args):
+    active = ledger.section("active")
+    if args.hook:
+        print(HOOK_HEADER.format(script=Path(__file__).resolve()))
+        if not active:
+            print("(no lessons yet)")
+    for lesson in active:
         print(ledger.render(lesson))
     return 0
 
@@ -192,7 +202,7 @@ def build_parser():
     add.add_argument("--tags", default="")
     for name in ("mistake", "cause", "rule", "check"):
         add.add_argument(f"--{name}")
-    sub.add_parser("active")
+    sub.add_parser("active").add_argument("--hook", action="store_true")
     sub.add_parser("check")
     sub.add_parser("search").add_argument("words", nargs="+")
     sub.add_parser("bump").add_argument("id")

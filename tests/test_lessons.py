@@ -1,6 +1,7 @@
 """Unit tests for the lessons-learned skill's ledger script."""
 import contextlib
 import io
+import json
 import sys
 import tempfile
 import unittest
@@ -82,6 +83,26 @@ class LessonsTests(unittest.TestCase):
         Path(self.file).write_text(Path(self.file).read_text() + "hand written note\n")
         self.assertEqual(self.run_cli("check")[0], 1)
         self.assertEqual(self.run_cli("bump", "L001")[0], 2)
+
+    def test_hook_mode_explains_how_to_self_record_even_with_no_lessons(self):
+        code, out, _ = self.run_cli("active", "--hook")
+        self.assertEqual(code, 0)
+        self.assertIn("If you catch your own mistake", out)
+        self.assertIn("lessons.py add", out)
+        self.assertIn("(no lessons yet)", out)
+        self.add("Dropped a column without a dry run")
+        out = self.run_cli("active", "--hook")[1]
+        self.assertIn("L001 [sql]", out)
+        self.assertNotIn("(no lessons yet)", out)
+
+    def test_shipped_session_hook_points_at_this_script(self):
+        config = json.loads((ROOT / "hooks" / "hooks.json").read_text(encoding="utf-8"))
+        entries = config["hooks"]["SessionStart"]
+        self.assertIn("compact", entries[0]["matcher"])
+        command = entries[0]["hooks"][0]["command"]
+        relative = command.split("${CLAUDE_PLUGIN_ROOT}/")[1].split('"')[0]
+        self.assertTrue((ROOT / relative).is_file(), relative)
+        self.assertIn("active --hook", command)
 
     def test_date_is_today(self):
         with mock.patch.object(lessons, "today", return_value="2026-11-04"):
