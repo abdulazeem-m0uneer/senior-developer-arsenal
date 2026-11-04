@@ -1,0 +1,6 @@
+{
+  "_doc": "Each session writes its own session id under its name on every start. The coordinator reads it to report each lane's progress.",
+  "pm": "",
+  "backend": "",
+  "web": ""
+}

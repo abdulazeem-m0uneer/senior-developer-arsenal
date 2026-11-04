@@ -107,6 +107,40 @@ class DetectStackTests(unittest.TestCase):
         self.write("node_modules/lib/huge.js", "x\n" * 5000)
         self.assertEqual(self.report()["long_files"], [{"path": "src/big.ts", "lines": 1200}])
 
+    def test_several_app_folders_suggest_multi_session_delivery(self):
+        self.write("package.json", "{}")
+        self.write("apps/api/package.json", "{}")
+        self.assertNotIn("multi_app", self.signals())
+        self.write("tests/fixture/package.json", "{}")
+        self.write("examples/demo/pyproject.toml", "")
+        self.write("packages/ui/package.json", "{}")
+        self.write(".github/actions/tag/package.json", "{}")
+        self.assertNotIn("multi_app", self.signals())
+        self.write("mobile/pubspec.yaml", "name: app\n")
+        row = next(r for r in self.report()["detected"] if r["signal"] == "multi_app")
+        self.assertEqual(row["evidence"], "apps/api (+1 more) [2 app folders]")
+        self.assertIn("multi-session-delivery", row["skills"])
+
+    def test_other_ecosystems_count_and_nested_apps_count_once(self):
+        self.write("Api/Api.csproj", "<Project/>")
+        self.write("Api/ClientApp/package.json", "{}")
+        self.assertNotIn("multi_app", self.signals())
+        self.write("engine/Cargo.toml", "")
+        self.write("site/Gemfile", "")
+        self.write("shop/composer.json", "{}")
+        row = next(r for r in self.report()["detected"] if r["signal"] == "multi_app")
+        self.assertEqual(row["evidence"], "Api (+3 more) [4 app folders]")
+
+    def test_a_dotnet_solution_counts_once_and_pairs_with_a_web_app(self):
+        self.write("App.csproj", "<Project/>")
+        self.write("src/Api/Api.csproj", "<Project/>")
+        self.write("src/Domain/Domain.csproj", "<Project/>")
+        self.write("tests/Api.Tests/Api.Tests.csproj", "<Project/>")
+        self.assertNotIn("multi_app", self.signals())
+        self.write("web/package.json", "{}")
+        row = next(r for r in self.report()["detected"] if r["signal"] == "multi_app")
+        self.assertEqual(row["evidence"], "src (+1 more) [2 app folders]")
+
     def test_every_recommendation_names_an_existing_arsenal_item(self):
         manifest = json.loads((ROOT / ".agents/subagents/subagent-definitions.json").read_text(encoding="utf-8"))
         known = {

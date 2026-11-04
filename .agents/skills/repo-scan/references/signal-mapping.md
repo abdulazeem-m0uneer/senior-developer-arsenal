@@ -23,6 +23,7 @@ The mapping the detector applies, what each signal is detected from, and how to 
 | Kubernetes | Up to 300 `*.yaml` / `*.yml` files whose first 8 KB has an `apiVersion:` and a workload, service, ingress, config, or autoscaler `kind:`; `kustomization.yaml`, `skaffold.yaml` | `kubernetes-ops`, `shared-infra-changes`, `devops-ci` | - | `infra-reviewer`, `devops-engineer` |
 | Tests present | Vitest / Jest / Playwright config, `pytest.ini`, `conftest.py`, `*.test.*`, `*.spec.*`, `test_*`, `*Tests.cs`, test dependencies, test directories | `test-strategy`, `qa-engineer` | - | `test-engineer`, `qa-engineer` |
 | Git repository | `.git` at the scanned root | `git-workflow-master`, `git-release`, `parallel-sessions` | `git-standards` | - |
+| Several deliverable apps | Two or more app manifests (`package.json`, `pyproject.toml`, `pubspec.yaml`, `go.mod`, `pom.xml`, `build.gradle`) in distinct non-root folders, outside test, sample, docs, `packages`, `libs`, `tools`, `scripts` and dot-folders | `multi-session-delivery`, `parallel-sessions`, `delivery-board-sync` | - | - |
 
 Always applicable, whatever is detected:
 
@@ -76,6 +77,7 @@ Recommend these from the refinement reads, not from file markers:
 | Kubernetes | One workload manifest and the chart or overlay that renders it | Namespaces and clusters it targets; resource requests and probes present; whether the cluster is shared (then `shared-infra-changes` gates every apply) |
 | Infrastructure as code | The root module or chart values; the state backend | Which live accounts it manages; whether other systems share them; how a plan is reviewed before apply |
 | Tests present | The test config and one test file | Runner, real coverage versus a placeholder, the single command that runs the suite |
+| Several deliverable apps | Each cited manifest | Real apps versus libraries, tools or samples; how many repositories and teams deliver them. Under two real apps: drop the row |
 
 Corrections to apply:
 - [ ] Python detected only from a few helper scripts: keep `python-standards` off the primary list; note it as incidental.
@@ -83,6 +85,7 @@ Corrections to apply:
 - [ ] Database detected only from an engine name in a compose file: confirm the application uses it.
 - [ ] Monorepo: report signals per package or service, with the path prefix as evidence.
 - [ ] Tests detected from a directory name only: open one file to confirm that real tests exist.
+- [ ] Several deliverable apps confirmed, or a workspace of several repositories: offer `multi-session-delivery` as a question ("Fast delivery with a coordinator session plus build lanes?"); never apply it unasked.
 
 ---
 

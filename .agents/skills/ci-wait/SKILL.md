@@ -47,6 +47,7 @@ Consult: [Outside Failures & Exit Code Playbook](./references/outside-failures.m
 2. The script reruns only the failed jobs, at most twice, with a delay so a rate limit can clear.
 3. When the script reports a change failure but the log plainly shows a registry, network, or provider fault, add the phrase to `OUTSIDE_CAUSES` in the script (with a test) in the change that met it.
 4. The same outside cause three times in a week is a pipeline defect: add a mirror, a cache, or a retry at the step (`devops-ci`).
+5. Every red run is also a lesson (`lessons-learned` Step 4a): a change failure that a local command would have caught adds that command to the pre-push gate, and a flaky test is rerun once and then fixed at its cause, never only rerun.
 
 ### Step 5: Merge Only the Tested Commit
 1. Merge with `gh pr merge <pr> --match-head-commit <sha>` using the commit the script printed; the merge is refused if anything was pushed since.

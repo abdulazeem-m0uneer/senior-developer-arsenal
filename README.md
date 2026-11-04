@@ -32,7 +32,7 @@ GitHub offers no trending API, so [`scripts/trending_rank.py`](scripts/trending_
 | Component | Quantity | Purpose |
 | :--- | :---: | :--- |
 | **Rules** | 13 | Enforce senior engineering standards: SOLID, a 1000-line file cap, mandatory tests with every change, minimal-change ladder, plus Python, Node.js, C#, Frontend, UI/UX, Databases, Git, Token Frugality, and Defensive Epistemology. |
-| **Specialized Skills** | 57 | Actionable runbooks following the Agent Skills standard (`SKILL.md` + progressive `references/`) with slash commands and negative triggers. |
+| **Specialized Skills** | 58 | Actionable runbooks following the Agent Skills standard (`SKILL.md` + progressive `references/`) with slash commands and negative triggers. |
 | **Autonomous Subagents** | 17 | Dedicated personas (`code-reviewer`, `code-explorer`, `qa-engineer`, `test-engineer`, `security-auditor`, `devops-engineer`, `epistemic-debugger`, `spec-reviewer`, `infra-reviewer`, `legacy-analyst`, and stack specialists). |
 | **Supported Agents** | 8 | Claude Code (plugin), Codex CLI, OpenCode, Cursor, Windsurf, GitHub Copilot, Gemini CLI, Antigravity. |
 | **Installers** | 2 | PowerShell (`install.ps1`) and Bash (`install.sh`) with identical options, non-destructive installs, and clean uninstall. |
@@ -70,7 +70,7 @@ Benchmarked against full-solution reviews on production-grade repositories:
 senior-developer-arsenal/
 ├── .agents/                     # Single source of truth (edit here only)
 │   ├── rules/                   # 13 rules with trigger/description/globs frontmatter
-│   ├── skills/<name>/           # 57 skills: SKILL.md + references/ (+ scripts/ where bundled)
+│   ├── skills/<name>/           # 58 skills: SKILL.md + references/ (+ scripts/ where bundled)
 │   ├── subagents/               # subagent-definitions.json + prompts/<name>.md
 │   └── mcp/servers.json         # Canonical MCP server definitions (CodeGraph, Hindsight)
 ├── dist/                        # GENERATED per-agent output (do not edit)
@@ -230,7 +230,7 @@ Five rules are always on (core, minimal-change, token-conservation, defensive-ep
 
 ## ⚡ Active Skills & Capabilities
 
-The arsenal includes 57 specialized skills conforming to the Agent Skills standard (agentskills.io), featuring isolated progressive disclosure references (`references/`), slash commands, and negative triggers:
+The arsenal includes 58 specialized skills conforming to the Agent Skills standard (agentskills.io), featuring isolated progressive disclosure references (`references/`), slash commands, and negative triggers:
 
 ### 1. code-review (/code-review)
 - **When to use**: Auditing pull requests, reviewing recent commits, inspecting staged diffs, or evaluating branch code quality.
@@ -494,6 +494,10 @@ The arsenal includes 57 specialized skills conforming to the Agent Skills standa
 - **When to use**: React Native (Expo and bare) and Flutter work: project shape, navigation, state, offline sync, performance, mobile security, and store release pipelines.
 - **Includes**: [flutter-guide.md](.agents/skills/mobile-expert/references/flutter-guide.md), [mobile-security-checklist.md](.agents/skills/mobile-expert/references/mobile-security-checklist.md), [react-native-guide.md](.agents/skills/mobile-expert/references/react-native-guide.md), [release-pipeline.md](.agents/skills/mobile-expert/references/release-pipeline.md).
 
+### 58. multi-session-delivery (/multi-session-delivery)
+- **When to use**: Several long-running agent sessions deliver one product: a coordinator that writes no code (plan, tracker, questions, watches, reports) plus build lanes with fixed names and owned modules, a pulled priority queue, contract first, one agent per story, a file message bus, a guarded merge and timed routines. `repo-scan` offers it when it finds two or more app folders.
+- **Includes**: [routines.md](.agents/skills/multi-session-delivery/references/routines.md), [OPERATING-MODEL.md](.agents/skills/multi-session-delivery/templates/OPERATING-MODEL.md), [SESSION-RULES.md](.agents/skills/multi-session-delivery/templates/SESSION-RULES.md), [bus/](.agents/skills/multi-session-delivery/templates/bus/README.md), [merge_green.py](.agents/skills/multi-session-delivery/scripts/merge_green.py).
+
 ---
 
 ## 🤖 Autonomous Subagents
@@ -574,6 +578,7 @@ All workflows have been consolidated into first-class, token-efficient skills un
 | **Provider SDK** | `/provider-sdk` | One package per provider, mock and live modes, one contract test through both. | Provider package, contract test, adapter and mode selector. |
 | **Decision Log** | `/decision-log` | Records decisions, propagates them, tracks open questions. | Log entry, corrected documents, open-question rows. |
 | **Parallel Sessions** | `/parallel-sessions` | Remote-first reads, one worktree per task, staging by path, numbers taken at commit time. | Isolated branch and worktree; collision report. |
+| **Multi-Session Delivery** | `/multi-session-delivery` | Coordinator plus build lanes, pulled queue, one-line events on a file bus, guarded merge, timed routines. | Lane table, rules files, bus, readiness table. |
 | **Delivery Board Sync** | `/delivery-board-sync` | Mirrors the plan on the board; search before create; no done on a claim. | Updated tasks with evidence; end-of-session table. |
 | **Autonomous Run** | `/autonomous-run` | Rules, budget and merge conditions for unattended work. | Merge list, parked questions, usage against budget. |
 | **Shared Infra Changes** | `/shared-infra-changes` | Additions-only changes to shared DNS, cloud accounts and clusters. | Approved plan, applied change, drift-free re-plan, rollback step. |
