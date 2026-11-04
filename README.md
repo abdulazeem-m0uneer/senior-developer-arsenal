@@ -69,8 +69,8 @@ Benchmarked against full-solution reviews on production-grade repositories:
 ```text
 senior-developer-arsenal/
 ├── .agents/                     # Single source of truth (edit here only)
-│   ├── rules/                   # 12 rules with trigger/description/globs frontmatter
-│   ├── skills/<name>/           # 51 skills: SKILL.md + references/ (+ scripts/ where bundled)
+│   ├── rules/                   # 13 rules with trigger/description/globs frontmatter
+│   ├── skills/<name>/           # 52 skills: SKILL.md + references/ (+ scripts/ where bundled)
 │   ├── subagents/               # subagent-definitions.json + prompts/<name>.md
 │   └── mcp/servers.json         # Canonical MCP server definitions (CodeGraph, Hindsight)
 ├── dist/                        # GENERATED per-agent output (do not edit)
@@ -79,6 +79,7 @@ senior-developer-arsenal/
 │   └── manifest.tsv             # What each installer copies where
 ├── .claude-plugin/              # GENERATED Claude Code plugin + marketplace manifests
 ├── agents/                      # GENERATED subagents for the Claude Code plugin (its default agents directory)
+├── hooks/hooks.json             # Claude Code plugin hook: loads the lessons-learned ledger at session start
 ├── plugins/                     # GENERATED opt-in Claude plugins for the MCP servers
 ├── scripts/
 │   ├── build.py                 # Generator: --validate, --check, or write dist/
@@ -86,7 +87,7 @@ senior-developer-arsenal/
 │   ├── trending_rank.py         # Updates the trending table in this README
 │   ├── arsenal                  # CLI wrapper over install.sh
 │   └── arsenal.ps1              # CLI wrapper over install.ps1
-├── tests/                       # smoke.sh and smoke.ps1 installer tests
+├── tests/                       # smoke.sh / smoke.ps1 installer tests, unittest suites for the bundled scripts
 ├── .github/workflows/           # ci.yml (lint + smoke tests) and trending.yml
 ├── .githooks/commit-msg         # Conventional Commits validator hook
 ├── docs/                        # TARGETS.md, UBUNTU-INTEGRATION.md
@@ -108,7 +109,7 @@ senior-developer-arsenal/
 /plugin install arsenal@senior-developer-arsenal
 ```
 
-Inside the plugin every skill is namespaced: type `/arsenal:code-review`, not `/code-review` (a bare name runs whatever else owns it, or nothing). Subagents appear as `arsenal:<name>`. A plugin cannot ship rules, so add them with the installer: `./install.sh --global --target claude`. Optional MCP servers: `/plugin install arsenal-codegraph@senior-developer-arsenal` and `/plugin install arsenal-hindsight@senior-developer-arsenal`.
+Inside the plugin every skill is namespaced: type `/arsenal:code-review`, not `/code-review` (a bare name runs whatever else owns it, or nothing). Subagents appear as `arsenal:<name>`. A plugin cannot ship rules, so add them with the installer: `./install.sh --global --target claude`. The plugin does ship one hook (`hooks/hooks.json`): at session startup, resume, clear and compact it prints the project's `lessons-learned` ledger (at most 15 lines, about 70 tokens of instructions) so the agent obeys past lessons and records its own mistakes; it prints nothing project-specific until a lesson exists. Other install routes do not include it; see `.agents/skills/lessons-learned/references/lesson-format-and-promotion.md` §5 to wire it by hand. Optional MCP servers: `/plugin install arsenal-codegraph@senior-developer-arsenal` and `/plugin install arsenal-hindsight@senior-developer-arsenal`.
 
 If adding the marketplace fails:
 
