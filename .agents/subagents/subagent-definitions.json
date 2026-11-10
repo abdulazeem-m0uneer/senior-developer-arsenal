@@ -152,6 +152,15 @@
       "enable_write_tools": false,
       "enable_subagent_tools": false,
       "recommended_model": "inherit"
+    },
+    {
+      "name": "risk-manager",
+      "role": "Senior Delivery Risk Manager",
+      "description": "Checks a coordinator's outward actions (sent reports, tracker changes, instructions to other agents) against their sources, watches risk to a dated milestone, and finds the biggest delay between code and staging, as RISK and SPEED lines. Read-only.",
+      "promptFile": "./prompts/risk-manager.md",
+      "enable_write_tools": false,
+      "enable_subagent_tools": false,
+      "recommended_model": "inherit"
     }
   ]
 }

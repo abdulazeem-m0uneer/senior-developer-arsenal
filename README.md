@@ -33,7 +33,7 @@ GitHub offers no trending API, so [`scripts/trending_rank.py`](scripts/trending_
 | :--- | :---: | :--- |
 | **Rules** | 13 | Enforce senior engineering standards: SOLID, a 1000-line file cap, mandatory tests with every change, minimal-change ladder, plus Python, Node.js, C#, Frontend, UI/UX, Databases, Git, Token Frugality, and Defensive Epistemology. |
 | **Specialized Skills** | 58 | Actionable runbooks following the Agent Skills standard (`SKILL.md` + progressive `references/`) with slash commands and negative triggers. |
-| **Autonomous Subagents** | 17 | Dedicated personas (`code-reviewer`, `code-explorer`, `qa-engineer`, `test-engineer`, `security-auditor`, `devops-engineer`, `epistemic-debugger`, `spec-reviewer`, `infra-reviewer`, `legacy-analyst`, and stack specialists). |
+| **Autonomous Subagents** | 18 | Dedicated personas (`code-reviewer`, `code-explorer`, `qa-engineer`, `test-engineer`, `security-auditor`, `devops-engineer`, `epistemic-debugger`, `spec-reviewer`, `infra-reviewer`, `legacy-analyst`, `risk-manager`, and stack specialists). |
 | **Supported Agents** | 8 | Claude Code (plugin), Codex CLI, OpenCode, Cursor, Windsurf, GitHub Copilot, Gemini CLI, Antigravity. |
 | **Installers** | 2 | PowerShell (`install.ps1`) and Bash (`install.sh`) with identical options, non-destructive installs, and clean uninstall. |
 
@@ -502,7 +502,7 @@ The arsenal includes 58 specialized skills conforming to the Agent Skills standa
 
 ## 🤖 Autonomous Subagents
 
-The arsenal defines 17 specialized subagent profiles in `.agents/subagents/subagent-definitions.json`; `scripts/build.py` converts them into each agent's native format:
+The arsenal defines 18 specialized subagent profiles in `.agents/subagents/subagent-definitions.json`; `scripts/build.py` converts them into each agent's native format:
 
 | Subagent Name | Role | Focus Area & Capabilities |
 | :--- | :--- | :--- |
@@ -523,6 +523,7 @@ The arsenal defines 17 specialized subagent profiles in `.agents/subagents/subag
 | **`spec-reviewer`** | Senior Specification Reviewer | Document changes against the decision log: contradictions, leftover old rules, invented rules, wrong citations. Read-only. |
 | **`infra-reviewer`** | Principal Infrastructure Reviewer | Infrastructure as code, Kubernetes, and deploy workflows: broken first apply, shared resources touched, holes, data loss. Read-only. |
 | **`legacy-analyst`** | Senior Legacy Systems Analyst | What a legacy system does, with `file:line`, who can reach it, and what was not found. Read-only. |
+| **`risk-manager`** | Senior Delivery Risk Manager | Checks a coordinator's sent reports, tracker changes and instructions against their sources, watches milestone risk, finds the biggest code-to-staging delay (`RISK:` / `SPEED:` lines). Read-only. |
 
 ### How to Invoke Subagents
 In any agent chat, invoke subagents using natural language:

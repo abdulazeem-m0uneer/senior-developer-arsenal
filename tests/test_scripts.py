@@ -106,6 +106,14 @@ class RepositoryTests(unittest.TestCase):
         sources = build.load_sources()
         self.assertEqual(build.stale_paths(build.generate(sources)), [])
 
+    def test_agents_described_as_read_only_cannot_write(self):
+        read_only = [agent for agent in build.load_sources()["subagents"] if agent["description"].endswith("Read-only.")]
+        self.assertIn("risk-manager", {agent["name"] for agent in read_only})
+        for agent in read_only:
+            with self.subTest(agent=agent["name"]):
+                self.assertFalse(agent["writes"])
+                self.assertIn("disallowedTools: Write, Edit, NotebookEdit", build.render_agent("claude", agent))
+
     def test_manifest_has_no_empty_fields_and_only_known_kinds(self):
         rows = build.manifest_rows(build.load_sources())
         kinds = {row[2] for row in rows}
