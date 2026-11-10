@@ -74,6 +74,7 @@ antigravity	global	file	qa-engineer.md	dist/antigravity/agents/qa-engineer.md	.g
 antigravity	global	file	spec-reviewer.md	dist/antigravity/agents/spec-reviewer.md	.gemini/config/agents/spec-reviewer.md	-
 antigravity	global	file	infra-reviewer.md	dist/antigravity/agents/infra-reviewer.md	.gemini/config/agents/infra-reviewer.md	-
 antigravity	global	file	legacy-analyst.md	dist/antigravity/agents/legacy-analyst.md	.gemini/config/agents/legacy-analyst.md	-
+antigravity	global	file	risk-manager.md	dist/antigravity/agents/risk-manager.md	.gemini/config/agents/risk-manager.md	-
 antigravity	global	file	csharp-dotnet-standards.md	.agents/rules/csharp-dotnet-standards.md	.gemini/config/rules/csharp-dotnet-standards.md	-
 antigravity	global	file	database-standards.md	.agents/rules/database-standards.md	.gemini/config/rules/database-standards.md	-
 antigravity	global	file	defensive-epistemology.md	.agents/rules/defensive-epistemology.md	.gemini/config/rules/defensive-epistemology.md	-
@@ -166,6 +167,7 @@ antigravity	project	file	qa-engineer.md	dist/antigravity/agents/qa-engineer.md	.
 antigravity	project	file	spec-reviewer.md	dist/antigravity/agents/spec-reviewer.md	.agents/agents/spec-reviewer.md	-
 antigravity	project	file	infra-reviewer.md	dist/antigravity/agents/infra-reviewer.md	.agents/agents/infra-reviewer.md	-
 antigravity	project	file	legacy-analyst.md	dist/antigravity/agents/legacy-analyst.md	.agents/agents/legacy-analyst.md	-
+antigravity	project	file	risk-manager.md	dist/antigravity/agents/risk-manager.md	.agents/agents/risk-manager.md	-
 antigravity	project	file	csharp-dotnet-standards.md	.agents/rules/csharp-dotnet-standards.md	.agents/rules/csharp-dotnet-standards.md	-
 antigravity	project	file	database-standards.md	.agents/rules/database-standards.md	.agents/rules/database-standards.md	-
 antigravity	project	file	defensive-epistemology.md	.agents/rules/defensive-epistemology.md	.agents/rules/defensive-epistemology.md	-
@@ -257,6 +259,7 @@ gemini	global	file	qa-engineer.md	dist/gemini/agents/qa-engineer.md	.gemini/agen
 gemini	global	file	spec-reviewer.md	dist/gemini/agents/spec-reviewer.md	.gemini/agents/spec-reviewer.md	-
 gemini	global	file	infra-reviewer.md	dist/gemini/agents/infra-reviewer.md	.gemini/agents/infra-reviewer.md	-
 gemini	global	file	legacy-analyst.md	dist/gemini/agents/legacy-analyst.md	.gemini/agents/legacy-analyst.md	-
+gemini	global	file	risk-manager.md	dist/gemini/agents/risk-manager.md	.gemini/agents/risk-manager.md	-
 gemini	global	mcp	codegraph	dist/mcp/gemini/codegraph.json	.gemini/settings.json	mcpServers:json
 gemini	global	mcp	hindsight	dist/mcp/gemini/hindsight.json	.gemini/settings.json	mcpServers:json
 gemini	project	dir	accessibility-audit	.agents/skills/accessibility-audit	.agents/skills/accessibility-audit	-
@@ -334,6 +337,7 @@ gemini	project	file	qa-engineer.md	dist/gemini/agents/qa-engineer.md	.gemini/age
 gemini	project	file	spec-reviewer.md	dist/gemini/agents/spec-reviewer.md	.gemini/agents/spec-reviewer.md	-
 gemini	project	file	infra-reviewer.md	dist/gemini/agents/infra-reviewer.md	.gemini/agents/infra-reviewer.md	-
 gemini	project	file	legacy-analyst.md	dist/gemini/agents/legacy-analyst.md	.gemini/agents/legacy-analyst.md	-
+gemini	project	file	risk-manager.md	dist/gemini/agents/risk-manager.md	.gemini/agents/risk-manager.md	-
 gemini	project	block	AGENTS.md	AGENTS.md	AGENTS.md	-
 gemini	project	block	GEMINI.md	dist/gemini/GEMINI.block.md	GEMINI.md	-
 gemini	project	mcp	codegraph	dist/mcp/gemini/codegraph.json	.gemini/settings.json	mcpServers:json
@@ -447,6 +451,7 @@ codex	global	file	qa-engineer.toml	dist/codex/agents/qa-engineer.toml	.codex/age
 codex	global	file	spec-reviewer.toml	dist/codex/agents/spec-reviewer.toml	.codex/agents/spec-reviewer.toml	-
 codex	global	file	infra-reviewer.toml	dist/codex/agents/infra-reviewer.toml	.codex/agents/infra-reviewer.toml	-
 codex	global	file	legacy-analyst.toml	dist/codex/agents/legacy-analyst.toml	.codex/agents/legacy-analyst.toml	-
+codex	global	file	risk-manager.toml	dist/codex/agents/risk-manager.toml	.codex/agents/risk-manager.toml	-
 codex	global	file	csharp-dotnet-standards.md	.agents/rules/csharp-dotnet-standards.md	.agents/rules/csharp-dotnet-standards.md	-
 codex	global	file	database-standards.md	.agents/rules/database-standards.md	.agents/rules/database-standards.md	-
 codex	global	file	defensive-epistemology.md	.agents/rules/defensive-epistemology.md	.agents/rules/defensive-epistemology.md	-
@@ -538,6 +543,7 @@ codex	project	file	qa-engineer.toml	dist/codex/agents/qa-engineer.toml	.codex/ag
 codex	project	file	spec-reviewer.toml	dist/codex/agents/spec-reviewer.toml	.codex/agents/spec-reviewer.toml	-
 codex	project	file	infra-reviewer.toml	dist/codex/agents/infra-reviewer.toml	.codex/agents/infra-reviewer.toml	-
 codex	project	file	legacy-analyst.toml	dist/codex/agents/legacy-analyst.toml	.codex/agents/legacy-analyst.toml	-
+codex	project	file	risk-manager.toml	dist/codex/agents/risk-manager.toml	.codex/agents/risk-manager.toml	-
 codex	project	file	csharp-dotnet-standards.md	.agents/rules/csharp-dotnet-standards.md	.agents/rules/csharp-dotnet-standards.md	-
 codex	project	file	database-standards.md	.agents/rules/database-standards.md	.agents/rules/database-standards.md	-
 codex	project	file	defensive-epistemology.md	.agents/rules/defensive-epistemology.md	.agents/rules/defensive-epistemology.md	-
@@ -629,6 +635,7 @@ opencode	global	file	qa-engineer.md	dist/opencode/agents/qa-engineer.md	.config/
 opencode	global	file	spec-reviewer.md	dist/opencode/agents/spec-reviewer.md	.config/opencode/agents/spec-reviewer.md	-
 opencode	global	file	infra-reviewer.md	dist/opencode/agents/infra-reviewer.md	.config/opencode/agents/infra-reviewer.md	-
 opencode	global	file	legacy-analyst.md	dist/opencode/agents/legacy-analyst.md	.config/opencode/agents/legacy-analyst.md	-
+opencode	global	file	risk-manager.md	dist/opencode/agents/risk-manager.md	.config/opencode/agents/risk-manager.md	-
 opencode	global	file	csharp-dotnet-standards.md	.agents/rules/csharp-dotnet-standards.md	.agents/rules/csharp-dotnet-standards.md	-
 opencode	global	file	database-standards.md	.agents/rules/database-standards.md	.agents/rules/database-standards.md	-
 opencode	global	file	defensive-epistemology.md	.agents/rules/defensive-epistemology.md	.agents/rules/defensive-epistemology.md	-
@@ -720,6 +727,7 @@ opencode	project	file	qa-engineer.md	dist/opencode/agents/qa-engineer.md	.openco
 opencode	project	file	spec-reviewer.md	dist/opencode/agents/spec-reviewer.md	.opencode/agents/spec-reviewer.md	-
 opencode	project	file	infra-reviewer.md	dist/opencode/agents/infra-reviewer.md	.opencode/agents/infra-reviewer.md	-
 opencode	project	file	legacy-analyst.md	dist/opencode/agents/legacy-analyst.md	.opencode/agents/legacy-analyst.md	-
+opencode	project	file	risk-manager.md	dist/opencode/agents/risk-manager.md	.opencode/agents/risk-manager.md	-
 opencode	project	file	csharp-dotnet-standards.md	.agents/rules/csharp-dotnet-standards.md	.agents/rules/csharp-dotnet-standards.md	-
 opencode	project	file	database-standards.md	.agents/rules/database-standards.md	.agents/rules/database-standards.md	-
 opencode	project	file	defensive-epistemology.md	.agents/rules/defensive-epistemology.md	.agents/rules/defensive-epistemology.md	-
@@ -811,6 +819,7 @@ cursor	global	file	qa-engineer.md	dist/cursor/agents/qa-engineer.md	.cursor/agen
 cursor	global	file	spec-reviewer.md	dist/cursor/agents/spec-reviewer.md	.cursor/agents/spec-reviewer.md	-
 cursor	global	file	infra-reviewer.md	dist/cursor/agents/infra-reviewer.md	.cursor/agents/infra-reviewer.md	-
 cursor	global	file	legacy-analyst.md	dist/cursor/agents/legacy-analyst.md	.cursor/agents/legacy-analyst.md	-
+cursor	global	file	risk-manager.md	dist/cursor/agents/risk-manager.md	.cursor/agents/risk-manager.md	-
 cursor	global	mcp	codegraph	dist/mcp/cursor/codegraph.json	.cursor/mcp.json	mcpServers:json
 cursor	global	mcp	hindsight	dist/mcp/cursor/hindsight.json	.cursor/mcp.json	mcpServers:json
 cursor	project	dir	accessibility-audit	.agents/skills/accessibility-audit	.agents/skills/accessibility-audit	-
@@ -888,6 +897,7 @@ cursor	project	file	qa-engineer.md	dist/cursor/agents/qa-engineer.md	.cursor/age
 cursor	project	file	spec-reviewer.md	dist/cursor/agents/spec-reviewer.md	.cursor/agents/spec-reviewer.md	-
 cursor	project	file	infra-reviewer.md	dist/cursor/agents/infra-reviewer.md	.cursor/agents/infra-reviewer.md	-
 cursor	project	file	legacy-analyst.md	dist/cursor/agents/legacy-analyst.md	.cursor/agents/legacy-analyst.md	-
+cursor	project	file	risk-manager.md	dist/cursor/agents/risk-manager.md	.cursor/agents/risk-manager.md	-
 cursor	project	file	csharp-dotnet-standards.mdc	dist/cursor/rules/csharp-dotnet-standards.mdc	.cursor/rules/csharp-dotnet-standards.mdc	-
 cursor	project	file	database-standards.mdc	dist/cursor/rules/database-standards.mdc	.cursor/rules/database-standards.mdc	-
 cursor	project	file	defensive-epistemology.mdc	dist/cursor/rules/defensive-epistemology.mdc	.cursor/rules/defensive-epistemology.mdc	-
@@ -1113,6 +1123,7 @@ copilot	global	file	qa-engineer.agent.md	dist/copilot/agents/qa-engineer.agent.m
 copilot	global	file	spec-reviewer.agent.md	dist/copilot/agents/spec-reviewer.agent.md	.copilot/agents/spec-reviewer.agent.md	-
 copilot	global	file	infra-reviewer.agent.md	dist/copilot/agents/infra-reviewer.agent.md	.copilot/agents/infra-reviewer.agent.md	-
 copilot	global	file	legacy-analyst.agent.md	dist/copilot/agents/legacy-analyst.agent.md	.copilot/agents/legacy-analyst.agent.md	-
+copilot	global	file	risk-manager.agent.md	dist/copilot/agents/risk-manager.agent.md	.copilot/agents/risk-manager.agent.md	-
 copilot	global	mcp	codegraph	dist/mcp/copilot-cli/codegraph.json	.copilot/mcp-config.json	mcpServers:json
 copilot	global	mcp	hindsight	dist/mcp/copilot-cli/hindsight.json	.copilot/mcp-config.json	mcpServers:json
 copilot	project	dir	accessibility-audit	.agents/skills/accessibility-audit	.agents/skills/accessibility-audit	-
@@ -1190,6 +1201,7 @@ copilot	project	file	qa-engineer.agent.md	dist/copilot/agents/qa-engineer.agent.
 copilot	project	file	spec-reviewer.agent.md	dist/copilot/agents/spec-reviewer.agent.md	.github/agents/spec-reviewer.agent.md	-
 copilot	project	file	infra-reviewer.agent.md	dist/copilot/agents/infra-reviewer.agent.md	.github/agents/infra-reviewer.agent.md	-
 copilot	project	file	legacy-analyst.agent.md	dist/copilot/agents/legacy-analyst.agent.md	.github/agents/legacy-analyst.agent.md	-
+copilot	project	file	risk-manager.agent.md	dist/copilot/agents/risk-manager.agent.md	.github/agents/risk-manager.agent.md	-
 copilot	project	file	csharp-dotnet-standards.instructions.md	dist/copilot/instructions/csharp-dotnet-standards.instructions.md	.github/instructions/csharp-dotnet-standards.instructions.md	-
 copilot	project	file	database-standards.instructions.md	dist/copilot/instructions/database-standards.instructions.md	.github/instructions/database-standards.instructions.md	-
 copilot	project	file	defensive-epistemology.instructions.md	dist/copilot/instructions/defensive-epistemology.instructions.md	.github/instructions/defensive-epistemology.instructions.md	-

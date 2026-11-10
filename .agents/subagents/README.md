@@ -57,6 +57,9 @@ This directory contains definitions and specialized prompts for domain-focused s
 16. **`legacy-analyst`** (`prompts/legacy-analyst.md`):
    - **Role**: Senior Legacy Systems Analyst.
    - **Focus**: What the legacy system does, with `file:line`, who can reach it, edge cases, and what was not found. Read-only.
+17. **`risk-manager`** (`prompts/risk-manager.md`):
+   - **Role**: Senior Delivery Risk Manager.
+   - **Focus**: A coordinator's outward actions checked against their sources, independent milestone risk watch, the biggest delay between code and staging, and its own mistakes recorded as lessons. Read-only.
 
 ---
 
