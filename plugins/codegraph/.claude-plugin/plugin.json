@@ -1,6 +1,6 @@
 {
   "name": "arsenal-codegraph",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "description": "Registers the codegraph MCP server for the Senior Developer Arsenal.",
   "author": {
     "name": "Abdulazeem Mohammed"

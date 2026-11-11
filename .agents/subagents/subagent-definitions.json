@@ -7,7 +7,7 @@
       "promptFile": "./prompts/code-reviewer.md",
       "enable_write_tools": true,
       "enable_subagent_tools": false,
-      "recommended_model": "pro"
+      "recommended_model": "balanced"
     },
     {
       "name": "code-explorer",
@@ -124,7 +124,7 @@
       "promptFile": "./prompts/qa-engineer.md",
       "enable_write_tools": true,
       "enable_subagent_tools": false,
-      "recommended_model": "inherit"
+      "recommended_model": "balanced"
     },
     {
       "name": "spec-reviewer",
