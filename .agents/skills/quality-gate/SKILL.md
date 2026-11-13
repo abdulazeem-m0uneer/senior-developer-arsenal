@@ -1,6 +1,6 @@
 ---
 name: quality-gate
-description: 'Designs and runs one local command that equals CI: smallest check first, a table from failing check to fix, checks that prove they bite on planted bad inputs, coverage of changed lines, no skipped tests, drift checks for generated files, a final uncached run. Use when the user asks to set up a local gate, make local checks match CI, explain a failing check, or runs /quality-gate. Triggers on: "quality gate", "run the gate", "pre-push checks", "changed-lines coverage", "/quality-gate". Do not use for building the pipeline (use devops-ci) or choosing tests for a change (use test-every-change).'
+description: 'Use whenever the user wants local checks to match CI, one pre-push command, or an explanation of a failing check. Designs and runs one local command that equals CI: smallest check first, a table from failing check to fix, checks proven to bite on planted bad inputs, changed-lines coverage, no skipped tests, drift checks for generated files, a final uncached run. Triggers on: "quality gate", "run the gate", "pre-push checks", "same as CI locally", "failures only after pushing", /quality-gate. Not for building the pipeline (use devops-ci) or choosing tests for a change (use test-every-change).'
 ---
 
 # Quality Gate Procedure

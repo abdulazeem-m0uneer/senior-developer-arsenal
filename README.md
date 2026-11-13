@@ -81,7 +81,7 @@ senior-developer-arsenal/
 ├── agents/                      # GENERATED subagents for the Claude Code plugin (its default agents directory)
 ├── hooks/hooks.json             # Claude Code plugin hooks: lessons ledger at session start, git snapshot across compaction
 ├── assets/icon.png              # Plugin icon (source: assets/icon.svg)
-├── evals/                       # claude plugin eval cases: does the right skill trigger (run by hand)
+├── evals/                       # claude plugin eval cases: skill triggering and real tasks vs a no-plugin baseline (docs/EVALS.md)
 ├── plugins/                     # GENERATED opt-in Claude plugins for the MCP servers
 ├── scripts/
 │   ├── build.py                 # Generator: --validate, --check, or write dist/

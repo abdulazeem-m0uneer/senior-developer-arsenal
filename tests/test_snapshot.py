@@ -94,5 +94,18 @@ class SessionCoreTest(unittest.TestCase):
         self.assertIn("session_core.py", hooks["SessionStart"][0]["hooks"][0]["command"])
 
 
+class EvalCoverageTest(unittest.TestCase):
+    def test_every_skill_has_a_trigger_eval_case(self):
+        skills = sorted(p.name for p in (ROOT / ".agents" / "skills").iterdir() if p.is_dir())
+        missing = [s for s in skills if not (ROOT / "evals" / f"trigger-{s}" / "prompt.md").is_file()]
+        self.assertEqual(missing, [], "add evals/trigger-<skill>/ for each new skill")
+
+    def test_every_trigger_case_names_an_existing_skill(self):
+        for case in sorted((ROOT / "evals").glob("trigger-*")):
+            skill = case.name[len("trigger-"):]
+            self.assertTrue((ROOT / ".agents" / "skills" / skill).is_dir(), case.name)
+            self.assertIn(skill, (case / "graders" / "skill-fired.md").read_text())
+
+
 if __name__ == "__main__":
     unittest.main()
