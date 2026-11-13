@@ -1,6 +1,6 @@
 ---
 name: mobile-expert
-description: 'Mobile runbook for React Native (Expo and bare) and Flutter: project shape, navigation, state and server-state, offline-first sync, typed API client, measured performance, MASVS-aligned security, testing, and signing-to-staged-rollout releases. Use to architect, speed up, harden, test, or ship a mobile app, or /mobile-expert. Triggers on: "React Native", "Expo", "Flutter", "EAS Build", "certificate pinning", "App Store release". Not for visual design (use ui-ux-architect), accessibility (use accessibility-audit), design-time threats (use threat-model), or CI (use devops-ci).'
+description: 'Use for any React Native, Expo, or Flutter task: slow or janky screens, lists, startup, app architecture, navigation, state, offline sync, security hardening, testing, or store releases. Runbook: project shape, typed API client, performance measured before tuning, MASVS-aligned security, and signing-to-staged-rollout releases. Triggers on: "React Native", "Expo", "Flutter", "mobile app", "EAS Build", "certificate pinning", "App Store release", /mobile-expert. Not for visual design (use ui-ux-architect), accessibility (use accessibility-audit), design-time threats (use threat-model), or CI (use devops-ci).'
 ---
 
 # Mobile Engineering Procedure

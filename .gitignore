@@ -37,4 +37,4 @@ __pycache__/
 .refact/
 .hindsight_data/
 .codegraph/
-.agents/handoff-snapshot.md
+evals/results/

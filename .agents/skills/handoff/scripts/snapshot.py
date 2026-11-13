@@ -5,25 +5,45 @@ Usage:
   snapshot.py write   # PreCompact hook: save branch, status, recent commits, diff stat
   snapshot.py show    # SessionStart hook: after a compaction, print the snapshot as additionalContext
 Hook input (JSON on stdin) is optional. Never fails the session: always exits 0.
-Snapshot file: $HANDOFF_SNAPSHOT or .agents/handoff-snapshot.md (git-ignored scratch, not a deliverable).
+Snapshot file: $HANDOFF_SNAPSHOT, else <OS temp dir>/arsenal-snapshot-<session_id>.md. It is never written
+inside the project, so a consuming repository gets no untracked file.
+Time budget: five git reads at 2 s each (10 s worst case); the hook timeout is 20 s.
 """
 import json
 import os
+import re
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
-PATH = Path(os.environ.get("HANDOFF_SNAPSHOT", ".agents/handoff-snapshot.md"))
+GIT_TIMEOUT = 2
 MAX_LINES = 30
 MAX_CHARS = 2500
 
 
 def git(*args):
     try:
-        out = subprocess.run(["git", *args], capture_output=True, text=True, timeout=5)
+        out = subprocess.run(["git", *args], capture_output=True, text=True, timeout=GIT_TIMEOUT)
         return out.stdout.strip().splitlines() if out.returncode == 0 else []
     except (OSError, subprocess.SubprocessError):
         return []
+
+
+def hook_input():
+    try:
+        data = json.load(sys.stdin)
+        return data if isinstance(data, dict) else {}
+    except (ValueError, OSError):
+        return {}
+
+
+def snapshot_path(data):
+    override = os.environ.get("HANDOFF_SNAPSHOT")
+    if override:
+        return Path(override)
+    session = re.sub(r"[^A-Za-z0-9_-]", "", str(data.get("session_id", ""))) or "default"
+    return Path(tempfile.gettempdir()) / f"arsenal-snapshot-{session}.md"
 
 
 def section(title, lines):
@@ -32,6 +52,7 @@ def section(title, lines):
 
 
 def write():
+    path = snapshot_path(hook_input())
     if not git("rev-parse", "--is-inside-work-tree"):
         return
     body = "\n\n".join([
@@ -41,18 +62,16 @@ def write():
         section("Recent commits:", git("log", "--oneline", "-5")),
         section("Diff stat vs HEAD:", git("diff", "--stat", "HEAD")[-15:]),
     ])
-    PATH.parent.mkdir(parents=True, exist_ok=True)
-    PATH.write_text(body[:MAX_CHARS] + "\n", encoding="utf-8")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(body[:MAX_CHARS] + "\n", encoding="utf-8")
 
 
 def show():
-    try:
-        source = json.load(sys.stdin).get("source")
-    except (ValueError, OSError):
-        source = None
-    if source != "compact" or not PATH.is_file():
+    data = hook_input()
+    path = snapshot_path(data)
+    if data.get("source") != "compact" or not path.is_file():
         return
-    text = PATH.read_text(encoding="utf-8")[:MAX_CHARS]
+    text = path.read_text(encoding="utf-8")[:MAX_CHARS]
     print(json.dumps({"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": text}}))
 
 

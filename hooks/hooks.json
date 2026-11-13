@@ -24,7 +24,7 @@
           {
             "type": "command",
             "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/.agents/skills/handoff/scripts/snapshot.py\" write || python \"${CLAUDE_PLUGIN_ROOT}/.agents/skills/handoff/scripts/snapshot.py\" write",
-            "timeout": 10
+            "timeout": 20
           }
         ]
       }

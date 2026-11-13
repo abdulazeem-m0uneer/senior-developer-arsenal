@@ -35,6 +35,16 @@ Use the `create-skill` skill to scaffold a new skill. Keep wording agent-neutral
 
 Text that loads every session is capped by `build.py --validate`: each skill description at most 700 characters, all descriptions together at most 31,500 (lower it when they shrink), always-on rules together at most 20,000. Put detail in the skill body or `references/`, not the description.
 
+## Behaviour evals (skill triggering)
+
+`evals/` holds cases for Claude Code's `claude plugin eval`: each `trigger-<skill>` case sends a natural prompt and passes only if that skill is invoked; `no-trigger-*` cases pass only if no skill is. They use free graders only (no judge model), but every run is a real model call on your own account (about 0.10 USD per run when measured), so they are run by hand, not in CI:
+
+```bash
+claude plugin eval . --trust-plugin --ablation none --runs 3 --no-publish --max-cost-usd 5
+```
+
+Run them after changing any skill description, and add a `trigger-<skill>` case with every new skill. Results land in the git-ignored `evals/results/`.
+
 ## Running the tests
 
 ```bash

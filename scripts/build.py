@@ -299,6 +299,9 @@ def render_agent(target, agent):
         # balanced: a mid-cost model for heavy builders that should not run on the parent's top model
         model = "haiku" if fast else "sonnet" if agent.get("balanced", False) else "inherit"
         fields = [("name", name), ("description", description), ("model", model)]
+        if fast:
+            # locators need little reasoning and no project memory: lowest effort, skip CLAUDE.md
+            fields += [("effort", "low"), ("omitClaudeMd", "true")]
         if not agent["writes"]:
             fields.append(("disallowedTools", "Write, Edit, NotebookEdit"))
     elif target == "cursor":
