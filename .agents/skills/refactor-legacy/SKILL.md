@@ -1,6 +1,6 @@
 ---
 name: refactor-legacy
-description: 'Runbook for changing untested existing code safely in place: write down the behaviour to keep, find the change point and its callers, pin current behaviour with characterization or golden-master tests, break dependencies through seams, refactor in tiny green steps, mutation-check the pins, and replace large units incrementally with a strangler fig. Use when the user asks to change, clean up, or extend code that has no tests, or runs /refactor-legacy. Triggers on: "untested code", "legacy code", "safely refactor", "characterization test", "golden master", "add a seam", "strangler fig", "/refactor-legacy". Do not use for rebuilding a system elsewhere with the same behaviour (use legacy-parity), tests for a new feature (use test-every-change), or moving data (use database-migration).'
+description: 'Change untested code safely in place: write down behaviour to keep, find the change point and callers, pin behaviour with characterization or golden-master tests, break dependencies through seams, refactor in tiny green steps, mutation-check the pins, and replace large units with a strangler fig. Use to change, clean up, or extend code without tests, or /refactor-legacy. Triggers on: "legacy code", "safely refactor", "characterization test", "golden master", "strangler fig". Not for rebuilding elsewhere (use legacy-parity), new-feature tests (use test-every-change), or data moves (use database-migration).'
 ---
 
 # Refactor Legacy Procedure

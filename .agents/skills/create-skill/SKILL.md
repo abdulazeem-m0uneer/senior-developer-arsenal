@@ -1,6 +1,6 @@
 ---
 name: create-skill
-description: 'Interactive meta-skill to architect, interview, scaffold, and install token-efficient agent skills following the Agent Skills standard (agentskills.io). Use when the user wants to create, scaffold, or customize a new skill, or runs /create-skill. Triggers on: "create skill", "new skill", "author skill", "/create-skill". Do not use for ADR authoring (use architecture-design-adr).'
+description: 'Use whenever the user wants a new agent skill created, scaffolded, or customized, including a team-specific checker or runbook to be packaged as a skill. Interactive meta-skill: interview, architect, scaffold, and install a token-efficient skill following the Agent Skills standard (agentskills.io). Triggers on: "create a skill", "new skill", "scaffold a skill", "author skill", /create-skill. Not for ADR authoring (use architecture-design-adr).'
 ---
 
 # Skill Authoring & Scaffolding Procedure

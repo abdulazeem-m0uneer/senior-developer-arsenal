@@ -1,6 +1,6 @@
 ---
 name: requirements-grilling
-description: 'Pre-build interrogation runbook: a frontier-driven question tree with a recommended answer per question, the agent fetching facts itself and asking the user only for decisions, a written design brief with the agent''s own calls marked, a fresh-eyes builder check, and a hard gate that nothing is built until the brief is approved. Use when a request is non-trivial and under-specified, before any plan or code, or when the user runs /requirements-grilling. Triggers on: "grill me", "stress-test this plan", "before you build", "what do you need from me", "/requirements-grilling". Do not use for a one-line clear task (do it), an architecture trade-off record (use architecture-design-adr), or questions for a third party (use the questionnaire reference in docs-writer).'
+description: 'Pre-build interrogation: a question tree with a recommended answer per question, the agent fetching facts itself and asking the user only for decisions, a written design brief with the agent calls marked, and a hard gate that nothing is built until the brief is approved. Use when a request is non-trivial and under-specified, before any plan or code, or /requirements-grilling. Triggers on: "grill me", "stress-test this plan", "before you build", "what do you need from me". Not for clear one-line tasks (do them), ADRs (use architecture-design-adr), or third-party questions (use docs-writer).'
 ---
 
 # Requirements Grilling Procedure

@@ -37,3 +37,4 @@ __pycache__/
 .refact/
 .hindsight_data/
 .codegraph/
+evals/results/

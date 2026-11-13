@@ -41,8 +41,9 @@ Consult: [Handoff Template](./references/handoff-template.md)
 4. Redact secrets, tokens, credentials, personal data.
 
 ### Step 4: Hand Over
-1. Report the path and a one-line summary. Do not paste the document into chat.
-2. Tell the user the next session's first message: `Read <path> and continue.`
+1. The plugin also saves a git snapshot automatically before every compaction and re-injects it after (`scripts/snapshot.py`); it is not a handoff document, only the work state.
+2. Report the path and a one-line summary. Do not paste the document into chat.
+3. Tell the user the next session's first message: `Read <path> and continue.`
 
 ---
 

@@ -2,6 +2,8 @@
 name: "code-explorer"
 description: "Cheap read-only localization: answers where code lives (cold-start orientation, cross-file search, failed direct search) with path:line citations only, keeping its reads out of the caller's context. Skip when the exact file or symbol is already known."
 model: haiku
+effort: low
+omitClaudeMd: true
 disallowedTools: Write, Edit, NotebookEdit
 ---
 

@@ -24,6 +24,10 @@ jobs:
         run: python3 scripts/build.py --validate
       - name: Generated output is up to date
         run: python3 scripts/build.py --check
+      - name: Claude Code plugin manifest (official validator)
+        run: |
+          npm install --global --silent @anthropic-ai/claude-code
+          claude plugin validate . --strict
       - name: Unit tests
         run: python3 -m unittest discover -s tests -p "test_*.py" -v
       - name: Strict YAML and TOML parsing

@@ -31,6 +31,22 @@ Use the `create-skill` skill to scaffold a new skill. Keep wording agent-neutral
 - `install.sh` and `install.ps1` must stay behaviorally identical; change both and both smoke tests.
 - Installer changes that delete or rewrite user files need a regression test in `tests/smoke.sh` and `tests/smoke.ps1` that proves user data survives.
 
+## Token budgets
+
+Text that loads every session is capped by `build.py --validate`: each skill description at most 700 characters, all descriptions together at most 31,500 (lower it when they shrink), always-on rules together at most 20,000. Put detail in the skill body or `references/`, not the description.
+
+## Behaviour evals (skill triggering)
+
+`evals/` holds cases for Claude Code's `claude plugin eval`: each `trigger-<skill>` case sends a natural prompt and passes only if that skill is invoked; `no-trigger-*` cases pass only if no skill is. They use free graders only (no judge model), but every run is a real model call on your own account (about 0.10 USD per run when measured), so they are run by hand, not in CI:
+
+```bash
+claude plugin eval . --trust-plugin --ablation none --runs 3 --no-publish --max-cost-usd 5
+```
+
+`task-*` cases give a real task (bug fix, review, vague request, legacy change) and compare the plugin against a no-plugin baseline; they need `--scaffold --allow-tools Write Edit Bash --tag task`, and the Bash grant needs the OS sandbox (`bubblewrap` and `socat` on Linux). Drop `Bash` where the sandbox is missing; the `tests-run` grader then cannot pass.
+
+Run them after changing any skill description. Every skill must have a `trigger-<skill>` case (a unit test enforces it). The last measured results are in [docs/EVALS.md](docs/EVALS.md). Results land in the git-ignored `evals/results/`.
+
 ## Running the tests
 
 ```bash

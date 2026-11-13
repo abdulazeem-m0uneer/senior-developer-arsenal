@@ -79,7 +79,9 @@ senior-developer-arsenal/
 │   └── manifest.tsv             # What each installer copies where
 ├── .claude-plugin/              # GENERATED Claude Code plugin + marketplace manifests
 ├── agents/                      # GENERATED subagents for the Claude Code plugin (its default agents directory)
-├── hooks/hooks.json             # Claude Code plugin hook: loads the lessons-learned ledger at session start
+├── hooks/hooks.json             # Claude Code plugin hooks: lessons ledger at session start, git snapshot across compaction
+├── assets/icon.png              # Plugin icon (source: assets/icon.svg)
+├── evals/                       # claude plugin eval cases: skill triggering and real tasks vs a no-plugin baseline (docs/EVALS.md)
 ├── plugins/                     # GENERATED opt-in Claude plugins for the MCP servers
 ├── scripts/
 │   ├── build.py                 # Generator: --validate, --check, or write dist/
@@ -109,7 +111,7 @@ senior-developer-arsenal/
 /plugin install arsenal@senior-developer-arsenal
 ```
 
-Inside the plugin every skill is namespaced: type `/arsenal:code-review`, not `/code-review` (a bare name runs whatever else owns it, or nothing). Subagents appear as `arsenal:<name>`. A plugin cannot ship rules, so add them with the installer: `./install.sh --global --target claude`. The plugin does ship one hook (`hooks/hooks.json`): at session startup, resume, clear and compact it prints the project's `lessons-learned` ledger (at most 15 lines, about 70 tokens of instructions) so the agent obeys past lessons and records its own mistakes; it prints nothing project-specific until a lesson exists. Other install routes do not include it; see `.agents/skills/lessons-learned/references/lesson-format-and-promotion.md` §5 to wire it by hand. Optional MCP servers: `/plugin install arsenal-codegraph@senior-developer-arsenal` and `/plugin install arsenal-hindsight@senior-developer-arsenal`.
+Inside the plugin every skill is namespaced: type `/arsenal:code-review`, not `/code-review` (a bare name runs whatever else owns it, or nothing). Subagents appear as `arsenal:<name>`. A plugin cannot ship rules, so add them with the installer: `./install.sh --global --target claude`. The plugin ships hooks (`hooks/hooks.json`). The first injects a 1,000-character operating core (`hooks/core.md`) at session start: use the matching skill before any engineering task, ship a test with every change, smallest change, no "done" without evidence, ask when ambiguous. Without it a plugin-only install never invokes the skills on a plain task (measured with `claude plugin eval`). The second: at session startup, resume, clear and compact it prints the project's `lessons-learned` ledger (at most 15 lines, about 70 tokens of instructions) so the agent obeys past lessons and records its own mistakes; it prints nothing project-specific until a lesson exists. A second pair of hooks (`PreCompact` writes, `SessionStart` on compact shows) saves a deterministic git snapshot (branch, uncommitted files, last commits, diff stat; at most 2,500 characters, no model tokens) to a per-session file in the OS temp dir (never inside the project) so the work state survives compaction. Other install routes do not include them; see `.agents/skills/lessons-learned/references/lesson-format-and-promotion.md` §5 to wire it by hand. Optional MCP servers: `/plugin install arsenal-codegraph@senior-developer-arsenal` and `/plugin install arsenal-hindsight@senior-developer-arsenal`.
 
 If adding the marketplace fails:
 
