@@ -1,6 +1,6 @@
 ---
 name: csharp-dotnet-expert
-description: 'Specialized C# and .NET engineering skill. Use when designing, building, refactoring, or optimizing ASP.NET Core APIs, Entity Framework Core, Dapper data layers, Clean Architecture solutions, or concurrent .NET code. Triggers on: "C#", ".NET", "ASP.NET Core", "EF Core", "Dapper", "Clean Architecture", "async deadlocks". Do not use for Python services (use python-backend-expert) or Node.js services (use nodejs-backend-expert).'
+description: 'C# and .NET engineering. Use when designing, building, refactoring or optimizing ASP.NET Core APIs, EF Core or Dapper data layers, Clean Architecture solutions, or async and concurrent .NET code. Triggers: "C#", ".NET", "ASP.NET Core", "EF Core", "Dapper", "Clean Architecture", "async deadlocks". Not for Python (use python-backend-expert) or Node.js (use nodejs-backend-expert).'
 ---
 
 # C# & .NET Engineering Skill

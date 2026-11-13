@@ -1,6 +1,6 @@
 ---
 name: deep-review
-description: 'Exhaustive, high-accuracy multi-pass review of a change or repository area: independent passes (correctness, security, data integrity, concurrency, performance, tests, API contracts, config, docs), each finding verified against the code (file:line), false-positive elimination, severity ranking, and re-review until clean. Use when the user asks for a thorough or complete review or a pre-release audit. Triggers on: "deep review", "review everything", "thorough review", "/deep-review". Do not use for a single-pass diff review (use code-review) or a security-only audit (use security-audit).'
+description: 'Exhaustive multi-pass review of a change or repository area, every finding verified at file:line. Use for a thorough or complete review or a pre-release audit. Triggers: "deep review", "review everything", "thorough review", /deep-review. Not for a single-pass diff review (use code-review) or a security-only audit (use security-audit).'
 ---
 
 # Deep Multi-Pass Review Procedure
@@ -44,7 +44,7 @@ Apply [Finding Verification & Reporting](./references/finding-verification.md) t
 Re-examine every confirmed finding as its opponent: is it guarded upstream, unreachable, intended, covered by a framework default, or already tested? Drop duplicates, merge findings with one root cause, and remove style opinions that no project rule supports.
 
 ### Step 5: Rank and Report
-Assign severity (`[Blocker]`, `[High]`, `[Medium]`, `[Low]`) by impact and likelihood, order the findings, and attach a surgical fix or a precise fix direction to each.
+Assign severity (`[Blocker]`, `[High]`, `[Medium]`, `[Low]`: an impact scale; the kind of finding that `code-review` tags `[Perf]`, `[Arch]` or `[Nit]` is the Pass column here) by impact and likelihood, order the findings, and attach a surgical fix or a precise fix direction to each.
 
 ### Step 6: Re-Review Until Clean
 After fixes land, verify each fix against its original proof, then re-run every pass over the changed lines and their callers. A fix is new code and gets the same scrutiny. Stop only when a complete pass yields zero new confirmed findings and the baseline commands are green.
@@ -72,3 +72,5 @@ Close with: passes run, files reviewed, candidates raised / confirmed / refuted 
 - **Findings Table First**: No preamble; start with the verdict line and the table.
 - **Evidence, Not Excerpts**: Cite `file:line` and the proof in one sentence; never paste whole functions.
 - **Report Confirmed Only**: Refuted candidates are counted, not described.
+
+**Next**: when no `[Blocker]` or `[High]` is open, run `quality-gate`.

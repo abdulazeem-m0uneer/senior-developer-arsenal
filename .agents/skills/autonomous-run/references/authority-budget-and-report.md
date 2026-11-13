@@ -1,6 +1,6 @@
 # Authority, Budget & End Report
 
-The written grant, the scope matrix, budget arithmetic with the usage script, the wind-down sequence, the parking format, and the end report template.
+The written grant, the scope matrix, budget arithmetic with the usage script, the limits a hook enforces, the wind-down sequence, the parking format, and the end report template.
 
 ---
 
@@ -12,6 +12,7 @@ Written by the agent, confirmed by the user in one word before they leave, and k
 Run:        Week 2 items of docs/delivery-plan.md, in plan order
 Window:     2025-03-04 18:00 to 2025-03-05 02:00 Europe/London
 Budget:     one fifth of the weekly allowance; wind down at 85% of that share
+Hard stop:  .claude/arsenal-run-limits.json: 600 tool calls, 480 minutes, deadline 02:00 (hook-enforced)
 May merge:  pull requests into the default branch when review is clean, CI is green on the
             reviewed commit, and the application starts. Payment code included: yes
 May release: staging only, through the release script, after its smoke test passes
@@ -75,7 +76,42 @@ Worked example: 5% used at 1,314 requests and 0.26M output gives 1% = 263 reques
 
 ---
 
-## 4. Wind-Down Sequence
+## 4. What a Hook Enforces and What Stays a Rule
+
+With the Claude Code plugin, `hooks/guard.py pre` runs before every tool call. Without the plugin (every other agent, or a manual install) nothing below is enforced and the whole skill is prose.
+
+**Run limits.** The file is `.claude/arsenal-run-limits.json` in the project (found from `$CLAUDE_PROJECT_DIR`, else the working directory, upward), or the path in `$ARSENAL_RUN_LIMITS`.
+
+```json
+{"max_tool_calls": 600, "max_minutes": 480, "deadline": "2025-03-05T02:00:00+00:00"}
+```
+
+| Key | Counted | Reached when |
+| :--- | :--- | :--- |
+| `max_tool_calls` | Tool calls of this session made while the file exists (the hook also fires for calls inside subagents) | The count equals the limit |
+| `max_minutes` | Wall-clock minutes since the first counted tool call of this session | That many minutes have passed |
+| `deadline` | Nothing; an ISO 8601 time with a UTC offset (`Z` or `+02:00`) | The time has passed, in any session |
+
+- Every key is optional. No file means no counting and no enforcement.
+- At a limit the hook denies every tool call with the reason and the file path. A `Read`, `Write` or `Edit` of a `.md` file still passes, so the handoff and the end report can be written (Claude Code only edits or overwrites an existing file it has read in the session, so after a limit the agent can create a new `.md` or extend one it can read). The agent cannot delete the limits file: the operator removes it before the next session, since a tripped file or a past `deadline` denies every call in later sessions too. Parallel tool calls can overshoot `max_tool_calls` by the parallel width; the turn-end gates for tests and lessons stop asking.
+- A file that is not a JSON object of these keys with positive numbers and a valid deadline counts as a reached limit, so a typo cannot lift the cap silently. While it is damaged, a `Read`, `Write` or `Edit` of the file itself is allowed.
+- The counts live in the per-session guard state in the OS temp dir and survive compaction, and a resume that keeps the session id. A new session id starts a new count: only `deadline` spans sessions.
+- `ARSENAL_GUARD=off` in the environment disables the hook. The limit is a brake for an agent that follows its instructions, not a sandbox: before a limit is reached the agent can still edit the file, so name it under "Never" in the authority block, and add a permission rule that denies edits to it if that matters.
+
+**Destructive commands.** In the permission modes where no human approves each call (`bypassPermissions`, `dontAsk`, `auto`) the same hook denies the listed destructive shell commands; in the other modes it asks. The list and its blind spots are in `docs/TARGETS.md`, section Hooks.
+
+**Not enforced by anything in this repository:**
+
+| Part of the skill | Status |
+| :--- | :--- |
+| Token or cost budget, the allowance share, the 85% and 95% thresholds | Prose. `usage_report.py` measures tokens only when the agent runs it; hook input carries no cost and no cumulative usage, so the limits file has no cost key. For a hard cost cap on a headless run use the CLI's own `--max-budget-usd` |
+| Reading the plan's allowance percentage | Not possible from here; the user reads it once for the calibration in section 3 |
+| A timer, scheduler or runner that starts the run, wakes it or winds it down | Not shipped. The agent checks the clock and the usage itself before each item; only the hard stop above is mechanical |
+| Authority scope, expiry on the user's return, merge conditions, the start-up proof, parking | Prose, checked by the user against the end report |
+
+---
+
+## 5. Wind-Down Sequence
 
 | At | Do | Do not |
 | :--- | :--- | :--- |
@@ -85,7 +121,7 @@ Worked example: 5% used at 1,314 requests and 0.26M output gives 1% = 263 reques
 
 ---
 
-## 5. Parking a Blocked Item
+## 6. Parking a Blocked Item
 
 ```text
 Parked:     2.4 Refund receipt text
@@ -101,7 +137,7 @@ State:      branch feat/refund-receipt pushed, no pull request; nothing merged
 
 ---
 
-## 6. End Report Template
+## 7. End Report Template
 
 ```markdown
 ## Run report: 2025-03-04 18:00 to 01:40 Europe/London
@@ -125,5 +161,5 @@ State:      branch feat/refund-receipt pushed, no pull request; nothing merged
 | 2.4 Receipt text | Fee as a separate line? | Yes | product owner |
 
 ### Usage
-Since 18:00: 4,120 requests, output 0.81M, fresh input 24.9M, cached reads 702M. Estimated 15.7% of the weekly allowance against a 20% share (estimate from one calibration point).
+Since 18:00: 4,120 requests, output 0.81M, fresh input 24.9M, cached reads 702M. Estimated 15.7% of the weekly allowance against a 20% share (estimate from one calibration point). Hard limits: not reached (or: tool-call limit reached at 01:32, report written after it).
 ```

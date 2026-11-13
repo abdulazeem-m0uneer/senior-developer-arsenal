@@ -13,6 +13,7 @@ How to tell a fault of the infrastructure from a fault of the change, what each 
 | 2 | The pull request, its checks, or a run could not be read | The `gh` call that failed | Check the number, the repository, `gh auth status`, and the network of this machine |
 | 3 | One CI run did not finish in the timeout, or no check ever reported | The timeout | See section 4 |
 | 4 | Failed jobs ran zero steps, or the log names billing | The jobs that never started | Not the change. Report to the owner of the CI account; a rerun will not help |
+| 5 | One `gh` call did not answer within `--gh-timeout` (default 120 s) and was killed | The `gh` call that hung | Nothing is known about the checks. Check the network of this machine, `gh auth status` and the provider's status page, then run the script again; raise `--gh-timeout` only for a very large failed log |
 
 ---
 

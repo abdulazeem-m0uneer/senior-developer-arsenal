@@ -2,7 +2,7 @@
 
 # Mandatory Testing Standards
 
-Tests are part of the change, not follow-up. Applies to every modification, any size, any reason.
+Tests are part of the change, not follow-up. Applies to every modification, any size, any reason; the only exception is the written exemption in section 1.
 
 ---
 
@@ -17,7 +17,7 @@ Tests are part of the change, not follow-up. Applies to every modification, any 
 | **Config, schema, migration** | Exercise new config, or migrate representative dataset up + down. |
 | **Dependency upgrade** | Full suite + tests for any API whose behavior changed. |
 
-No framework → set up minimal standard one for stack first. Test truly impossible → say why + manual verification done; never skip silently.
+No framework → set up minimal standard one for stack first. Test truly impossible → written exemption: why + manual verification done; never skip silently. No test and no exemption = not done.
 
 ---
 

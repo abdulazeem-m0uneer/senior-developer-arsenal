@@ -1,0 +1,6 @@
+{
+  "checks": [
+    {"name": "first-step-keeps-old-version-working", "kind": "first_new_file_lacks", "glob": "migrations/*.sql", "require_match": true,
+     "pattern": "(?i)drop\\s+(column\\s+)?(if\\s+exists\\s+)?\"?legacy_email|rename\\s+(column\\s+)?\"?username"}
+  ]
+}

@@ -1,0 +1,118 @@
+name: Evals
+
+# Paid: real model runs, with and without the plugin. Never runs on push or pull request.
+on:
+  schedule:
+    - cron: "23 5 * * 1"
+  workflow_dispatch:
+    inputs:
+      runs:
+        description: Runs per arm for each case
+        default: "10"
+      max_cost_usd:
+        description: Hard cost ceiling for the whole suite (USD)
+        default: "25"
+      model:
+        description: Model for the agent runs
+        default: sonnet
+      judge_model:
+        description: Model for the judge graders
+        default: haiku
+      tag:
+        description: Case tag to run (task = real tasks, trigger = skill triggering)
+        default: task
+      label:
+        description: Name of this run in docs/eval-results.json
+        default: weekly
+
+permissions:
+  contents: read
+
+concurrency:
+  group: evals
+  cancel-in-progress: false
+
+jobs:
+  evals:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    env:
+      # The API key is set only on the two steps that need it: the outcome step runs model-written test code, and
+      # a same-user process can read the job's other secrets and its parent's environment.
+      RUNS: ${{ inputs.runs || '10' }}
+      MAX_COST_USD: ${{ inputs.max_cost_usd || '25' }}
+      MODEL: ${{ inputs.model || 'sonnet' }}
+      JUDGE_MODEL: ${{ inputs.judge_model || 'haiku' }}
+      TAG: ${{ inputs.tag || 'task' }}
+      LABEL: ${{ inputs.label || 'weekly' }}
+    steps:
+      - name: Skip when the API key secret is absent
+        id: key
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "::notice::The ANTHROPIC_API_KEY secret is not set, so the evals were skipped."
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v7
+        if: steps.key.outputs.present == 'true'
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        if: steps.key.outputs.present == 'true'
+        with:
+          python-version: "3.12"
+      - name: Install Claude Code, the shell sandbox and pytest
+        if: steps.key.outputs.present == 'true'
+        run: |
+          npm install --global --silent @anthropic-ai/claude-code
+          sudo apt-get update --quiet
+          sudo apt-get install --yes --quiet bubblewrap socat
+          # The Bash grant runs inside an unprivileged user namespace, which Ubuntu runners restrict by default.
+          sudo sysctl --write kernel.apparmor_restrict_unprivileged_userns=0 || true
+          pip install --quiet pytest
+      - name: Run the eval suite
+        if: steps.key.outputs.present == 'true'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          case "$RUNS" in ''|*[!0-9]*) echo "::error::runs must be a whole number"; exit 1 ;; esac
+          [ "$RUNS" -ge 1 ] && [ "$RUNS" -le 20 ] || { echo "::error::runs must be 1 to 20"; exit 1; }
+          case "$MAX_COST_USD" in ''|*[!0-9.]*|*.*.*|.) echo "::error::max_cost_usd must be a decimal number"; exit 1 ;; esac
+          for value in "$MODEL" "$JUDGE_MODEL" "$TAG"; do
+            case "$value" in ''|-*) echo "::error::model, judge_model and tag must not be empty or start with a dash"; exit 1 ;; esac
+          done
+          mkdir -p eval-out
+          status=0
+          claude plugin eval . --trust-plugin --scaffold --allow-tools Write Edit Bash \
+            --tag "$TAG" --runs "$RUNS" --model "$MODEL" --judge-model "$JUDGE_MODEL" \
+            --max-cost-usd "$MAX_COST_USD" --threshold 0 --concurrency 4 --no-publish --keep-temp \
+            --json eval-out/harness.json --output-dir eval-out || status=$?
+          if [ ! -s eval-out/harness.json ]; then
+            echo "::error::claude plugin eval wrote no results (exit $status)."
+            exit 1
+          fi
+          if [ "$status" -eq 2 ]; then
+            echo "::warning::The cost ceiling of $MAX_COST_USD USD was reached; the results are partial."
+          fi
+      - name: Outcome checks and results file
+        if: steps.key.outputs.present == 'true'
+        run: |
+          python3 scripts/eval_outcomes.py --results eval-out/harness.json --out eval-out/outcomes.json
+          python3 scripts/eval_report.py --record eval-out/harness.json --outcomes eval-out/outcomes.json \
+            --label "$LABEL" --note "Run by the Evals workflow (run $GITHUB_RUN_ID)."
+          cp docs/eval-results.json docs/EVALS.md eval-out/
+          sed -n '/eval-results:start/,/eval-results:end/p' docs/EVALS.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v7
+        if: always() && steps.key.outputs.present == 'true'
+        with:
+          name: eval-results
+          path: |
+            eval-out/harness.json
+            eval-out/outcomes.json
+            eval-out/eval-results.json
+            eval-out/EVALS.md
+          if-no-files-found: warn

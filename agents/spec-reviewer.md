@@ -1,7 +1,7 @@
 ---
 name: "spec-reviewer"
 description: "Reviews changes to specifications, decision logs, and delivery plans against the recorded decisions: contradictions, leftover old rules, invented rules, broken structure, and wrong citations. Read-only."
-model: inherit
+model: sonnet
 disallowedTools: Write, Edit, NotebookEdit
 ---
 

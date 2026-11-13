@@ -9,6 +9,7 @@ ARSENAL_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 MANIFEST="$ARSENAL_ROOT/dist/manifest.tsv"
 CLI_BIN="$ARSENAL_ROOT/scripts/arsenal"
 MCP_MERGE="$ARSENAL_ROOT/scripts/mcp_merge.py"
+HOOKS_MERGE="$ARSENAL_ROOT/scripts/hooks_merge.py"
 ALL_TARGETS="antigravity gemini claude codex opencode cursor windsurf copilot"
 BLOCK_BEGIN='<!-- BEGIN senior-developer-arsenal -->'
 BLOCK_END='<!-- END senior-developer-arsenal -->'
@@ -43,6 +44,8 @@ Options:
   -m, --hindsight           Register the Hindsight memory MCP server
   -c, --codegraph           Register the CodeGraph MCP server
       --bank <id>           Hindsight bank id (default: project folder name)
+      --hooks               Register the session-start and stop hooks (codex, gemini, cursor,
+                            copilot, antigravity; needs python3; see docs/TARGETS.md#hooks)
       --cli                 Install the 'arsenal' command into ~/.local/bin
   -h, --help                Show this help
 
@@ -50,6 +53,7 @@ Examples:
   ./install.sh --global --target all
   ./install.sh --project ~/code/api --target claude,cursor --link
   ./install.sh --global --target codex --codegraph
+  ./install.sh --global --target codex,cursor --hooks
 EOF
 }
 
@@ -64,6 +68,7 @@ STATUS_MODE=false
 CLI_MODE=false
 HINDSIGHT_MODE=false
 CODEGRAPH_MODE=false
+HOOKS_MODE=false
 BANK_ID=""
 
 need_value() { if [ $# -lt 2 ] || [ -z "$2" ]; then die "$1 requires a value."; fi; }
@@ -83,6 +88,7 @@ while [ $# -gt 0 ]; do
     --cli) CLI_MODE=true; shift ;;
     --hindsight|-m) HINDSIGHT_MODE=true; shift ;;
     --codegraph|-c) CODEGRAPH_MODE=true; shift ;;
+    --hooks) HOOKS_MODE=true; shift ;;
     --help|-h) show_help; exit 0 ;;
     *) echo -e "${RED}Unknown option: $1${NC}" >&2; show_help; exit 1 ;;
   esac
@@ -126,9 +132,9 @@ if [ "$HINDSIGHT_MODE" = true ] || [ "$CODEGRAPH_MODE" = true ]; then MCP_MODE=t
 SCOPES=()
 [ "$GLOBAL_MODE" = false ] || SCOPES+=("global")
 [ -z "$PROJECT_ROOT" ] || SCOPES+=("project")
-# MCP registration, status and uninstall default to the global scope.
+# MCP and hook registration, status and uninstall default to the global scope.
 if [ ${#SCOPES[@]} -eq 0 ]; then
-  if [ "$MCP_MODE" = true ] || [ "$STATUS_MODE" = true ] || [ "$UNINSTALL" = true ]; then
+  if [ "$MCP_MODE" = true ] || [ "$HOOKS_MODE" = true ] || [ "$STATUS_MODE" = true ] || [ "$UNINSTALL" = true ]; then
     SCOPES+=("global")
   fi
 fi
@@ -395,7 +401,10 @@ is_block_destination() {
 
 # Removes everything recorded for a target, including items a newer manifest no longer lists.
 uninstall_target() { # target scope
-  local state recorded_target destination
+  local state recorded_target destination kind name source extra
+  while IFS=$'\t' read -r kind name source destination extra; do
+    [ "$kind" != "hooks" ] || merge_hooks "$2" "$source" "$destination" "$extra" --remove
+  done < <(manifest_rows "$1" "$2")
   state="$(state_file "$2")"
   [ -f "$state" ] || return 0
   while IFS=$'\t' read -r recorded_target destination; do
@@ -445,6 +454,25 @@ register_mcp() { # scope kind name source destination extra
   echo "registered '$name' in $path"
 }
 
+# Merges the arsenal hook entries into the agent's hook config, or removes them (--remove).
+merge_hooks() { # scope source destination hook-dir [--remove]
+  local base path directory arguments
+  base="$(scope_base "$1")"; path="$base/$3"; directory="$base/$4"
+  if [ "${5:-}" = "--remove" ]; then
+    [ -f "$path" ] || return 0
+  elif [ ! -f "$directory/agent_hook.py" ] && [ "$DRY_RUN" = false ]; then
+    warn "Skipped hooks in $path ($directory/agent_hook.py is not installed; run the installer for this scope and target first)."
+    SKIPPED=$((SKIPPED + 1))
+    return 0
+  fi
+  command -v python3 > /dev/null 2>&1 || die "python3 is required to update $path."
+  [ -f "$ARSENAL_ROOT/$2" ] || die "Missing source '$2'. Run: python3 scripts/build.py"
+  arguments=(--file "$path" --entry "$ARSENAL_ROOT/$2" --set "ARSENAL_HOOKS=$directory")
+  [ -z "${5:-}" ] || arguments+=("$5")
+  [ "$DRY_RUN" = false ] || arguments+=(--dry-run)
+  python3 "$HOOKS_MERGE" "${arguments[@]}" || FAILED=1
+}
+
 show_status() { # target scope
   local base present=0 total=0 kind name source destination extra path
   base="$(scope_base "$2")"
@@ -472,6 +500,8 @@ process() { # target scope
         ! server_enabled "$name" || register_mcp "$scope" "$kind" "$name" "$source" "$destination" "$extra" ;;
       mcp-note)
         ! server_enabled "$name" || echo -e "  ${CYAN}note:${NC} $extra" ;;
+      hooks)
+        [ "$HOOKS_MODE" = false ] || merge_hooks "$scope" "$source" "$destination" "$extra" ;;
       note)
         [ "$INSTALL_FILES" = false ] || echo -e "  ${CYAN}note:${NC} $extra" ;;
       *) die "Unknown manifest row kind '$kind'. Update install.sh to match scripts/build.py." ;;
@@ -523,8 +553,8 @@ fi
 
 echo ""
 if [ "$UNINSTALL" = true ]; then
-  echo -e "${GREEN}[DONE] Removed $REMOVED item(s). MCP server entries are left in place.${NC}"
+  echo -e "${GREEN}[DONE] Removed $REMOVED item(s) and the arsenal hook entries. MCP server entries are left in place.${NC}"
 else
   echo -e "${GREEN}[DONE] Installed $INSTALLED, already current $UNCHANGED, skipped $SKIPPED.${NC}"
 fi
-[ "$FAILED" -eq 0 ] || die "One or more MCP configurations could not be updated (see messages above)."
+[ "$FAILED" -eq 0 ] || die "One or more MCP or hook configurations could not be updated (see messages above)."

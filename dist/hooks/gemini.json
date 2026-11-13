@@ -1,0 +1,28 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "name": "arsenal-SessionStart",
+            "type": "command",
+            "command": "python3 \"{{ARSENAL_HOOKS}}/agent_hook.py\" gemini SessionStart || python \"{{ARSENAL_HOOKS}}/agent_hook.py\" gemini SessionStart",
+            "timeout": 30000
+          }
+        ]
+      }
+    ],
+    "AfterAgent": [
+      {
+        "hooks": [
+          {
+            "name": "arsenal-Stop",
+            "type": "command",
+            "command": "python3 \"{{ARSENAL_HOOKS}}/agent_hook.py\" gemini Stop || python \"{{ARSENAL_HOOKS}}/agent_hook.py\" gemini Stop",
+            "timeout": 15000
+          }
+        ]
+      }
+    ]
+  }
+}

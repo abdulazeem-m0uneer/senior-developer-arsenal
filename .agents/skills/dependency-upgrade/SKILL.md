@@ -1,6 +1,6 @@
 ---
 name: dependency-upgrade
-description: 'Dependency and runtime upgrade runbook: inventory outdated and vulnerable packages, read the official migration guide at the exact versions, upgrade one dependency and one major at a time, keep installs reproducible, run the full suite plus a real start, and check licences and supply chain. Use when the user asks to upgrade a package, runtime or base image, or runs /dependency-upgrade. Triggers on: "upgrade dependency", "bump version", "update packages", "major upgrade", "/dependency-upgrade". Do not use for flaws in own code (use security-audit) or schema changes (use database-migration).'
+description: 'Dependency and runtime upgrades: outdated and vulnerable packages, one major at a time, full suite after each. Use to upgrade a package, runtime or base image. Triggers: "upgrade dependency", "bump version", "update packages", "major upgrade", /dependency-upgrade. Not for flaws in own code (use security-audit) or schema changes (use database-migration).'
 ---
 
 # Safe Dependency Upgrade Procedure

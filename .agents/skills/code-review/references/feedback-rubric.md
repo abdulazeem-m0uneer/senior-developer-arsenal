@@ -9,10 +9,10 @@ Use this format to produce clear, constructive, and impactful review comments.
 Every finding must provide:
 1. **File and Line Reference**: Clear pointer to where the issue occurs.
 2. **Category & Severity**:
-   - `🚨 [Blocker]`: Critical defect, security flaw, or data corruption risk. Merging blocked.
-   - `⚡ [Performance]`: Query degradation, event loop blocking, memory leak.
-   - `🏗️ [Architecture]`: Boundary violation, improper abstraction, tight coupling.
-   - `💡 [Suggestion]`: Minor readability or idiomatic cleanup.
+   - `[Blocker]`: Critical defect, security flaw, or data corruption risk. Merging blocked.
+   - `[Perf]`: Query degradation, event loop blocking, memory leak.
+   - `[Arch]`: Boundary violation, improper abstraction, tight coupling.
+   - `[Nit]`: Minor readability or idiomatic cleanup.
 3. **The "Why"**: The underlying technical risk, performance penalty, or maintainability drawback.
 4. **Actionable Solution / Code Diff**: Concrete replacement code demonstrating the fix.
 
@@ -21,7 +21,7 @@ Every finding must provide:
 ## 2. Review Report Template
 
 ```markdown
-# 🔍 Senior Code Review Report
+# Senior Code Review Report
 
 ## Summary & Verdict
 - **Verdict**: [ Approved | Approved with Suggestions | Changes Requested ]
@@ -31,7 +31,7 @@ Every finding must provide:
 
 ## Key Findings
 
-### 🚨 Blocker: [Brief description of blocker]
+### [Blocker] [Brief description of blocker]
 - **Location**: `src/Services/PaymentService.cs:L45-L52`
 - **Impact**: Risk of double-charging customer due to unhandled concurrency race condition.
 - **Recommendation**: Wrap transaction in an optimistic lock or use a distributed lock key based on order ID.
@@ -40,16 +40,16 @@ Every finding must provide:
 await using var tx = await dbContext.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
 ```
 
-### ⚡ Performance: [Brief description of performance issue]
+### [Perf] [Brief description of performance issue]
 - **Location**: `src/modules/orders/order.repository.ts:L88`
 - **Impact**: Unindexed sequential scan on table `orders` with 1M+ rows.
 - **Recommendation**: Create a composite index on `(user_id, created_at DESC)`.
 
-### 🏗️ Architecture: [Layering or abstraction concern]
+### [Arch] [Layering or abstraction concern]
 - **Location**: `src/Controllers/UsersController.cs:L30`
 - **Impact**: Direct dependency on EF DbContext inside Presentation Controller bypassing Domain Service layer.
 
-### 💡 Suggestions & Minor Cleanups
+### [Nit] Minor cleanups
 - `src/utils/date.ts`: Prefer native `Intl.DateTimeFormat` over ad-hoc string slicing.
 
 ---

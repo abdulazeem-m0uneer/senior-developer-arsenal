@@ -1,6 +1,7 @@
 ---
 trigger: model_decision
 description: 'Apply when creating commits, branches, rebases, releases, or pull requests.'
+globs: '**/.gitignore,**/.gitattributes,**/.gitmodules,**/COMMIT_EDITMSG,**/CHANGELOG.md,**/.github/pull_request_template.md,**/.github/PULL_REQUEST_TEMPLATE/**,**/commitlint.config.*,**/.commitlintrc*,**/.husky/**,**/.releaserc*'
 ---
 
 # Git Version Control & Pull Request Standards

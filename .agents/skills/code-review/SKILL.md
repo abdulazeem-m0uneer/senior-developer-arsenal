@@ -1,6 +1,6 @@
 ---
 name: code-review
-description: 'Comprehensive senior software engineer code review procedure. Use when the user asks to review pull requests, inspect git diffs, audit code changes, or runs /code-review. Triggers on: "review code", "audit PR", "inspect diff", "/code-review". Do not use for frontend re-render audits (use frontend-audit) or UI/UX visual audits (use ui-ux-audit).'
+description: 'Senior code review of a change. Use to review a pull request, inspect a git diff, or audit code changes. Triggers: "review code", "audit PR", "inspect diff", /code-review. Not for an exhaustive multi-pass audit (use deep-review), frontend re-render audits (use frontend-audit) or UI/UX visual audits (use ui-ux-audit).'
 ---
 
 # Senior Code Review Procedure
@@ -12,7 +12,7 @@ This skill guides the agent through an exhaustive, senior-level code review acro
 ## 1. When to Use This Skill
 
 Activate this skill when:
-- Reviewing pull requests, staged changes, or recent git commits (`HEAD~1..HEAD`).
+- Reviewing pull requests, a branch, or staged and uncommitted changes.
 - Auditing architectural integrity, security vulnerabilities (SQLi, IDOR, secrets), or concurrency hazards.
 - The user runs the `/code-review` slash command or asks for code feedback.
 
@@ -23,13 +23,17 @@ Activate this skill when:
 ## 2. Step-by-Step Execution Runbook
 
 ### Step 1: Context & Diff Inspection
-1. Inspect git status and changes:
+1. Fix the scope. A range or pull request the user names wins; otherwise review everything the branch adds over the default branch, committed or not:
    ```bash
-   git status
-   git diff HEAD~1..HEAD
+   git status --short                                   # untracked files are in scope too: read them
+   for base in "$(git symbolic-ref --quiet --short refs/remotes/origin/HEAD)" origin/main origin/master main master; do
+     [ -n "$base" ] && git rev-parse --verify --quiet "$base" >/dev/null && break; base=
+   done
+   [ -n "$base" ] && git diff "$(git merge-base "$base" HEAD)"   # branch commits plus staged and unstaged changes
    ```
+   The default branch is the one `origin/HEAD` points to, else `origin/main`, `origin/master`, `main`, `master` in that order. When `base` stays empty (no remote and no such branch), do not run the diff: ask the user for the base. To fix a missing `origin/HEAD` run `git remote set-head origin --auto`, or ask `gh repo view --json defaultBranchRef --jq .defaultBranchRef.name`. Only when that diff is empty and the tree is clean (HEAD is on the default branch) review the last commit: `git diff HEAD~1..HEAD`.
 2. Identify all modified architectural layers (Domain, Application Services, Repositories, API Endpoints, Migrations).
-3. Record the commit hash under review (`git rev-parse HEAD`); the verdict applies to that commit only.
+3. Record the base and the commit hash under review (`git rev-parse HEAD`); the verdict applies to that commit plus the uncommitted changes listed in step 1, and to nothing later.
 
 ### Step 2: Multi-Dimensional Checklist Evaluation
 Evaluate changes against the [Senior Review Checklist](./references/review-checklist.md):
@@ -42,10 +46,10 @@ Evaluate changes against the [Senior Review Checklist](./references/review-check
 Format the final review report according to the [Feedback Rubric](./references/feedback-rubric.md):
 - **Executive Verdict**: `Approved`, `Approved with Suggestions`, or `Changes Requested`.
 - **Ranked Findings**: Grouped strictly by:
-  - `🚨 [Blocker]`: Must resolve before merge (data loss, security vulnerabilities, fatal bugs).
-  - `⚡ [Performance]`: Query bottlenecks, event loop lag, memory bloat.
-  - `🏗️ [Architecture]`: Layer violations, tight coupling, leaky abstractions.
-  - `💡 [Suggestion / Nit]`: Idioms, readability, naming conventions.
+  - `[Blocker]`: Must resolve before merge (data loss, security vulnerabilities, fatal bugs).
+  - `[Perf]`: Query bottlenecks, event loop lag, memory bloat.
+  - `[Arch]`: Layer violations, tight coupling, leaky abstractions.
+  - `[Nit]`: Idioms, readability, naming conventions.
 - **Surgical Code Diffs**: Provide targeted 2–5 line diffs for fixes.
 - **Not Checked**: State plainly what was not reviewed (files skipped, tests not run, behaviour not exercised).
 
@@ -75,3 +79,5 @@ Before finalizing review output:
 
 - **Zero Fluff**: Start immediately with the Executive Verdict and Findings table.
 - **Surgical Snippets**: Never reprint unchanged files. Output only minimal diffs.
+
+**Next**: on `Approved` (fixes re-reviewed), run `quality-gate`; a large or high-risk change goes through `deep-review` first.

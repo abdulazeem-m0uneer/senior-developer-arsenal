@@ -1,6 +1,6 @@
 ---
 name: data-privacy
-description: 'Privacy review runbook for a code change: inventory the personal data it touches, trace each item to seven sinks (logs, traces and error reports, stored copies, API responses, outside services, exports, backups), then check access control, minimisation, retention, deletion, redaction and test data. Use when the user asks for a privacy review, a personal-data leak check, or runs /data-privacy. Triggers on: "privacy review", "PII in logs", "personal data leak", "redact", "/data-privacy". Do not use for injection or broken authentication (use security-audit) or diff quality (use code-review).'
+description: 'Privacy review of a code change: trace the personal data it touches to logs, stored copies, API responses, outside services and exports. Triggers: "privacy review", "PII in logs", "personal data leak", "redact", /data-privacy. Not for injection or broken authentication (use security-audit) or diff quality (use code-review).'
 ---
 
 # Data Privacy Review Procedure

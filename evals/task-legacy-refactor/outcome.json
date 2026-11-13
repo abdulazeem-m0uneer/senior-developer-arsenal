@@ -1,0 +1,6 @@
+{
+  "checks": [
+    {"name": "acceptance", "kind": "acceptance", "tests": "outcome/acceptance"},
+    {"name": "characterization-test-green-before-and-after", "kind": "characterization_test"}
+  ]
+}

@@ -1,6 +1,6 @@
 ---
 name: observability
-description: 'Observability runbook: structured JSON logs with a request id and trace id, RED and USE metrics with bounded labels, sampled OpenTelemetry traces, health, readiness and version endpoints, SLO-based alerts, redaction at the logger, and bounded telemetry queries. Use when the user asks to instrument a service, define alerts, look up what a request logged, or runs /observability. Triggers on: "add logging", "structured logs", "add tracing", "metrics and alerts", "query the logs", "/observability". Do not use for root-cause analysis (use investigate) or latency profiling (use perf-audit).'
+description: 'Instrument a service: structured logs, metrics, OpenTelemetry traces, health endpoints, alerts. Use to add instrumentation, define alerts, or look up what a request logged. Triggers: "add logging", "structured logs", "add tracing", "metrics and alerts", "query the logs", /observability. Not for root-cause analysis (use investigate) or latency profiling (use perf-audit).'
 ---
 
 # Observability & Telemetry Query Procedure

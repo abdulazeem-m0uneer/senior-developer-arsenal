@@ -220,7 +220,7 @@ Complete-Test "unsafe install records never delete anything"
 Reset-Sandbox
 $copy = Join-Path $Work "arsenal"
 New-Item -ItemType Directory -Path $copy, (Join-Path $ProjectDir ".agents") -Force | Out-Null
-foreach ($entry in @(".agents", "dist", "scripts", "install.ps1", "AGENTS.md")) {
+foreach ($entry in @(".agents", "dist", "hooks", "scripts", "install.ps1", "AGENTS.md")) {
     Copy-Item -LiteralPath (Join-Path $Root $entry) -Destination (Join-Path $copy $entry) -Recurse -Force
 }
 $copySkills = Join-Path (Join-Path $copy ".agents") "skills"

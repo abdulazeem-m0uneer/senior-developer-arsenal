@@ -1,6 +1,6 @@
 ---
 name: smoke-test
-description: 'Builds and runs an API smoke suite that creates its own accounts and data through the API, runs the same cases locally before a pull request and against the deployed environment after every release from the exact commit, and ends in a PASSED, FAILED, or PARTIAL verdict with a bounded fix loop. Use when the user asks to smoke test an API, verify a release, add a smoke case, or runs /smoke-test. Triggers on: "smoke test", "verify the release", "works on staging", "post-deploy check", "/smoke-test". Do not use for browser journeys (use e2e-feature) or the test plan (use test-strategy).'
+description: 'Build and run an API smoke suite that creates its own data and runs locally and against the deployed environment after each release. Use to smoke test an API, verify a release or add a smoke case. Triggers: "smoke test", "verify the release", "works on staging", "post-deploy check", /smoke-test. Not for browser journeys (use e2e-feature) or the test plan (use test-strategy).'
 ---
 
 # API Smoke Test Procedure
@@ -74,7 +74,7 @@ npm run check:smoke-coverage                                       # every serve
 | 0 | Health names an older commit | Release did not roll out; later layers test the wrong build | `[Blocker]` | Fix the rollout, rerun |
 | 1 | Protected route answers 200 without credentials | Data exposed | `[Security]` | Add the guard and a test through the real route |
 | 2 | Response has a field the schema forbids | Clients break or data leaks | `[Blocker]` | Fix the handler or the contract, test first |
-| 2 | Staff journey NOT RUN: no credentials on this machine | Release unverified | `[Suggestion]` | Report PARTIAL; provide the account, rerun |
+| 2 | Staff journey NOT RUN: no credentials on this machine | Release unverified | `[Nit]` | Report PARTIAL; provide the account, rerun |
 
 ---
 
@@ -83,3 +83,5 @@ npm run check:smoke-coverage                                       # every serve
 - **Verdict First**: Lead with `PASSED`, `FAILED`, or `PARTIAL` and the layer table; details only for failures and NOT RUN rows.
 - **One Request Id per Failure**: Fetch the log lines of the failing request, never the environment's whole log.
 - **Changed Module Only**: While fixing, rerun the one case file; run all layers once at the end.
+
+**Next**: `PASSED` ends the delivery lifecycle; on `FAILED` in a live environment use `incident-response`, otherwise `investigate`.

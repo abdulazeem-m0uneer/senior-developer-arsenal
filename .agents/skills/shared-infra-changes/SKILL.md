@@ -1,6 +1,6 @@
 ---
 name: shared-infra-changes
-description: 'Runbook for changing live shared infrastructure (DNS zones, cloud accounts, clusters, identity providers): inventory first, additions only, each marked with its owner, one reviewed data file, a human-approved plan, a no-changes re-plan and a rollback written first. Use when the user asks to add to a shared account, review an infrastructure plan, or runs /shared-infra-changes. Triggers on: "add a DNS record", "shared account", "live zone", "infrastructure plan", "/shared-infra-changes". Do not use for pipelines and Dockerfiles (use devops-ci) or schema changes (use database-migration).'
+description: 'Change live shared infrastructure (DNS zones, cloud accounts, clusters, identity providers): additions only, a human-approved plan, rollback written first. Use to add to a shared account or review an infrastructure plan. Triggers: "add a DNS record", "shared account", "live zone", "infrastructure plan", /shared-infra-changes. Not for pipelines (use devops-ci) or schema changes (use database-migration).'
 ---
 
 # Shared Infrastructure Change Procedure

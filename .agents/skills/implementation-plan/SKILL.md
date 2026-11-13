@@ -1,6 +1,6 @@
 ---
 name: implementation-plan
-description: 'Turns an approved brief into bite-sized tasks for an engineer new to the codebase: exact files, signatures, test assertions, verification commands, a file map, a self-review, then inline execution or one fresh implementer and reviewer per task with a ledger that survives context loss. Use when a brief is approved and work spans more than one sitting or file, or /implementation-plan. Triggers on: "write the plan", "break this down", "implementation plan", "execute the plan". Not for requirements (use requirements-grilling), board status (use delivery-board-sync), or unattended runs (use autonomous-run).'
+description: 'Turn an approved brief into bite-sized tasks with exact files, tests and verification commands. Use when a brief is approved and the work spans more than one sitting or file. Triggers: "write the plan", "break this down", "implementation plan", "execute the plan", /implementation-plan. Not for requirements (use requirements-grilling) or board status (use delivery-board-sync).'
 ---
 
 # Implementation Plan Procedure
@@ -63,9 +63,9 @@ grep -n 'Ruling:' .plan-workspace/progress.md               # every one goes in 
 | Area | Finding | Risk | Severity | Fix |
 | :--- | :--- | :--- | :---: | :--- |
 | Plan | Task 7 calls `clearFullLayers()`; Task 3 defined `clearLayers()` | Implementer invents a second function | `[Blocker]` | Align names in the self-review |
-| Plan | Code block of 80 lines where the test and signature determine the body | Plan is a transcript; implementer transcribes bugs | `[Architecture]` | Replace with signature and test |
+| Plan | Code block of 80 lines where the test and signature determine the body | Plan is a transcript; implementer transcribes bugs | `[Arch]` | Replace with signature and test |
 | Loop | Controller re-dispatched Tasks 1-3 after compaction | Hours of duplicate work, conflicting commits | `[Blocker]` | Ledger first; resume from its `complete` lines |
-| Loop | Dispatch prompt carries 40k chars of prior-task history | Subagent drowns; cost explodes | `[Performance]` | Brief file, interfaces, constraints only |
+| Loop | Dispatch prompt carries 40k chars of prior-task history | Subagent drowns; cost explodes | `[Perf]` | Brief file, interfaces, constraints only |
 
 ---
 
@@ -74,5 +74,7 @@ grep -n 'Ruling:' .plan-workspace/progress.md               # every one goes in 
 - **Brief by File**: Extract a task's text to a file and pass the path; never paste the whole plan into a dispatch.
 - **Reports by File**: Implementers and reviewers write full reports to files and return under 15 lines.
 - **One Line Between Calls**: Narrate at most one line; the ledger and tool results carry the record.
+
+**Next**: for each task of the approved plan, `test-every-change` derives the tests before the code is written.
 
 Adapted from obra/superpowers (MIT).

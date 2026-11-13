@@ -91,6 +91,33 @@ class RenderTests(unittest.TestCase):
         self.assertIn("alwaysApply: true", build.render_rule("cursor", always))
         self.assertIn('applyTo: "**"', build.render_rule("copilot", always))
 
+    def test_model_decision_rule_with_globs_is_scoped_only_where_the_model_cannot_decide(self):
+        rule = {"name": "git", "trigger": "model_decision", "description": "Git", "globs": ["**/.gitignore"], "body": "B\n"}
+        self.assertTrue(build.render_rule("claude", rule).startswith('---\npaths:\n  - "**/.gitignore"\n---'))
+        self.assertIn('applyTo: "**/.gitignore"', build.render_rule("copilot", rule))
+        cursor = build.render_rule("cursor", rule)
+        self.assertNotIn("globs:", cursor, "Cursor keeps choosing the rule from its description")
+        self.assertIn('description: "Git"\nalwaysApply: false', cursor)
+
+    def test_rule_without_globs_is_unconditional_on_claude_and_copilot_only(self):
+        for trigger in ("model_decision", "manual"):
+            rule = {"name": "r", "trigger": trigger, "description": "R", "globs": [], "body": "B\n"}
+            with self.subTest(trigger=trigger):
+                self.assertFalse(build.render_rule("claude", rule).startswith("---"))
+                self.assertIn('applyTo: "**"', build.render_rule("copilot", rule))
+                self.assertIn("alwaysApply: false", build.render_rule("cursor", rule))
+                self.assertEqual({target: build.rule_activation(target, rule) for target in build.TARGETS},
+                                 {target: "always" if target in ("claude", "copilot") else "model"
+                                  for target in build.TARGETS})
+
+    def test_activation_follows_the_trigger_for_always_on_and_glob_rules(self):
+        always = {"name": "a", "trigger": "always_on", "description": "A", "globs": [], "body": "B\n"}
+        scoped = dict(always, trigger="glob", globs=["**/*.py"])
+        for target in build.TARGETS:
+            with self.subTest(target=target):
+                self.assertEqual(build.rule_activation(target, always), "always")
+                self.assertEqual(build.rule_activation(target, scoped), "glob")
+
     def test_mcp_entries_match_each_client_shape(self):
         stdio = {"type": "stdio", "command": "codegraph", "args": ["serve", "--mcp"]}
         http = {"type": "http", "url": "http://localhost:8888/mcp/x/"}
@@ -117,7 +144,7 @@ class RepositoryTests(unittest.TestCase):
     def test_manifest_has_no_empty_fields_and_only_known_kinds(self):
         rows = build.manifest_rows(build.load_sources())
         kinds = {row[2] for row in rows}
-        self.assertLessEqual(kinds, {"dir", "file", "block", "mcp", "mcp-if-exists", "mcp-note", "note"})
+        self.assertLessEqual(kinds, {"dir", "file", "block", "mcp", "mcp-if-exists", "mcp-note", "note", "hooks"})
         self.assertTrue(all(field for row in rows for field in row))
         self.assertTrue(all((ROOT / row[4]).exists() for row in rows if row[4] != "-"))
 
@@ -135,6 +162,85 @@ class RepositoryTests(unittest.TestCase):
             with self.subTest(plugin=entry["name"]):
                 manifest = f"{entry['source'][2:]}/.claude-plugin/plugin.json".lstrip("/")
                 self.assertEqual(json.loads(outputs[manifest])["name"], entry["name"])
+
+
+class BudgetTests(unittest.TestCase):
+    """Text that loads in every session is capped; the caps are checked on throwaway sources."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.root = Path(self.tmp.name)
+        for name, value in (("ROOT", self.root), ("AGENTS", self.root / ".agents"), ("MAX_ALWAYS_ON_RULE_TOTAL", 1000)):
+            patcher = mock.patch.object(build, name, value)
+            patcher.start()
+            self.addCleanup(patcher.stop)
+
+    def write_rule(self, name, trigger, size, globs=None):
+        folder = self.root / ".agents" / "rules"
+        folder.mkdir(parents=True, exist_ok=True)
+        scope = f"globs: '{globs}'\n" if globs else ""
+        (folder / f"{name}.md").write_text(f"---\ntrigger: {trigger}\ndescription: 'D'\n{scope}---\n" + "x" * size,
+                                           encoding="utf-8")
+
+    def write_skill(self, name, description):
+        folder = self.root / ".agents" / "skills" / name
+        folder.mkdir(parents=True)
+        (folder / "SKILL.md").write_text(f"---\nname: {name}\ndescription: '{description}'\n---\nBody\n",
+                                         encoding="utf-8")
+
+    def test_rule_without_a_path_scope_counts_toward_the_always_on_budget(self):
+        self.write_rule("core", "always_on", 900)
+        self.write_rule("git", "model_decision", 200)
+        with self.assertRaisesRegex(build.SourceError, r"load every session on claude total \d+ chars.*core, git"):
+            build.load_rules()
+
+    def test_path_scoped_model_decision_rule_is_outside_the_always_on_budget(self):
+        self.write_rule("core", "always_on", 900)
+        self.write_rule("git", "model_decision", 200, globs="**/.gitignore")
+        rules = build.load_rules()
+        self.assertEqual(build.unconditional_rules("claude", rules), ["core"])
+        self.assertEqual(build.unconditional_rules("copilot", rules), ["core"])
+
+    def test_always_on_rules_alone_can_exceed_the_budget(self):
+        self.write_rule("core", "always_on", 1001)
+        with self.assertRaisesRegex(build.SourceError, "load every session"):
+            build.load_rules()
+
+    def test_globs_are_required_for_glob_and_refused_for_always_on_and_manual(self):
+        for trigger, globs, message in (("glob", None, "needs globs"), ("always_on", "**/*.py", "only allowed"),
+                                        ("manual", "**/*.py", "only allowed")):
+            with self.subTest(trigger=trigger):
+                self.write_rule("rule", trigger, 10, globs)
+                with self.assertRaisesRegex(build.SourceError, message):
+                    build.load_rules()
+
+    def test_skill_description_at_the_cap_passes_and_one_over_fails(self):
+        self.write_skill("fits", "d" * build.MAX_SKILL_DESC_CHARS)
+        self.assertEqual(build.load_skills(), ["fits"])
+        self.write_skill("long", "d" * (build.MAX_SKILL_DESC_CHARS + 1))
+        with self.assertRaisesRegex(build.SourceError, f"long/SKILL.md: description is {build.MAX_SKILL_DESC_CHARS + 1} chars"):
+            build.load_skills()
+
+    def test_skill_descriptions_together_are_capped(self):
+        count = build.MAX_SKILL_DESC_TOTAL // build.MAX_SKILL_DESC_CHARS + 1
+        for index in range(count):
+            self.write_skill(f"skill-{index}", "d" * build.MAX_SKILL_DESC_CHARS)
+        with self.assertRaisesRegex(build.SourceError, "skill descriptions total"):
+            build.load_skills()
+
+
+class RuleRepositoryTests(unittest.TestCase):
+    def test_only_always_on_rules_load_in_every_session_on_any_target(self):
+        rules = build.load_rules()
+        always_on = [rule["name"] for rule in rules if rule["trigger"] == "always_on"]
+        for target in build.TARGETS:
+            with self.subTest(target=target):
+                self.assertEqual(build.unconditional_rules(target, rules), always_on)
+
+    def test_skill_description_budgets_hold_the_measured_saving(self):
+        self.assertLessEqual(build.MAX_SKILL_DESC_CHARS, 420)
+        self.assertLessEqual(build.MAX_SKILL_DESC_TOTAL, 22000)
 
 
 class McpMergeTests(unittest.TestCase):

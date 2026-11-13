@@ -12,7 +12,7 @@ Which command to run first for a given change, the generic checks worth having i
 | One package or project | Its type-check, lint, tests | `npm run test -w packages/billing` | `dotnet test src/Billing.Tests` | `pytest packages/billing && ruff check packages/billing` |
 | Anything structural (new package, dependency, config key, migration, endpoint) | Static checks only | `npm run gate:checks` | `dotnet format --verify-no-changes && dotnet build -warnaserror` | `ruff check . && mypy .` |
 | An endpoint added or changed | Static checks, then the API smoke suite locally | see `smoke-test` | see `smoke-test` | see `smoke-test` |
-| Before offering the change | The whole gate, cache off, once | `TURBO_FORCE=true npm run gate` | `dotnet test --no-incremental` | `pytest -p no:cacheprovider` |
+| Before offering the change | The whole gate, cache off, once | `TURBO_FORCE=true npm run gate` | `dotnet build --no-incremental && dotnet test --no-build` | `pytest -p no:cacheprovider` |
 
 Split the entry point so the cheap half needs no containers: `gate:checks` (static, about a minute) and `gate` (static, then type-check, lint, all tests, changed-lines coverage).
 

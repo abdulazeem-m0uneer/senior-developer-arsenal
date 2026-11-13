@@ -2,12 +2,18 @@
 import contextlib
 import io
 import json
+import os
+import subprocess
 import sys
+import tempfile
+import time
 import unittest
+import unittest.mock
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / ".agents" / "skills" / "ci-wait" / "scripts"))
+SCRIPT = ROOT / ".agents" / "skills" / "ci-wait" / "scripts" / "ci_wait.py"
+sys.path.insert(0, str(SCRIPT.parent))
 
 import ci_wait  # noqa: E402
 
@@ -162,6 +168,58 @@ class CiWaitTests(unittest.TestCase):
 
     def test_missing_gh_binary_exits_2(self):
         self.assertEqual(self.run_wait(lambda args: (127, "")), ci_wait.EXIT_UNREADABLE)
+
+    def test_gh_call_that_hangs_at_any_step_exits_5(self):
+        red = dict(checks=[[check("fail")]], log="429 Too Many Requests")
+        for hangs_on, setup in ((["pr", "view"], {}), (["pr", "checks"], {}), (["run", "view"], red),
+                                (["run", "rerun"], red)):
+            gh = FakeGh(**setup)
+
+            def runner(args, gh=gh, hangs_on=hangs_on):
+                if args[:2] == hangs_on:
+                    raise ci_wait.GhTimeout(f"gh {' '.join(args)} did not answer in 120 s")
+                return gh(args)
+            with self.subTest(hangs_on=hangs_on):
+                self.assertEqual(self.run_wait(runner), ci_wait.EXIT_GH_TIMEOUT)
+                self.assertIn(f"gh timed out: gh {' '.join(hangs_on)}", self.output())
+                self.assertIn("The state of the checks is unknown", self.output())
+                self.assertNotIn("CI is green", self.output())
+
+
+class SlowGhTests(unittest.TestCase):
+    """A real `gh` on PATH that never answers: the script must give up on it, loudly."""
+
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        gh = Path(directory.name) / "gh"
+        gh.write_text("#!/bin/sh\nexec sleep 60\n")
+        gh.chmod(0o755)
+        self.path = directory.name + os.pathsep + os.environ.get("PATH", "")
+
+    def test_run_gh_raises_after_the_timeout(self):
+        started = time.monotonic()
+        with unittest.mock.patch.dict(os.environ, {"PATH": self.path}), self.assertRaises(ci_wait.GhTimeout) as raised:
+            ci_wait.run_gh(["pr", "view", "12"], timeout=0.5)
+        self.assertEqual(str(raised.exception), "gh pr view 12 did not answer in 0.5 s")
+        self.assertLess(time.monotonic() - started, 10)
+
+    def test_script_exits_5_instead_of_hanging(self):
+        done = subprocess.run([sys.executable, str(SCRIPT), "12", "--gh-timeout", "0.5"], capture_output=True,
+                              text=True, check=False, timeout=30, env={**os.environ, "PATH": self.path})
+        self.assertEqual(done.returncode, ci_wait.EXIT_GH_TIMEOUT)
+        self.assertIn("gh timed out: gh pr view 12 --json headRefOid did not answer in 0.5 s", done.stdout)
+
+    def test_gh_timeout_must_be_positive(self):
+        with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as raised:
+            ci_wait.main(["12", "--gh-timeout", "0"])
+        self.assertEqual(raised.exception.code, 2)
+
+    def test_gh_timeout_rejects_nan_and_inf_without_a_traceback(self):
+        for value in ("nan", "inf", "-inf"):
+            with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as raised:
+                ci_wait.main(["12", "--gh-timeout", value])
+            self.assertEqual(raised.exception.code, 2, value)
 
 
 class ClassifyLogTests(unittest.TestCase):

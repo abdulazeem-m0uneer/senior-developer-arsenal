@@ -1,6 +1,6 @@
 ---
 name: payments-integrity
-description: 'Runbook for code that moves money (charges, refunds, payouts, wallet balances, gateway webhooks): integer minor units, an append-only double-entry ledger, idempotency keys, gateway calls outside transactions, signed deduplicated webhooks, state machines and reconciliation. Use when the user asks to add or review a payment flow, refund or webhook handler, or runs /payments-integrity. Triggers on: "payment flow", "refund", "gateway webhook", "double charge", "/payments-integrity". Do not use for wrapping a provider API (use provider-sdk) or vulnerability hunting (use security-audit).'
+description: 'Code that moves money (charges, refunds, payouts, wallet balances, gateway webhooks): ledger, idempotency, signed webhooks, reconciliation. Use to add or review a payment flow, refund or webhook handler. Triggers: "payment flow", "refund", "gateway webhook", "double charge", /payments-integrity. Not for wrapping a provider API (use provider-sdk) or vulnerability hunting (use security-audit).'
 ---
 
 # Payments Integrity Procedure

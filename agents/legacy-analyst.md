@@ -1,7 +1,7 @@
 ---
 name: "legacy-analyst"
 description: "Answers what a legacy system does at a given point from its source, with file and line, who can reach it, edge cases, and what was not found, so a rebuild keeps the behaviour. Read-only."
-model: inherit
+model: sonnet
 disallowedTools: Write, Edit, NotebookEdit
 ---
 

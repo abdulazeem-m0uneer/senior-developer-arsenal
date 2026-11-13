@@ -1,6 +1,6 @@
 ---
 name: repo-scan
-description: 'Scans the repository the arsenal is installed into and reports which arsenal skills, rules, and subagents apply, using a bundled stack-detection script refined by reading a few key files. Detects Node.js, React, Angular, .NET, Python, SQL, Docker, CI, tests, OpenAPI, and UI styling, and lists gaps (no tests, no CI, files over 1000 lines). Use when starting work in a new or unfamiliar repository or when the user asks which skills to use. Triggers on: "scan this repo", "which skills apply", "detect the stack", "/repo-scan". Do not use for reviewing code quality (use deep-review).'
+description: 'Scan the repository and report which arsenal skills, rules and subagents apply, plus gaps (no tests, no CI, oversized files). Use when starting in a new or unfamiliar repository or when asked which skills to use. Triggers: "scan this repo", "which skills apply", "detect the stack", /repo-scan. Not for reviewing code quality (use deep-review).'
 ---
 
 # Repository Scan & Skill Applicability Procedure

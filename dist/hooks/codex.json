@@ -1,0 +1,26 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"{{ARSENAL_HOOKS}}/agent_hook.py\" codex SessionStart || python \"{{ARSENAL_HOOKS}}/agent_hook.py\" codex SessionStart",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"{{ARSENAL_HOOKS}}/agent_hook.py\" codex Stop || python \"{{ARSENAL_HOOKS}}/agent_hook.py\" codex Stop",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}

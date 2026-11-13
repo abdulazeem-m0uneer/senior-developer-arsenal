@@ -1,0 +1,6 @@
+{
+  "checks": [
+    {"name": "acceptance", "kind": "acceptance", "tests": "outcome/acceptance"},
+    {"name": "regression-test-red-then-green", "kind": "regression_test"}
+  ]
+}

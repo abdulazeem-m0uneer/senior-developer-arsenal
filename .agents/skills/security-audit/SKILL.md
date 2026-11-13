@@ -1,6 +1,6 @@
 ---
 name: security-audit
-description: 'Application security audit runbook covering OWASP Top 10, injection, authn/authz flaws (IDOR/BOLA), secrets leakage, dependency and supply-chain risk, SSRF, unsafe deserialization, and timing attacks across Node.js/TypeScript, C#/.NET, Python, and SQL. Use when the user asks for a security audit, threat review, vulnerability hunt, or pre-release hardening pass. Triggers on: "security audit", "find vulnerabilities", "OWASP", "check for IDOR", "/security-audit". Do not use for general pull request quality review (use code-review) or latency profiling (use perf-audit).'
+description: 'Application security audit of existing code: OWASP Top 10, injection, authn/authz (IDOR/BOLA), secrets, SSRF. Use for a security audit, vulnerability hunt or pre-release hardening pass. Triggers: "security audit", "find vulnerabilities", "OWASP", "check for IDOR", /security-audit. Not for design-time threats (use threat-model), personal data (use data-privacy) or general PR review (use code-review).'
 ---
 
 # Application Security Audit Procedure

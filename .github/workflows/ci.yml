@@ -24,6 +24,8 @@ jobs:
         run: python3 scripts/build.py --validate
       - name: Generated output is up to date
         run: python3 scripts/build.py --check
+      - name: Context overhead report is up to date
+        run: python3 scripts/token_benchmark.py --check
       - name: Claude Code plugin manifest (official validator)
         run: |
           npm install --global --silent @anthropic-ai/claude-code

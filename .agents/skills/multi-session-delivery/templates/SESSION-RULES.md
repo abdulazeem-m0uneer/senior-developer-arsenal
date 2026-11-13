@@ -4,7 +4,7 @@ Every session reads this file when it starts. A newer decision by the lead repla
 
 ## Rules for every session
 
-- Read this file, `.agents/OPERATING-MODEL.md` and your bus inbox (`bash .agents/bus/read.sh <name>`) before any work.
+- Read this file, `.agents/OPERATING-MODEL.md` and your bus inbox (`bash .agents/bus/read.sh <name>`) before any work; acknowledge the lines once acted on (`--ack <line>`, printed by the read).
 - Keep your fixed session name (`pm`, `backend`, `backend-b`, `web`, `mobile`) and the shared permission mode.
 - On every start, write your own session id under your name in `.agents/pm/lanes.json`.
 - **Priority:** urgent tickets and client-team tickets; then the features clients wait on; then the current plan week, hardest story first.

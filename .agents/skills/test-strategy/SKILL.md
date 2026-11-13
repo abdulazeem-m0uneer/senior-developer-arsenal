@@ -1,6 +1,6 @@
 ---
 name: test-strategy
-description: 'Test strategy and test authoring runbook: test pyramid layering, unit vs integration vs end-to-end scope, edge-case enumeration, test doubles, flaky-test diagnosis, and coverage that matters, using Vitest/Jest, xUnit, pytest, and Playwright. Use when the user asks to write or improve tests, plan a test suite, fix flaky tests, or raise meaningful coverage. Triggers on: "write tests", "test strategy", "add coverage", "flaky test", "/test-strategy". Do not use for reviewing a diff for defects (use code-review) or building a full vertical feature slice (use e2e-feature).'
+description: 'Test suite design: pyramid, unit vs integration vs end-to-end scope, test doubles, flaky-test diagnosis. Use to plan or improve a test suite, fix flaky tests or raise coverage. Triggers: "write tests", "test strategy", "add coverage", "flaky test", /test-strategy. Not for the tests of one change (use test-every-change), reviewing a diff (use code-review) or manual test plans (use qa-engineer).'
 ---
 
 # Test Strategy & Test Authoring Procedure

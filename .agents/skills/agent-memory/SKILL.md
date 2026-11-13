@@ -1,6 +1,6 @@
 ---
 name: agent-memory
-description: 'Use whenever the user asks to remember something for future sessions, save a project fact or rule, or recall what is known about the project. Long-term agent memory with Hindsight (vectorize-io/hindsight): retains architecture, facts and solved debugging lessons, and recalls them with hybrid retrieval (vector, keyword, graph, temporal). Triggers on: "remember this", "remember for next time", "save architectural rule", "recall project context", "what do you know about", "hindsight memory", /agent-memory. Not for reading source code (use codegraph or code search) or the written decision record (use decision-log).'
+description: 'Use whenever the user asks to remember something for future sessions, save a project fact or rule, or recall what is known about the project. Long-term memory through the Hindsight MCP server. Triggers: "remember this", "save architectural rule", "recall project context", "what do you know about", "hindsight memory", /agent-memory. Not for reading source code (use codegraph) or decisions (use decision-log).'
 ---
 
 # Agent Memory Procedure

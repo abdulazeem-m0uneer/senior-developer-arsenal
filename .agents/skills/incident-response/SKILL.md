@@ -1,6 +1,6 @@
 ---
 name: incident-response
-description: 'Production incident runbook: set severity by user impact, assign incident roles, mitigate before diagnosing, keep a live timeline, send status updates on a fixed interval, preserve evidence before restart, and close with a blameless postmortem with owned, dated actions. Use when the user asks to handle an outage, write a status update or postmortem, or runs /incident-response. Triggers on: "production is down", "we have an incident", "status update", "write a postmortem", "/incident-response". Do not use for root-cause method (use investigate) or deploy pipeline design (use devops-ci).'
+description: 'Production incident runbook: severity, roles, mitigate before diagnosing, timeline, postmortem. Use to handle an outage or write a status update or postmortem. Triggers: "production is down", "we have an incident", "status update", "write a postmortem", /incident-response. Not for root-cause method (use investigate) or deploy pipeline design (use devops-ci).'
 ---
 
 # Production Incident Response Procedure

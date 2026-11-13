@@ -1,6 +1,6 @@
 ---
 name: ci-wait
-description: 'Waits for the checks of a pull request and separates an outside failure (registry rate limit, runner that never started, network, billing, the CI provider itself) from a failure of the change, rerunning only the outside ones at most twice and merging only the tested commit. Use when the user asks to wait for CI, judge whether a red run is flaky, or runs /ci-wait. Triggers on: "wait for CI", "is CI green", "rerun the failed jobs", "flaky pipeline", "merge when green", "/ci-wait". Do not use for writing the pipeline itself (use devops-ci) or for merge strategy (use git-workflow-master).'
+description: 'Wait for pull request checks and tell an outside failure (rate limit, runner, network, CI provider) from a failure of the change. Use to wait for CI or judge whether a red run is flaky. Triggers: "wait for CI", "is CI green", "rerun the failed jobs", "flaky pipeline", "merge when green", /ci-wait. Not for writing the pipeline (use devops-ci) or merge strategy (use git-workflow-master).'
 ---
 
 # CI Wait & Failure Triage Procedure
@@ -32,7 +32,7 @@ Activate this skill when:
 ### Step 2: Wait With the Bundled Script
 1. Resolve the script path relative to the directory that contains this file, then run `python3 <skill-dir>/scripts/ci_wait.py <pr>`.
 2. Run it in the background with a budget of one CI run (default 40 minutes) plus reruns; do not write a second wait loop and do not read logs by hand first.
-3. Tune only with flags: `--timeout`, `--interval`, `--max-reruns`, `--rerun-delay`. Never poll faster than 15 seconds: it burns API quota and gains nothing.
+3. Tune only with flags: `--timeout`, `--interval`, `--max-reruns`, `--rerun-delay`, `--gh-timeout` (seconds one `gh` call may take, default 120). Never poll faster than 15 seconds: it burns API quota and gains nothing.
 
 ### Step 3: Act on the Exit Code
 Consult: [Outside Failures & Exit Code Playbook](./references/outside-failures.md)
@@ -41,6 +41,7 @@ Consult: [Outside Failures & Exit Code Playbook](./references/outside-failures.m
 3. `2`: the pull request or run could not be read. Check the number, the repository, and authentication.
 4. `3`: not finished in time, or no checks reported. Check `mergeable` and the workflow triggers, look at the run once, then run the script again.
 5. `4`: jobs never started (billing, no runner). Not the change; a rerun will not help. Report to whoever owns the CI account.
+6. `5`: a `gh` call hung past `--gh-timeout`. Nothing is known about the checks: never read it as green or red. Check the network and `gh auth status`, then run the script again.
 
 ### Step 4: Handle Outside Failures Honestly
 1. An outside failure is retried, never worked around: no skipped job, no weakened check, no merge on red.
@@ -60,7 +61,7 @@ Consult: [Outside Failures & Exit Code Playbook](./references/outside-failures.m
 
 ```bash
 gh pr view <pr> --json headRefOid,mergeable,mergeStateStatus   # head commit and conflicts
-python3 <skill-dir>/scripts/ci_wait.py <pr>; echo "exit $?"    # 0 green, 1 change, 2 unreadable, 3 timeout, 4 never started
+python3 <skill-dir>/scripts/ci_wait.py <pr>; echo "exit $?"    # 0 green, 1 change, 2 unreadable, 3 CI timeout, 4 never started, 5 gh hung
 gh pr checks <pr> --json name,bucket,link                      # every bucket is pass or skipping
 gh pr merge <pr> --squash --match-head-commit <sha>            # only the tested commit lands
 ```
@@ -69,7 +70,7 @@ gh pr merge <pr> --squash --match-head-commit <sha>            # only the tested
 | :--- | :--- | :--- | :---: | :--- |
 | Merge | Merged without `--match-head-commit` after a late push | Untested commit on the main branch | `[Blocker]` | Revert or verify the landed commit; always pin the commit |
 | Triage | Red job skipped or marked optional to get green | A real defect ships | `[Blocker]` | Restore the job; fix the change or rerun the outside failure |
-| Pipeline | Image pulls hit the registry rate limit weekly | Random red runs, wasted reruns | `[Suggestion]` | Authenticate pulls or add a pull-through mirror |
+| Pipeline | Image pulls hit the registry rate limit weekly | Random red runs, wasted reruns | `[Nit]` | Authenticate pulls or add a pull-through mirror |
 
 ---
 
@@ -78,3 +79,5 @@ gh pr merge <pr> --squash --match-head-commit <sha>            # only the tested
 - **One Command**: Run the script and read its last lines; never stream the whole run log into the conversation.
 - **Decisive Lines Only**: Quote the failed job, the failed step, and at most twelve error lines.
 - **No Narrated Waiting**: Report once when the wait ends, with the exit code, the commit, and the next action.
+
+**Next**: once the tested commit is merged and a release is due, cut it with `git-release`.

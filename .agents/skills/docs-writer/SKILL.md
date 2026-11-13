@@ -1,6 +1,6 @@
 ---
 name: docs-writer
-description: 'Technical documentation runbook: pick the document type by reader need, write READMEs, runbooks a tired person can follow, and API reference entries stating what, why, who, how, errors and rules in the same change as the endpoint, keep one home per fact, and check docs in CI. Use when the user asks to write or fix a README, runbook or API reference, or runs /docs-writer. Triggers on: "write docs", "create a README", "write a runbook", "API reference", "/docs-writer". Do not use for endpoint contract design (use api-design) or decision records (use architecture-design-adr or decision-log).'
+description: 'Technical documentation: READMEs, runbooks and API reference entries. Use to write or fix a README, runbook or API reference. Triggers: "write docs", "create a README", "write a runbook", "API reference", /docs-writer. Not for endpoint contract design (use api-design) or decision records (use architecture-design-adr or decision-log).'
 ---
 
 # Technical Documentation Procedure

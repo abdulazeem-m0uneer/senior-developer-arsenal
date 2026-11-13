@@ -1,6 +1,6 @@
 ---
 name: database-migration
-description: 'Safe, non-blocking database migration design and verification workflow for PostgreSQL, SQLite, and MSSQL. Use when the user asks to create migrations, alter tables, add indexes, or runs /database-migration. Triggers on: "database migration", "schema migration", "alter table", "add column", "/database-migration". Do not use for query plan profiling or indexing strategy (use database-architect).'
+description: 'Safe, non-blocking database migrations for PostgreSQL, SQLite and MSSQL. Use to create a migration, alter a table, or add a column or index on a live table. Triggers: "database migration", "schema migration", "alter table", "add column", /database-migration. Not for query plan profiling or indexing strategy (use database-architect).'
 ---
 
 # Safe Database Migration Procedure

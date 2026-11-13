@@ -2,22 +2,27 @@
 """Wait for a pull request's checks and tell an outside failure from a failure of the change.
 
 Usage: python3 ci_wait.py <pr> [--timeout 2400] [--interval 30] [--max-reruns 2] [--rerun-delay 240]
+                             [--gh-timeout 120]
 Exit codes:
   0  green; the tested commit and the merge command are printed
   1  the change failed (or an outside failure survived every rerun)
   2  the pull request or a run could not be read
   3  one CI run did not finish in time, or the pull request reports no checks
   4  jobs never started (billing, no runner); a rerun will not help
+  5  one gh call did not answer within --gh-timeout seconds; nothing is known about the checks
 Outside failures are rerun (failed jobs only), never worked around. Nothing is merged here.
 """
 import argparse
+import functools
 import json
 import re
 import subprocess
 import sys
 import time
 
-EXIT_GREEN, EXIT_CHANGE_FAILED, EXIT_UNREADABLE, EXIT_NOT_FINISHED, EXIT_NEVER_STARTED = range(5)
+(EXIT_GREEN, EXIT_CHANGE_FAILED, EXIT_UNREADABLE, EXIT_NOT_FINISHED, EXIT_NEVER_STARTED,
+ EXIT_GH_TIMEOUT) = range(6)
+GH_TIMEOUT = 120  # seconds for one gh call; the slowest one downloads the failed log
 
 # (label, pattern, rerunnable). Add a new outside cause here, in the change that meets it.
 OUTSIDE_CAUSES = (
@@ -42,6 +47,10 @@ class Unreadable(Exception):
     """A gh call did not return what was asked for."""
 
 
+class GhTimeout(Exception):
+    """A gh call did not answer in time: nothing was learned, so no verdict may follow."""
+
+
 def classify_log(text):
     """Pure: the outside causes a failed job's log names, as (label, rerunnable) pairs."""
     return [(label, rerunnable) for label, pattern, rerunnable in OUTSIDE_CAUSES
@@ -58,10 +67,12 @@ def error_lines(text, limit=12):
     return seen[-limit:]
 
 
-def run_gh(args):
-    """Default runner: (exit code, stdout) of `gh <args>`."""
+def run_gh(args, timeout=GH_TIMEOUT):
+    """Default runner: (exit code, stdout) of `gh <args>`; GhTimeout when it hangs past `timeout` seconds."""
     try:
-        done = subprocess.run(["gh", *args], capture_output=True, text=True, check=False)
+        done = subprocess.run(["gh", *args], capture_output=True, text=True, check=False, timeout=timeout)
+    except subprocess.TimeoutExpired as error:
+        raise GhTimeout(f"gh {' '.join(args)} did not answer in {timeout} s") from error
     except OSError:
         return 127, ""
     return done.returncode, done.stdout
@@ -181,6 +192,10 @@ def wait(pr, runner=run_gh, sleep=time.sleep, out=print, **options):
     except Unreadable as error:
         out(f"Could not read the pull request: {error}")
         return EXIT_UNREADABLE
+    except GhTimeout as error:
+        out(f"gh timed out: {error}. The state of the checks is unknown; check the network and "
+            "`gh auth status`, then run the script again.")
+        return EXIT_GH_TIMEOUT
 
 
 def main(argv=None):
@@ -190,8 +205,12 @@ def main(argv=None):
     parser.add_argument("--interval", type=int, default=30, help="seconds between polls")
     parser.add_argument("--max-reruns", type=int, default=2, help="reruns of an outside failure")
     parser.add_argument("--rerun-delay", type=int, default=240, help="seconds before a rerun")
+    parser.add_argument("--gh-timeout", type=float, default=GH_TIMEOUT, help="seconds for one gh call")
     args = parser.parse_args(argv)
-    return wait(args.pr, interval=args.interval, timeout=args.timeout,
+    if not 0 < args.gh_timeout < float("inf"):  # also rejects nan
+        parser.error("--gh-timeout must be a positive, finite number")
+    return wait(args.pr, runner=functools.partial(run_gh, timeout=args.gh_timeout),
+                interval=args.interval, timeout=args.timeout,
                 max_reruns=args.max_reruns, rerun_delay=args.rerun_delay)
 
 

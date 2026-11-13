@@ -1,6 +1,6 @@
 ---
 name: git-release
-description: 'Release preparation workflow to verify build & tests, inspect commit history, bump version according to SemVer, and draft release notes. Use when the user asks to prepare a release, bump versions, cut a tag, or runs /git-release. Triggers on: "prepare release", "cut tag", "bump version", "release notes", "/git-release". Do not use for interactive git rebasing or merge conflict resolution (use git-workflow-master).'
+description: 'Release preparation: verify build and tests, bump the version by SemVer, write release notes or a changelog, cut the tag. Use to prepare a release, bump versions or cut a tag. Triggers: "prepare release", "cut tag", "bump version", "release notes", /git-release. Not for rebasing or merge conflicts (use git-workflow-master).'
 ---
 
 # Production Release Preparation Skill
@@ -67,3 +67,5 @@ git tag -a vX.Y.Z -m "Release vX.Y.Z"
 
 - Output only the calculated version bump, the formatted changelog markdown, and the git tag command.
 - Do not dump full git log outputs into chat.
+
+**Next**: once the release is deployed, verify it with `smoke-test`.

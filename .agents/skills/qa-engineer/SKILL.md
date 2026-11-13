@@ -1,6 +1,6 @@
 ---
 name: qa-engineer
-description: 'QA engineering runbook: derive testable acceptance criteria, write test plans and test cases (positive, negative, boundary, state-transition), run exploratory charters, select the regression suite, file reproducible bug reports with severity and priority, and run the release sign-off checklist. Use when the user asks for a test plan, test cases, a bug report, or QA sign-off. Triggers on: "test plan", "test cases", "acceptance criteria", "bug report", "/qa-engineer". Do not use for automated test code design (use test-strategy) or tests for a code change (use test-every-change).'
+description: 'QA engineering: acceptance criteria, test plans and cases, exploratory testing, bug reports, release sign-off. Use for a test plan, test cases, a bug report or QA sign-off. Triggers: "test plan", "test cases", "acceptance criteria", "bug report", /qa-engineer. Not for automated test code design (use test-strategy) or tests for a code change (use test-every-change).'
 ---
 
 # QA Engineering Procedure

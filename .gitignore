@@ -38,3 +38,6 @@ __pycache__/
 .hindsight_data/
 .codegraph/
 evals/results/
+
+# Lessons ledger lock files
+.agents/.*.lock
