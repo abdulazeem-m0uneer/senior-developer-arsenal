@@ -1,6 +1,6 @@
 ---
 name: quality-gate
-description: 'Use whenever the user wants local checks to match CI, one pre-push command, or an explanation of a failing check. Designs and runs one local command that equals CI: smallest check first, a table from failing check to fix, checks proven to bite on planted bad inputs, changed-lines coverage, no skipped tests, drift checks for generated files, a final uncached run. Triggers on: "quality gate", "run the gate", "pre-push checks", "same as CI locally", "failures only after pushing", /quality-gate. Not for building the pipeline (use devops-ci) or choosing tests for a change (use test-every-change).'
+description: 'Use whenever the user wants local checks to match CI, one pre-push command, or an explanation of a failing check. Designs and runs one local command that equals CI. Triggers: "quality gate", "run the gate", "pre-push checks", "same as CI locally", "failures only after pushing", /quality-gate. Not for building the pipeline (use devops-ci) or choosing tests for a change (use test-every-change).'
 ---
 
 # Quality Gate Procedure
@@ -64,7 +64,7 @@ Consult: [Checks That Bite: Planted Inputs & Changed-Lines Coverage](./reference
 ```bash
 git diff --name-only $(git merge-base origin/main HEAD)...HEAD   # what changed decides what runs first
 TURBO_FORCE=true npm run gate                                    # Node.js: task cache off
-dotnet test --no-incremental --collect:"XPlat Code Coverage"     # .NET: no incremental build reuse
+dotnet build --no-incremental && dotnet test --no-build --collect:"XPlat Code Coverage"   # .NET: full rebuild, then test that build
 pytest -p no:cacheprovider --cov --cov-report=xml && diff-cover coverage.xml --compare-branch=origin/main --fail-under=90
 git status --porcelain                                           # must be empty: the gate rewrote nothing
 ```
@@ -72,7 +72,7 @@ git status --porcelain                                           # must be empty
 | Area | Finding | Risk | Severity | Fix |
 | :--- | :--- | :--- | :---: | :--- |
 | Parity | CI runs a licence check the local gate omits | Red CI after a green local run | `[Blocker]` | Add it to the single entry point |
-| Honesty | Boundary rule has a typo and matches no file | Check passes while enforcing nothing | `[Architecture]` | Add planted violations that must fail |
+| Honesty | Boundary rule has a typo and matches no file | Check passes while enforcing nothing | `[Arch]` | Add planted violations that must fail |
 | Tests | `it.only` left in a suite | 400 tests silently not run | `[Blocker]` | Remove it; add the test-discipline check |
 
 ---
@@ -82,3 +82,5 @@ git status --porcelain                                           # must be empty
 - **Narrowest Command**: Run the one test file or package that changed; the full gate once before offering the change.
 - **First Failure Only**: Quote the failing check's name and its first error lines, never the passing output.
 - **Header, Not Folder**: Read the header of the one failing check; do not load every check to understand one.
+
+**Next**: when the full gate is green, `definition-of-done` checks the change before it is reported complete.

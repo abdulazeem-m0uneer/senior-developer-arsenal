@@ -1,6 +1,6 @@
 ---
 name: kubernetes-ops
-description: 'Kubernetes workload runbook: manifest checklist (requests and limits, probes, securityContext, PDB, HPA, rollout, secrets, NetworkPolicy, RBAC), Helm and kustomize conventions, validation before apply, and a symptom-driven debugging runbook, read-only kubectl first. Use to write, review, or debug manifests, a Helm chart, or a failing pod or rollout, or /kubernetes-ops. Triggers on: "Kubernetes manifest", "Helm chart", "CrashLoopBackOff", "Pending pod", "kubectl". Not for applying to a live shared cluster (use shared-infra-changes) or Dockerfiles and pipelines (use devops-ci).'
+description: 'Kubernetes manifests, Helm and kustomize, validation before apply, debugging with read-only kubectl first. Use to write, review or debug manifests, a Helm chart, or a failing pod or rollout. Triggers: "Kubernetes manifest", "Helm chart", "CrashLoopBackOff", "Pending pod", "kubectl", /kubernetes-ops. Not for a live shared cluster (use shared-infra-changes) or Dockerfiles and pipelines (use devops-ci).'
 ---
 
 # Kubernetes Operations Procedure

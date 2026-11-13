@@ -23,11 +23,17 @@ def frontmatter(path):
 
 def main():
     checked = 0
-    markdown = [*ROOT.glob("dist/**/*.md"), *ROOT.glob(".agents/skills/*/SKILL.md"), *ROOT.glob(".agents/rules/*.md")]
+    markdown = [*ROOT.glob("dist/**/*.md"), *ROOT.glob(".agents/skills/*/SKILL.md"), *ROOT.glob(".agents/rules/*.md"),
+                *ROOT.glob("evals/*/prompt.md"), *ROOT.glob("evals/*/graders/*.md")]
     for path in markdown:
         block = frontmatter(path)
         if block is not None and not isinstance(yaml.safe_load(block), dict):
             print(f"error: {path.relative_to(ROOT)}: frontmatter is not a mapping", file=sys.stderr)
+            return 1
+        checked += 1
+    for path in [*ROOT.glob(".github/workflows/*.yml"), *ROOT.glob("evals/*/case.yaml")]:
+        if not isinstance(yaml.safe_load(path.read_text(encoding="utf-8")), dict):
+            print(f"error: {path.relative_to(ROOT)}: not a YAML mapping", file=sys.stderr)
             return 1
         checked += 1
     for path in ROOT.glob("dist/**/*.toml"):
@@ -37,7 +43,7 @@ def main():
         checked += 1
     json_files = [*ROOT.glob("dist/**/*.json"), *ROOT.glob("plugins/**/*.json"),
                   *ROOT.glob(".claude-plugin/*.json"), *ROOT.glob(".agents/**/*.json"),
-                  *ROOT.glob("hooks/*.json")]
+                  *ROOT.glob("hooks/*.json"), *ROOT.glob("evals/*/outcome.json"), *ROOT.glob("docs/*.json")]
     for path in json_files:
         json.loads(path.read_text(encoding="utf-8"))
         checked += 1

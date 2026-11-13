@@ -1,6 +1,6 @@
 ---
 name: definition-of-done
-description: 'Verification gate that builds a per-feature Definition of Done checklist and verifies every item with evidence (command output, file:line), ending in a DONE or NOT DONE verdict table. Use when the user asks whether a feature, fix, or task is finished, ready to merge, or ready to ship, and before reporting any work as complete. Triggers on: "definition of done", "is this done", "verify the feature", "ready to merge", "/definition-of-done". Do not use for hunting defects in a diff (use code-review or deep-review) or for writing the missing tests (use test-every-change).'
+description: 'Verification gate: prove every Definition of Done item with evidence, then a DONE or NOT DONE verdict. Use when asked whether work is finished, ready to merge or ready to ship, and before reporting it complete. Triggers: "definition of done", "is this done", "verify the feature", "ready to merge", /definition-of-done. Not for finding defects (use code-review) or writing missing tests (use test-every-change).'
 ---
 
 # Definition of Done Verification Gate
@@ -78,3 +78,5 @@ Use the commands and evidence rules in [Evidence Commands & Verdict Template](./
 - **Verdict First**: Start with `DONE` or `NOT DONE`, then the table; no narrative.
 - **Decisive Lines Only**: Quote the single output line that proves the item, never the whole log.
 - **Failures in Full, Passes in Brief**: Expand only `FAIL` and `UNVERIFIED` rows with the required action.
+
+**Next**: on `DONE`, open or update the pull request and wait for its checks with `ci-wait`; on `NOT DONE`, return to the skill that owns the failing row.

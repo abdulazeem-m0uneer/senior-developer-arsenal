@@ -1,6 +1,6 @@
 ---
 name: delivery-board-sync
-description: 'Keeps a task board in any tracker (Jira, Linear, GitHub Projects, Trello) in step with the plan document: the plan is the only source of the schedule, one task per plan item, a status moves only with evidence, and blocked items name who must answer what. Use when the user asks to update the board, seed tasks from the plan, or runs /delivery-board-sync. Triggers on: "update the board", "sync the tracker", "move the ticket", "create tasks from the plan", "/delivery-board-sync". Do not use for recording a decision (use decision-log) or proving work is done (use definition-of-done).'
+description: 'Keep a task board (Jira, Linear, GitHub Projects, Trello) in step with the plan document. Use to update the board or seed tasks from the plan. Triggers: "update the board", "sync the tracker", "move the ticket", "create tasks from the plan", /delivery-board-sync. Not for recording a decision (use decision-log) or proving work is done (use definition-of-done).'
 ---
 
 # Delivery Board Sync Procedure

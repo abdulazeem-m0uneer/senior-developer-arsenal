@@ -24,7 +24,7 @@ Every line, every language:
 
 1. **SOLID**: S one reason to change per class/module/function; O extend via new types/composition, not editing stable paths; L subtypes honor contract (no stronger preconditions, no surprise exceptions); I small role-specific interfaces; D depend on abstractions, inject infra (DB, HTTP, clock, FS) into domain.
 2. **File cap 1000 lines**: no source file >1000 after change. Split by responsibility before crossing. Never add to file already over; extract cohesive unit first. Generated, lockfiles, vendored exempt (say so).
-3. **Every change ships tests**: see `testing-standards.md`. No test = not done.
+3. **Every change ships tests**: see `testing-standards.md`. Neither a test nor the written exemption defined there = not done.
 4. **Verify before done**: lint, type-check, build, full suite; report failures verbatim.
 
 ---
@@ -54,6 +54,6 @@ Every line, every language:
 
 ## 4. Communication & Feedback Rubric
 
-- Tag: `[Blocker]` (security, data loss, severe bug), `[Performance]`, `[Architecture]`, `[Minor/Nit]`, `[Question]`.
+- Tag: `[Blocker]` (security, data loss, severe bug), `[Perf]`, `[Arch]`, `[Nit]`, `[Question]`.
 - Give the why (arch/security/perf rationale).
 - Give concrete idiomatic alternative, not just the problem.

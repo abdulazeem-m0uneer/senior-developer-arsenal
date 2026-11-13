@@ -133,7 +133,7 @@
       "promptFile": "./prompts/spec-reviewer.md",
       "enable_write_tools": false,
       "enable_subagent_tools": false,
-      "recommended_model": "inherit"
+      "recommended_model": "balanced"
     },
     {
       "name": "infra-reviewer",
@@ -151,7 +151,7 @@
       "promptFile": "./prompts/legacy-analyst.md",
       "enable_write_tools": false,
       "enable_subagent_tools": false,
-      "recommended_model": "inherit"
+      "recommended_model": "balanced"
     },
     {
       "name": "risk-manager",
@@ -160,7 +160,7 @@
       "promptFile": "./prompts/risk-manager.md",
       "enable_write_tools": false,
       "enable_subagent_tools": false,
-      "recommended_model": "inherit"
+      "recommended_model": "balanced"
     }
   ]
 }

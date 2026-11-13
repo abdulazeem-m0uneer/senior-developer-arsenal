@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "type": "command",
+        "bash": "python3 \"{{ARSENAL_HOOKS}}/agent_hook.py\" copilot SessionStart || python \"{{ARSENAL_HOOKS}}/agent_hook.py\" copilot SessionStart",
+        "powershell": "python \"{{ARSENAL_HOOKS}}/agent_hook.py\" copilot SessionStart",
+        "timeoutSec": 30
+      }
+    ],
+    "agentStop": [
+      {
+        "type": "command",
+        "bash": "python3 \"{{ARSENAL_HOOKS}}/agent_hook.py\" copilot Stop || python \"{{ARSENAL_HOOKS}}/agent_hook.py\" copilot Stop",
+        "powershell": "python \"{{ARSENAL_HOOKS}}/agent_hook.py\" copilot Stop",
+        "timeoutSec": 15
+      }
+    ]
+  }
+}

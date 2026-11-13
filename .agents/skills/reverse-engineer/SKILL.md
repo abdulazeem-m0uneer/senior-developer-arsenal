@@ -1,6 +1,6 @@
 ---
 name: reverse-engineer
-description: 'Evidence-driven runbook for understanding one feature of a third-party app (native, Electron, .NET, APK, website) with the REA MCP server, then rebuilding it clean-room with parity tests. Every claim carries a file, function or address and a confidence grade; authorization and license limits gate the work. Use to trace or decompile a feature or build similar functionality, or /reverse-engineer. Triggers on: "reverse engineer", "decompile", "trace the feature", "REA". Not for your own legacy code (use legacy-parity), production bugs (use investigate), or bypassing licensing, DRM, or paywalls (refuse).'
+description: 'Understand one feature of a third-party app (native, Electron, .NET, APK, web) with the REA MCP server, then rebuild it clean-room. Use to trace, decompile or rebuild a feature. Triggers: "reverse engineer", "decompile", "trace the feature", "REA", /reverse-engineer. Not for your own legacy code (use legacy-parity), a production bug (use investigate) or bypassing licensing, DRM or paywalls (refuse).'
 ---
 
 # Feature Reverse-Engineering Procedure

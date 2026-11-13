@@ -1,6 +1,6 @@
 ---
 name: parallel-sessions
-description: 'Runbook for several agents or people working in one repository at once: read the remote default branch before judging what exists, check open pull requests before building anything shared, one worktree per task, staging by explicit path, and sequence numbers taken at commit time. Use when the user asks to work alongside other sessions, avoid duplicated work, or runs /parallel-sessions. Triggers on: "another session", "shared checkout", "parallel agents", "use a worktree", "/parallel-sessions". Do not use for rebasing (use git-workflow-master) or waiting on pipelines (use ci-wait).'
+description: 'Several agents or people in one repository at once: one worktree per task, staging by explicit path. Use to work alongside other sessions or stop duplicated or overwritten work. Triggers: "another session", "shared checkout", "parallel agents", "use a worktree", /parallel-sessions. Not for a coordinator plus lanes (use multi-session-delivery) or rebasing (use git-workflow-master).'
 ---
 
 # Parallel Sessions Procedure

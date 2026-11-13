@@ -1,6 +1,6 @@
 ---
 name: accessibility-audit
-description: 'WCAG 2.2 AA audit of a running page, app, or screen: scoped states, axe pass, keyboard pass, screen reader scripts (NVDA, VoiceOver, TalkBack), zoom, contrast, motion, target size, forms, then evidenced findings, a conformance statement, and a Playwright+axe guard. Use for an accessibility audit, WCAG check, screen reader test, VPAT/ACR input, or /accessibility-audit. Triggers on: "accessibility audit", "a11y audit", "WCAG audit", "screen reader test", "/accessibility-audit". Not for design gates (use ui-ux-audit) or render performance (use frontend-audit).'
+description: 'WCAG 2.2 AA audit of a running page, app or screen: axe, keyboard, screen readers, contrast, target size. Use for an accessibility or WCAG check, screen reader test, or VPAT/ACR input. Triggers: "accessibility audit", "a11y audit", "WCAG audit", "screen reader test", /accessibility-audit. Not for design gates (use ui-ux-audit) or render performance (use frontend-audit).'
 ---
 
 # Accessibility Audit Procedure

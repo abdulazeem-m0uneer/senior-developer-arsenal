@@ -1,6 +1,6 @@
 ---
 name: decision-log
-description: 'Decision recording runbook: one numbered log of one-line entries that quote the decider and date, amended entries marked not rewritten, a sweep of every document stating the old rule, and an open-questions list with owners. Use when the user asks to record a decision, apply an owner answer, reverse a recorded rule, or runs /decision-log. Triggers on: "record this decision", "the owner answered", "we decided", "reverse that decision", "/decision-log". Do not use for an architecture choice with trade-offs (use architecture-design-adr) or task board status (use delivery-board-sync).'
+description: 'One numbered decision log: dated one-line entries, amendments marked not rewritten, open questions with owners. Use to record a decision, apply an owner answer, or reverse a recorded rule. Triggers: "record this decision", "the owner answered", "we decided", "reverse that decision", /decision-log. Not for architecture trade-offs (use architecture-design-adr) or board status (use delivery-board-sync).'
 ---
 
 # Decision Log Procedure

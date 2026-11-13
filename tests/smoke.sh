@@ -156,7 +156,7 @@ pass "unsafe install records never delete anything"
 fresh
 ARSENAL_COPY="$WORK/arsenal"
 mkdir -p "$ARSENAL_COPY"
-cp -R "$ROOT/.agents" "$ROOT/dist" "$ROOT/scripts" "$ROOT/install.sh" "$ROOT/AGENTS.md" "$ARSENAL_COPY/"
+cp -R "$ROOT/.agents" "$ROOT/dist" "$ROOT/hooks" "$ROOT/scripts" "$ROOT/install.sh" "$ROOT/AGENTS.md" "$ARSENAL_COPY/"
 mkdir -p "$WORK/proj/.agents"
 ln -s "$ARSENAL_COPY/.agents/skills" "$WORK/proj/.agents/skills"
 copy_files() { find "$ARSENAL_COPY/.agents" -type f | wc -l | tr -d ' '; }
@@ -209,5 +209,46 @@ chmod 600 "$HOME/.cursor/mcp.json"
 "$INSTALL" --target cursor --codegraph > /dev/null 2>&1
 [ -n "$(find "$HOME/.cursor/mcp.json" -perm 600)" ] || fail "MCP config permissions were widened"
 pass "MCP config permissions are preserved"
+
+fresh
+mkdir -p "$HOME/.cursor"
+echo '{"version": 1, "hooks": {"stop": [{"command": "./mine.sh"}]}, "other": 1}' > "$HOME/.cursor/hooks.json"
+"$INSTALL" --global --target cursor,codex > /dev/null 2>&1
+[ ! -e "$HOME/.codex/hooks.json" ] || fail "hooks were registered without --hooks"
+"$INSTALL" --global --target cursor,codex --hooks > "$WORK/out.txt" 2>&1 || { cat "$WORK/out.txt"; fail "--hooks exited non-zero"; }
+python3 - "$HOME" <<'PY' || fail "hook configs are wrong"
+import json, sys
+home = sys.argv[1]
+adapter = f"{home}/.agents/arsenal-hooks/agent_hook.py"
+cursor = json.load(open(f"{home}/.cursor/hooks.json"))
+assert cursor["other"] == 1 and cursor["hooks"]["stop"][0] == {"command": "./mine.sh"}, cursor
+assert adapter in cursor["hooks"]["stop"][1]["command"] and adapter in cursor["hooks"]["sessionStart"][0]["command"], cursor
+codex = json.load(open(f"{home}/.codex/hooks.json"))["hooks"]
+assert adapter in codex["SessionStart"][0]["hooks"][0]["command"] and adapter in codex["Stop"][0]["hooks"][0]["command"], codex
+PY
+ls "$HOME/.cursor"/hooks.json.bak-* > /dev/null 2>&1 || fail "no backup of the existing hook config"
+"$INSTALL" --target cursor,codex --hooks > "$WORK/out.txt" 2>&1
+[ "$(grep -c "unchanged: arsenal hooks" "$WORK/out.txt")" = "2" ] || fail "hook registration is not idempotent"
+echo '{"conversation_id": "smoke", "workspace_roots": ["'"$WORK/proj"'"]}' \
+  | python3 "$HOME/.agents/arsenal-hooks/agent_hook.py" cursor SessionStart > "$WORK/out.txt"
+grep -q '"additional_context": ".*lessons' "$WORK/out.txt" || { cat "$WORK/out.txt"; fail "the installed session-start hook printed no operating core and lessons"; }
+"$INSTALL" --global --target cursor,codex --uninstall > /dev/null 2>&1
+[ ! -e "$HOME/.codex/hooks.json" ] || fail "uninstall left a hook config that held only arsenal hooks"
+python3 - "$HOME/.cursor/hooks.json" <<'PY' || fail "uninstall did not restore the user's hook config"
+import json, sys
+assert json.load(open(sys.argv[1])) == {"version": 1, "hooks": {"stop": [{"command": "./mine.sh"}]}, "other": 1}
+PY
+pass "--hooks merges into existing hook configs, runs, and uninstall removes only the arsenal hooks"
+
+fresh
+mkdir -p "$HOME/.cursor"
+echo '{ not json' > "$HOME/.cursor/hooks.json"
+"$INSTALL" --global --target cursor > /dev/null 2>&1
+if "$INSTALL" --target cursor --hooks > /dev/null 2>&1; then fail "invalid hook config did not fail the run"; fi
+[ "$(cat "$HOME/.cursor/hooks.json")" = '{ not json' ] || fail "invalid hook config was overwritten"
+"$INSTALL" --target antigravity --hooks > "$WORK/out.txt" 2>&1
+grep -q "Skipped hooks" "$WORK/out.txt" || fail "hooks were registered for a target whose hook scripts are not installed"
+[ ! -e "$HOME/.gemini/config/hooks.json" ] || fail "a hook config pointing at missing scripts was written"
+pass "an unparseable hook config is left untouched, and hooks are not registered without their scripts"
 
 echo "all $PASSED smoke tests passed"

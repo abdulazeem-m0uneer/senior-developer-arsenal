@@ -1,6 +1,6 @@
 ---
 name: autonomous-run
-description: 'Rules for a long unattended agent run (overnight, away period): scoped written authority that expires, a token budget measured by a bundled script, work in plan order, proof that the application starts, merging only on green CI plus a clean review, parked blockers, and an end report. Use when the user asks for unattended work, sets a usage budget, or runs /autonomous-run. Triggers on: "work while I am away", "overnight run", "continue without me", "usage budget", "/autonomous-run". Do not use for waiting on one pipeline (use ci-wait) or updating the task board (use delivery-board-sync).'
+description: 'Rules for a long unattended run (overnight, away period): scoped authority, a measured token budget, merge only on green CI. Use when the user asks for unattended work or sets a usage budget. Triggers: "work while I am away", "overnight run", "continue without me", "usage budget", /autonomous-run. Not for waiting on one pipeline (use ci-wait) or the task board (use delivery-board-sync).'
 ---
 
 # Autonomous Run Procedure
@@ -29,12 +29,14 @@ Consult: [Authority, Budget & End Report](./references/authority-budget-and-repo
 1. Restate the grant in one block and get a yes before the user leaves: what may be merged and where, what is never done, when it expires.
 2. Never included unless named in that message: production releases, destructive operations (data deletion, history rewrite, infrastructure removal), spending, changes to secrets or access.
 3. The grant ends at its expiry or when the user returns, whichever is first; afterwards ask again. Silence widens nothing: where the grant does not cover an action, park it.
+4. Claude Code plugin only: a hook refuses the common destructive shell commands (force push, `git reset --hard`, `rm -rf` on a root or repository path, `DROP TABLE` through a database client and the like) whenever no human approves each call. A refusal is final: park the action, never rephrase the command to get past it. Everything else in this step is a rule the agent keeps, not a mechanism.
 
 ### Step 2: Set the Window and the Budget
 1. Record the time window (start, end, time zone) and begin winding down an hour before the end.
 2. Record the budget as a share of the allowance (for example one fifth of a weekly quota per working day) and wind down at about 85% of the share.
 3. Measure with this skill's `scripts/usage_report.py`, which sums token usage from session transcripts in JSON-lines form. Resolve the script path relative to the directory that contains this file. It needs Python 3.9+ and no packages.
 4. Run it before each large piece of work and in the end report; do not estimate usage from memory.
+5. Claude Code plugin only: write the hard limits to `.claude/arsenal-run-limits.json` in the project before the user leaves, for example `{"max_tool_calls": 600, "max_minutes": 480, "deadline": "2025-03-05T02:00:00+00:00"}`, and show it in the authority block. Once a limit is reached a hook denies every further tool call except writing a `.md` file. Set them above the wind-down point: they are the hard stop, not the plan. See the reference, section 4, for what is enforced and what is not.
 
 ### Step 3: Prove the Application Starts
 1. Before changing anything: start every process the application has (server, worker, scheduler), apply migrations, and confirm the health endpoint answers with no errors in the logs. A broken baseline is the first item of the run.
@@ -53,8 +55,9 @@ Consult: [Authority, Budget & End Report](./references/authority-budget-and-repo
 4. Append every merge to a running list as it happens: item, pull request, commit, time.
 
 ### Step 6: Wind Down and Report
-1. At the threshold or the end of the window: start nothing new, finish and merge what is in flight, or leave it as a labelled open pull request.
+1. At the threshold or the end of the window: start nothing new, finish and merge what is in flight, or leave it as a labelled open pull request. Nothing in the repository watches the clock or the usage for this: the agent checks both itself before each item.
 2. Run the start-up proof, update the task board, then write the end report: done with evidence, parked with questions, usage against the budget.
+3. If a hook says a run limit is reached, stop at once: write the handoff or end report as a `.md` file (still allowed), say what was left unverified, and end the turn. Do not edit or delete the limits file; only the user lifts it. The user deletes the file after the run, because a file left behind with a past deadline stops the next session too.
 
 ---
 
@@ -74,6 +77,7 @@ gh pr merge <number> --rebase --match-head-commit <reviewed-sha>   # refuses if 
 | Merge | Merged on green CI of an earlier commit | Unreviewed code on the default branch | `[Security]` | Revert or review the delta; pin merges to the reviewed hash |
 | Budget | Run stopped mid-review when the quota ran out | Half-done work, no report | `[Blocker]` | Measure before each large task; wind down at 85% |
 | Start-up | All checks green, the worker crashes on boot | The user returns to a dead application | `[Blocker]` | Start every process at the start and the end |
+| Limits | No limits file, or limits set at the planned end instead of above it | Nothing stops a runaway run, or the hard stop lands before the report is due | `[Arch]` | Write the file at the start; wind down by the budget, keep the limits as the backstop |
 
 ---
 

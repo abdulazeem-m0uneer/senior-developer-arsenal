@@ -1,6 +1,6 @@
 ---
 name: requirements-grilling
-description: 'Pre-build interrogation: a question tree with a recommended answer per question, the agent fetching facts itself and asking the user only for decisions, a written design brief with the agent calls marked, and a hard gate that nothing is built until the brief is approved. Use when a request is non-trivial and under-specified, before any plan or code, or /requirements-grilling. Triggers on: "grill me", "stress-test this plan", "before you build", "what do you need from me". Not for clear one-line tasks (do them), ADRs (use architecture-design-adr), or third-party questions (use docs-writer).'
+description: 'Pre-build interrogation: a question tree with recommended answers, a written brief, nothing built until it is approved. Use when a request is non-trivial and under-specified, before any plan or code. Triggers: "grill me", "stress-test this plan", "before you build", "what do you need from me", /requirements-grilling. Not for clear one-line tasks (do them) or ADRs (use architecture-design-adr).'
 ---
 
 # Requirements Grilling Procedure
@@ -54,8 +54,8 @@ Consult: [Question Ladder & Design Brief](./references/question-ladder-and-brief
 
 | Area | Finding | Risk | Severity | Fix |
 | :--- | :--- | :--- | :---: | :--- |
-| Frontier | Round asks a question whose answer depends on another open question | Both answers guessed; tree built on sand | `[Architecture]` | Move it to the next round |
-| Facts | User asked for a value that `grep` or the manifest answers | Wasted turn; user distrusts the process | `[Suggestion]` | Look it up, ask only decisions |
+| Frontier | Round asks a question whose answer depends on another open question | Both answers guessed; tree built on sand | `[Arch]` | Move it to the next round |
+| Facts | User asked for a value that `grep` or the manifest answers | Wasted turn; user distrusts the process | `[Nit]` | Look it up, ask only decisions |
 | Playback | A default the user never heard is in the brief as theirs | A choice they could not reject carries their authority | `[Blocker]` | Mark as agent's call; list it in the handover |
 | Gate | Scaffold created after `sounds good` to an idea, before the brief | Approval covered what was shown, not what was written | `[Blocker]` | Stop; get approval of the written brief |
 
@@ -66,5 +66,7 @@ Consult: [Question Ladder & Design Brief](./references/question-ladder-and-brief
 - **One Question per Branch**: Collapse synonyms; never read the ground-to-cover list out as questions.
 - **Playback, Not Transcript**: Describe the understood part once; never restate the whole conversation.
 - **Brief by Pointer**: Hand the builder-check subagent the brief path, never the chat history.
+
+**Next**: once the user approves the written brief, hand it to `implementation-plan`.
 
 Adapted from obra/superpowers (MIT) and mattpocock/skills (MIT).

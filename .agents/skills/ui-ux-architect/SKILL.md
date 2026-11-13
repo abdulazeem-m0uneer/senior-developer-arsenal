@@ -1,6 +1,6 @@
 ---
 name: ui-ux-architect
-description: 'Senior UI/UX and design system architecture skill. Implements DTCG tokens, state-complete components, WCAG 2.2 AA accessibility, and production design systems. Use when the user asks to design UI components, create design tokens, or structure a design system. Triggers on: "design component", "create tokens", "DTCG tokens", "design system". Do not use for automated slop auditing (use ui-ux-audit) or client re-render profiling (use frontend-audit).'
+description: 'UI/UX and design system architecture: DTCG tokens, state-complete components, WCAG 2.2 AA. Use to design UI components, create design tokens or structure a design system. Triggers: "design component", "create tokens", "DTCG tokens", "design system". Not for auditing existing UI (use ui-ux-audit) or re-render profiling (use frontend-audit).'
 ---
 
 # UI/UX & Design System Architecture Skill

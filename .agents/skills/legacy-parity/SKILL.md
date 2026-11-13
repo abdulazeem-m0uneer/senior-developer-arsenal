@@ -1,6 +1,6 @@
 ---
 name: legacy-parity
-description: 'Runbook for rebuilding a legacy system while keeping its behaviour, and a frozen interface, the same: answer what the legacy does from source with file and line, pin it with characterisation tests, rebuild cleanly, audit differences as a table, and sync with the moving legacy branch. Use when the user asks what the legacy does, to check parity, or runs /legacy-parity. Triggers on: "what does the legacy do", "parity check", "same as legacy", "legacy sync", "/legacy-parity". Do not use for judging a design on its merits (use ui-ux-audit) or moving data (use database-migration).'
+description: 'Rebuild a legacy system while keeping its behaviour: answer what the legacy does from source, pin it with tests, audit differences. Use when asked what the legacy does or to check parity. Triggers: "what does the legacy do", "parity check", "same as legacy", "legacy sync", /legacy-parity. Not for changing untested code in place (use refactor-legacy) or moving data (use database-migration).'
 ---
 
 # Legacy Parity Procedure

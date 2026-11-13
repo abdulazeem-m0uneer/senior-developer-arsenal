@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "command": "python3 \"{{ARSENAL_HOOKS}}/agent_hook.py\" cursor SessionStart || python \"{{ARSENAL_HOOKS}}/agent_hook.py\" cursor SessionStart",
+        "timeout": 30
+      }
+    ],
+    "stop": [
+      {
+        "command": "python3 \"{{ARSENAL_HOOKS}}/agent_hook.py\" cursor Stop || python \"{{ARSENAL_HOOKS}}/agent_hook.py\" cursor Stop",
+        "timeout": 15
+      }
+    ]
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "senior-developer-arsenal": {
+    "SessionStart": [
+      {
+        "type": "command",
+        "command": "python3 \"{{ARSENAL_HOOKS}}/agent_hook.py\" antigravity SessionStart || python \"{{ARSENAL_HOOKS}}/agent_hook.py\" antigravity SessionStart",
+        "timeout": 30
+      }
+    ],
+    "Stop": [
+      {
+        "type": "command",
+        "command": "python3 \"{{ARSENAL_HOOKS}}/agent_hook.py\" antigravity Stop || python \"{{ARSENAL_HOOKS}}/agent_hook.py\" antigravity Stop",
+        "timeout": 15
+      }
+    ]
+  }
+}

@@ -1,6 +1,6 @@
 ---
 name: handoff
-description: 'Session handoff runbook: compact the current conversation into one short document a fresh agent reads instead of the history, with state, blockers, open hypotheses, files touched, pointers to existing artifacts, and the skills the next session should activate. Use before context fills, at the end of a long task, when switching agents or machines, or when the user runs /handoff. Triggers on: "handoff", "hand off", "continue in a new session", "context is full", "write a summary for the next agent", "/handoff". Do not use for a decision record (use decision-log) or a postmortem (use incident-response).'
+description: 'Compact the conversation into one short document a fresh agent reads instead of the history. Use before context fills, at the end of a long task, or when switching agents or machines. Triggers: "handoff", "hand off", "continue in a new session", "context is full", "summary for the next agent", /handoff. Not for a decision record (use decision-log) or a postmortem (use incident-response).'
 ---
 
 # Session Handoff Procedure
@@ -41,7 +41,7 @@ Consult: [Handoff Template](./references/handoff-template.md)
 4. Redact secrets, tokens, credentials, personal data.
 
 ### Step 4: Hand Over
-1. The plugin also saves a git snapshot automatically before every compaction and re-injects it after (`scripts/snapshot.py`); it is not a handoff document, only the work state.
+1. The plugin also saves a snapshot automatically before every compaction and re-injects it after (`scripts/snapshot.py`): the first user prompt, the last three, the open todos, pointers to plan ledgers and handoff documents on disk, and the git state. It is not a handoff document: it holds no decisions, blockers or hypotheses, and its todo list is best effort (read from the session transcript, whose format may change).
 2. Report the path and a one-line summary. Do not paste the document into chat.
 3. Tell the user the next session's first message: `Read <path> and continue.`
 

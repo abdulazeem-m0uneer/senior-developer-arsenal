@@ -32,7 +32,7 @@ Session names are fixed. Every session runs in the same permission mode. Remove 
 
 ## Messages
 
-- **Bus:** `<workspace>/.agents/bus`. Send with `send.sh <to> <from> "<line>"`, then the live message. On every start run `read.sh <me>` first.
+- **Bus:** `<workspace>/.agents/bus`. Send with `send.sh <to> <from> "<line>"`, then the live message. On every start run `read.sh <me>` first, then `read.sh <me> --ack <line>` once the lines are acted on.
 - **Lane to coordinator:** `started|paused|merged|released|deployed|verified|blocked <ticket> <evidence>`; `Q: <question> | type: business or lead | context | blocks | working rule meanwhile`.
 - **Questions:** only the coordinator creates question tickets. Business questions go to `<business owner>` in `<business status>`; lead questions go to `<lead>` in `<blocked status>`. Questions a lane can settle by best practice are decided there and recorded. Never re-ask a question that has an answer.
 - **Session registry:** on every start each session writes its own session id under its name in `.agents/pm/lanes.json`.

@@ -1,6 +1,6 @@
 ---
 name: mcp-server
-description: 'Builds a tool server that lets agents call an outside API or service through well-named, schema-validated, paginated, annotated tools, then proves it with read-only evaluation questions an agent must answer through the tools alone. Use when the user asks to expose a service, database, or internal API to agents as tools, or runs /mcp-server. Triggers on: "build an MCP server", "expose this API to agents", "write tools for the agent", "tool server", "/mcp-server". Do not use for wrapping a provider inside the application (use provider-sdk) or designing the HTTP API of the application itself (use api-design).'
+description: 'Build an MCP tool server that lets agents call an outside API or service. Use to expose a service, database or internal API to agents as tools. Triggers: "build an MCP server", "expose this API to agents", "write tools for the agent", "tool server", /mcp-server. Not for wrapping a provider inside the application (use provider-sdk) or its own HTTP API (use api-design).'
 ---
 
 # Agent Tool Server Procedure

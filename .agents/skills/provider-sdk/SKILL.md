@@ -1,6 +1,6 @@
 ---
 name: provider-sdk
-description: 'Integrates an outside provider (payments, SMS, maps, identity) as one package with the same calls in a mock mode and a live mode chosen by configuration: fixed file layout, one contract test through both modes, documented mock differences, the mock refused in production, hardened live calls. Use when the user asks to add, wrap, mock, or test a third-party API, or runs /provider-sdk. Triggers on: "integrate a provider", "third-party client", "mock the provider", "webhook signature", "/provider-sdk". Do not use for designing your API (use api-design) or ledger rules (use payments-integrity).'
+description: 'Integrate an outside provider (payments, SMS, maps, identity) as one package with a mock mode and a live mode behind the same calls. Use to add, wrap, mock or test a third-party API. Triggers: "integrate a provider", "third-party client", "mock the provider", "webhook signature", /provider-sdk. Not for designing your own API (use api-design) or ledger rules (use payments-integrity).'
 ---
 
 # Provider SDK Integration Procedure

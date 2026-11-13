@@ -1,6 +1,7 @@
 ---
 trigger: model_decision
 description: 'Apply when a change spans API contracts and client code (type synthesis, optimistic mutations, streaming).'
+globs: '**/openapi*.json,**/openapi*.yaml,**/openapi*.yml,**/swagger*.json,**/*.graphql,**/*.proto,**/api/**,**/*.dto.ts,**/*Dto.cs,**/*Controller.cs,**/*.controller.ts,**/*.service.ts,**/*client*.ts'
 ---
 
 # Fullstack Architecture & Integration Standards

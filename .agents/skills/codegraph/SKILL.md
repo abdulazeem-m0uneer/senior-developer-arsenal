@@ -1,6 +1,6 @@
 ---
 name: codegraph
-description: 'Fast AST-based structural code intelligence via CodeGraph MCP. Replaces expensive file reading, broad greps, and blind codebase exploration with precise symbol lookups, call paths, caller/callee trees, and blast radius impact analysis. Use when the user asks who calls a symbol, how a flow works, or what a change would break, or runs /codegraph. Triggers on: "codegraph", "code graph", "find callers", "find callees", "blast radius", "symbol definition", "who calls", "call hierarchy", "/codegraph". Do not use for non-code config files or when no CodeGraph MCP server is connected.'
+description: 'AST code intelligence through the CodeGraph MCP: symbols, call paths, callers, blast radius, instead of broad greps. Use when asked who calls a symbol, how a flow works, or what a change would break. Triggers: "codegraph", "find callers", "find callees", "blast radius", "who calls", "call hierarchy", /codegraph. Not for non-code config files or when no CodeGraph MCP server is connected.'
 ---
 
 # CodeGraph Structural Navigation Procedure

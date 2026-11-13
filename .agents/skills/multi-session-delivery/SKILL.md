@@ -1,6 +1,6 @@
 ---
 name: multi-session-delivery
-description: 'Operating model for several long-running agent sessions on one product: a coordinator that writes no code and owns plan, tracker, and reports, plus build lanes with owned modules, a priority queue, contract first, one agent per story, an append-only message bus, a guarded merge script, and a mistake ledger. Use for two or more apps or repos, a backend too big for one session, an often-away lead, or /multi-session-delivery. Triggers on: "PM session", "coordinator session", "lanes", "session bus". Not for git collisions in one checkout (use parallel-sessions) or one unattended run (use autonomous-run).'
+description: 'Operating model for several long-running agent sessions on one product: a coordinator that writes no code plus build lanes and a message bus. Use for two or more apps or repos, or work too big for one session. Triggers: "PM session", "coordinator session", "lanes", "session bus", /multi-session-delivery. Not for collisions in one checkout (use parallel-sessions) or one unattended run (use autonomous-run).'
 ---
 
 # Multi-Session Delivery Procedure
@@ -47,7 +47,7 @@ Consult: [Operating Model Template](./templates/OPERATING-MODEL.md)
 ### Step 4: Messages Between Sessions
 Consult: [Session Bus](./templates/bus/README.md)
 1. Every message is written to the receiver's inbox on the file bus first (`send.sh <to> <from> "<line>"`), then sent as a live message. The bus survives restarts; live messages do not.
-2. On every start a session reads its inbox (`read.sh <me>`) before any work. Once a week the coordinator runs `archive.sh`, which moves old lines that were already read and shifts the read mark under the bus lock; never trim an inbox by hand.
+2. On every start a session reads its inbox (`read.sh <me>`) before any work, acts on each line, then acknowledges (`read.sh <me> --ack <line>`, printed by the read); unacknowledged lines are shown again. Once a week the coordinator runs `archive.sh`, which moves old lines that were already acknowledged and shifts the read mark under the bus lock; never trim an inbox by hand.
 3. Lane to coordinator, one line per event: `started|paused|merged|released|deployed|verified|blocked <ticket> <evidence>`. `verified` names the release it was checked on.
 4. Questions: `Q: <question> | type: business or lead | context | blocks | working rule meanwhile`. Only the coordinator files question tickets and relays answers. Technical questions a lane can settle by best practice are decided and recorded there, never asked.
 5. Lane to lane (two backend lanes): ask the owner lane for a migration slot and wait; announce any change to a shared file with the reason; one owner per story, handovers one way at a time; on a collision both lanes pause, tell the coordinator, and the owner lane decides (the lead decides if they disagree).
@@ -76,9 +76,10 @@ Consult: [Routines & Timers](./references/routines.md)
 
 ```bash
 bash .agents/bus/send.sh backend pm "started T-1 smoke"      # prints: ok inbox-backend
-bash .agents/bus/read.sh backend                             # shows the line once, then "(no unread messages)"
-bash .agents/bus/archive.sh 7                                # archives only old lines already read
-python3 <skill>/scripts/merge_green.py <merged-pr-number>    # dry run, no --yes: refused: ... is MERGED (exit 1)
+bash .agents/bus/read.sh backend                             # shows the line and the ack command, every time until acknowledged
+bash .agents/bus/read.sh backend --ack 1                     # prints: ok read-mark-backend 1; the next read: "(no unread messages)"
+bash .agents/bus/archive.sh 7                                # archives only old lines already acknowledged
+python3 <skill>/scripts/merge_green.py <merged-pr-number>    # dry run, no --yes: refused: ... is MERGED (exit 1); exit 4: gh hung, see --gh-timeout
 systemctl --user list-timers                                 # each routine's next run equals its required time
 ```
 

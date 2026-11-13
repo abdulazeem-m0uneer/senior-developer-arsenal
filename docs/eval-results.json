@@ -1,0 +1,586 @@
+{
+  "runs": [
+    {
+      "label": "smoke",
+      "note": "Smoke run that proves the pipeline end to end: one case, one run per arm. It is too small to compare the arms. The eval shell could not start on the recording machine (the kernel restricts nested user namespaces), so no run could execute its tests and `tests-run` fails in both arms; the outcome checks ran the tests afterwards.",
+      "recorded": "2026-11-13",
+      "claude_version": "2.1.321",
+      "arsenal_version": "1.3.1",
+      "model": "haiku",
+      "judge_model": "haiku",
+      "runs_per_arm": 1,
+      "cost_usd": 0.012194780000000002,
+      "partial": false,
+      "cases": {
+        "task-bugfix": {
+          "with": [
+            {
+              "score": 0.6666666666666666,
+              "cost_usd": 0.007897890000000001,
+              "judge_cost_usd": 0.0002909,
+              "turns": 10,
+              "duration_seconds": 26,
+              "error": null,
+              "tokens": {
+                "input_tokens": 10,
+                "cache_creation_input_tokens": 24515,
+                "cache_read_input_tokens": 128499,
+                "output_tokens": 2836
+              },
+              "graders": {
+                "any-skill-fired": {
+                  "passed": true,
+                  "scored": false
+                },
+                "fix-correct": {
+                  "passed": true,
+                  "scored": true
+                },
+                "regression-test": {
+                  "passed": true,
+                  "scored": true
+                },
+                "tests-run": {
+                  "passed": false,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass",
+                "regression-test-red-then-green": "pass"
+              }
+            }
+          ],
+          "without": [
+            {
+              "score": 0.3333333333333333,
+              "cost_usd": 0.00429689,
+              "judge_cost_usd": 0.00023619999999999994,
+              "turns": 7,
+              "duration_seconds": 20,
+              "error": null,
+              "tokens": {
+                "input_tokens": 14,
+                "cache_creation_input_tokens": 10876,
+                "cache_read_input_tokens": 117259,
+                "output_tokens": 1423
+              },
+              "graders": {
+                "fix-correct": {
+                  "passed": true,
+                  "scored": true
+                },
+                "regression-test": {
+                  "passed": false,
+                  "scored": true
+                },
+                "tests-run": {
+                  "passed": false,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass",
+                "regression-test-red-then-green": "fail"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "label": "pilot",
+      "note": "Grader calibration pilot of the six `hard` cases after the outcome checks were added: one run per arm, so no row is evidence of a difference between the arms. The eval shell could not start on the recording machine either, so `tests-run` here only shows that a test command was issued; `inconclusive` means the run's tests need pytest, which was not installed where the outcome checks ran.",
+      "recorded": "2026-11-13",
+      "claude_version": "2.1.321",
+      "arsenal_version": "1.3.1",
+      "model": "haiku",
+      "judge_model": "haiku",
+      "runs_per_arm": 1,
+      "cost_usd": 0.11329998999999999,
+      "partial": false,
+      "cases": {
+        "task-cross-module-bug": {
+          "with": [
+            {
+              "score": 0.5,
+              "cost_usd": 0.0080113,
+              "judge_cost_usd": 0.00027440000000000006,
+              "turns": 10,
+              "duration_seconds": 25,
+              "error": null,
+              "tokens": {
+                "input_tokens": 10,
+                "cache_creation_input_tokens": 25170,
+                "cache_read_input_tokens": 131490,
+                "output_tokens": 2774
+              },
+              "graders": {
+                "any-skill-fired": {
+                  "passed": true,
+                  "scored": false
+                },
+                "regression-test": {
+                  "passed": false,
+                  "scored": true
+                },
+                "root-cause-fixed": {
+                  "passed": true,
+                  "scored": true
+                },
+                "root-cause-named": {
+                  "passed": true,
+                  "scored": true
+                },
+                "tests-run": {
+                  "passed": false,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass",
+                "regression-test-red-then-green": "fail"
+              }
+            }
+          ],
+          "without": [
+            {
+              "score": 0.5,
+              "cost_usd": 0.00391225,
+              "judge_cost_usd": 0.00019170000000000002,
+              "turns": 7,
+              "duration_seconds": 19,
+              "error": null,
+              "tokens": {
+                "input_tokens": 10,
+                "cache_creation_input_tokens": 11027,
+                "cache_read_input_tokens": 80865,
+                "output_tokens": 1411
+              },
+              "graders": {
+                "regression-test": {
+                  "passed": false,
+                  "scored": true
+                },
+                "root-cause-fixed": {
+                  "passed": true,
+                  "scored": true
+                },
+                "root-cause-named": {
+                  "passed": true,
+                  "scored": true
+                },
+                "tests-run": {
+                  "passed": false,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass",
+                "regression-test-red-then-green": "fail"
+              }
+            }
+          ]
+        },
+        "task-failing-ci": {
+          "with": [
+            {
+              "score": 1,
+              "cost_usd": 0.00868539,
+              "judge_cost_usd": 0.00016079999999999995,
+              "turns": 12,
+              "duration_seconds": 29,
+              "error": null,
+              "tokens": {
+                "input_tokens": 18,
+                "cache_creation_input_tokens": 24045,
+                "cache_read_input_tokens": 245079,
+                "output_tokens": 2526
+              },
+              "graders": {
+                "any-skill-fired": {
+                  "passed": false,
+                  "scored": false
+                },
+                "code-fixed": {
+                  "passed": true,
+                  "scored": true
+                },
+                "no-skip-markers": {
+                  "passed": true,
+                  "scored": true
+                },
+                "original-assertions-kept": {
+                  "passed": true,
+                  "scored": true
+                },
+                "tests-run": {
+                  "passed": true,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "original-tests-green": "pass"
+              }
+            }
+          ],
+          "without": [
+            {
+              "score": 1,
+              "cost_usd": 0.0046397700000000005,
+              "judge_cost_usd": 0.00014190000000000003,
+              "turns": 10,
+              "duration_seconds": 22,
+              "error": null,
+              "tokens": {
+                "input_tokens": 14,
+                "cache_creation_input_tokens": 11819,
+                "cache_read_input_tokens": 119167,
+                "output_tokens": 1882
+              },
+              "graders": {
+                "code-fixed": {
+                  "passed": true,
+                  "scored": true
+                },
+                "no-skip-markers": {
+                  "passed": true,
+                  "scored": true
+                },
+                "original-assertions-kept": {
+                  "passed": true,
+                  "scored": true
+                },
+                "tests-run": {
+                  "passed": true,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "original-tests-green": "pass"
+              }
+            }
+          ]
+        },
+        "task-feature-fullstack": {
+          "with": [
+            {
+              "score": 1,
+              "cost_usd": 0.013306569999999998,
+              "judge_cost_usd": 0,
+              "turns": 17,
+              "duration_seconds": 47,
+              "error": null,
+              "tokens": {
+                "input_tokens": 18,
+                "cache_creation_input_tokens": 31863,
+                "cache_read_input_tokens": 276367,
+                "output_tokens": 8337
+              },
+              "graders": {
+                "any-skill-fired": {
+                  "passed": true,
+                  "scored": false
+                },
+                "api-changed": {
+                  "passed": true,
+                  "scored": true
+                },
+                "client-changed": {
+                  "passed": true,
+                  "scored": true
+                },
+                "new-migration": {
+                  "passed": true,
+                  "scored": true
+                },
+                "old-migration-untouched": {
+                  "passed": true,
+                  "scored": true
+                },
+                "tests-run": {
+                  "passed": true,
+                  "scored": true
+                },
+                "tests-written": {
+                  "passed": true,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass",
+                "feature-test-red-then-green": "pass"
+              }
+            }
+          ],
+          "without": [
+            {
+              "score": 0.6666666666666666,
+              "cost_usd": 0.007753390000000001,
+              "judge_cost_usd": 0,
+              "turns": 15,
+              "duration_seconds": 34,
+              "error": null,
+              "tokens": {
+                "input_tokens": 16,
+                "cache_creation_input_tokens": 17251,
+                "cache_read_input_tokens": 152409,
+                "output_tokens": 5555
+              },
+              "graders": {
+                "api-changed": {
+                  "passed": true,
+                  "scored": true
+                },
+                "client-changed": {
+                  "passed": true,
+                  "scored": true
+                },
+                "new-migration": {
+                  "passed": true,
+                  "scored": true
+                },
+                "old-migration-untouched": {
+                  "passed": true,
+                  "scored": true
+                },
+                "tests-run": {
+                  "passed": false,
+                  "scored": true
+                },
+                "tests-written": {
+                  "passed": false,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass",
+                "feature-test-red-then-green": "fail"
+              }
+            }
+          ]
+        },
+        "task-feature-multifile": {
+          "with": [
+            {
+              "score": 1,
+              "cost_usd": 0.01444949,
+              "judge_cost_usd": 0.0005517,
+              "turns": 21,
+              "duration_seconds": 59,
+              "error": null,
+              "tokens": {
+                "input_tokens": 20,
+                "cache_creation_input_tokens": 32846,
+                "cache_read_input_tokens": 321759,
+                "output_tokens": 8218
+              },
+              "graders": {
+                "any-skill-fired": {
+                  "passed": true,
+                  "scored": false
+                },
+                "api-wired": {
+                  "passed": true,
+                  "scored": true
+                },
+                "service-correct": {
+                  "passed": true,
+                  "scored": true
+                },
+                "tests-run": {
+                  "passed": true,
+                  "scored": true
+                },
+                "tests-written": {
+                  "passed": true,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass",
+                "feature-test-red-then-green": "inconclusive"
+              }
+            }
+          ],
+          "without": [
+            {
+              "score": 0.5,
+              "cost_usd": 0.0072549500000000005,
+              "judge_cost_usd": 0.0005784,
+              "turns": 15,
+              "duration_seconds": 38,
+              "error": null,
+              "tokens": {
+                "input_tokens": 16,
+                "cache_creation_input_tokens": 14691,
+                "cache_read_input_tokens": 145825,
+                "output_tokens": 4557
+              },
+              "graders": {
+                "api-wired": {
+                  "passed": true,
+                  "scored": true
+                },
+                "service-correct": {
+                  "passed": true,
+                  "scored": true
+                },
+                "tests-run": {
+                  "passed": false,
+                  "scored": true
+                },
+                "tests-written": {
+                  "passed": false,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass",
+                "feature-test-red-then-green": "fail"
+              }
+            }
+          ]
+        },
+        "task-legacy-refactor": {
+          "with": [
+            {
+              "score": 1,
+              "cost_usd": 0.018181169999999997,
+              "judge_cost_usd": 0.00032550000000000027,
+              "turns": 14,
+              "duration_seconds": 81,
+              "error": null,
+              "tokens": {
+                "input_tokens": 22,
+                "cache_creation_input_tokens": 37502,
+                "cache_read_input_tokens": 360807,
+                "output_tokens": 13490
+              },
+              "graders": {
+                "any-skill-fired": {
+                  "passed": true,
+                  "scored": false
+                },
+                "characterization-tests": {
+                  "passed": true,
+                  "scored": true
+                },
+                "decomposed": {
+                  "passed": true,
+                  "scored": true
+                },
+                "readable": {
+                  "passed": true,
+                  "scored": true
+                },
+                "tests-run": {
+                  "passed": true,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass",
+                "characterization-test-green-before-and-after": "pass"
+              }
+            }
+          ],
+          "without": [
+            {
+              "score": 0.5,
+              "cost_usd": 0.00940218,
+              "judge_cost_usd": 0.0005437999999999997,
+              "turns": 10,
+              "duration_seconds": 50,
+              "error": null,
+              "tokens": {
+                "input_tokens": 16,
+                "cache_creation_input_tokens": 16767,
+                "cache_read_input_tokens": 144388,
+                "output_tokens": 8119
+              },
+              "graders": {
+                "characterization-tests": {
+                  "passed": false,
+                  "scored": true
+                },
+                "decomposed": {
+                  "passed": true,
+                  "scored": true
+                },
+                "readable": {
+                  "passed": true,
+                  "scored": true
+                },
+                "tests-run": {
+                  "passed": false,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass",
+                "characterization-test-green-before-and-after": "fail"
+              }
+            }
+          ]
+        },
+        "task-risky-migration": {
+          "with": [
+            {
+              "score": 1,
+              "cost_usd": 0.0105898,
+              "judge_cost_usd": 0.00025469999999999985,
+              "turns": 12,
+              "duration_seconds": 42,
+              "error": null,
+              "tokens": {
+                "input_tokens": 12,
+                "cache_creation_input_tokens": 27806,
+                "cache_read_input_tokens": 160370,
+                "output_tokens": 6338
+              },
+              "graders": {
+                "any-skill-fired": {
+                  "passed": true,
+                  "scored": false
+                },
+                "flags-risk": {
+                  "passed": true,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "first-step-keeps-old-version-working": "pass"
+              }
+            }
+          ],
+          "without": [
+            {
+              "score": 1,
+              "cost_usd": 0.0071137299999999995,
+              "judge_cost_usd": 0.0006058999999999995,
+              "turns": 8,
+              "duration_seconds": 34,
+              "error": null,
+              "tokens": {
+                "input_tokens": 10,
+                "cache_creation_input_tokens": 14694,
+                "cache_read_input_tokens": 81853,
+                "output_tokens": 5499
+              },
+              "graders": {
+                "flags-risk": {
+                  "passed": true,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "first-step-keeps-old-version-working": "pass"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

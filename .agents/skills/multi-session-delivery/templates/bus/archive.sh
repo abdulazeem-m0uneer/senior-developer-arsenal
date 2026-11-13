@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# usage: archive.sh [days=7]   moves inbox lines that are older than <days> AND already read to archive/ and
-# shifts the read mark, under the bus lock. Unread lines always stay. Run by the coordinator once a week.
+# usage: archive.sh [days=7]   moves inbox lines that are older than <days> AND acknowledged to archive/ and
+# shifts the read mark, under the bus lock. Unacknowledged lines always stay. Run by the coordinator once a week.
 set -euo pipefail
 days=${1:-7}
 [[ "$days" =~ ^[0-9]+$ ]] || { echo "usage: $0 [days]" >&2; exit 2; }
@@ -15,7 +15,7 @@ for inbox in "$dir"/inbox-*.md; do
   old=$(awk -v c="$cutoff" '{ if (substr($0, 1, 20) < c) n = NR; else exit } END { print n + 0 }' "$inbox")
   mark="$dir/read-mark-$name.txt"
   last=$(cat "$mark" 2>/dev/null || echo 0); [[ "$last" =~ ^[0-9]+$ ]] || last=0
-  (( old < last )) || old=$last   # never archive a line its reader has not read
+  (( old < last )) || old=$last   # never archive a line its reader has not acknowledged
   (( old > 0 )) || continue
   head -n "$old" "$inbox" >> "$dir/archive/inbox-$name-$(date -u +%Y-%m-%d).md"
   # Mark first: a crash between the two steps repeats lines instead of losing them.

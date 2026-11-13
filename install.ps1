@@ -16,12 +16,15 @@
     -Hindsight         Register the Hindsight memory MCP server.
     -CodeGraph         Register the CodeGraph MCP server.
     -Bank <id>         Hindsight bank id (default: project folder name).
+    -Hooks             Register the session-start and stop hooks (codex, gemini, cursor, copilot,
+                       antigravity; needs Python on PATH; see docs/TARGETS.md, section Hooks).
     -Cli               Install the 'arsenal' command into ~\.local\bin.
 
 .EXAMPLE
     .\install.ps1 -Global -Target all
     .\install.ps1 -Project "C:\repos\my-api" -Target claude,cursor -Symlink
     .\install.ps1 -Global -Target codex -CodeGraph
+    .\install.ps1 -Global -Target codex,cursor -Hooks
 #>
 
 [CmdletBinding(PositionalBinding = $false)]
@@ -37,6 +40,7 @@ param (
     [switch]$Hindsight,
     [switch]$CodeGraph,
     [string]$Bank,
+    [switch]$Hooks,
     [switch]$Cli
 )
 
@@ -102,8 +106,8 @@ $InstallFiles = ($Global -or [bool]$ProjectRoot)
 $Scopes = @()
 if ($Global) { $Scopes += "global" }
 if ($ProjectRoot) { $Scopes += "project" }
-# MCP registration, status and uninstall default to the global scope.
-if ($Scopes.Count -eq 0 -and ($McpMode -or $Status -or $Uninstall)) { $Scopes += "global" }
+# MCP and hook registration, status and uninstall default to the global scope.
+if ($Scopes.Count -eq 0 -and ($McpMode -or $Hooks -or $Status -or $Uninstall)) { $Scopes += "global" }
 
 if ($PSBoundParameters.Count -eq 0) {
     Get-Help $PSCommandPath
@@ -460,6 +464,9 @@ function Uninstall-Item([string]$TargetName, [string]$Scope, [string]$Destinatio
 
 # Removes everything recorded for a target, including items a newer manifest no longer lists.
 function Uninstall-Target([string]$TargetName, [string]$Scope) {
+    foreach ($row in (Get-ManifestRows $TargetName $Scope)) {
+        if ($row.kind -eq "hooks") { Merge-Hooks $Scope $row $true }
+    }
     foreach ($line in (Get-StateLines (Get-StatePath $Scope))) {
         $parts = $line -split "`t", 2
         if ($parts[0] -eq $TargetName) { Uninstall-Item $TargetName $Scope $parts[1] }
@@ -544,6 +551,29 @@ function Register-Mcp([string]$Scope, $Row) {
     }
 }
 
+# Merges the arsenal hook entries into the agent's hook config, or removes them, through scripts/hooks_merge.py.
+function Merge-Hooks([string]$Scope, $Row, [bool]$Remove) {
+    $base = Get-ScopeBase $Scope
+    $path = Join-Path $base $Row.destination
+    $directory = (Join-Path $base $Row.extra) -replace "\\", "/"
+    if ($Remove) {
+        if (-not (Test-Path -LiteralPath $path)) { return }
+    } elseif (-not $DryRun -and -not (Test-Path -LiteralPath (Join-Path $directory "agent_hook.py"))) {
+        Write-Skip "Skipped hooks in $path ($directory/agent_hook.py is not installed; run the installer for this scope and target first)."
+        return
+    }
+    $python = @("python3", "python") | Where-Object { Get-Command $_ -ErrorAction SilentlyContinue } | Select-Object -First 1
+    if (-not $python) { Stop-Install "Python is required to update $path." }
+    $entry = Join-Path $ArsenalRoot $Row.source
+    if (-not (Test-Path -LiteralPath $entry)) { Stop-Install "Missing source '$($Row.source)'. Run: python3 scripts/build.py" }
+    $arguments = @((Join-Path (Join-Path $ArsenalRoot "scripts") "hooks_merge.py"), "--file", $path, "--entry", $entry,
+        "--set", "ARSENAL_HOOKS=$directory")
+    if ($Remove) { $arguments += "--remove" }
+    if ($DryRun) { $arguments += "--dry-run" }
+    & $python @arguments
+    if ($LASTEXITCODE -ne 0) { $script:Failed = $true }
+}
+
 function Show-Status([string]$TargetName, [string]$Scope) {
     $base = Get-ScopeBase $Scope
     $present = 0
@@ -566,6 +596,7 @@ function Invoke-Target([string]$TargetName, [string]$Scope) {
             "block" { if ($InstallFiles) { Install-Block $TargetName $Scope $row.source $row.destination } }
             { $_ -in "mcp", "mcp-if-exists" } { if (Test-ServerEnabled $row.name) { Register-Mcp $Scope $row } }
             "mcp-note" { if (Test-ServerEnabled $row.name) { Write-Host "  note: $($row.extra)" -ForegroundColor Cyan } }
+            "hooks" { if ($Hooks) { Merge-Hooks $Scope $row $false } }
             "note" { if ($InstallFiles) { Write-Host "  note: $($row.extra)" -ForegroundColor Cyan } }
             default { Stop-Install "Unknown manifest row kind '$($row.kind)'. Update install.ps1 to match scripts/build.py." }
         }
@@ -605,8 +636,8 @@ if ($Cli) { Install-Cli }
 
 Write-Host ""
 if ($Uninstall) {
-    Write-Host "[DONE] Removed $($script:Removed) item(s). MCP server entries are left in place." -ForegroundColor Green
+    Write-Host "[DONE] Removed $($script:Removed) item(s) and the arsenal hook entries. MCP server entries are left in place." -ForegroundColor Green
 } else {
     Write-Host "[DONE] Installed $($script:Installed), already current $($script:Unchanged), skipped $($script:Skipped)." -ForegroundColor Green
 }
-if ($script:Failed) { Stop-Install "One or more MCP configurations could not be updated (see messages above)." }
+if ($script:Failed) { Stop-Install "One or more MCP or hook configurations could not be updated (see messages above)." }

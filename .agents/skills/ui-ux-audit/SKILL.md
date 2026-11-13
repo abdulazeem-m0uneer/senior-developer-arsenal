@@ -1,6 +1,6 @@
 ---
 name: ui-ux-audit
-description: 'Senior UI/UX and design audit workflow. Evaluates screens and components against 10 anti-slop gates, DTCG token compliance, state completeness, and WCAG 2.2 AA. Use when the user asks to audit UI, check anti-slop gates, verify contrast/touch targets, or runs /ui-ux-audit. Triggers on: "ui audit", "ux audit", "anti-slop audit", "audit contrast", "/ui-ux-audit". Do not use for frontend client re-render profiling (use frontend-audit) or backend profiling (use perf-audit).'
+description: 'UI/UX audit of screens and components against anti-slop gates, DTCG tokens, state completeness and contrast. Use to audit UI, check anti-slop gates, or verify contrast and touch targets. Triggers: "ui audit", "ux audit", "anti-slop audit", "audit contrast", /ui-ux-audit. Not for a full WCAG audit of a running page (use accessibility-audit) or re-render profiling (use frontend-audit).'
 ---
 
 # UI/UX & Design Audit Workflow Skill

@@ -1,0 +1,33 @@
+{
+  "SessionStart": [
+    {
+      "script": "session_core.py",
+      "args": [],
+      "timeout": 10
+    },
+    {
+      "script": "../skills/lessons-learned/scripts/lessons.py",
+      "args": [
+        "active",
+        "--hook"
+      ],
+      "timeout": 10
+    },
+    {
+      "script": "guard.py",
+      "args": [
+        "baseline"
+      ],
+      "timeout": 10
+    }
+  ],
+  "Stop": [
+    {
+      "script": "guard.py",
+      "args": [
+        "stop"
+      ],
+      "timeout": 15
+    }
+  ]
+}

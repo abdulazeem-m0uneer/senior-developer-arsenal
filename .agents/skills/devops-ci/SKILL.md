@@ -1,6 +1,6 @@
 ---
 name: devops-ci
-description: 'CI/CD and containerisation runbook: Dockerfile hardening and multi-stage builds, GitHub Actions pipelines, caching, secrets handling, deploy strategies (blue/green, canary), rollback, health checks, and 12-factor configuration. Use when the user asks to write or harden a Dockerfile, build or speed up a CI pipeline, plan a deployment or rollback, or fix a failing workflow. Triggers on: "Dockerfile", "GitHub Actions", "CI pipeline", "deploy strategy", "rollback", "/devops-ci". Do not use for version bumps and release notes (use git-release) or application latency profiling (use perf-audit).'
+description: 'CI/CD and containers. Use to write or harden a Dockerfile, build or speed up a pipeline, plan a deployment, or fix a failing workflow. Triggers: "Dockerfile", "GitHub Actions", "CI pipeline", "deploy strategy", "rollback", /devops-ci. Not for version bumps and release notes (use git-release) or latency profiling (use perf-audit).'
 ---
 
 # DevOps, CI/CD & Containerisation Procedure

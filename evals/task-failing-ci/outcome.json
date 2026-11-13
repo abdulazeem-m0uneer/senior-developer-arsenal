@@ -1,0 +1,5 @@
+{
+  "checks": [
+    {"name": "original-tests-green", "kind": "original_tests", "paths": ["tests/test_paging.py"]}
+  ]
+}

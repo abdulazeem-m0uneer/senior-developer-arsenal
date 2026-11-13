@@ -1,7 +1,7 @@
 ---
 name: "risk-manager"
 description: "Checks a coordinator's outward actions (sent reports, tracker changes, instructions to other agents) against their sources, watches risk to a dated milestone, and finds the biggest delay between code and staging, as RISK and SPEED lines. Read-only."
-model: inherit
+model: sonnet
 disallowedTools: Write, Edit, NotebookEdit
 ---
 

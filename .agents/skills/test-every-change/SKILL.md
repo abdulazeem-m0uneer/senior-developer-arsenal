@@ -1,6 +1,6 @@
 ---
 name: test-every-change
-description: 'Mandatory test authoring for every code change: maps each changed behaviour to required tests: failing regression test before a bug fix, happy path plus error and edge cases for a feature, characterization tests before a refactor, checks for config, infra, and migration changes, then runs the full suite. Use when implementing a feature, fixing a bug, refactoring, or changing any code or config. Triggers on: "add tests for this change", "regression test", "/test-every-change". Do not use for suite design or flaky tests (use test-strategy) or manual test plans (use qa-engineer).'
+description: 'Tests for every code change: regression test before a bug fix, happy, error and edge cases for a feature, characterization tests before a refactor. Use when implementing a feature, fixing a bug, refactoring, or changing any code or config. Triggers: "add tests for this change", "regression test", /test-every-change. Not for suite design or flaky tests (use test-strategy) or manual test plans (use qa-engineer).'
 ---
 
 # Test Every Change Procedure
@@ -47,6 +47,7 @@ Follow [Bootstrap & Exemptions](./references/bootstrap-and-exemptions.md): set u
 2. Run the full suite, not only the new tests. A failure elsewhere is caused by the change until proven otherwise; fix it or report it, never skip or delete the test.
 3. Measure coverage of the changed lines and branches against the base branch, not the global percentage; uncovered changed lines get a test or a written exemption.
 4. Leave no skipped, focused, or todo test behind (`.skip`, `.only`, `[Fact(Skip=...)]`, `@pytest.mark.skip`).
+5. With the Claude Code plugin, a `Stop` hook (`hooks/guard.py`) blocks once when source files changed in the session and no test file did. Answer it with the test, or with the written exemption from Step 4; never by touching a test file to silence it.
 
 ---
 
@@ -73,3 +74,5 @@ Full suite: `<command>` exit `<code>`, `<passed>` passed, `<failed>` failed, `<s
 - **Tests Only**: Output new or changed test functions, never whole files.
 - **Mapping Table, No Narration**: Report the table and the suite result line; omit testing theory.
 - **Failures First**: On a red suite, show only failing test names and the first assertion message.
+
+**Next**: when every mapped test passes, review the change with `code-review` (`deep-review` for a large or high-risk change).
