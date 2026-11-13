@@ -9,6 +9,22 @@
             "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/.agents/skills/lessons-learned/scripts/lessons.py\" active --hook || python \"${CLAUDE_PLUGIN_ROOT}/.agents/skills/lessons-learned/scripts/lessons.py\" active --hook",
             "timeout": 10,
             "statusMessage": "Loading lessons learned..."
+          },
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/.agents/skills/handoff/scripts/snapshot.py\" show || python \"${CLAUDE_PLUGIN_ROOT}/.agents/skills/handoff/scripts/snapshot.py\" show",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/.agents/skills/handoff/scripts/snapshot.py\" write || python \"${CLAUDE_PLUGIN_ROOT}/.agents/skills/handoff/scripts/snapshot.py\" write",
+            "timeout": 10
           }
         ]
       }

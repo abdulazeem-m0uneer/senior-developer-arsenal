@@ -1,6 +1,6 @@
 ---
 name: lessons-learned
-description: 'Mistake-ledger runbook: when the agent errs or is corrected, record the root cause as one line in a project lessons file (mistake, cause, rule, check), deduplicate against existing lessons, load only the capped Active list at session start, and promote repeated mistakes into a test, lint, hook or rule so they stop recurring. Use after a user correction, a confirmed root cause, a failed build or test caused by a wrong assumption, a blocker review finding on the agent''s own change, or when the user runs /lessons-learned. Triggers on: "learn from this", "do not make this mistake again", "record this lesson", "you made this mistake before", "/lessons-learned". Do not use for user preferences or domain facts (use agent-memory), decisions (use decision-log), or incident timelines (use incident-response).'
+description: 'Mistake ledger: when the agent errs or is corrected, record the verified root cause as one line (mistake, cause, rule, check) in a project lessons file, deduplicate, load only the capped Active list at session start, and promote repeats into a test, lint, hook or rule. Use after a user correction, a confirmed root cause, a failure from a wrong assumption, or /lessons-learned. Triggers on: "learn from this", "do not make this mistake again", "record this lesson". Not for preferences or facts (use agent-memory), decisions (use decision-log), or incidents (use incident-response).'
 ---
 
 # Lessons Learned Procedure

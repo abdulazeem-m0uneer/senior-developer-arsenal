@@ -31,6 +31,10 @@ Use the `create-skill` skill to scaffold a new skill. Keep wording agent-neutral
 - `install.sh` and `install.ps1` must stay behaviorally identical; change both and both smoke tests.
 - Installer changes that delete or rewrite user files need a regression test in `tests/smoke.sh` and `tests/smoke.ps1` that proves user data survives.
 
+## Token budgets
+
+Text that loads every session is capped by `build.py --validate`: each skill description at most 700 characters, all descriptions together at most 31,500 (lower it when they shrink), always-on rules together at most 20,000. Put detail in the skill body or `references/`, not the description.
+
 ## Running the tests
 
 ```bash

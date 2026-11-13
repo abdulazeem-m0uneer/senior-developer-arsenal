@@ -29,6 +29,10 @@ NAME_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 BANK_PLACEHOLDER = "{{BANK_ID}}"
 MAX_DESCRIPTION = 1024
 MAX_RULE_CHARS = 12000
+# Token budgets for text that loads in every session (descriptions are always in context).
+MAX_SKILL_DESC_CHARS = 700
+MAX_SKILL_DESC_TOTAL = 31500  # ratchet: lower it when descriptions shrink
+MAX_ALWAYS_ON_RULE_TOTAL = 20000
 MAX_AGENTS_MD_BYTES = 32 * 1024
 MAX_FILE_LINES = 1000
 # Hand-written sources held to the arsenal's own 1000-line file cap.
@@ -138,6 +142,7 @@ def read(path):
 
 def load_skills():
     skills = []
+    desc_total = 0
     for directory in sorted(p for p in (AGENTS / "skills").iterdir() if p.is_dir()):
         skill_file = directory / "SKILL.md"
         rel = skill_file.relative_to(ROOT)
@@ -156,9 +161,14 @@ def load_skills():
             raise SourceError(f"{rel}: name must match {NAME_RE.pattern}")
         if not 1 <= len(description) <= MAX_DESCRIPTION:
             raise SourceError(f"{rel}: description must be 1-{MAX_DESCRIPTION} characters")
+        if len(description) > MAX_SKILL_DESC_CHARS:
+            raise SourceError(f"{rel}: description is {len(description)} chars; budget is {MAX_SKILL_DESC_CHARS} (descriptions load every session, move detail into the body)")
+        desc_total += len(description)
         for markdown in sorted(directory.rglob("*.md")):
             check_links(markdown, directory)
         skills.append(name)
+    if desc_total > MAX_SKILL_DESC_TOTAL:
+        raise SourceError(f"skill descriptions total {desc_total} chars; budget is {MAX_SKILL_DESC_TOTAL}")
     if not skills:
         raise SourceError(".agents/skills: no skills found")
     return skills
@@ -197,6 +207,9 @@ def load_rules():
             "name": rule_file.stem, "trigger": trigger,
             "description": meta["description"], "globs": globs, "body": body,
         })
+    always_on = sum(len(r["body"]) for r in rules if r["trigger"] == "always_on")
+    if always_on > MAX_ALWAYS_ON_RULE_TOTAL:
+        raise SourceError(f"always-on rules total {always_on} chars; budget is {MAX_ALWAYS_ON_RULE_TOTAL}")
     if not rules:
         raise SourceError(".agents/rules: no rules found")
     return rules

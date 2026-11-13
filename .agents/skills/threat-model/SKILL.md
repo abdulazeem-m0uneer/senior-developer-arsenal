@@ -1,6 +1,6 @@
 ---
 name: threat-model
-description: 'Design-time threat modelling runbook: scope the feature, draw a data-flow diagram with trust boundaries, apply STRIDE per element and per boundary crossing, write abuse cases, rate by likelihood x impact, map each mitigation to an implementing skill, record accepted residual risk with an owner, and turn each mitigation into a testable control. Use when the user asks to threat-model a feature, service, or API before or while it is built, or runs /threat-model. Triggers on: "threat model", "STRIDE", "abuse cases", "what could an attacker do to this design", "new trust boundary", "/threat-model". Do not use for finding flaws in existing code (use security-audit), tracing personal data flows (use data-privacy), or recording the architecture choice itself (use architecture-design-adr).'
+description: 'Design-time threat modelling: scope the feature, draw a data-flow diagram with trust boundaries, apply STRIDE, write abuse cases, rate by likelihood x impact, map mitigations to implementing skills, record residual risk with an owner, and turn mitigations into testable controls. Use to threat-model a feature, service, or API before or while building, or /threat-model. Triggers on: "threat model", "STRIDE", "abuse cases", "new trust boundary". Not for flaws in existing code (use security-audit), personal data flows (use data-privacy), or the architecture choice (use architecture-design-adr).'
 ---
 
 # Threat Model Procedure

@@ -1,6 +1,6 @@
 ---
 name: implementation-plan
-description: 'Implementation plan runbook: turns an approved brief into bite-sized tasks for an engineer who has never seen the codebase, each task naming exact files, signatures, test assertions, and verification commands, with a file map, interfaces between tasks, a review-focus list, a self-review for coverage and type drift, then execution either inline or by one fresh implementer and one fresh reviewer per task with a ledger that survives context loss. Use when a brief or spec is approved and work spans more than one sitting or one file, or when the user runs /implementation-plan. Triggers on: "write the plan", "break this down", "implementation plan", "execute the plan", "/implementation-plan". Do not use for requirements discovery (use requirements-grilling), board status (use delivery-board-sync), or an unattended run''s authority and budget (use autonomous-run).'
+description: 'Turns an approved brief into bite-sized tasks for an engineer new to the codebase: exact files, signatures, test assertions, verification commands, a file map, a self-review, then inline execution or one fresh implementer and reviewer per task with a ledger that survives context loss. Use when a brief is approved and work spans more than one sitting or file, or /implementation-plan. Triggers on: "write the plan", "break this down", "implementation plan", "execute the plan". Not for requirements (use requirements-grilling), board status (use delivery-board-sync), or unattended runs (use autonomous-run).'
 ---
 
 # Implementation Plan Procedure
