@@ -56,6 +56,7 @@ Source: `.agents/rules/*.md` with `trigger` (`always_on`, `model_decision`, `glo
 | Agent | Hook shipped | What it does |
 | :--- | :--- | :--- |
 | Claude Code (plugin) | `hooks/hooks.json`: `SessionStart` on `startup\|resume\|clear\|compact` | Runs `lessons.py active --hook` from the `lessons-learned` skill: prints the self-recording instruction and the project's Active lessons. Silent about lessons if `.agents/lessons.md` does not exist. |
+| Claude Code (plugin) | `hooks/hooks.json`: `SessionStart` (same entry, runs first) | Runs `hooks/session_core.py`: injects the static operating core from `hooks/core.md` (about 1,000 characters) so a plugin-only install uses the skills and tests its changes; rules cannot ship in a plugin. |
 | Claude Code (plugin) | `hooks/hooks.json`: `PreCompact`, and `SessionStart` on compact (same entry) | Runs `snapshot.py write` / `show` from the `handoff` skill: saves branch, uncommitted files, recent commits and diff stat to a per-session file in the OS temp dir, re-injects it after compaction. Silent outside git repos and on non-compact starts; never fails the session. |
 | Every other agent, and Claude Code without the plugin | none | Wire it by hand (Claude Code `.claude/settings.json` snippet) or add one line to `AGENTS.md`; see the `lessons-learned` skill reference, section 5. |
 

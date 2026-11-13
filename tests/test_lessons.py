@@ -105,7 +105,7 @@ class LessonsTests(unittest.TestCase):
         config = json.loads((ROOT / "hooks" / "hooks.json").read_text(encoding="utf-8"))
         entries = config["hooks"]["SessionStart"]
         self.assertIn("compact", entries[0]["matcher"])
-        command = entries[0]["hooks"][0]["command"]
+        command = next(h["command"] for h in entries[0]["hooks"] if "lessons.py" in h["command"])
         relative = command.split("${CLAUDE_PLUGIN_ROOT}/")[1].split('"')[0]
         self.assertTrue((ROOT / relative).is_file(), relative)
         self.assertIn("active --hook", command)

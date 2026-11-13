@@ -43,6 +43,8 @@ Text that loads every session is capped by `build.py --validate`: each skill des
 claude plugin eval . --trust-plugin --ablation none --runs 3 --no-publish --max-cost-usd 5
 ```
 
+`task-*` cases give a real task (bug fix, review, vague request, legacy change) and compare the plugin against a no-plugin baseline; they need `--scaffold --allow-tools Write Edit Bash --tag task`, and the Bash grant needs the OS sandbox (`bubblewrap` and `socat` on Linux). Drop `Bash` where the sandbox is missing; the `tests-run` grader then cannot pass.
+
 Run them after changing any skill description, and add a `trigger-<skill>` case with every new skill. Results land in the git-ignored `evals/results/`.
 
 ## Running the tests

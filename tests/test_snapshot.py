@@ -71,5 +71,28 @@ class SnapshotTest(unittest.TestCase):
         self.assertIn("snapshot.py", json.dumps(hooks["SessionStart"]))
 
 
+class SessionCoreTest(unittest.TestCase):
+    def test_core_hook_emits_static_capped_context(self):
+        script = ROOT / "hooks" / "session_core.py"
+        first = subprocess.run([sys.executable, str(script)], capture_output=True, text=True)
+        second = subprocess.run([sys.executable, str(script)], capture_output=True, text=True)
+        self.assertEqual(first.returncode, 0)
+        self.assertEqual(first.stdout, second.stdout)  # static text keeps the prompt cache warm
+        context = json.loads(first.stdout)["hookSpecificOutput"]["additionalContext"]
+        self.assertLessEqual(len(context), 1500)
+        self.assertIn("test-every-change", context)
+
+    def test_core_names_only_real_skills(self):
+        text = (ROOT / "hooks" / "core.md").read_text()
+        for skill in ("investigate", "test-every-change", "refactor-legacy", "code-review",
+                      "requirements-grilling", "definition-of-done"):
+            self.assertIn(skill, text)
+            self.assertTrue((ROOT / ".agents" / "skills" / skill / "SKILL.md").is_file(), skill)
+
+    def test_core_hook_is_wired_first_on_session_start(self):
+        hooks = json.loads((ROOT / "hooks" / "hooks.json").read_text())["hooks"]
+        self.assertIn("session_core.py", hooks["SessionStart"][0]["hooks"][0]["command"])
+
+
 if __name__ == "__main__":
     unittest.main()
