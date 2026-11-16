@@ -25,6 +25,25 @@ _Last change detected: 2026-10-04 (UTC). Checked daily by `.github/workflows/tre
 
 GitHub offers no trending API, so [`scripts/trending_rank.py`](scripts/trending_rank.py) reads the public trending page once a day and rewrites this table only when a rank changes.
 
+## 📊 Real Usage
+
+What the arsenal did in the maintainer's own Claude Code sessions, from the local store of the `usage-stats` skill. Each number states its base; they are counts, not a comparison with sessions without the arsenal (that is what [docs/EVALS.md](docs/EVALS.md) is for).
+
+<!-- BEGIN usage -->
+| Measure | Value |
+| :--- | :--- |
+| Sessions with the arsenal active | 115 (2026-10-04 to 2026-11-16) |
+| Code-changing sessions that also changed tests | 12 of 14 (85.7%) |
+| Missing-test blocks followed by a test | 0 of 1 (0.0%) |
+| Failed checks that later passed | 3 |
+| Destructive commands denied | 5 |
+| Repeat mistakes denied by lesson guards | 0 |
+| Code-changing sessions where a skill fired | 4 of 14 (28.6%) |
+| Lessons recorded / later enforced | 54 / 5 |
+
+_From the maintainer's own sessions, generated 2026-11-16 by `usage_stats.py report --readme`. Counts, not proof of cause._
+<!-- END usage -->
+
 ---
 
 ## 🎯 What This Toolkit Provides
@@ -32,7 +51,7 @@ GitHub offers no trending API, so [`scripts/trending_rank.py`](scripts/trending_
 | Component | Quantity | Purpose |
 | :--- | :---: | :--- |
 | **Rules** | 13 | Enforce senior engineering standards: SOLID, a 1000-line file cap, mandatory tests with every change, minimal-change ladder, plus Python, Node.js, C#, Frontend, UI/UX, Databases, Git, Token Frugality, and Defensive Epistemology. |
-| **Specialized Skills** | 59 | Actionable runbooks following the Agent Skills standard (`SKILL.md` + progressive `references/`) with slash commands and negative triggers. |
+| **Specialized Skills** | 60 | Actionable runbooks following the Agent Skills standard (`SKILL.md` + progressive `references/`) with slash commands and negative triggers. |
 | **Autonomous Subagents** | 18 | Dedicated personas (`code-reviewer`, `code-explorer`, `qa-engineer`, `test-engineer`, `security-auditor`, `devops-engineer`, `epistemic-debugger`, `spec-reviewer`, `infra-reviewer`, `legacy-analyst`, `risk-manager`, and stack specialists). |
 | **Supported Agents** | 8 | Claude Code (plugin), Codex CLI, OpenCode, Cursor, Windsurf, GitHub Copilot, Gemini CLI, Antigravity. |
 | **Installers** | 2 | PowerShell (`install.ps1`) and Bash (`install.sh`) with identical options, non-destructive installs, and clean uninstall. |
@@ -70,7 +89,7 @@ The arsenal operates with strict **Token Frugality & Epistemic Hygiene Guardrail
 senior-developer-arsenal/
 ├── .agents/                     # Single source of truth (edit here only)
 │   ├── rules/                   # 13 rules with trigger/description/globs frontmatter
-│   ├── skills/<name>/           # 59 skills: SKILL.md + references/ (+ scripts/ where bundled)
+│   ├── skills/<name>/           # 60 skills: SKILL.md + references/ (+ scripts/ where bundled)
 │   ├── subagents/               # subagent-definitions.json + prompts/<name>.md
 │   └── mcp/servers.json         # Canonical MCP server definitions (CodeGraph, Hindsight)
 ├── dist/                        # GENERATED per-agent output (do not edit)
@@ -115,7 +134,7 @@ senior-developer-arsenal/
 /plugin install arsenal@senior-developer-arsenal
 ```
 
-Inside the plugin every skill is namespaced: type `/arsenal:code-review`, not `/code-review` (a bare name runs whatever else owns it, or nothing). Subagents appear as `arsenal:<name>`. A plugin cannot ship rules, so add them with the installer: `./install.sh --global --target claude`. The plugin ships hooks (`hooks/hooks.json`). The first injects a 1,000-character operating core (`hooks/core.md`) at session start: use the matching skill before any engineering task, ship a test with every change, smallest change, no "done" without evidence, ask when ambiguous. Without it a plugin-only install never invokes the skills on a plain task (measured with `claude plugin eval`). The second: at session startup, resume, clear and compact it prints the project's `lessons-learned` ledger (the most relevant lessons as one-line rules, at most 2,000 characters; about 110 tokens of instructions when the ledger is empty) so the agent obeys past lessons and records its own mistakes; it prints nothing project-specific until a lesson exists. Three more hooks keep the task and the work state across compaction with no model tokens: `UserPromptSubmit` silently records the first user prompt and the last three, `PreCompact` writes a deterministic snapshot (original request, latest instructions, open todos, pointers to plan ledgers and handoff documents, branch, uncommitted files, last commits, diff stat; at most 4,000 characters), and `SessionStart` on compact shows it. The files live per session in the OS temp dir (never inside the project); the todo list is best effort because it is read from the session transcript. The last group (`hooks/guard.py`) enforces instead of reminding: a `Stop` hook blocks the end of a turn once when source files changed in the session and no test file did, or when a test, build, lint or CI command failed, the same check never passed again in the session, and no lesson was recorded after it (red-first TDD is not interrupted); the model must add the test or the lesson, or say in one sentence why none applies. The same `Stop` hook names dead code this session's changes add or leave behind (commented-out code, debugger leftovers, file-local names defined once, imports orphaned by a removed call; `file:line`, any language, git only, never edits a file): the model removes it or says in one sentence why it stays (`ARSENAL_GUARD_DEADCODE=off` turns off only that check). A `PreToolUse` hook stops destructive shell commands (force push, `git reset --hard`, `git clean -f`, `rm -rf` on a root, home or repository path, `DROP`/`TRUNCATE` through a database client, `terraform destroy` and the like): denied with the safer alternative when no human approves each call (`bypassPermissions`, `dontAsk`, `auto`), asked about otherwise; `ARSENAL_GUARD_DESTRUCTIVE=allow` turns only that off. It also denies a Bash command that repeats a recorded habit mistake (a `pgrep -f` wait loop, a git hook bypass, a `--help` probe of a local script, a secret in a message command), with rules tied to lesson ids and extended in `.agents/lesson-guards.json`; each refusal is logged without the command, and `lessons.py hits` and `lessons.py unguarded --min 2` report which guards fire and which repeats still have none (`ARSENAL_LESSON_GUARDS=off` turns only that off; see the `lessons-learned` skill). The same hook enforces the limits of an unattended run (tool calls, minutes, deadline) when the project holds `.claude/arsenal-run-limits.json`; see the `autonomous-run` skill. A turn with nothing to enforce prints nothing (no context cost), the same files or failures are never asked about twice, and `ARSENAL_GUARD=off` turns all of it off; details and limits are in [docs/TARGETS.md](docs/TARGETS.md#hooks). The installer can register only the session-start and stop gate for Codex, Gemini CLI, Cursor, Copilot and Antigravity with `--hooks` (`-Hooks` on Windows); none of those was run inside its tool, see the table in [docs/TARGETS.md](docs/TARGETS.md#hooks-for-the-other-agents---hooks). For any other route see `.agents/skills/lessons-learned/references/lesson-format-and-promotion.md` §5 to wire it by hand. Optional MCP servers: `/plugin install arsenal-codegraph@senior-developer-arsenal` and `/plugin install arsenal-hindsight@senior-developer-arsenal`.
+Inside the plugin every skill is namespaced: type `/arsenal:code-review`, not `/code-review` (a bare name runs whatever else owns it, or nothing). Subagents appear as `arsenal:<name>`. A plugin cannot ship rules, so add them with the installer: `./install.sh --global --target claude`. The plugin ships hooks (`hooks/hooks.json`). The first injects a 1,000-character operating core (`hooks/core.md`) at session start: use the matching skill before any engineering task, ship a test with every change, smallest change, no "done" without evidence, ask when ambiguous. Without it a plugin-only install never invokes the skills on a plain task (measured with `claude plugin eval`). The second: at session startup, resume, clear and compact it prints the project's `lessons-learned` ledger (the most relevant lessons as one-line rules, at most 2,000 characters; about 110 tokens of instructions when the ledger is empty) so the agent obeys past lessons and records its own mistakes; it prints nothing project-specific until a lesson exists. Three more hooks keep the task and the work state across compaction with no model tokens: `UserPromptSubmit` silently records the first user prompt and the last three, `PreCompact` writes a deterministic snapshot (original request, latest instructions, open todos, pointers to plan ledgers and handoff documents, branch, uncommitted files, last commits, diff stat; at most 4,000 characters), and `SessionStart` on compact shows it. The files live per session in the OS temp dir (never inside the project); the todo list is best effort because it is read from the session transcript. The last group (`hooks/guard.py`) enforces instead of reminding: a `Stop` hook blocks the end of a turn once when source files changed in the session and no test file did, or when a test, build, lint or CI command failed, the same check never passed again in the session, and no lesson was recorded after it (red-first TDD is not interrupted); the model must add the test or the lesson, or say in one sentence why none applies. The same `Stop` hook names dead code this session's changes add or leave behind (commented-out code, debugger leftovers, file-local names defined once, imports orphaned by a removed call; `file:line`, any language, git only, never edits a file): the model removes it or says in one sentence why it stays (`ARSENAL_GUARD_DEADCODE=off` turns off only that check). A `PreToolUse` hook stops destructive shell commands (force push, `git reset --hard`, `git clean -f`, `rm -rf` on a root, home or repository path, `DROP`/`TRUNCATE` through a database client, `terraform destroy` and the like): denied with the safer alternative when no human approves each call (`bypassPermissions`, `dontAsk`, `auto`), asked about otherwise; `ARSENAL_GUARD_DESTRUCTIVE=allow` turns only that off. It also denies a Bash command that repeats a recorded habit mistake (a `pgrep -f` wait loop, a git hook bypass, a `--help` probe of a local script, a secret in a message command), with rules tied to lesson ids and extended in `.agents/lesson-guards.json`; each refusal is logged without the command, and `lessons.py hits` and `lessons.py unguarded --min 2` report which guards fire and which repeats still have none (`ARSENAL_LESSON_GUARDS=off` turns only that off; see the `lessons-learned` skill). The same hook enforces the limits of an unattended run (tool calls, minutes, deadline) when the project holds `.claude/arsenal-run-limits.json`; see the `autonomous-run` skill. A `SessionEnd` hook adds counts from each finished session (skills used, blocks and what followed them, denials, checks, lessons; never a prompt, command or path) to the local `~/.agents/arsenal-usage.jsonl`, which the `usage-stats` skill reports on (`ARSENAL_USAGE=off` turns it off). A turn with nothing to enforce prints nothing (no context cost), the same files or failures are never asked about twice, and `ARSENAL_GUARD=off` turns all of it off; details and limits are in [docs/TARGETS.md](docs/TARGETS.md#hooks). The installer can register only the session-start and stop gate for Codex, Gemini CLI, Cursor, Copilot and Antigravity with `--hooks` (`-Hooks` on Windows); none of those was run inside its tool, see the table in [docs/TARGETS.md](docs/TARGETS.md#hooks-for-the-other-agents---hooks). For any other route see `.agents/skills/lessons-learned/references/lesson-format-and-promotion.md` §5 to wire it by hand. Optional MCP servers: `/plugin install arsenal-codegraph@senior-developer-arsenal` and `/plugin install arsenal-hindsight@senior-developer-arsenal`.
 
 If adding the marketplace fails:
 
@@ -236,7 +255,7 @@ Five rules are always on (core, minimal-change, token-conservation, defensive-ep
 
 ## ⚡ Active Skills & Capabilities
 
-The arsenal includes 59 specialized skills conforming to the Agent Skills standard (agentskills.io), featuring isolated progressive disclosure references (`references/`), slash commands, and negative triggers:
+The arsenal includes 60 specialized skills conforming to the Agent Skills standard (agentskills.io), featuring isolated progressive disclosure references (`references/`), slash commands, and negative triggers:
 
 ### 1. code-review (/code-review)
 - **When to use**: Auditing pull requests, reviewing recent commits, inspecting staged diffs, or evaluating branch code quality.
@@ -507,6 +526,10 @@ The arsenal includes 59 specialized skills conforming to the Agent Skills standa
 ### 59. dead-code (/dead-code)
 - **When to use**: A repository-wide sweep for unused functions, classes, imports, exports, dependencies and commented-out code: the stack's own tool, CodeGraph or the bundled detector, every candidate verified against reflection, DI, serialization, framework conventions and string references, removed in small batches with the tests green after each.
 - **Includes**: [language-tools.md](.agents/skills/dead-code/references/language-tools.md), bundled `scripts/dead_code.py` (also run by the `Stop` hook on each session's own diff).
+
+### 60. usage-stats (/usage-stats)
+- **When to use**: Numbers on how the arsenal helped in your own sessions (tests with code changes, blocks followed by a fix, failed checks turned green, destructive commands and repeat mistakes stopped, skills used, lessons enforced), for a README, a post or a talk. Local only: counts and names, never prompts, commands or paths.
+- **Includes**: [usage_stats.py](.agents/skills/usage-stats/scripts/usage_stats.py) (`record` as the `SessionEnd` hook, `backfill`, `report --markdown | --json | --readme`).
 
 ---
 

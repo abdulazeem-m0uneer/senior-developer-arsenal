@@ -35,7 +35,7 @@ MAX_DESCRIPTION = 1024
 MAX_RULE_CHARS = 12000
 # Token budgets for text that loads in every session (descriptions are always in context).
 MAX_SKILL_DESC_CHARS = 420
-MAX_SKILL_DESC_TOTAL = 22000  # ratchet: lower it when descriptions shrink
+MAX_SKILL_DESC_TOTAL = 22500  # ratchet: lower it when descriptions shrink; raised for dead-code, usage-stats, ship
 # Rule bodies that load in every session on the most expensive target, whatever their trigger says.
 MAX_ALWAYS_ON_RULE_TOTAL = 17700  # ratchet: 17,457 today; a 2.5K rule must not slip in unnoticed
 MAX_AGENTS_MD_BYTES = 32 * 1024

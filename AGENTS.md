@@ -106,6 +106,7 @@ Skills: `.agents/skills/<name>/SKILL.md`. Subagents: `.agents/subagents/`.
 | Several sessions delivering one product (coordinator + lanes) | `multi-session-delivery` | — |
 | Session handoff (context nearly full) | `handoff` | — |
 | Learn from mistakes (corrected, confirmed root cause) | `lessons-learned` (load `active` at session start) | — |
+| How useful the arsenal is (own sessions, local numbers) | `usage-stats` | — |
 | Accessibility audit (WCAG 2.2 AA) | `accessibility-audit` | `ui-ux-architect` |
 | Change untested legacy code in place | `refactor-legacy` | — |
 | Design-time threats, new trust boundary | `threat-model` | `security-auditor` |

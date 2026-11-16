@@ -58,6 +58,7 @@ antigravity	global	dir	test-strategy	.agents/skills/test-strategy	.gemini/config
 antigravity	global	dir	threat-model	.agents/skills/threat-model	.gemini/config/skills/threat-model	-
 antigravity	global	dir	ui-ux-architect	.agents/skills/ui-ux-architect	.gemini/config/skills/ui-ux-architect	-
 antigravity	global	dir	ui-ux-audit	.agents/skills/ui-ux-audit	.gemini/config/skills/ui-ux-audit	-
+antigravity	global	dir	usage-stats	.agents/skills/usage-stats	.gemini/config/skills/usage-stats	-
 antigravity	global	file	code-reviewer.md	dist/antigravity/agents/code-reviewer.md	.gemini/config/agents/code-reviewer.md	-
 antigravity	global	file	code-explorer.md	dist/antigravity/agents/code-explorer.md	.gemini/config/agents/code-explorer.md	-
 antigravity	global	file	db-architect.md	dist/antigravity/agents/db-architect.md	.gemini/config/agents/db-architect.md	-
@@ -161,6 +162,7 @@ antigravity	project	dir	test-strategy	.agents/skills/test-strategy	.agents/skill
 antigravity	project	dir	threat-model	.agents/skills/threat-model	.agents/skills/threat-model	-
 antigravity	project	dir	ui-ux-architect	.agents/skills/ui-ux-architect	.agents/skills/ui-ux-architect	-
 antigravity	project	dir	ui-ux-audit	.agents/skills/ui-ux-audit	.agents/skills/ui-ux-audit	-
+antigravity	project	dir	usage-stats	.agents/skills/usage-stats	.agents/skills/usage-stats	-
 antigravity	project	file	code-reviewer.md	dist/antigravity/agents/code-reviewer.md	.agents/agents/code-reviewer.md	-
 antigravity	project	file	code-explorer.md	dist/antigravity/agents/code-explorer.md	.agents/agents/code-explorer.md	-
 antigravity	project	file	db-architect.md	dist/antigravity/agents/db-architect.md	.agents/agents/db-architect.md	-
@@ -263,6 +265,7 @@ gemini	global	dir	test-strategy	.agents/skills/test-strategy	.agents/skills/test
 gemini	global	dir	threat-model	.agents/skills/threat-model	.agents/skills/threat-model	-
 gemini	global	dir	ui-ux-architect	.agents/skills/ui-ux-architect	.agents/skills/ui-ux-architect	-
 gemini	global	dir	ui-ux-audit	.agents/skills/ui-ux-audit	.agents/skills/ui-ux-audit	-
+gemini	global	dir	usage-stats	.agents/skills/usage-stats	.agents/skills/usage-stats	-
 gemini	global	file	code-reviewer.md	dist/gemini/agents/code-reviewer.md	.gemini/agents/code-reviewer.md	-
 gemini	global	file	code-explorer.md	dist/gemini/agents/code-explorer.md	.gemini/agents/code-explorer.md	-
 gemini	global	file	db-architect.md	dist/gemini/agents/db-architect.md	.gemini/agents/db-architect.md	-
@@ -351,6 +354,7 @@ gemini	project	dir	test-strategy	.agents/skills/test-strategy	.agents/skills/tes
 gemini	project	dir	threat-model	.agents/skills/threat-model	.agents/skills/threat-model	-
 gemini	project	dir	ui-ux-architect	.agents/skills/ui-ux-architect	.agents/skills/ui-ux-architect	-
 gemini	project	dir	ui-ux-audit	.agents/skills/ui-ux-audit	.agents/skills/ui-ux-audit	-
+gemini	project	dir	usage-stats	.agents/skills/usage-stats	.agents/skills/usage-stats	-
 gemini	project	file	code-reviewer.md	dist/gemini/agents/code-reviewer.md	.gemini/agents/code-reviewer.md	-
 gemini	project	file	code-explorer.md	dist/gemini/agents/code-explorer.md	.gemini/agents/code-explorer.md	-
 gemini	project	file	db-architect.md	dist/gemini/agents/db-architect.md	.gemini/agents/db-architect.md	-
@@ -475,6 +479,7 @@ codex	global	dir	test-strategy	.agents/skills/test-strategy	.agents/skills/test-
 codex	global	dir	threat-model	.agents/skills/threat-model	.agents/skills/threat-model	-
 codex	global	dir	ui-ux-architect	.agents/skills/ui-ux-architect	.agents/skills/ui-ux-architect	-
 codex	global	dir	ui-ux-audit	.agents/skills/ui-ux-audit	.agents/skills/ui-ux-audit	-
+codex	global	dir	usage-stats	.agents/skills/usage-stats	.agents/skills/usage-stats	-
 codex	global	file	code-reviewer.toml	dist/codex/agents/code-reviewer.toml	.codex/agents/code-reviewer.toml	-
 codex	global	file	code-explorer.toml	dist/codex/agents/code-explorer.toml	.codex/agents/code-explorer.toml	-
 codex	global	file	db-architect.toml	dist/codex/agents/db-architect.toml	.codex/agents/db-architect.toml	-
@@ -577,6 +582,7 @@ codex	project	dir	test-strategy	.agents/skills/test-strategy	.agents/skills/test
 codex	project	dir	threat-model	.agents/skills/threat-model	.agents/skills/threat-model	-
 codex	project	dir	ui-ux-architect	.agents/skills/ui-ux-architect	.agents/skills/ui-ux-architect	-
 codex	project	dir	ui-ux-audit	.agents/skills/ui-ux-audit	.agents/skills/ui-ux-audit	-
+codex	project	dir	usage-stats	.agents/skills/usage-stats	.agents/skills/usage-stats	-
 codex	project	file	code-reviewer.toml	dist/codex/agents/code-reviewer.toml	.codex/agents/code-reviewer.toml	-
 codex	project	file	code-explorer.toml	dist/codex/agents/code-explorer.toml	.codex/agents/code-explorer.toml	-
 codex	project	file	db-architect.toml	dist/codex/agents/db-architect.toml	.codex/agents/db-architect.toml	-
@@ -679,6 +685,7 @@ opencode	global	dir	test-strategy	.agents/skills/test-strategy	.agents/skills/te
 opencode	global	dir	threat-model	.agents/skills/threat-model	.agents/skills/threat-model	-
 opencode	global	dir	ui-ux-architect	.agents/skills/ui-ux-architect	.agents/skills/ui-ux-architect	-
 opencode	global	dir	ui-ux-audit	.agents/skills/ui-ux-audit	.agents/skills/ui-ux-audit	-
+opencode	global	dir	usage-stats	.agents/skills/usage-stats	.agents/skills/usage-stats	-
 opencode	global	file	code-reviewer.md	dist/opencode/agents/code-reviewer.md	.config/opencode/agents/code-reviewer.md	-
 opencode	global	file	code-explorer.md	dist/opencode/agents/code-explorer.md	.config/opencode/agents/code-explorer.md	-
 opencode	global	file	db-architect.md	dist/opencode/agents/db-architect.md	.config/opencode/agents/db-architect.md	-
@@ -772,6 +779,7 @@ opencode	project	dir	test-strategy	.agents/skills/test-strategy	.agents/skills/t
 opencode	project	dir	threat-model	.agents/skills/threat-model	.agents/skills/threat-model	-
 opencode	project	dir	ui-ux-architect	.agents/skills/ui-ux-architect	.agents/skills/ui-ux-architect	-
 opencode	project	dir	ui-ux-audit	.agents/skills/ui-ux-audit	.agents/skills/ui-ux-audit	-
+opencode	project	dir	usage-stats	.agents/skills/usage-stats	.agents/skills/usage-stats	-
 opencode	project	file	code-reviewer.md	dist/opencode/agents/code-reviewer.md	.opencode/agents/code-reviewer.md	-
 opencode	project	file	code-explorer.md	dist/opencode/agents/code-explorer.md	.opencode/agents/code-explorer.md	-
 opencode	project	file	db-architect.md	dist/opencode/agents/db-architect.md	.opencode/agents/db-architect.md	-
@@ -865,6 +873,7 @@ cursor	global	dir	test-strategy	.agents/skills/test-strategy	.agents/skills/test
 cursor	global	dir	threat-model	.agents/skills/threat-model	.agents/skills/threat-model	-
 cursor	global	dir	ui-ux-architect	.agents/skills/ui-ux-architect	.agents/skills/ui-ux-architect	-
 cursor	global	dir	ui-ux-audit	.agents/skills/ui-ux-audit	.agents/skills/ui-ux-audit	-
+cursor	global	dir	usage-stats	.agents/skills/usage-stats	.agents/skills/usage-stats	-
 cursor	global	file	code-reviewer.md	dist/cursor/agents/code-reviewer.md	.cursor/agents/code-reviewer.md	-
 cursor	global	file	code-explorer.md	dist/cursor/agents/code-explorer.md	.cursor/agents/code-explorer.md	-
 cursor	global	file	db-architect.md	dist/cursor/agents/db-architect.md	.cursor/agents/db-architect.md	-
@@ -953,6 +962,7 @@ cursor	project	dir	test-strategy	.agents/skills/test-strategy	.agents/skills/tes
 cursor	project	dir	threat-model	.agents/skills/threat-model	.agents/skills/threat-model	-
 cursor	project	dir	ui-ux-architect	.agents/skills/ui-ux-architect	.agents/skills/ui-ux-architect	-
 cursor	project	dir	ui-ux-audit	.agents/skills/ui-ux-audit	.agents/skills/ui-ux-audit	-
+cursor	project	dir	usage-stats	.agents/skills/usage-stats	.agents/skills/usage-stats	-
 cursor	project	file	code-reviewer.md	dist/cursor/agents/code-reviewer.md	.cursor/agents/code-reviewer.md	-
 cursor	project	file	code-explorer.md	dist/cursor/agents/code-explorer.md	.cursor/agents/code-explorer.md	-
 cursor	project	file	db-architect.md	dist/cursor/agents/db-architect.md	.cursor/agents/db-architect.md	-
@@ -1055,6 +1065,7 @@ windsurf	global	dir	test-strategy	.agents/skills/test-strategy	.agents/skills/te
 windsurf	global	dir	threat-model	.agents/skills/threat-model	.agents/skills/threat-model	-
 windsurf	global	dir	ui-ux-architect	.agents/skills/ui-ux-architect	.agents/skills/ui-ux-architect	-
 windsurf	global	dir	ui-ux-audit	.agents/skills/ui-ux-audit	.agents/skills/ui-ux-audit	-
+windsurf	global	dir	usage-stats	.agents/skills/usage-stats	.agents/skills/usage-stats	-
 windsurf	global	mcp	codegraph	dist/mcp/serverurl/codegraph.json	.codeium/windsurf/mcp_config.json	mcpServers:json
 windsurf	global	mcp	hindsight	dist/mcp/serverurl/hindsight.json	.codeium/windsurf/mcp_config.json	mcpServers:json
 windsurf	project	dir	accessibility-audit	.agents/skills/accessibility-audit	.agents/skills/accessibility-audit	-
@@ -1116,6 +1127,7 @@ windsurf	project	dir	test-strategy	.agents/skills/test-strategy	.agents/skills/t
 windsurf	project	dir	threat-model	.agents/skills/threat-model	.agents/skills/threat-model	-
 windsurf	project	dir	ui-ux-architect	.agents/skills/ui-ux-architect	.agents/skills/ui-ux-architect	-
 windsurf	project	dir	ui-ux-audit	.agents/skills/ui-ux-audit	.agents/skills/ui-ux-audit	-
+windsurf	project	dir	usage-stats	.agents/skills/usage-stats	.agents/skills/usage-stats	-
 windsurf	project	file	csharp-dotnet-standards.md	.agents/rules/csharp-dotnet-standards.md	.windsurf/rules/csharp-dotnet-standards.md	-
 windsurf	project	file	database-standards.md	.agents/rules/database-standards.md	.windsurf/rules/database-standards.md	-
 windsurf	project	file	defensive-epistemology.md	.agents/rules/defensive-epistemology.md	.windsurf/rules/defensive-epistemology.md	-
@@ -1191,6 +1203,7 @@ copilot	global	dir	test-strategy	.agents/skills/test-strategy	.agents/skills/tes
 copilot	global	dir	threat-model	.agents/skills/threat-model	.agents/skills/threat-model	-
 copilot	global	dir	ui-ux-architect	.agents/skills/ui-ux-architect	.agents/skills/ui-ux-architect	-
 copilot	global	dir	ui-ux-audit	.agents/skills/ui-ux-audit	.agents/skills/ui-ux-audit	-
+copilot	global	dir	usage-stats	.agents/skills/usage-stats	.agents/skills/usage-stats	-
 copilot	global	file	code-reviewer.agent.md	dist/copilot/agents/code-reviewer.agent.md	.copilot/agents/code-reviewer.agent.md	-
 copilot	global	file	code-explorer.agent.md	dist/copilot/agents/code-explorer.agent.md	.copilot/agents/code-explorer.agent.md	-
 copilot	global	file	db-architect.agent.md	dist/copilot/agents/db-architect.agent.md	.copilot/agents/db-architect.agent.md	-
@@ -1279,6 +1292,7 @@ copilot	project	dir	test-strategy	.agents/skills/test-strategy	.agents/skills/te
 copilot	project	dir	threat-model	.agents/skills/threat-model	.agents/skills/threat-model	-
 copilot	project	dir	ui-ux-architect	.agents/skills/ui-ux-architect	.agents/skills/ui-ux-architect	-
 copilot	project	dir	ui-ux-audit	.agents/skills/ui-ux-audit	.agents/skills/ui-ux-audit	-
+copilot	project	dir	usage-stats	.agents/skills/usage-stats	.agents/skills/usage-stats	-
 copilot	project	file	code-reviewer.agent.md	dist/copilot/agents/code-reviewer.agent.md	.github/agents/code-reviewer.agent.md	-
 copilot	project	file	code-explorer.agent.md	dist/copilot/agents/code-explorer.agent.md	.github/agents/code-explorer.agent.md	-
 copilot	project	file	db-architect.agent.md	dist/copilot/agents/db-architect.agent.md	.github/agents/db-architect.agent.md	-
