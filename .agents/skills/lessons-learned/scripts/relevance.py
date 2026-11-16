@@ -98,6 +98,13 @@ def rank(lessons, tokens):
     return first + [item[3] for item in rest]
 
 
+def alternate(first, second):
+    """first[0], second[0], first[1], second[1], ...; the longer list's tail follows in order."""
+    merged = [item for pair in zip(first, second) for item in pair]
+    shorter = min(len(first), len(second))
+    return merged + first[shorter:] + second[shorter:]
+
+
 def fit(lines, budget):
     """Indexes of the lines that fit the character budget, taken in order."""
     kept, used = [], 0

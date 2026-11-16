@@ -4,7 +4,8 @@
 Usage:
   lessons.py add --tags a,b --mistake M --cause C --rule R [--check K] [--global]
   lessons.py active [--hook]         # Active lessons, project then global; --hook emits SessionStart hook JSON
-  lessons.py search WORD [WORD...]   # lessons (Active + Archive, project + global) containing every word
+  lessons.py search WORD [WORD...] [--full]  # lessons (Active + Archive, project + global) containing every word
+  lessons.py show ID                 # one lesson in full (mistake, cause, rule, check); listings print rules only
   lessons.py bump ID                 # the mistake happened again (an archived lesson returns to Active)
   lessons.py archive ID              # retire a lesson
   lessons.py promote ID              # write a rule stub under <ledger dir>/rules/, mark promoted, stop injecting
@@ -36,8 +37,7 @@ SIMILAR_AT = 0.5
 FIELD_MAX = 200
 TAGS_MAX = 60
 SEARCH_MAX = 10
-HOOK_MAX = 4000   # characters of additionalContext; the host cap is 10,000
-LINE_MAX = 700
+HOOK_MAX = 2000   # characters of additionalContext (host cap 10,000); brief lines fit about ten lessons
 MUTATING = ("add", "bump", "archive", "promote", "globalize")
 LINE_RE = re.compile(
     r"^- ([LG]\d{3,}) \[([^\]]*)\] hits:(\d+) \| (\d{4}-\d{2}-\d{2}) \| Mistake: (.*?) \| Cause: (.*?) "
@@ -48,10 +48,9 @@ HEADER = ("# Lessons Learned\n\n"
           f"{ACTIVE_CAP}), Archive is searched on demand. Never store secrets or personal data. -->\n")
 GLOBAL_LABEL = "Global lessons (every project):"
 MORE_LINE = "(+{count} more: lessons.py search <words>)"
-HOOK_HEADER = ("Lessons ledger for this project: obey the lessons below. If you catch your own mistake, or repeat one "
-               "listed here, verify the cause, then run `python3 {script} add --tags T --mistake M --cause C --rule R "
-               "--check K` (a repeat: `bump ID`; a tool or habit lesson that holds in every project: add `--global`). "
-               "Self-audit before saying a task is done.")
+HOOK_HEADER = ("Lessons (obey; xN = times seen; full text: `show ID`). If you catch your own mistake, verify the cause, "
+               "then `python3 {script} add --tags T --mistake M --cause C --rule R --check K` (repeat: `bump ID`; "
+               "holds in any project: `--global`). Self-audit before saying done.")
 
 
 class Refused(Exception):
@@ -102,6 +101,12 @@ class Ledger:
         return (f"- {lesson['id']} [{lesson['tags']}] hits:{lesson['hits']} | {lesson['date']} | "
                 f"Mistake: {lesson['mistake']} | Cause: {lesson['cause']} | Rule: {lesson['rule']} | "
                 f"Check: {lesson['check']}" + (f" | Promoted: {lesson['promoted']}" if lesson["promoted"] else ""))
+
+    @staticmethod
+    def brief(lesson):
+        """The rule alone: about a quarter of the full line. `show ID` prints the rest on demand."""
+        return (f"- {lesson['id']} [{lesson['tags']}] x{lesson['hits']}: {lesson['rule']}"
+                + (f" -> {lesson['promoted']}" if lesson["promoted"] else ""))
 
     def section(self, name):
         return [lesson for lesson in self.lessons if lesson["section"] == name]
@@ -223,17 +228,15 @@ def cmd_add(ledger, args):
     return 0
 
 
-def clip(line):
-    return line if len(line) <= LINE_MAX else line[:LINE_MAX - 4] + " ..."
-
-
 def hook_text(project, shared):
     """Header, then the lessons that matter most for the files in play, within HOOK_MAX characters."""
     header = HOOK_HEADER.format(script=Path(__file__).resolve())
     if not project and not shared:
         return header + "\n(no lessons yet)"
-    ranked = relevance.rank(project + shared, relevance.path_tokens(relevance.changed_paths(relevance.session_cwd())))
-    lines = [clip(Ledger.render(lesson)) for lesson in ranked]
+    tokens = relevance.path_tokens(relevance.changed_paths(relevance.session_cwd()))
+    # Ranked apart, then alternated: high-hit global lessons must not crowd out every project lesson.
+    ranked = relevance.alternate(relevance.rank(project, tokens), relevance.rank(shared, tokens))
+    lines = [Ledger.brief(lesson) for lesson in ranked]
     budget = HOOK_MAX - len(header) - len(GLOBAL_LABEL) - len(MORE_LINE.format(count=len(lines))) - 3
     kept = relevance.fit(lines, budget)
     is_shared = [any(ranked[index] is lesson for lesson in shared) for index in kept]
@@ -266,8 +269,14 @@ def cmd_search(ledger, args):
     found = [(scope + lesson["section"], lesson)
              for scope, source in (("", ledger), ("global ", other)) if source for lesson in source.lessons
              if all(n in Ledger.render(lesson).lower() for n in needles)]
+    shape = Ledger.render if args.full else Ledger.brief
     for label, lesson in sorted(found, key=lambda item: -item[1]["hits"])[:SEARCH_MAX]:
-        print(f"[{label}] {Ledger.render(lesson)}")
+        print(f"[{label}] {shape(lesson)}")
+    return 0
+
+
+def cmd_show(ledger, args):
+    print(Ledger.render(ledger.find(args.id)))
     return 0
 
 
@@ -356,7 +365,10 @@ def build_parser():
     for name in ("mistake", "cause", "rule", "check"):
         add.add_argument(f"--{name}")
     sub.add_parser("active").add_argument("--hook", action="store_true")
-    sub.add_parser("search").add_argument("words", nargs="+")
+    search = sub.add_parser("search")
+    search.add_argument("words", nargs="+")
+    search.add_argument("--full", action="store_true")
+    sub.add_parser("show").add_argument("id")
     promote = sub.add_parser("promote")
     promote.add_argument("--as", dest="kind", choices=("rule", "test"), default="rule")
     promote.add_argument("--guard")
@@ -370,7 +382,7 @@ def build_parser():
 
 
 COMMANDS = {"add": cmd_add, "active": cmd_active, "search": cmd_search, "bump": cmd_bump, "archive": cmd_archive,
-            "promote": cmd_promote, "globalize": cmd_globalize, "check": cmd_check}
+            "promote": cmd_promote, "globalize": cmd_globalize, "check": cmd_check, "show": cmd_show}
 
 
 def refuse_stray(ledger):

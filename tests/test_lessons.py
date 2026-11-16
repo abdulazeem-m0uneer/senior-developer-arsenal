@@ -524,7 +524,8 @@ class PromotionTests(LedgerCase):
         self.assertIn("- L001", self.run_cli("active")[1])
         guard.write_text("", encoding="utf-8")
         self.assertEqual(self.run_cli("promote", "L001", "--guard", str(guard))[0], 0)
-        self.assertIn(f"| Promoted: {guard.as_posix()}", self.run_cli("search", "column")[1])
+        self.assertIn(f" -> {guard.as_posix()}", self.run_cli("search", "column")[1])
+        self.assertIn(f"| Promoted: {guard.as_posix()}", self.run_cli("search", "column", "--full")[1])
         self.assertFalse(self.rules.exists())
 
     def test_promoted_lesson_that_recurs_returns_and_names_its_guard(self):
@@ -613,7 +614,7 @@ class RelevanceTests(LedgerCase):
             context = self.hook_context()
         self.assertLessEqual(len(context), lessons.HOOK_MAX)
         self.assertLess(lessons.HOOK_MAX, 10000)
-        self.assertEqual(lessons.HOOK_MAX, 4000)  # the documented cap
+        self.assertEqual(lessons.HOOK_MAX, 2000)  # the documented cap
         self.assertEqual(relevance.TAG_WEIGHT, 3)
         self.assertLess(2 * relevance.GIT_TIMEOUT + relevance.STDIN_WAIT, 10)  # inside the hook's 10 s timeout
         shown = context.count("\n- L") + context.count("\n- G")
@@ -621,7 +622,56 @@ class RelevanceTests(LedgerCase):
         self.assertTrue(context.endswith(f"(+{2 * lessons.ACTIVE_CAP - shown} more: lessons.py search <words>)"))
         self.assertTrue(context.split("\n")[1].startswith("- L007 "), "the most recurrent lesson is always kept")
         self.assertIn(lessons.GLOBAL_LABEL, context)
-        self.assertIn(" ...", context)
+
+    def test_hook_and_search_print_rules_only_and_show_prints_the_whole_lesson(self):
+        self.add("Dropped a column without a dry run")
+        self.add("Force pushed over a teammate's commits", rule="Use --force-with-lease", tags="git",
+                 extra=("--global",))
+        context = self.hook_context()
+        self.assertIn("- L001 [sql] x1: Run the migration dry run first", context)
+        self.assertIn("- G001 [git] x1: Use --force-with-lease", context)
+        for hidden in ("Mistake:", "Cause:", "Check:", "assumed it was safe"):
+            self.assertNotIn(hidden, context)
+        self.assertEqual(self.run_cli("search", "column")[1],
+                         "[active] - L001 [sql] x1: Run the migration dry run first\n")
+        self.assertIn("Cause: assumed it was safe", self.run_cli("search", "column", "--full")[1])
+        code, out, _ = self.run_cli("show", "L001")
+        self.assertEqual(code, 0)
+        self.assertTrue(out.startswith("- L001 [sql] hits:1 | "))
+        self.assertIn("Mistake: Dropped a column without a dry run | Cause: assumed it was safe", out)
+        self.assertIn("Check: grep dry-run in CI", out)
+        self.assertIn("Rule: Use --force-with-lease", self.run_cli("show", "g001")[1])
+        code, out, err = self.run_cli("show", "L099")
+        self.assertEqual((code, out), (2, ""))
+        self.assertIn("no lesson L099", err)
+
+    def test_brief_lines_fit_far_more_lessons_than_full_lines(self):
+        long = "x" * lessons.FIELD_MAX
+        for n in range(lessons.ACTIVE_CAP):
+            self.run_cli("add", "--tags", f"tag{n}", "--mistake", f"unique{n} {long}", "--cause", long,
+                         "--rule", f"distinct{n} guard{n} step{n} before merging{n}", "--check", long)
+        with mock.patch.object(relevance, "changed_paths", return_value=[]):
+            context = self.hook_context()
+        self.assertLessEqual(len(context), lessons.HOOK_MAX)
+        self.assertEqual(context.count("\n- L"), lessons.ACTIVE_CAP)  # full lines of this size fit two or three
+        self.assertNotIn("more: lessons.py search", context)
+
+    def test_high_hit_global_lessons_do_not_crowd_out_project_lessons(self):
+        long = "y" * lessons.FIELD_MAX
+        for n in range(lessons.ACTIVE_CAP):
+            self.run_cli("add", "--tags", f"tag{n}", "--mistake", f"gm{n}", "--cause", "c",
+                         "--rule", f"global{n} rule{n} {long}", "--check", "k", "--global")
+            for _ in range(5):
+                self.run_cli("bump", f"G{n + 1:03d}")
+        for n in range(3):
+            self.add(f"pm{n}", rule=f"project{n} rule{n} {long}")
+        with mock.patch.object(relevance, "changed_paths", return_value=[]):
+            context = self.hook_context()
+        self.assertLessEqual(len(context), lessons.HOOK_MAX)
+        self.assertIn("\n- L00", context)
+        self.assertIn("\n- G0", context)
+        self.assertEqual(relevance.alternate([1, 2, 3], ["a"]), [1, "a", 2, 3])
+        self.assertEqual(relevance.alternate([], ["a", "b"]), ["a", "b"])
 
     def test_short_ledger_is_shown_whole_with_no_more_line(self):
         self.add_distinct(lessons.ACTIVE_CAP)
