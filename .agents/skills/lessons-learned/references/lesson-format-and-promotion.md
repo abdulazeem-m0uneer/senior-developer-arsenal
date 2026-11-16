@@ -112,7 +112,7 @@ What `--hook` selects. The host caps `additionalContext` at 10,000 characters an
 2. Within each ledger the three most repeated lessons (two hits or more) come first, whatever the task.
 3. The rest are scored against the session's files: the hook reads `cwd` from its stdin JSON (waiting at most half a second for it) and runs `git status --porcelain` and `git log -5 --name-only` there, each with a 1.5 second timeout. A tag that matches a word or file-type of a changed path (`py` counts as `python`, `sql` as `database`, `yml` as `ci`, and so on) scores 3; each matching word of the mistake, rule or check scores 1. Ties go to the newer lesson.
 4. Without git, outside a repository, or on a timeout, every score is zero and the order is newest first.
-5. Lessons are added in that order while they fit. If any did not fit, the last line is `(+N more: lessons.py search <words>)`.
+5. Lessons are added in that order while they fit. The header's script path is counted as 160 characters whatever its real length, so the same ledger shows the same lessons wherever arsenal is installed (a path longer than that makes the output longer than 2,000 characters by the difference). If any did not fit, the last line is `(+N more: lessons.py search <words>)`.
 
 The Active cap of 15 per ledger and its eviction rule are unchanged; ranking decides only what a session start shows. The hook never fails the session: on any error it prints nothing and exits 0.
 

@@ -656,6 +656,20 @@ class RelevanceTests(LedgerCase):
         self.assertEqual(context.count("\n- L"), lessons.ACTIVE_CAP)  # full lines of this size fit two or three
         self.assertNotIn("more: lessons.py search", context)
 
+    def test_the_install_path_does_not_change_which_lessons_are_shown(self):
+        long = "z" * lessons.FIELD_MAX
+        for n in range(lessons.ACTIVE_CAP):
+            self.add(f"pm{n} broke{n}", rule=f"path{n} rule{n} {long}", tags=f"tag{n}")
+        shown = []
+        for install in ("/a/lessons.py", "/" + "deep/" * 30 + "lessons.py"):
+            with mock.patch.object(lessons, "__file__", install), \
+                    mock.patch.object(relevance, "changed_paths", return_value=[]):
+                context = self.hook_context()
+            self.assertIn(f"`python3 {Path(install).resolve()} add", context)
+            shown.append([line for line in context.splitlines() if line.startswith("- L")])
+        self.assertEqual(shown[0], shown[1])
+        self.assertGreaterEqual(len(shown[0]), 3)
+
     def test_high_hit_global_lessons_do_not_crowd_out_project_lessons(self):
         long = "y" * lessons.FIELD_MAX
         for n in range(lessons.ACTIVE_CAP):

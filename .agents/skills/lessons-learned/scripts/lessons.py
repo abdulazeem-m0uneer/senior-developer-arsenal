@@ -38,6 +38,7 @@ FIELD_MAX = 200
 TAGS_MAX = 60
 SEARCH_MAX = 10
 HOOK_MAX = 2000   # characters of additionalContext (host cap 10,000); brief lines fit about ten lessons
+SCRIPT_PATH_BUDGET = 160  # the header's script path, counted at this length whatever its real one (plugin: ~120)
 MUTATING = ("add", "bump", "archive", "promote", "globalize")
 LINE_RE = re.compile(
     r"^- ([LG]\d{3,}) \[([^\]]*)\] hits:(\d+) \| (\d{4}-\d{2}-\d{2}) \| Mistake: (.*?) \| Cause: (.*?) "
@@ -237,7 +238,9 @@ def hook_text(project, shared):
     # Ranked apart, then alternated: high-hit global lessons must not crowd out every project lesson.
     ranked = relevance.alternate(relevance.rank(project, tokens), relevance.rank(shared, tokens))
     lines = [Ledger.brief(lesson) for lesson in ranked]
-    budget = HOOK_MAX - len(header) - len(GLOBAL_LABEL) - len(MORE_LINE.format(count=len(lines))) - 3
+    # The script path is budgeted at a fixed length, so where arsenal is installed never changes which lessons show.
+    fixed_header = len(HOOK_HEADER.format(script="")) + SCRIPT_PATH_BUDGET
+    budget = HOOK_MAX - fixed_header - len(GLOBAL_LABEL) - len(MORE_LINE.format(count=len(lines))) - 3
     kept = relevance.fit(lines, budget)
     is_shared = [any(ranked[index] is lesson for lesson in shared) for index in kept]
     out = [header] + [lines[index] for index, flag in zip(kept, is_shared) if not flag]
