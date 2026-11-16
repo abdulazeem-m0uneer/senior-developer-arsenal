@@ -33,9 +33,9 @@ The script is `scripts/lessons.py` beside this file; resolve its path from this 
 ### Step 1: Load
 Consult: [Lesson Format, Triggers & Promotion](./references/lesson-format-and-promotion.md)
 1. Session start: `python scripts/lessons.py active`. It prints at most 15 project lessons, then the global ones under a `Global lessons` line (a global lesson that repeats a project lesson is left out). Treat each as a constraint on this session.
-2. Entering an area (a database migration, a deploy, an auth flow): `python scripts/lessons.py search <keyword> [keyword]`. Never read the whole file.
+2. Entering an area (a database migration, a deploy, an auth flow): `python scripts/lessons.py search <keyword> [keyword]` (rules only; `--full` for whole lines). `python scripts/lessons.py show <id>` prints one lesson in full when its rule is not enough. Never read the whole file.
 3. A lesson that contradicts the current code is reported as a conflict, not applied silently.
-4. The plugin ships a `SessionStart` hook (`hooks/hooks.json`) that runs `active --hook` on startup, resume, clear and compact, so the list and the recording instructions are in context without being asked. The hook output is capped at 4,000 characters: the three most repeated lessons always come first, the rest are ordered by how well their tags and words match the files changed in the working tree and the last five commits (newest first when git is unavailable), and a final `(+N more: lessons.py search <words>)` line says how many did not fit. For installs without the plugin, wire the same hook from the reference.
+4. The plugin ships a `SessionStart` hook (`hooks/hooks.json`) that runs `active --hook` on startup, resume, clear and compact, so the list and the recording instructions are in context without being asked. The hook output is capped at 2,000 characters and prints each lesson as its id, tags, hit count and rule only (`show <id>` gives the rest): project and global lessons are ranked separately and alternated, so neither crowds out the other; within each, the three most repeated lessons come first, the rest are ordered by how well their tags and words match the files changed in the working tree and the last five commits (newest first when git is unavailable), and a final `(+N more: lessons.py search <words>)` line says how many did not fit. For installs without the plugin, wire the same hook from the reference.
 5. A session that starts without the hook output in context runs `python scripts/lessons.py active --hook` itself once.
 
 ### Step 2: Capture Only a Verified Cause
@@ -106,4 +106,4 @@ A yes with a verified cause becomes a lesson (Step 3). All no: record nothing an
 - Load only `active` (at most 15 lines per ledger) or a `search` (at most 10 lines); never `cat` the ledger.
 - One `add` call per lesson; do not re-read the file after writing.
 - Lessons are terse fragments, not paragraphs.
-- The hook costs one header (about 85 tokens plus the script path) plus the lessons that fit, at most 4,000 characters (about 1,000 tokens) in total per session start; nothing is re-read mid-session.
+- The hook costs one header (about 85 tokens plus the script path) plus the lessons that fit, at most 2,000 characters (about 500 tokens) in total per session start, about ten lessons; nothing is re-read mid-session.

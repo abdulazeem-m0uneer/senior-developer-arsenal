@@ -114,7 +114,7 @@ def run_session_start(project, state):
     """{hook label: context text} from running every SessionStart hook command in `project`."""
     env = {key: value for key, value in os.environ.items() if key not in HOOK_ENV_DROPPED}
     env.update(TMPDIR=str(state), TEMP=str(state), TMP=str(state), CLAUDE_PLUGIN_ROOT=str(ROOT),
-               PYTHONDONTWRITEBYTECODE="1")
+               PYTHONDONTWRITEBYTECODE="1", LESSONS_GLOBAL_FILE=str(state / "no-global-lessons.md"))  # not the user's
     stdin = json.dumps({"session_id": "token-benchmark", "transcript_path": "", "cwd": str(project),
                         "permission_mode": "default", "hook_event_name": "SessionStart", "source": "startup"})
     outputs = {}
