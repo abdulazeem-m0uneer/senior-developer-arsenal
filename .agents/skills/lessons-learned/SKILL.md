@@ -52,11 +52,22 @@ Consult: [Lesson Format, Triggers & Promotion](./references/lesson-format-and-pr
 5. A lesson about a tool or a habit that holds in any repository (a git flag, a shell quoting trap, "read the file before editing it") goes to the global ledger: add `--global`, or move an existing one with `python scripts/lessons.py globalize <id>`. Anything that names this project's files, schema, services or conventions stays in the project ledger.
 
 ### Step 4: Promote Repeats
-1. At three hits the script prints `PROMOTE`. A mistake that keeps happening is a missing guard, not a missing reminder.
+1. At three hits the script prints `PROMOTE`. A mistake that keeps happening is a missing guard, not a missing reminder. A team that guards at the second hit sets `LESSONS_PROMOTE_AT=2` (or passes `check --min 2`): the threshold drives the hint, `check` and `unguarded`.
 2. Prefer the strongest enforcement available: a failing test, a lint rule, a CI check, or a hook. `python scripts/lessons.py promote <id> --as test` prints a test stub built from the lesson's check; once the guard exists, `python scripts/lessons.py promote <id> --guard <path>` records it.
 3. When no mechanical guard fits, `python scripts/lessons.py promote <id>` writes the rule as a line in `.agents/rules/lessons-promoted.md` beside the ledger (created with always-on frontmatter; `--rules-dir` picks another directory). Tighten the wording, narrow the trigger to a glob if it concerns one stack, and commit it.
-4. A promoted lesson moves to Archive with `Promoted: <guard>` on its line and is no longer injected. Name the guard in the commit message. If the mistake happens again the lesson returns to Active and the script prints `GUARD FAILED`: fix the guard, not the wording of the lesson.
-5. When the user mentions the same mistake recurred, `python scripts/lessons.py bump <id>` instead of adding; an archived lesson returns to Active.
+4. A guard that covers only part of the rule (it blocks a secret in one command, while the rule also covers logs and fixtures): `promote <id> --guard <path> --keep-rule` records the guard and also writes the rule line, so the uncovered part stays in force.
+5. A promoted lesson moves to Archive with `Promoted: <guard>` on its line and is no longer injected. Name the guard in the commit message. If the mistake happens again the lesson returns to Active and the script prints `GUARD FAILED`: fix the guard, not the wording of the lesson.
+6. When the user mentions the same mistake recurred, `python scripts/lessons.py bump <id>` instead of adding; an archived lesson returns to Active.
+
+### Step 4b: Guard Shell Habits at the Tool Call
+1. With the Claude Code plugin, the `PreToolUse` hook (`hooks/guard_lessons.py`) denies a Bash command that repeats a known habit mistake: a `while`/`until` wait loop on `pgrep -f`, a git hook bypass (`--no-verify`, `commit -n`, setting `core.hooksPath`, git run with `HUSKY=0`), a script (`.sh`, `.py` and the like, or one the registry names) probed with `--help`/`-h`, and a secret-looking value sent through a message command the registry names. Commands are judged by their words after quotes and here-document bodies are removed, so a commit message or a `grep` for the pattern passes.
+2. Tie a rule to its lesson, switch one off, or add your own (program, subcommand, arguments, assignments, loop) in `.agents/lesson-guards.json` (project) or `~/.agents/lesson-guards.json` (global); format in the reference. Then `promote <id> --guard .agents/lesson-guards.json`. `ARSENAL_LESSON_GUARDS=off` disables the hook for a session.
+3. Each refusal is logged (time, lesson, rule, working directory, never the command) to `~/.agents/lesson-guard-hits.jsonl`; `python scripts/lessons.py hits --since 24h` counts them per lesson. The log only grows; truncate or rotate it when it gets large.
+
+### Step 4c: Daily Repeat Check
+1. `python scripts/lessons.py unguarded --min 2 [other ledgers...]` lists every lesson seen twice or more without a guard, Archive included (a retired lesson that repeated is still unguarded), most hits first.
+2. Schedule it once a day with the recipe in the reference (a systemd user timer or cron): `unguarded`, `check` and `hits --since 24h` on every ledger, one summary line to the team's inbox, the full list to a file.
+3. Route each unguarded repeat to the agent or person who owns the area it names; that owner builds the guard the same day and runs `promote <id> --guard <path>`. A repeat with no possible mechanical guard gets `promote <id>` (rule line) so it stops appearing.
 
 ### Step 4a: Learn From Every Red CI Run
 A red run costs pipeline minutes and a review cycle. Every one is a lesson, the first time:

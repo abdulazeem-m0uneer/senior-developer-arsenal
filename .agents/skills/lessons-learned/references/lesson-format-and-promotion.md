@@ -76,9 +76,49 @@ The script does the bookkeeping:
 | :--- | :--- |
 | `promote <id> --as test` | Prints a `unittest` stub named after the rule, failing with the lesson's check as its message. Marks nothing: adapt it to the project's test framework and make it pass. |
 | `promote <id> --guard <path>` | The guard (test, lint config, hook, CI file) exists at `<path>`: the lesson moves to Archive with `Promoted: <path>`. Exits 2 if the path does not exist. |
+| `promote <id> --guard <path> --keep-rule` | The guard covers only part of the rule: also appends the rule line (as `promote <id>` does) and stores `Promoted: <path> + rule <rule file>`. Exits 2 without `--guard`. |
+| `unguarded [--min N] [LEDGER...]` | Lessons with N or more hits and no `Promoted:` field, Active and Archive, from this ledger, the global one and any named ledger, most hits first. A lesson moved by `globalize` is listed once, from the global ledger. |
+| `hits [--since 24h]` | Lesson-guard refusals per lesson in the window (`m`, `h` or `d`), from the hit log. |
 | `promote <id>` | Rung 4: appends the rule, its check and the lesson id to `rules/lessons-promoted.md` beside the ledger (`.agents/rules/` for the project ledger, `~/.agents/rules/` for the global one; `--rules-dir` overrides), creating the file with `trigger: always_on` frontmatter, and marks the lesson promoted. Review the wording, change the trigger to `glob` with `globs` if it concerns one stack, and commit it. Agents that do not read `.agents/rules/` need the file wired in through their own rules mechanism or one line in `AGENTS.md`. |
 
-A promoted lesson is no longer injected at session start. If the mistake happens again (`add` of a matching lesson, or `bump`), it returns to Active, keeps its `Promoted:` field, and the script prints `GUARD FAILED` with the guard's path: the guard did not hold and is what needs fixing. `check` lists un-promoted lessons at three hits as candidates, and recurred promoted ones separately. Mention the guard in the commit message so the history explains why the lesson left Active.
+A promoted lesson is no longer injected at session start. If the mistake happens again (`add` of a matching lesson, or `bump`), it returns to Active, keeps its `Promoted:` field, and the script prints `GUARD FAILED` with the guard's path: the guard did not hold and is what needs fixing. `check` lists un-promoted lessons at three hits as candidates (`--min N` or `$LESSONS_PROMOTE_AT` changes the threshold for `check`, `unguarded` and the `PROMOTE` hint), and recurred promoted ones separately. Mention the guard in the commit message so the history explains why the lesson left Active.
+
+### Lesson guard registry
+
+The plugin's `PreToolUse` hook (`hooks/guard_lessons.py`) applies the built-in rules `pgrep-wait-loop`, `hook-bypass`, `help-probe` and `secret-in-message`, adjusted by `~/.agents/lesson-guards.json` (`$LESSONS_GUARDS_GLOBAL_FILE`) and then the project's `.agents/lesson-guards.json` (searched upward from the project directory; its entry for a built-in rule wins):
+
+```json
+{"guards": [
+  {"rule": "hook-bypass", "lesson": "G027"},
+  {"rule": "help-probe", "enabled": false},
+  {"rule": "secret-in-message", "lesson": "G021", "programs": ["notify.sh"]},
+  {"lesson": "L031", "program": "git", "subcommand": "push", "args_any": ["--force", "-f"],
+   "reason": "Force-pushed a shared branch. Push a new branch instead."}
+]}
+```
+
+`help-probe` judges scripts with a known suffix (`.sh`, `.py`, `.mjs` and the like) run directly or through an interpreter; its `programs` adds extensionless scripts by name. `hook-bypass` counts `HUSKY=0` only on a git command (set on it, or exported earlier in the same command line), so `HUSKY=0 npm ci` passes. A rule of your own needs `lesson`, `reason` and `program` (a name or list of names, never a path); `subcommand` (first operand; for git, after global options such as `-C dir`), `args_any` (exact words; `-f` also matches in a cluster such as `-fu`), `assignments_any` (`VAR=value` before the program) and `in_loop` (the condition of `while`/`until`) narrow it. Every key is checked: an unknown key, a wrong type or broken JSON makes the hook deny every Bash command with the file and the fault until it is fixed (an Edit fixes it), so a typo never silently drops a guard. `secret-in-message` does nothing until `programs` names the commands that send messages. Not judged: commands built from variables or run through `xargs`, `ssh` or a script file. The hook ships with the Claude Code plugin only; other agents get the same rules from a test or CI check.
+
+### Daily repeat check
+
+Run once a day, as a systemd user timer (the session that starts it may end; a timer does not):
+
+```ini
+# ~/.config/systemd/user/lessons-check.service
+[Service]
+Type=oneshot
+TimeoutStartSec=120
+ExecStart=/bin/sh -c 'L=/path/to/lessons.py; { $L unguarded --min 2 /path/to/other/lessons.md; $L --file /path/to/lessons.md check --min 2; $L hits --since 24h; } > %h/.cache/lessons-daily.txt 2>&1'
+
+# ~/.config/systemd/user/lessons-check.timer
+[Timer]
+OnCalendar=Mon..Fri 08:30
+Persistent=true
+[Install]
+WantedBy=timers.target
+```
+
+Validate before relying on it: `systemd-analyze calendar "Mon..Fri 08:30"` prints the next run, and after `systemctl --user enable --now lessons-check.timer`, `systemctl --user list-timers` must show it. `TimeoutStartSec` bounds a oneshot (`RuntimeMaxSec` does not). With cron: `30 8 * * 1-5 /path/to/lessons.py unguarded --min 2 > ~/.cache/lessons-daily.txt 2>&1`. Post one line (count of unguarded repeats, the top ten by hits, guard refusals of the last day, the path of the full list) where the owners will see it, then route each repeat to the agent or person who owns its area; it is done when `promote <id> --guard <path>` has recorded the guard.
 
 ---
 

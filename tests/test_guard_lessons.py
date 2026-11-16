@@ -1,0 +1,313 @@
+"""Tests for the lesson-pattern guard (hooks/guard_lessons.py), its hit log, and its place in guard.py pre."""
+import json
+import os
+import subprocess
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+from unittest import mock
+
+ROOT = Path(__file__).resolve().parent.parent
+SCRIPT = ROOT / "hooks" / "guard.py"
+
+sys.dont_write_bytecode = True
+sys.path.insert(0, str(SCRIPT.parent))
+sys.path.insert(0, str(ROOT / ".agents" / "skills" / "lessons-learned" / "scripts"))
+import guard_hits  # noqa: E402
+import guard_lessons  # noqa: E402
+import ledger_store  # noqa: E402
+
+# Fake credentials, assembled at run time so that no secret scanner finds a literal one in this file.
+FAKE_VALUE = "Hunter" + "2" + "xyz" + "99"
+FAKE_PASSWORD = "pass" + "word=" + FAKE_VALUE
+FAKE_DB_URL = "postgres://app:" + "s3cret" + "pw" + "@db:5432/x"
+FAKE_JWT = ".".join(("eyJ" + "hbGciOiJIUzI1NiJ9", "eyJ" + "zdWIiOiIxMjM0NTY3ODkw", "c2lnbmF0dXJl" + "LXRleHQ"))
+
+
+class RegistryCase(unittest.TestCase):
+    """A project folder and a global registry path in a temp dir; the user's real registry is never read."""
+
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.dir = Path(directory.name)
+        self.project = self.dir / "project"
+        (self.project / "sub").mkdir(parents=True)
+        self.global_file = self.dir / "home" / "lesson-guards.json"
+        self.hits = self.dir / "home" / "hits.jsonl"
+        env = {"LESSONS_GUARDS_GLOBAL_FILE": str(self.global_file), "LESSONS_GUARD_HITS_FILE": str(self.hits)}
+        patch = mock.patch.dict(os.environ, env)
+        patch.start()
+        self.addCleanup(patch.stop)
+        os.environ.pop("CLAUDE_PROJECT_DIR", None)
+
+    def registry(self, guards, path=None):
+        path = Path(path or self.project / ".agents" / "lesson-guards.json")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(guards if isinstance(guards, str) else json.dumps({"guards": guards}), encoding="utf-8")
+
+    def rule(self, command, cwd=None):
+        hit = guard_lessons.judge(command, str(cwd or self.project))
+        return hit.rule if hit else None
+
+
+class BuiltInRuleTests(RegistryCase):
+    def assert_rule(self, rule, hits, passes):
+        for command in hits:
+            self.assertEqual(self.rule(command), rule, command)
+        for command in passes:
+            self.assertIsNone(self.rule(command), command)
+
+    def test_pgrep_wait_loop(self):
+        self.assert_rule("pgrep-wait-loop", [
+            'while pgrep -f "npm test" >/dev/null; do sleep 5; done', "until ! pgrep -af e2e/run.mjs; do sleep 2; done",
+            "cd x && while pgrep -f vitest; do sleep 1; done", "timeout -k 5 600 make; while pgrep --full y; do :; done",
+            "bash -c 'while pgrep -f job; do sleep 1; done'", "while kill -0 $p && pgrep -f x; do sleep 1; done",
+            "while [ $(pgrep -f x | wc -l) -gt 0 ]; do sleep 1; done", "while\n  pgrep -f x\ndo\n  sleep 1\ndone",
+        ], [
+            "pgrep -f vitest", "while kill -0 $pid 2>/dev/null; do sleep 5; done", "while pgrep vitest; do sleep 1; done",
+            'grep -n "while pgrep -f" notes.md', "echo 'never: while pgrep -f x'", "if pgrep -f x; then echo up; fi",
+            "while read -r name; do echo $name; done; pgrep -f x", "while true; do sleep 1; done && pgrep -f x",
+        ])
+
+    def test_hook_bypass(self):
+        self.assert_rule("hook-bypass", [
+            "git commit --no-verify -m x", "git push --no-verify origin dev", 'git commit -nm "fix"', "git commit -n -m x",
+            "git commit -an", "git -c core.hooksPath=/dev/null commit -m x", "git config core.hooksPath /dev/null",
+            "git config --global core.hookspath .nohooks", "git config set core.hooksPath .x", "HUSKY=0 git push",
+            "husky=0 git push", "export HUSKY=0 && git commit -m x", "export HUSKY=0; git push",
+            "sh -c 'git commit --no-verify -m x'", 'eval "git commit -n -m x"', "git -C repo commit -n -m x",
+            "git -c a=b commit -n", "git --git-dir .git commit -n", 'bash -c "bash -c \'git commit -n\'"',
+            "git commit -u -n -m x", "git push -u --no-verify origin dev", 'HUSKY=0 bash -c "git commit -m x"',
+            'export HUSKY=0; sh -c "git push"',
+        ], [
+            'git commit -m "no verify skipped, --no-verify banned"', "git commit -am x", "git push -n origin dev",
+            "git config --get core.hooksPath", "git log --oneline -5", 'git commit -m "-n is banned"', "git commit -mn",
+            "git -C repo commit -m x", "HUSKY=1 git push",
+            "git config --get-regexp core.hooksPath", "git config --get-all core.hooksPath", "git config core.hooksPath",
+            "git config --local core.hooksPath", "git config --show-origin core.hooksPath",
+            "git config --unset core.hooksPath", "git config --get-regexp core.hooksPath .",
+            "git config --unset-all core.hooksPath old", "git config get core.hooksPath",
+            "git commit -c core.hooksPath=x -m y", "git log -c core.hooksPath=x", "HUSKY=0 bash -c 'npm ci'", "HUSKY=0 npm ci", "HUSKY=0 pnpm install",
+            "env HUSKY=0 npm run release", "git commit -m --no-verify", 'git tag -m "--no-verify" v1',
+            "git commit -m x -- -n", "git commit -uno -m x", "git commit -mn",
+            "bash -c \"bash -c 'bash -c \\\"git commit -n\\\"'\"",  # deeper than MAX_DEPTH: not read "git commit -F - <<'EOF'\nban --no-verify\nHUSKY=0 git push\nEOF",
+        ])
+
+    def test_help_probe(self):
+        self.assert_rule("help-probe", [
+            "./scripts/run.sh --help", "node tools/report.mjs --help", "python3 scripts/lessons.py -h",
+            "bash deploy.sh -h", "~/bin/sync.py --help", "./db.sh --help localhost",
+        ], [
+            "git --help", "npm --help", "./node_modules/.bin/vitest --help", "./.venv/bin/pytest -h", "node -h",
+            "node tools/report.mjs get 123", "sed -n '1,40p' scripts/run.sh", "python3 -h", "/usr/bin/git --help",
+            'echo "./run.sh --help"', "../tools/x --help", "./gradlew --help", "./db.sh -h localhost", "bash deploy.sh -h host", "./target/release/app --help",
+        ])
+
+    def test_help_probe_programs_name_extensionless_scripts(self):
+        self.registry([{"rule": "help-probe", "programs": ["release-tool"]}])
+        self.assertEqual(self.rule("release-tool --help"), "help-probe")
+        self.assertEqual(self.rule("./bin/release-tool -h"), "help-probe")
+        self.assertIsNone(self.rule("./gradlew --help"))
+
+    def test_the_assembled_fakes_are_secrets_to_the_detector(self):
+        for fake in (FAKE_PASSWORD, FAKE_DB_URL, FAKE_JWT):
+            self.assertTrue(ledger_store.find_secret(fake))
+
+    def test_secret_in_message_needs_the_message_programs(self):
+        command = f'notify.sh team "login: {FAKE_PASSWORD}"'
+        self.assertIsNone(self.rule(command))
+        self.registry([{"rule": "secret-in-message", "lesson": "G021", "programs": ["notify.sh"]}])
+        self.assert_rule("secret-in-message", [
+            command, f'./tools/notify.sh team "db {FAKE_DB_URL}"', f'bash notify.sh team "jwt {FAKE_JWT}"',
+        ], [
+            'notify.sh team "credentials are in ~/.config/app/staging.env"', 'notify.sh team "token rotated at 14:24"',
+            f'echo "{FAKE_PASSWORD}"', f'other.sh team "{FAKE_PASSWORD}"',
+        ])
+
+    def test_empty_and_non_text_commands_pass(self):
+        for command in ("", "   ", None, 42):
+            self.assertIsNone(guard_lessons.judge(command, str(self.project)))
+
+    def test_unbalanced_quote_still_judges_what_came_before(self):
+        self.assertEqual(self.rule("git commit --no-verify -m 'unfinished"), "hook-bypass")
+
+
+class RegistryTests(RegistryCase):
+    def test_lesson_id_and_reason_come_from_the_registry(self):
+        self.registry([{"rule": "hook-bypass", "lesson": "G027", "reason": "Hooks are the only CI here."}])
+        hit = guard_lessons.judge("git commit --no-verify", str(self.project / "sub"))
+        self.assertEqual(hit, guard_lessons.Hit("G027", "hook-bypass", "Hooks are the only CI here."))
+
+    def test_without_a_registry_built_in_rules_have_no_lesson_and_the_default_reason(self):
+        hit = guard_lessons.judge("git commit --no-verify", str(self.project))
+        self.assertEqual((hit.lesson, hit.reason), (None, guard_lessons.BUILT_IN_REASONS["hook-bypass"]))
+
+    def test_a_rule_can_be_switched_off_and_the_project_entry_wins(self):
+        self.registry([{"rule": "help-probe", "lesson": "G012"}], self.global_file)
+        self.registry([{"rule": "help-probe", "enabled": False}])
+        self.assertIsNone(self.rule("./run.sh --help"))
+        self.assertEqual(self.rule("./run.sh --help", cwd=self.dir), "help-probe")  # outside: global only
+        hit = guard_lessons.judge("./run.sh --help", str(self.dir))
+        self.assertEqual(hit.lesson, "G012")
+
+    def test_claude_project_dir_names_the_project(self):
+        self.registry([{"rule": "help-probe", "enabled": False}])
+        with mock.patch.dict(os.environ, {"CLAUDE_PROJECT_DIR": str(self.project)}):
+            self.assertIsNone(self.rule("./run.sh --help", cwd=self.dir))
+
+    def test_a_rule_of_your_own(self):
+        self.registry([{"lesson": "L031", "program": "git", "subcommand": "push", "args_any": ["--force", "-f"],
+                        "reason": "Push a new branch instead."},
+                       {"lesson": "L040", "program": ["make", "gmake"], "assignments_any": ["SKIP_TESTS=1"],
+                        "reason": "Tests are never skipped."},
+                       {"lesson": "L041", "program": "curl", "in_loop": True, "reason": "Poll with a timeout."}])
+        hit = guard_lessons.judge("git push -fu origin topic", str(self.project))
+        self.assertEqual(hit, guard_lessons.Hit("L031", "L031", "Push a new branch instead."))
+        for command in ("git push --force", "git -C d push -f", "git -c a=b push --force", "git push -uf o b"):
+            self.assertEqual(self.rule(command), "L031", command)
+        self.assertEqual(self.rule("SKIP_TESTS=1 gmake release"), "L040")
+        self.assertEqual(self.rule("while curl -sf localhost:8080; do sleep 1; done"), "L041")
+        self.assertEqual(self.rule("until test -f ready && curl -sf x; do sleep 1; done"), "L041")
+        for command in ("git push origin topic", "git fetch -f", "git -C push status -f", 'git commit -m "git push --force"', "make release",
+                        "SKIP_TESTS=0 make", "curl -sf localhost:8080"):
+            self.assertIsNone(self.rule(command), command)
+
+    def test_unusable_registries_are_refused_with_the_file_and_the_fault(self):
+        cases = [
+            ("{not json", "lesson-guards.json"),
+            (json.dumps([]), "expected"),
+            (json.dumps({"guards": [], "extra": 1}), "expected"),
+            (json.dumps({"guards": ["x"]}), "not an object"),
+            (json.dumps({"guards": [{"rule": "no-such-rule"}]}), "rule must be one of"),
+            (json.dumps({"guards": [{"rule": "help-probe", "enabeld": False}]}), "unknown keys"),
+            (json.dumps({"guards": [{"rule": "help-probe", "enabled": "no"}]}), "enabled must be"),
+            (json.dumps({"guards": [{"rule": "help-probe", "lesson": "twelve"}]}), "not a lesson id"),
+            (json.dumps({"guards": [{"rule": "help-probe", "lesson": "L012\n"}]}), "not a lesson id"),
+            (json.dumps({"guards": [{"rule": "hook-bypass", "programs": ["x"]}]}), "programs is a list"),
+            (json.dumps({"guards": [{"lesson": "L001", "program": "/usr/bin/git", "reason": "x"}]}), "without a directory"),
+            (json.dumps({"guards": [{"rule": "help-probe", "reason": " "}]}), "reason must be"),
+            (json.dumps({"guards": [{"rule": "secret-in-message", "programs": "notify.sh"}]}), "programs is a list"),
+            (json.dumps({"guards": [{"program": "git", "reason": "x"}]}), "needs lesson, reason and program"),
+            (json.dumps({"guards": [{"lesson": "L001", "program": "git", "reason": "x", "argz": []}]}), "unknown keys"),
+            (json.dumps({"guards": [{"lesson": "L001", "program": [], "reason": "x"}]}), "program must be"),
+            (json.dumps({"guards": [{"lesson": "L001", "program": "git", "reason": "x", "args_any": "-f"}]}), "args_any"),
+            (json.dumps({"guards": [{"lesson": "L001", "program": "git", "reason": "x", "subcommand": ""}]}), "subcommand"),
+            (json.dumps({"guards": [{"lesson": "L001", "program": "git", "reason": "x", "in_loop": 1}]}), "in_loop"),
+        ]
+        for text, fault in cases:
+            self.registry(text)
+            with self.assertRaises(guard_lessons.RegistryError, msg=text) as raised:
+                guard_lessons.judge("ls", str(self.project))
+            self.assertIn(fault, str(raised.exception), text)
+
+    def test_a_registry_that_is_a_directory_is_refused(self):
+        (self.project / ".agents" / "lesson-guards.json").mkdir(parents=True)
+        self.assertEqual(guard_lessons.registry_paths(str(self.project)), [])  # not a file: not a registry
+        self.global_file.mkdir(parents=True)
+        self.assertEqual(guard_lessons.registry_paths(str(self.project)), [])
+
+
+class HitLogTests(RegistryCase):
+    def test_append_and_count_within_the_window(self):
+        guard_hits.append("G027", "hook-bypass", "/work", now=1000)
+        guard_hits.append("G027", "hook-bypass", "/work", now=5000)
+        guard_hits.append(None, "help-probe", "/work", now=5100)
+        guard_hits.append("G002", "pgrep-wait-loop", "/work", now=9000)  # after `now`: not counted
+        found, damaged = guard_hits.counts(3600, now=5200)
+        self.assertEqual(dict(found), {("G027", "hook-bypass"): 1, ("-", "help-probe"): 1})
+        self.assertEqual(damaged, 0)
+        self.assertEqual(oct(self.hits.stat().st_mode & 0o777), "0o600")
+
+    def test_damaged_lines_are_skipped_and_counted(self):
+        guard_hits.append("G027", "hook-bypass", "/w", now=100)
+        with open(self.hits, "a", encoding="utf-8") as handle:
+            handle.write("not json\nnull\n{\"time\": \"x\", \"rule\": \"r\"}\n{\"lesson\": \"L1\"}\n")
+        found, damaged = guard_hits.counts(3600, now=200)
+        self.assertEqual((sum(found.values()), damaged), (1, 4))
+
+    def test_no_log_is_no_hits(self):
+        self.assertEqual(guard_hits.counts(60), ({}, 0))
+
+    def test_windows(self):
+        self.assertEqual([guard_hits.window_seconds(w) for w in ("30m", "24h", "7d")], [1800, 86400, 604800])
+        for bad in ("0h", "24", "h", "-1h", "1w", ""):
+            with self.assertRaises(ValueError, msg=bad):
+                guard_hits.window_seconds(bad)
+
+
+class HookTests(RegistryCase):
+    """guard.py pre run as Claude Code runs it."""
+
+    def pre(self, command, env=None, tool="Bash"):
+        payload = {"hook_event_name": "PreToolUse", "tool_name": tool, "tool_input": {"command": command},
+                   "cwd": str(self.project), "permission_mode": "default"}
+        base = {k: v for k, v in os.environ.items()
+                if k not in ("ARSENAL_GUARD", "ARSENAL_LESSON_GUARDS", "ARSENAL_GUARD_DESTRUCTIVE",
+                             "ARSENAL_RUN_LIMITS", "CLAUDE_PROJECT_DIR")}
+        result = subprocess.run([sys.executable, str(SCRIPT), "pre"], cwd=self.project, input=json.dumps(payload),
+                                capture_output=True, text=True, env={**base, **(env or {})})
+        self.assertEqual(result.returncode, 0, result.stderr)
+        return json.loads(result.stdout)["hookSpecificOutput"] if result.stdout.strip() else None
+
+    def test_a_refused_command_is_denied_and_logged_without_the_command(self):
+        self.registry([{"rule": "hook-bypass", "lesson": "G027"}])
+        out = self.pre("git commit --no-verify -m secretword")
+        self.assertEqual(out["permissionDecision"], "deny")
+        self.assertIn("lesson guard G027 (hook-bypass)", out["permissionDecisionReason"])
+        [entry] = [json.loads(line) for line in self.hits.read_text().splitlines()]
+        self.assertEqual((entry["lesson"], entry["rule"], entry["cwd"]), ("G027", "hook-bypass", str(self.project)))
+        self.assertNotIn("secretword", self.hits.read_text())
+
+    def test_clean_commands_and_other_tools_print_nothing(self):
+        self.assertIsNone(self.pre("ls -la"))
+        self.assertIsNone(self.pre("git commit --no-verify", tool="Read"))
+        self.assertFalse(self.hits.exists())
+
+    def test_switches(self):
+        self.assertIsNone(self.pre("git commit --no-verify", env={"ARSENAL_LESSON_GUARDS": "off"}))
+        self.assertIsNone(self.pre("git commit --no-verify", env={"ARSENAL_GUARD": "off"}))
+        out = self.pre("git commit --no-verify", env={"ARSENAL_GUARD_DESTRUCTIVE": "allow"})
+        self.assertEqual(out["permissionDecision"], "deny")  # the destructive switch does not lift lesson guards
+
+    def test_an_unusable_registry_denies_with_the_fault(self):
+        self.registry("{broken")
+        out = self.pre("ls")
+        self.assertEqual(out["permissionDecision"], "deny")
+        self.assertIn("registry is unusable", out["permissionDecisionReason"])
+        self.assertIn("lesson-guards.json", out["permissionDecisionReason"])
+
+    def test_an_unwritable_hit_log_still_refuses_and_says_so(self):
+        self.hits.parent.mkdir(parents=True)
+        self.hits.mkdir()  # a directory where the log file should be
+        out = self.pre("git commit --no-verify")
+        self.assertEqual(out["permissionDecision"], "deny")
+        self.assertIn("hit not logged", out["permissionDecisionReason"])
+
+    def test_any_logging_error_still_refuses_and_says_so(self):
+        import guard  # the hook module, in process: Path.home() raises RuntimeError when no home can be found
+        with mock.patch.object(guard_hits, "append", side_effect=RuntimeError("no home directory")):
+            reason = guard.lesson_refusal("git commit --no-verify", str(self.project))
+        self.assertIn("hook-bypass", reason)
+        self.assertIn("hit not logged: no home directory", reason)
+
+    def test_a_missing_helper_module_refuses_instead_of_passing(self):
+        import guard
+        with mock.patch.object(guard.guard_lessons, "judge", side_effect=ImportError("No module named 'ledger_store'")):
+            reason = guard.lesson_refusal("./notify.sh x", str(self.project))
+        self.assertIn("cannot judge this command", reason)
+
+    def test_the_secret_rule_runs_inside_the_hook(self):  # ledger_store is found beside lessons.py
+        self.registry([{"rule": "secret-in-message", "lesson": "G021", "programs": ["notify.sh"]}])
+        out = self.pre(f'./notify.sh team "{FAKE_PASSWORD}"')
+        self.assertEqual(out["permissionDecision"], "deny")
+        self.assertIn("G021 (secret-in-message)", out["permissionDecisionReason"])
+        self.assertNotIn(FAKE_VALUE, out["permissionDecisionReason"] + self.hits.read_text())
+
+    def test_destructive_commands_are_still_asked_about(self):
+        self.assertEqual(self.pre("git reset --hard")["permissionDecision"], "ask")
+
+
+if __name__ == "__main__":
+    unittest.main()
