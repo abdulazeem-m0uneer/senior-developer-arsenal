@@ -11,10 +11,14 @@ Usage:
   lessons.py promote ID              # write a rule stub under <ledger dir>/rules/, mark promoted, stop injecting
   lessons.py promote ID --as test    # print a test stub for the lesson's check (marks nothing)
   lessons.py promote ID --guard PATH # the guard (test, lint, hook, CI step) exists at PATH: mark promoted
+  lessons.py promote ID --guard PATH --keep-rule  # the guard covers only part of the rule: also write the rule stub
   lessons.py globalize ID            # move a project lesson to the global ledger
-  lessons.py check                   # validate the file and list promotion candidates
+  lessons.py check [--min N]         # validate the file and list promotion candidates (hits >= N)
+  lessons.py unguarded [--min N] [LEDGER...]  # lessons seen N+ times with no guard, archive included, most hits first
+  lessons.py hits [--since 24h]      # lesson-guard refusals in the window, from the hit log (guard_hits.py)
 Options: --file PATH (default: $LESSONS_FILE or .agents/lessons.md); --global on add, bump, archive, promote and
   check targets the global ledger ($LESSONS_GLOBAL_FILE or ~/.agents/lessons.md), as does an id starting with G.
+  The promotion threshold N defaults to $LESSONS_PROMOTE_AT, else 3.
 Exit codes: 0 ok, 1 check found problems, 2 usage, refused content, unreadable file or busy lock.
 Time budget: `active --hook` runs two short git reads (1.5 s timeout each) and never fails the session.
 """
@@ -27,12 +31,13 @@ import sys
 from datetime import date
 from pathlib import Path
 
+import guard_hits
 import promotion
 import relevance
 from ledger_store import find_secret, locked, write_atomic
 
 ACTIVE_CAP = 15
-PROMOTE_AT = 3
+PROMOTE_AT = 3   # default; $LESSONS_PROMOTE_AT or --min overrides it
 SIMILAR_AT = 0.5
 FIELD_MAX = 200
 TAGS_MAX = 60
@@ -173,10 +178,22 @@ def clean(value, limit=FIELD_MAX):
     return " ".join(value.replace("|", "/").split())[:limit]
 
 
+def promote_at(given=None):
+    """The hit count from which a lesson should get a guard: --min, else $LESSONS_PROMOTE_AT, else PROMOTE_AT."""
+    value = given if given is not None else os.environ.get("LESSONS_PROMOTE_AT") or PROMOTE_AT
+    try:
+        number = int(value)
+    except ValueError:
+        number = 0
+    if number < 1:
+        raise Refused(f"promotion threshold {value!r} is not a whole number of 1 or more (--min, LESSONS_PROMOTE_AT)")
+    return number
+
+
 def promote_hint(lesson):
     if lesson["promoted"]:
         return f"\nGUARD FAILED {lesson['id']}: promoted to {lesson['promoted']} and it happened again. Strengthen it."
-    if lesson["hits"] < PROMOTE_AT:
+    if lesson["hits"] < promote_at():
         return ""
     return (f"\nPROMOTE {lesson['id']}: seen {lesson['hits']} times. Run `promote {lesson['id']}` for a rule stub, or "
             f"enforce it mechanically (test, lint, hook, CI) and run `promote {lesson['id']} --guard PATH`.")
@@ -301,10 +318,17 @@ def cmd_archive(ledger, args):
 
 def cmd_promote(ledger, args):
     lesson = ledger.find(args.id)
+    if args.keep_rule and not args.guard:
+        raise Refused("--keep-rule goes with --guard PATH: it keeps the rule for what that guard does not cover")
     if args.guard:
         if not Path(args.guard).exists():
             raise Refused(f"guard {args.guard} does not exist; write it first")
         lesson["promoted"] = promotion.shown(args.guard)
+        if args.keep_rule:  # a partial guard: the rest of the rule stays in force as an always-loaded rule
+            path, appended = promotion.write_rule_stub(lesson, args.rules_dir or ledger.path.parent / "rules")
+            lesson["promoted"] += f" + rule {promotion.shown(path)}"
+            print(f"rule {'written to' if appended else 'already present in'} {path}: it keeps the part of the rule "
+                  "the guard does not cover")
     elif args.kind == "test":
         print(promotion.test_stub(lesson))
         print(f"Write it, make it pass, then: promote {lesson['id']} --guard <test file>")
@@ -336,7 +360,8 @@ def cmd_globalize(ledger, args):
     return 0
 
 
-def cmd_check(ledger, _args):
+def cmd_check(ledger, args):
+    threshold = promote_at(args.min)
     problems = ["not valid UTF-8: convert the file; a command that writes it would replace the bad bytes"
                 ] if ledger.undecodable else []
     problems += [f"unparsable line: {line[:80]}" for line in ledger.stray]
@@ -347,16 +372,48 @@ def cmd_check(ledger, _args):
     if len(ledger.section("active")) > ACTIVE_CAP:
         problems.append(f"Active has {len(ledger.section('active'))} lessons (cap {ACTIVE_CAP})")
     for lesson in ledger.section("active"):
-        if lesson["hits"] >= PROMOTE_AT and lesson["promoted"]:
+        if lesson["hits"] >= threshold and lesson["promoted"]:
             print(f"candidate {lesson['id']} hits:{lesson['hits']}: recurred after promotion to {lesson['promoted']}; "
                   "strengthen that guard")
-        elif lesson["hits"] >= PROMOTE_AT:
+        elif lesson["hits"] >= threshold:
             print(f"candidate {lesson['id']} hits:{lesson['hits']}: run `promote {lesson['id']}` (rule stub), or add "
                   "a test, lint, hook or CI guard and `promote --guard`")
     for problem in problems:
         print(f"problem: {problem}")
     print(f"{len(ledger.lessons)} lessons, {len(problems)} problems")
     return 1 if problems else 0
+
+
+def cmd_unguarded(ledger, args):
+    """Every lesson seen --min times or more with no guard, archive included, from this ledger, the global one and
+    any ledger named; a lesson moved to the global ledger is counted there, not here."""
+    threshold = promote_at(args.min)
+    missing = [path for path in args.ledgers if not Path(path).is_file()]
+    if missing:
+        raise Refused(f"no ledger at {', '.join(missing)}")
+    sources = []
+    for source in [ledger, *(Ledger(Path(path), "L") for path in args.ledgers), open_global(ledger.path)]:
+        if source and all(source.path.resolve() != seen.path.resolve() for seen in sources):
+            sources.append(source)
+    found = [(source, lesson) for source in sources for lesson in source.lessons
+             if lesson["hits"] >= threshold and not lesson["promoted"]]
+    for source, lesson in sorted(found, key=lambda item: -item[1]["hits"]):
+        print(f"{lesson['id']} hits:{lesson['hits']} [{lesson['section']}] {source.path}: {lesson['rule']}")
+    print(f"{len(found)} lessons seen {threshold}+ times without a guard")
+    return 0
+
+
+def cmd_hits(_ledger, args):
+    try:
+        seconds = guard_hits.window_seconds(args.since)
+    except ValueError as error:
+        raise Refused(str(error)) from None
+    found, damaged = guard_hits.counts(seconds)
+    for (lesson, rule), count in found.most_common():
+        print(f"{lesson} ({rule}) x{count}")
+    print(f"{sum(found.values())} guard refusals in the last {args.since} ({guard_hits.path()})"
+          + (f"; {damaged} damaged lines skipped" if damaged else ""))
+    return 0
 
 
 def build_parser():
@@ -376,16 +433,24 @@ def build_parser():
     promote.add_argument("--as", dest="kind", choices=("rule", "test"), default="rule")
     promote.add_argument("--guard")
     promote.add_argument("--rules-dir")
+    promote.add_argument("--keep-rule", action="store_true")
+    unguarded = sub.add_parser("unguarded")
+    unguarded.add_argument("ledgers", nargs="*")
+    sub.add_parser("hits").add_argument("--since", default="24h")
     by_id = [sub.add_parser(name) for name in ("bump", "archive", "globalize")] + [promote]
     for command in by_id:
         command.add_argument("id")
-    for command in [add, sub.add_parser("check"), *by_id[:2], promote]:
+    check = sub.add_parser("check")
+    for command in [add, check, *by_id[:2], promote]:
         command.add_argument("--global", dest="shared", action="store_true")
+    for command in (check, unguarded):
+        command.add_argument("--min", type=int)
     return parser
 
 
 COMMANDS = {"add": cmd_add, "active": cmd_active, "search": cmd_search, "bump": cmd_bump, "archive": cmd_archive,
-            "promote": cmd_promote, "globalize": cmd_globalize, "check": cmd_check, "show": cmd_show}
+            "promote": cmd_promote, "globalize": cmd_globalize, "check": cmd_check, "show": cmd_show,
+            "unguarded": cmd_unguarded, "hits": cmd_hits}
 
 
 def refuse_stray(ledger):

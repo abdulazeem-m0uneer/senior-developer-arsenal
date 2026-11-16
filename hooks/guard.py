@@ -5,8 +5,9 @@ commands and the limits of an unattended run (Claude Code plugin).
 Usage (hook input is JSON on stdin):
   guard.py baseline  # SessionStart startup|resume|clear: record HEAD and the already-dirty paths; prints nothing
   guard.py track     # PostToolUseFailure / PostToolUse on Bash: record failed and passed checks and recorded lessons
-  guard.py pre       # PreToolUse, every tool: deny past a run limit (guard_limits.py); ask or deny a destructive
-                     # Bash command (guard_destructive.py)
+  guard.py pre       # PreToolUse, every tool: deny past a run limit (guard_limits.py); deny a Bash command that
+                     # repeats a recorded lesson (guard_lessons.py, hit logged by guard_hits.py); ask or deny a
+                     # destructive Bash command (guard_destructive.py)
   guard.py stop      # Stop: block once when source changed without a test, or a check failed, never passed
                      # again and no lesson followed; silent once a run limit is reached
 Output: the Stop block {"decision":"block","reason":...} and the PreToolUse decision {"hookSpecificOutput":
@@ -51,10 +52,12 @@ SKILLS = next((path for path in (ROOT / ".agents" / "skills", ROOT / "skills") i
 LESSONS = SKILLS / "lessons-learned" / "scripts" / "lessons.py"
 sys.dont_write_bytecode = True  # importing the helper must not leave __pycache__ in the plugin
 sys.path.insert(0, str(SKILLS / "handoff" / "scripts"))
+sys.path.insert(0, str(LESSONS.parent))  # guard_hits, and ledger_store's secret check for guard_lessons
 try:
     import snapshot as hook  # hook input, session id, per-session file path, bounded git
     import guard_destructive
     import guard_limits
+    import guard_lessons
 except Exception:  # a broken install must not break the session either
     sys.exit(0)
 
@@ -312,7 +315,13 @@ def pre():
                               "end the turn. Only the operator lifts the limit, by editing or deleting that file.")
     tool_input = data.get("tool_input")
     command = tool_input.get("command") if isinstance(tool_input, dict) else None
-    if data.get("tool_name") != "Bash" or not isinstance(command, str) or switched_off("ARSENAL_GUARD_DESTRUCTIVE", "allow"):
+    if data.get("tool_name") != "Bash" or not isinstance(command, str):
+        return
+    if not switched_off("ARSENAL_LESSON_GUARDS"):
+        refusal = lesson_refusal(command, cwd)
+        if refusal:
+            return decide("deny", refusal)
+    if switched_off("ARSENAL_GUARD_DESTRUCTIVE", "allow"):
         return
     danger = guard_destructive.destructive(command, cwd)
     if not danger:
@@ -321,6 +330,26 @@ def pre():
         return decide("deny", f"arsenal guard: {danger}. Denied because nobody approves each call in this "
                               "permission mode; if it is really needed, park it for the user.")
     decide("ask", f"arsenal guard: {danger}.")
+
+
+def lesson_refusal(command, cwd):
+    """Why the command is refused under a lesson guard (the hit is logged), or ''."""
+    try:
+        hit = guard_lessons.judge(command, cwd)
+    except guard_lessons.RegistryError as error:
+        return (f"arsenal lesson guards: the registry is unusable ({error}). Fix the file with the Edit tool (or restart "
+                "the session with ARSENAL_LESSON_GUARDS=off); until then no Bash command runs, so no guard is silently lost.")
+    except ImportError as error:  # the secret rule's helper is missing: a broken install must not pass the command
+        return f"arsenal lesson guards cannot judge this command ({error}); reinstall the plugin."
+    if not hit:
+        return ""
+    note = ""
+    try:
+        import guard_hits  # imported here: only a refused command needs it
+        guard_hits.append(hit.lesson, hit.rule, cwd)
+    except Exception as error:  # the log is a report (no home directory, unwritable file); the refusal stands
+        note = f" (hit not logged: {error})"
+    return f"arsenal lesson guard {hit.lesson or hit.rule} ({hit.rule}): {hit.reason}{note}"
 
 
 def untested_sources(root, events):

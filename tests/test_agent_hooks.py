@@ -124,7 +124,7 @@ class ManifestTest(unittest.TestCase):
                 self.assertEqual(skills, {os.path.dirname(directory) + "/skills"}, (target, scope))
                 installed = {row[5] for row in mine if row[2] == "file"}
                 for name in ("agent_hook.py", "steps.json", "session_core.py", "core.md", "guard.py",
-                             "guard_destructive.py", "guard_limits.py"):
+                             "guard_destructive.py", "guard_limits.py", "guard_lessons.py"):
                     self.assertIn(f"{directory}/{name}", installed, (target, scope))
                 self.assertEqual(hooks[0][4], f"dist/hooks/{target}.json")
 
