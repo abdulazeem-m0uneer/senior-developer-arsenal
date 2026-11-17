@@ -223,17 +223,28 @@ class SharedTempTest(InstallCase):
         self.assertEqual(oct(self.folder.stat().st_mode & 0o777), "0o700")
         self.assertEqual(len(self.caches()), 1)
 
-    def test_a_folder_others_can_write_or_a_link_is_never_used(self):
+    def test_an_own_loose_folder_is_tightened_and_a_link_is_never_used(self):
         self.folder.mkdir()
-        self.folder.chmod(0o777)
+        self.folder.chmod(0o777)  # ours, but others could write it: tightened before anything is read from it
         self.assertIn("arsenal:zoo-keeper", self.line("plan the zebra crossing for the zoo", script=self.script))
-        self.assertEqual(self.caches(), [])
+        self.assertEqual(oct(self.folder.stat().st_mode & 0o777), "0o700")
+        self.assertEqual(len(self.caches()), 1)
+        for cache in self.caches():
+            cache.unlink()
         self.folder.rmdir()
         elsewhere = Path(self.temp.name) / "elsewhere"
         elsewhere.mkdir(mode=0o700)
         os.symlink(elsewhere, self.folder)
         self.assertIn("arsenal:zoo-keeper", self.line("plan the zebra crossing for the zoo", script=self.script))
         self.assertEqual(list(elsewhere.iterdir()), [])
+
+    def test_an_empty_cached_phrase_is_rejected_not_fatal(self):
+        self.line("plan the zebra crossing for the zoo", script=self.script)
+        [cache] = self.caches()
+        stored = json.loads(cache.read_text(encoding="utf-8"))
+        stored["skills"]["zoo-keeper"]["triggers"].append(["  ", 3, ""])
+        cache.write_text(json.dumps(stored), encoding="utf-8")
+        self.assertIn("arsenal:zoo-keeper", self.line("plan the zebra crossing for the zoo", script=self.script))
 
     def test_a_planted_cache_cannot_inject_names_or_patterns(self):
         self.line("plan the zebra crossing for the zoo", script=self.script)

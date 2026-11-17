@@ -95,8 +95,13 @@ def state_dir():
         return None
     if not stat.S_ISDIR(info.st_mode):
         return None
-    if uid is not None and (info.st_uid != uid or info.st_mode & 0o077):
-        return None  # someone else's folder, or one others can write: no cache, no repeat state
+    if uid is not None and info.st_uid != uid:
+        return None  # someone else's folder: no cache, no repeat state
+    if uid is not None and info.st_mode & 0o077:
+        try:
+            os.chmod(folder, 0o700)  # our own folder, made with a looser umask or mode: tighten it, then use it
+        except OSError:
+            return None
     return folder
 
 
@@ -135,8 +140,8 @@ def valid_table(table, names):
             return False
         for trigger in skill["triggers"]:
             if not (isinstance(trigger, list) and len(trigger) == 3 and isinstance(trigger[0], str)
-                    and len(trigger[0]) <= MAX_PHRASE and type(trigger[1]) is int and 0 < trigger[1] < 10
-                    and isinstance(trigger[2], str)):
+                    and trigger[0].strip() and len(trigger[0]) <= MAX_PHRASE and type(trigger[1]) is int
+                    and 0 < trigger[1] < 10 and isinstance(trigger[2], str) and trigger[2]):
                 return False
         for rule in skill["not_for"]:
             if not (isinstance(rule, list) and len(rule) == 2 and isinstance(rule[0], list)
