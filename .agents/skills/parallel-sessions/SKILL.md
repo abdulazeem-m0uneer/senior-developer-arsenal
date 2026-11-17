@@ -40,6 +40,7 @@ Consult: [Worktree Command Sheet & Collision Table](./references/worktrees-and-c
 2. Give the worktree its own dependency install, ports, and scratch database so two sessions never share runtime state.
 3. Never switch branch, reset, clean, or restore in a checkout that holds changes that are not yours.
 4. Several independent problems in one session: Consult: [Dispatching Parallel Subagents](./references/dispatching-parallel-agents.md). One agent per independent domain, dispatched in the same response; never two implementers on one branch.
+5. When a session or lane owns only some folders, lock its edits to them: `python3 <skill-dir>/scripts/scope.py set <folder>... --reason "<task>"` (`show`, `clear`). With the Claude Code plugin, the `PreToolUse` hook then denies a Write, Edit, MultiEdit or NotebookEdit outside those folders. Bash is not covered, and `ARSENAL_GUARD_SCOPE=off` lifts the lock. Clear it when the task merges.
 
 ### Step 4: Stage, Stash, and Number Without Collisions
 1. Stage by explicit path. `git add -A`, `git add .`, and `git commit -a` are banned in a shared checkout: they sweep in the neighbour's files.
