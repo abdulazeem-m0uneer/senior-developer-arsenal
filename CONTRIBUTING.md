@@ -43,7 +43,7 @@ Use the `create-skill` skill to scaffold a new skill. Keep wording agent-neutral
 
 ## Token budgets
 
-Text that loads every session is capped by `build.py --validate`: each skill description at most 420 characters, all descriptions together at most 22,000 (lower it when they shrink), and the rules that load in every session together at most 20,000 on each target. That last cap counts what a target really loads: a rule without `globs` is unconditional on Claude Code and Copilot whatever its `trigger` says, so a new `model_decision` rule needs `globs` or room in the budget. The measured total is in `docs/BENCHMARK.md`. Put detail in the skill body or `references/`, not the description.
+Text that loads every session is capped by `build.py --validate`: each skill description at most 420 characters, all descriptions together at most 22,500 (lower it when they shrink), and the rules that load in every session together at most 20,000 on each target. That last cap counts what a target really loads: a rule without `globs` is unconditional on Claude Code and Copilot whatever its `trigger` says, so a new `model_decision` rule needs `globs` or room in the budget. The measured total is in `docs/BENCHMARK.md`. Put detail in the skill body or `references/`, not the description.
 
 ## Behaviour evals
 
