@@ -33,6 +33,7 @@ SHAPE_RE = re.compile(
     r"\bsk-[A-Za-z0-9_-]{16,}|\bgh[pousr]_[A-Za-z0-9]{20,}|\bgithub_pat_[A-Za-z0-9_]{20,}"
     r"|\b(?:AKIA|ASIA)[0-9A-Z]{16}\b|\bxox[abeprs]-[A-Za-z0-9-]{10,}"
     r"|\bglpat-[A-Za-z0-9_-]{20,}|hooks\.slack\.com/services/[A-Za-z0-9/]{20,}"
+    r"|\b[sr]k_(?:live|test)_[A-Za-z0-9]{8,}|\bBearer\s+[A-Za-z0-9._~+/-]{16,}"  # payment secret keys, bearer tokens
     r"|\b[a-z][a-z0-9+.-]*://[^\s/:@]+:[^\s/@]{6,}@"
     r"|\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}|-----BEGIN [A-Z0-9 ]+-----")
 RUN_RE = re.compile(r"[A-Za-z0-9+/=_\\-]{%d,}" % RUN_MIN)

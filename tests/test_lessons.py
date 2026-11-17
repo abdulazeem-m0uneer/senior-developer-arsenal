@@ -254,6 +254,15 @@ class SecretFilterTests(LedgerCase):
         for text in harmless:
             self.assertEqual(self.accepted(text), (True, ""), text)
 
+    def test_bearer_tokens_and_payment_secret_keys_are_refused(self):
+        # assembled at run time, so no secret scanner sees a literal one in this file
+        for text in ("Authorization: " + "Bearer " + "a1B2c3D4" * 3, "key " + "sk" + "_live_" + "x7Yq" * 6,
+                     "restricted " + "rk" + "_test_" + "9Gh2" * 4):
+            self.assertEqual(self.accepted(text)[0], False, text)
+        for text in ("send Bearer <token> in the header", "the Bearer token expired at noon",
+                     "prefix sk_live_ alone"):
+            self.assertEqual(self.accepted(text), (True, ""), text)
+
     def test_real_secret_shapes_are_refused(self):
         secrets = [
             "sk-ant-api03-abcdefghijklmnop1234", "ghp_" + "a1B2c3D4e5" * 4, "github_pat_" + "A1b2C3d4E5" * 3,
