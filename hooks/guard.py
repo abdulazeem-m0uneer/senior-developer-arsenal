@@ -4,7 +4,8 @@ commands and the limits of an unattended run (Claude Code plugin).
 
 Usage (hook input is JSON on stdin):
   guard.py baseline  # SessionStart startup|resume|clear: record HEAD and the already-dirty paths; prints nothing
-  guard.py track     # PostToolUseFailure / PostToolUse on Bash: record failed and passed checks and recorded lessons
+  guard.py track     # PostToolUseFailure / PostToolUse on Bash: record failed and passed checks and recorded lessons;
+                     # a recorded lesson also appends its preceding failures to the local evidence file (save_evidence)
   guard.py pre       # PreToolUse, every tool: deny past a run limit (guard_limits.py); deny a Bash command that
                      # repeats a recorded lesson (guard_lessons.py, hit logged by guard_hits.py); ask or deny a
                      # destructive Bash command (guard_destructive.py)
@@ -55,7 +56,7 @@ SKILLS = next((path for path in (ROOT / ".agents" / "skills", ROOT / "skills") i
 LESSONS = SKILLS / "lessons-learned" / "scripts" / "lessons.py"
 sys.dont_write_bytecode = True  # importing the helper must not leave __pycache__ in the plugin
 sys.path.insert(0, str(SKILLS / "handoff" / "scripts"))
-sys.path.insert(0, str(LESSONS.parent))  # guard_hits, and ledger_store's secret check for guard_lessons
+sys.path.insert(0, str(LESSONS.parent))  # guard_hits, ledger_store's secret check (guard_lessons, save_evidence)
 sys.path.insert(0, str(SKILLS / "dead-code" / "scripts"))  # dead_code, imported by the stop gate only
 try:
     import snapshot as hook  # hook input, session id, per-session file path, bounded git
@@ -64,6 +65,15 @@ try:
     import guard_lessons
 except Exception:  # a broken install must not break the session either
     sys.exit(0)
+
+EVIDENCE_FAILURES = 3   # failed commands kept with a lesson: the last ones since the previous lesson
+ERROR_CHARS = 400
+FAILED_COMMAND_CHARS = 300
+LESSON_COMMAND_CHARS = 1200  # the add command carries the lesson's own text: pairs stay usable without an id
+WITHHELD = "[withheld: looks like a secret]"
+# What lessons.py prints for the lesson it wrote or counted: "added L012", "duplicate of G003: ...", "L012 hits:3".
+LESSON_ID = re.compile(r"\b(?:added|duplicate of) ([LG]\d{3,})\b|^([LG]\d{3,}) hits:\d+", re.M)
+LEDGER_IN_COMMAND = re.compile(r"(?:LESSONS_FILE=|--file[=\s])(\"[^\"]+\"|'[^']+'|[^\s;&|]+)")
 
 MAX_NAMED = 8
 COMMAND_CHARS = 80
@@ -278,14 +288,65 @@ def track():
         return
     checks = check_keys(command)
     if data.get("hook_event_name") == "PostToolUseFailure":
-        if checks and data.get("is_interrupt") is not True:
-            record(path, {"event": "fail", "command": " ".join(command.split())[:COMMAND_CHARS], "checks": checks})
+        if data.get("is_interrupt") is not True:
+            record(path, {"event": "error", "command": shown(command, FAILED_COMMAND_CHARS),
+                          "error": shown(str(data.get("error") or ""), ERROR_CHARS)})
+            if checks:
+                record(path, {"event": "fail", "command": " ".join(command.split())[:COMMAND_CHARS], "checks": checks})
         return
     if LESSON_COMMAND.search(bounded(command)):  # PostToolUse: the command exited 0
+        before = load(path)
         record(path, {"event": "lesson"})
+        try:
+            save_evidence(data, command, before)
+        except OSError:  # the evidence file is optional; the gate's own state is already written
+            pass
     checks = check_keys(command, decisive=True)  # a pass hidden by `| tail` or `|| true` proves nothing
     if checks:
         record(path, {"event": "pass", "checks": checks})
+
+
+def shown(text, limit):
+    """One line of at most `limit` characters, or a placeholder when it looks like it holds a secret."""
+    text = " ".join(text.split())[:limit]
+    try:
+        from ledger_store import find_secret  # imported here: `pre` runs before every tool call and never needs it
+    except ImportError:
+        return WITHHELD
+    return WITHHELD if find_secret(text) else text
+
+
+def evidence_path():
+    return Path(os.environ.get("LESSONS_EVIDENCE_FILE") or Path.home() / ".agents" / "lessons-evidence.jsonl")
+
+
+def save_evidence(data, command, events):
+    """Append {lesson, ledger, lesson command, the failures since the previous lesson} to the local evidence file,
+    the labelled pairs a failure-to-lesson matcher can later be trained and measured on. Nothing when no command
+    failed since the previous lesson. Never inside the transcript or the ledger; LESSONS_EVIDENCE=off disables it."""
+    if switched_off("LESSONS_EVIDENCE") or switched_off():
+        return
+    failures = []
+    for event in events:
+        if event.get("event") == "error":
+            failures.append({"command": str(event.get("command", "")), "error": str(event.get("error", ""))})
+        elif event.get("event") == "lesson":
+            failures = []
+    if not failures:
+        return
+    response = data.get("tool_response")
+    stdout = response.get("stdout") if isinstance(response, dict) else None
+    found = LESSON_ID.search(stdout) if isinstance(stdout, str) else None
+    lesson = (found.group(1) or found.group(2)) if found else None
+    named = LEDGER_IN_COMMAND.search(command)
+    ledger = named.group(1).strip("\"'") if named else os.environ.get("LESSONS_FILE") or ".agents/lessons.md"
+    cwd = hook.working_dir(data)
+    entry = {"time": time.strftime("%Y-%m-%dT%H:%M:%S%z"), "lesson": lesson,
+             "ledger": "global" if lesson and lesson.startswith("G") else str(Path(cwd, ledger)),
+             "lesson_command": shown(command, LESSON_COMMAND_CHARS), "failures": failures[-EVIDENCE_FAILURES:]}
+    target = evidence_path()
+    target.parent.mkdir(parents=True, exist_ok=True)
+    record(target, entry)
 
 
 def decide(decision, text):

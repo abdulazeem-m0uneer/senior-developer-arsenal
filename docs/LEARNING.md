@@ -72,6 +72,29 @@ On a real pair of ledgers (15 project and 15 global lessons), session start show
 | Codex CLI, Gemini CLI, Cursor, GitHub Copilot, Antigravity | `./install.sh --global --target <agent> --hooks` registers the session-start hook and the stop gate (see [TARGETS.md](TARGETS.md#hooks-for-the-other-agents---hooks)). |
 | Any other agent | One line in its instruction file: "At session start run `python .agents/skills/lessons-learned/scripts/lessons.py active --hook`; after a verified mistake run `lessons.py add ...`." |
 
+## Evidence for a trained matcher
+
+A small model could do better than word matching: when a command fails, name the lesson it repeats. It has to be trained and measured on pairs of a failure and the lesson it led to, and agent transcripts do not hold those pairs reliably. An agent often records a lesson minutes later, about an earlier event or a review finding, so "the failure just before a lesson" is a poor label. Measured on one developer's transcripts (about 190,000 shell commands, 76 failure-then-lesson pairs), both a word matcher and a local embedding model put the right lesson first only 7% of the time. A model that warns before a command runs, trained on the command text alone, reached AUC 0.72 but 10 of 11 warnings would have been wrong.
+
+So the Claude Code plugin now records the pairs as they happen. When `lessons.py add` or `bump` succeeds, `hooks/guard.py` appends one line to a local evidence file:
+
+```json
+{"time": "...", "lesson": "L004", "ledger": "/repo/.agents/lessons.md",
+ "lesson_command": "python3 lessons.py add --tags git --mistake \"...\" ...",
+ "failures": [{"command": "git push upstream main", "error": "Exit code 128 fatal: ..."}]}
+```
+
+| Property | Value |
+| :--- | :--- |
+| Path | `$LESSONS_EVIDENCE_FILE`, default `~/.agents/lessons-evidence.jsonl` (mode 600, never inside a repository by default) |
+| When | Only after a failed Bash command since the previous lesson in the session; at most the last three failures |
+| Size | Failed command 300 characters, error 400, the lesson command 1,200 (it holds the lesson's own text, so a pair stays usable when the id could not be read) |
+| Privacy | A field that looks like a secret is replaced by `[withheld: looks like a secret]`; the file stays on the machine |
+| Context cost | None: the hook prints nothing and runs no subprocess |
+| Off switch | `LESSONS_EVIDENCE=off` (or `ARSENAL_GUARD=off` for every guard) |
+
+Once a few hundred pairs exist, a matcher can be trained on them and measured on held-out sessions; it should be switched on only if it names the right lesson most of the time.
+
 ## Limits
 
 - Lessons help only when they are loaded; an agent that ignores its instruction file never sees them.

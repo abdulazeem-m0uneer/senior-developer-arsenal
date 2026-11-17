@@ -35,6 +35,7 @@ class GuardCase(unittest.TestCase):
         self.write("legacy.py", "dirty before the session")
         self.outside = tempfile.TemporaryDirectory()
         self.state = Path(self.outside.name) / "snap.guard.jsonl"
+        self.evidence = Path(self.outside.name) / "evidence.jsonl"
 
     def tearDown(self):
         self.tmp.cleanup()
@@ -47,9 +48,10 @@ class GuardCase(unittest.TestCase):
 
     def run_hook(self, cmd, payload=None, cwd=None, env=None):
         stdin = payload if isinstance(payload, str) else json.dumps(payload or {})
-        base = {**os.environ, "HANDOFF_SNAPSHOT": str(Path(self.outside.name) / "snap.md")}
+        base = {**os.environ, "HANDOFF_SNAPSHOT": str(Path(self.outside.name) / "snap.md"),
+                "LESSONS_EVIDENCE_FILE": str(self.evidence)}  # never the developer's real evidence file
         for name in ("ARSENAL_GUARD", "ARSENAL_GUARD_DESTRUCTIVE", "ARSENAL_GUARD_DEADCODE", "ARSENAL_RUN_LIMITS",
-                     "CLAUDE_PROJECT_DIR"):
+                     "CLAUDE_PROJECT_DIR", "LESSONS_EVIDENCE", "LESSONS_FILE"):
             base.pop(name, None)  # the developer's own session must not leak into the hook under test
         result = subprocess.run([sys.executable, str(SCRIPT), cmd], cwd=cwd or self.dir, input=stdin,
                                 capture_output=True, text=True, env={**base, **(env or {})})
@@ -250,6 +252,87 @@ class TestGateTest(GuardCase):
             self.assertIsNone(guard.changed_paths(str(self.dir), "HEAD"), failing)
         guard.git_fields = original
         self.assertEqual(guard.changed_paths(str(self.dir), "HEAD"), {"legacy.py"})
+
+
+class EvidenceTest(GuardCase):
+    """A recorded lesson stores the failures that preceded it in the local evidence file."""
+    ADD = 'python3 lessons.py add --tags git --mistake "pushed to the wrong remote" --rule "read git remote -v first"'
+
+    def failed_command(self, command, error="Exit code 1\nfatal: no such remote"):
+        self.bash(command, failed=True, error=error, is_interrupt=False)
+
+    def lesson(self, command=ADD, stdout="added L004", env=None):
+        payload = {"hook_event_name": "PostToolUse", "tool_name": "Bash", "tool_input": {"command": command},
+                   "tool_response": {"stdout": stdout, "stderr": ""}}
+        self.assertEqual(self.run_hook("track", payload, env=env), "")
+
+    def entries(self):
+        if not self.evidence.exists():
+            return []
+        return [json.loads(line) for line in self.evidence.read_text().splitlines()]
+
+    def test_a_lesson_after_a_failure_stores_the_pair(self):
+        self.failed_command("git push upstream main")
+        self.lesson()
+        [entry] = self.entries()
+        self.assertEqual(entry["lesson"], "L004")
+        self.assertEqual(entry["ledger"], str(self.dir / ".agents" / "lessons.md"))
+        self.assertIn('--mistake "pushed to the wrong remote"', entry["lesson_command"])
+        self.assertEqual(entry["failures"], [{"command": "git push upstream main",
+                                              "error": "Exit code 1 fatal: no such remote"}])
+        self.assertEqual(oct(self.evidence.stat().st_mode & 0o777), "0o600")
+
+    def test_no_failure_since_the_previous_lesson_stores_nothing(self):
+        self.lesson()
+        self.assertEqual(self.entries(), [])
+        self.failed_command("cat missing.txt")
+        self.lesson()
+        self.lesson(stdout="L004 hits:2")
+        self.assertEqual(len(self.entries()), 1)
+
+    def test_only_failures_since_the_previous_lesson_and_at_most_three_newest_last(self):
+        self.failed_command("first")
+        self.lesson()
+        for n in range(5):
+            self.failed_command(f"later{n}")
+        self.lesson(stdout="duplicate of G003: hits bumped to 4")
+        first, second = self.entries()
+        self.assertEqual([f["command"] for f in first["failures"]], ["first"])
+        self.assertEqual([f["command"] for f in second["failures"]], ["later2", "later3", "later4"])
+        self.assertEqual((second["lesson"], second["ledger"]), ("G003", "global"))
+
+    def test_bump_output_and_a_named_ledger_are_read(self):
+        self.failed_command("ls nothing-here")
+        self.lesson(command="python3 lessons.py --file docs/l.md bump L012", stdout="L012 hits:3")
+        self.failed_command("ls nothing-here")
+        self.lesson(command="LESSONS_FILE=/abs/ledger.md python3 lessons.py add --tags a", stdout="no id printed")
+        named, unnamed = self.entries()
+        self.assertEqual((named["lesson"], named["ledger"]), ("L012", str(self.dir / "docs" / "l.md")))
+        self.assertEqual((unnamed["lesson"], unnamed["ledger"]), (None, "/abs/ledger.md"))
+
+    def test_secrets_are_withheld(self):
+        token = "ghp_" + "a1B2" * 9
+        self.failed_command(f"curl -H 'Authorization: token {token}' https://api.example.com", error=f"Exit code 22 {token}")
+        self.lesson(command=self.ADD + f" --check 'TOKEN={token}'")
+        [entry] = self.entries()
+        self.assertEqual(entry["failures"][0], {"command": guard.WITHHELD, "error": guard.WITHHELD})
+        self.assertEqual(entry["lesson_command"], guard.WITHHELD)
+        self.assertNotIn(token, self.evidence.read_text())
+
+    def test_interrupted_commands_and_the_opt_out_store_nothing(self):
+        self.bash("sleep 100", failed=True, error="Interrupted", is_interrupt=True)
+        self.lesson()
+        self.failed_command("cat missing.txt")
+        self.lesson(env={"LESSONS_EVIDENCE": "off"})
+        self.failed_command("cat missing.txt")
+        self.lesson(env={"ARSENAL_GUARD": "off"})
+        self.assertEqual(self.entries(), [])
+
+    def test_an_unwritable_evidence_file_still_records_the_lesson_for_the_stop_gate(self):
+        self.evidence.mkdir()  # a directory where the file should be: every write fails
+        self.failed_command("git push upstream main")
+        self.lesson()
+        self.assertEqual(json.loads(self.state.read_text().splitlines()[-1]), {"event": "lesson"})
 
 
 class FailOpenTest(GuardCase):
