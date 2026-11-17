@@ -40,6 +40,11 @@
             "type": "command",
             "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/.agents/skills/handoff/scripts/snapshot.py\" prompt || python \"${CLAUDE_PLUGIN_ROOT}/.agents/skills/handoff/scripts/snapshot.py\" prompt",
             "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/skill_router.py\" || python \"${CLAUDE_PLUGIN_ROOT}/hooks/skill_router.py\"",
+            "timeout": 5
           }
         ]
       }
