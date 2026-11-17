@@ -86,6 +86,7 @@ Skills: `.agents/skills/<name>/SKILL.md`. Subagents: `.agents/subagents/`.
 | Done? | `definition-of-done` before reporting complete | — |
 | Repo onboarding | `repo-scan` (stack → skills/rules/subagents) | — |
 | DevOps, CI/CD | `devops-ci`; `ci-wait` (PR checks); `quality-gate` (local = CI) | `devops-engineer` |
+| Ship a branch (gate, commit, push, PR, CI fix loop), babysit a PR | `ship` | — |
 | Architecture decisions | `architecture-design-adr` | — |
 | Structural navigation | `codegraph` (CodeGraph MCP connected) | — |
 | Long-term memory | `agent-memory` (Hindsight available) | — |

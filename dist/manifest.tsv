@@ -52,6 +52,7 @@ antigravity	global	dir	requirements-grilling	.agents/skills/requirements-grillin
 antigravity	global	dir	reverse-engineer	.agents/skills/reverse-engineer	.gemini/config/skills/reverse-engineer	-
 antigravity	global	dir	security-audit	.agents/skills/security-audit	.gemini/config/skills/security-audit	-
 antigravity	global	dir	shared-infra-changes	.agents/skills/shared-infra-changes	.gemini/config/skills/shared-infra-changes	-
+antigravity	global	dir	ship	.agents/skills/ship	.gemini/config/skills/ship	-
 antigravity	global	dir	smoke-test	.agents/skills/smoke-test	.gemini/config/skills/smoke-test	-
 antigravity	global	dir	test-every-change	.agents/skills/test-every-change	.gemini/config/skills/test-every-change	-
 antigravity	global	dir	test-strategy	.agents/skills/test-strategy	.gemini/config/skills/test-strategy	-
@@ -95,7 +96,10 @@ antigravity	global	file	guard.py	hooks/guard.py	.gemini/config/arsenal-hooks/gua
 antigravity	global	file	guard_destructive.py	hooks/guard_destructive.py	.gemini/config/arsenal-hooks/guard_destructive.py	-
 antigravity	global	file	guard_lessons.py	hooks/guard_lessons.py	.gemini/config/arsenal-hooks/guard_lessons.py	-
 antigravity	global	file	guard_limits.py	hooks/guard_limits.py	.gemini/config/arsenal-hooks/guard_limits.py	-
+antigravity	global	file	guard_models.py	hooks/guard_models.py	.gemini/config/arsenal-hooks/guard_models.py	-
+antigravity	global	file	guard_scope.py	hooks/guard_scope.py	.gemini/config/arsenal-hooks/guard_scope.py	-
 antigravity	global	file	session_core.py	hooks/session_core.py	.gemini/config/arsenal-hooks/session_core.py	-
+antigravity	global	file	skill_router.py	hooks/skill_router.py	.gemini/config/arsenal-hooks/skill_router.py	-
 antigravity	global	file	core.md	hooks/core.md	.gemini/config/arsenal-hooks/core.md	-
 antigravity	global	file	steps.json	dist/hooks/steps.json	.gemini/config/arsenal-hooks/steps.json	-
 antigravity	global	hooks	hooks	dist/hooks/antigravity.json	.gemini/config/hooks.json	.gemini/config/arsenal-hooks
@@ -156,6 +160,7 @@ antigravity	project	dir	requirements-grilling	.agents/skills/requirements-grilli
 antigravity	project	dir	reverse-engineer	.agents/skills/reverse-engineer	.agents/skills/reverse-engineer	-
 antigravity	project	dir	security-audit	.agents/skills/security-audit	.agents/skills/security-audit	-
 antigravity	project	dir	shared-infra-changes	.agents/skills/shared-infra-changes	.agents/skills/shared-infra-changes	-
+antigravity	project	dir	ship	.agents/skills/ship	.agents/skills/ship	-
 antigravity	project	dir	smoke-test	.agents/skills/smoke-test	.agents/skills/smoke-test	-
 antigravity	project	dir	test-every-change	.agents/skills/test-every-change	.agents/skills/test-every-change	-
 antigravity	project	dir	test-strategy	.agents/skills/test-strategy	.agents/skills/test-strategy	-
@@ -200,7 +205,10 @@ antigravity	project	file	guard.py	hooks/guard.py	.agents/arsenal-hooks/guard.py	
 antigravity	project	file	guard_destructive.py	hooks/guard_destructive.py	.agents/arsenal-hooks/guard_destructive.py	-
 antigravity	project	file	guard_lessons.py	hooks/guard_lessons.py	.agents/arsenal-hooks/guard_lessons.py	-
 antigravity	project	file	guard_limits.py	hooks/guard_limits.py	.agents/arsenal-hooks/guard_limits.py	-
+antigravity	project	file	guard_models.py	hooks/guard_models.py	.agents/arsenal-hooks/guard_models.py	-
+antigravity	project	file	guard_scope.py	hooks/guard_scope.py	.agents/arsenal-hooks/guard_scope.py	-
 antigravity	project	file	session_core.py	hooks/session_core.py	.agents/arsenal-hooks/session_core.py	-
+antigravity	project	file	skill_router.py	hooks/skill_router.py	.agents/arsenal-hooks/skill_router.py	-
 antigravity	project	file	core.md	hooks/core.md	.agents/arsenal-hooks/core.md	-
 antigravity	project	file	steps.json	dist/hooks/steps.json	.agents/arsenal-hooks/steps.json	-
 antigravity	project	hooks	hooks	dist/hooks/antigravity.json	.agents/hooks.json	.agents/arsenal-hooks
@@ -259,6 +267,7 @@ gemini	global	dir	requirements-grilling	.agents/skills/requirements-grilling	.ag
 gemini	global	dir	reverse-engineer	.agents/skills/reverse-engineer	.agents/skills/reverse-engineer	-
 gemini	global	dir	security-audit	.agents/skills/security-audit	.agents/skills/security-audit	-
 gemini	global	dir	shared-infra-changes	.agents/skills/shared-infra-changes	.agents/skills/shared-infra-changes	-
+gemini	global	dir	ship	.agents/skills/ship	.agents/skills/ship	-
 gemini	global	dir	smoke-test	.agents/skills/smoke-test	.agents/skills/smoke-test	-
 gemini	global	dir	test-every-change	.agents/skills/test-every-change	.agents/skills/test-every-change	-
 gemini	global	dir	test-strategy	.agents/skills/test-strategy	.agents/skills/test-strategy	-
@@ -289,7 +298,10 @@ gemini	global	file	guard.py	hooks/guard.py	.agents/arsenal-hooks/guard.py	-
 gemini	global	file	guard_destructive.py	hooks/guard_destructive.py	.agents/arsenal-hooks/guard_destructive.py	-
 gemini	global	file	guard_lessons.py	hooks/guard_lessons.py	.agents/arsenal-hooks/guard_lessons.py	-
 gemini	global	file	guard_limits.py	hooks/guard_limits.py	.agents/arsenal-hooks/guard_limits.py	-
+gemini	global	file	guard_models.py	hooks/guard_models.py	.agents/arsenal-hooks/guard_models.py	-
+gemini	global	file	guard_scope.py	hooks/guard_scope.py	.agents/arsenal-hooks/guard_scope.py	-
 gemini	global	file	session_core.py	hooks/session_core.py	.agents/arsenal-hooks/session_core.py	-
+gemini	global	file	skill_router.py	hooks/skill_router.py	.agents/arsenal-hooks/skill_router.py	-
 gemini	global	file	core.md	hooks/core.md	.agents/arsenal-hooks/core.md	-
 gemini	global	file	steps.json	dist/hooks/steps.json	.agents/arsenal-hooks/steps.json	-
 gemini	global	hooks	hooks	dist/hooks/gemini.json	.gemini/settings.json	.agents/arsenal-hooks
@@ -348,6 +360,7 @@ gemini	project	dir	requirements-grilling	.agents/skills/requirements-grilling	.a
 gemini	project	dir	reverse-engineer	.agents/skills/reverse-engineer	.agents/skills/reverse-engineer	-
 gemini	project	dir	security-audit	.agents/skills/security-audit	.agents/skills/security-audit	-
 gemini	project	dir	shared-infra-changes	.agents/skills/shared-infra-changes	.agents/skills/shared-infra-changes	-
+gemini	project	dir	ship	.agents/skills/ship	.agents/skills/ship	-
 gemini	project	dir	smoke-test	.agents/skills/smoke-test	.agents/skills/smoke-test	-
 gemini	project	dir	test-every-change	.agents/skills/test-every-change	.agents/skills/test-every-change	-
 gemini	project	dir	test-strategy	.agents/skills/test-strategy	.agents/skills/test-strategy	-
@@ -380,7 +393,10 @@ gemini	project	file	guard.py	hooks/guard.py	.agents/arsenal-hooks/guard.py	-
 gemini	project	file	guard_destructive.py	hooks/guard_destructive.py	.agents/arsenal-hooks/guard_destructive.py	-
 gemini	project	file	guard_lessons.py	hooks/guard_lessons.py	.agents/arsenal-hooks/guard_lessons.py	-
 gemini	project	file	guard_limits.py	hooks/guard_limits.py	.agents/arsenal-hooks/guard_limits.py	-
+gemini	project	file	guard_models.py	hooks/guard_models.py	.agents/arsenal-hooks/guard_models.py	-
+gemini	project	file	guard_scope.py	hooks/guard_scope.py	.agents/arsenal-hooks/guard_scope.py	-
 gemini	project	file	session_core.py	hooks/session_core.py	.agents/arsenal-hooks/session_core.py	-
+gemini	project	file	skill_router.py	hooks/skill_router.py	.agents/arsenal-hooks/skill_router.py	-
 gemini	project	file	core.md	hooks/core.md	.agents/arsenal-hooks/core.md	-
 gemini	project	file	steps.json	dist/hooks/steps.json	.agents/arsenal-hooks/steps.json	-
 gemini	project	hooks	hooks	dist/hooks/gemini.json	.gemini/settings.json	.agents/arsenal-hooks
@@ -473,6 +489,7 @@ codex	global	dir	requirements-grilling	.agents/skills/requirements-grilling	.age
 codex	global	dir	reverse-engineer	.agents/skills/reverse-engineer	.agents/skills/reverse-engineer	-
 codex	global	dir	security-audit	.agents/skills/security-audit	.agents/skills/security-audit	-
 codex	global	dir	shared-infra-changes	.agents/skills/shared-infra-changes	.agents/skills/shared-infra-changes	-
+codex	global	dir	ship	.agents/skills/ship	.agents/skills/ship	-
 codex	global	dir	smoke-test	.agents/skills/smoke-test	.agents/skills/smoke-test	-
 codex	global	dir	test-every-change	.agents/skills/test-every-change	.agents/skills/test-every-change	-
 codex	global	dir	test-strategy	.agents/skills/test-strategy	.agents/skills/test-strategy	-
@@ -517,7 +534,10 @@ codex	global	file	guard.py	hooks/guard.py	.agents/arsenal-hooks/guard.py	-
 codex	global	file	guard_destructive.py	hooks/guard_destructive.py	.agents/arsenal-hooks/guard_destructive.py	-
 codex	global	file	guard_lessons.py	hooks/guard_lessons.py	.agents/arsenal-hooks/guard_lessons.py	-
 codex	global	file	guard_limits.py	hooks/guard_limits.py	.agents/arsenal-hooks/guard_limits.py	-
+codex	global	file	guard_models.py	hooks/guard_models.py	.agents/arsenal-hooks/guard_models.py	-
+codex	global	file	guard_scope.py	hooks/guard_scope.py	.agents/arsenal-hooks/guard_scope.py	-
 codex	global	file	session_core.py	hooks/session_core.py	.agents/arsenal-hooks/session_core.py	-
+codex	global	file	skill_router.py	hooks/skill_router.py	.agents/arsenal-hooks/skill_router.py	-
 codex	global	file	core.md	hooks/core.md	.agents/arsenal-hooks/core.md	-
 codex	global	file	steps.json	dist/hooks/steps.json	.agents/arsenal-hooks/steps.json	-
 codex	global	hooks	hooks	dist/hooks/codex.json	.codex/hooks.json	.agents/arsenal-hooks
@@ -576,6 +596,7 @@ codex	project	dir	requirements-grilling	.agents/skills/requirements-grilling	.ag
 codex	project	dir	reverse-engineer	.agents/skills/reverse-engineer	.agents/skills/reverse-engineer	-
 codex	project	dir	security-audit	.agents/skills/security-audit	.agents/skills/security-audit	-
 codex	project	dir	shared-infra-changes	.agents/skills/shared-infra-changes	.agents/skills/shared-infra-changes	-
+codex	project	dir	ship	.agents/skills/ship	.agents/skills/ship	-
 codex	project	dir	smoke-test	.agents/skills/smoke-test	.agents/skills/smoke-test	-
 codex	project	dir	test-every-change	.agents/skills/test-every-change	.agents/skills/test-every-change	-
 codex	project	dir	test-strategy	.agents/skills/test-strategy	.agents/skills/test-strategy	-
@@ -620,7 +641,10 @@ codex	project	file	guard.py	hooks/guard.py	.agents/arsenal-hooks/guard.py	-
 codex	project	file	guard_destructive.py	hooks/guard_destructive.py	.agents/arsenal-hooks/guard_destructive.py	-
 codex	project	file	guard_lessons.py	hooks/guard_lessons.py	.agents/arsenal-hooks/guard_lessons.py	-
 codex	project	file	guard_limits.py	hooks/guard_limits.py	.agents/arsenal-hooks/guard_limits.py	-
+codex	project	file	guard_models.py	hooks/guard_models.py	.agents/arsenal-hooks/guard_models.py	-
+codex	project	file	guard_scope.py	hooks/guard_scope.py	.agents/arsenal-hooks/guard_scope.py	-
 codex	project	file	session_core.py	hooks/session_core.py	.agents/arsenal-hooks/session_core.py	-
+codex	project	file	skill_router.py	hooks/skill_router.py	.agents/arsenal-hooks/skill_router.py	-
 codex	project	file	core.md	hooks/core.md	.agents/arsenal-hooks/core.md	-
 codex	project	file	steps.json	dist/hooks/steps.json	.agents/arsenal-hooks/steps.json	-
 codex	project	hooks	hooks	dist/hooks/codex.json	.codex/hooks.json	.agents/arsenal-hooks
@@ -679,6 +703,7 @@ opencode	global	dir	requirements-grilling	.agents/skills/requirements-grilling	.
 opencode	global	dir	reverse-engineer	.agents/skills/reverse-engineer	.agents/skills/reverse-engineer	-
 opencode	global	dir	security-audit	.agents/skills/security-audit	.agents/skills/security-audit	-
 opencode	global	dir	shared-infra-changes	.agents/skills/shared-infra-changes	.agents/skills/shared-infra-changes	-
+opencode	global	dir	ship	.agents/skills/ship	.agents/skills/ship	-
 opencode	global	dir	smoke-test	.agents/skills/smoke-test	.agents/skills/smoke-test	-
 opencode	global	dir	test-every-change	.agents/skills/test-every-change	.agents/skills/test-every-change	-
 opencode	global	dir	test-strategy	.agents/skills/test-strategy	.agents/skills/test-strategy	-
@@ -773,6 +798,7 @@ opencode	project	dir	requirements-grilling	.agents/skills/requirements-grilling	
 opencode	project	dir	reverse-engineer	.agents/skills/reverse-engineer	.agents/skills/reverse-engineer	-
 opencode	project	dir	security-audit	.agents/skills/security-audit	.agents/skills/security-audit	-
 opencode	project	dir	shared-infra-changes	.agents/skills/shared-infra-changes	.agents/skills/shared-infra-changes	-
+opencode	project	dir	ship	.agents/skills/ship	.agents/skills/ship	-
 opencode	project	dir	smoke-test	.agents/skills/smoke-test	.agents/skills/smoke-test	-
 opencode	project	dir	test-every-change	.agents/skills/test-every-change	.agents/skills/test-every-change	-
 opencode	project	dir	test-strategy	.agents/skills/test-strategy	.agents/skills/test-strategy	-
@@ -867,6 +893,7 @@ cursor	global	dir	requirements-grilling	.agents/skills/requirements-grilling	.ag
 cursor	global	dir	reverse-engineer	.agents/skills/reverse-engineer	.agents/skills/reverse-engineer	-
 cursor	global	dir	security-audit	.agents/skills/security-audit	.agents/skills/security-audit	-
 cursor	global	dir	shared-infra-changes	.agents/skills/shared-infra-changes	.agents/skills/shared-infra-changes	-
+cursor	global	dir	ship	.agents/skills/ship	.agents/skills/ship	-
 cursor	global	dir	smoke-test	.agents/skills/smoke-test	.agents/skills/smoke-test	-
 cursor	global	dir	test-every-change	.agents/skills/test-every-change	.agents/skills/test-every-change	-
 cursor	global	dir	test-strategy	.agents/skills/test-strategy	.agents/skills/test-strategy	-
@@ -897,7 +924,10 @@ cursor	global	file	guard.py	hooks/guard.py	.agents/arsenal-hooks/guard.py	-
 cursor	global	file	guard_destructive.py	hooks/guard_destructive.py	.agents/arsenal-hooks/guard_destructive.py	-
 cursor	global	file	guard_lessons.py	hooks/guard_lessons.py	.agents/arsenal-hooks/guard_lessons.py	-
 cursor	global	file	guard_limits.py	hooks/guard_limits.py	.agents/arsenal-hooks/guard_limits.py	-
+cursor	global	file	guard_models.py	hooks/guard_models.py	.agents/arsenal-hooks/guard_models.py	-
+cursor	global	file	guard_scope.py	hooks/guard_scope.py	.agents/arsenal-hooks/guard_scope.py	-
 cursor	global	file	session_core.py	hooks/session_core.py	.agents/arsenal-hooks/session_core.py	-
+cursor	global	file	skill_router.py	hooks/skill_router.py	.agents/arsenal-hooks/skill_router.py	-
 cursor	global	file	core.md	hooks/core.md	.agents/arsenal-hooks/core.md	-
 cursor	global	file	steps.json	dist/hooks/steps.json	.agents/arsenal-hooks/steps.json	-
 cursor	global	hooks	hooks	dist/hooks/cursor.json	.cursor/hooks.json	.agents/arsenal-hooks
@@ -956,6 +986,7 @@ cursor	project	dir	requirements-grilling	.agents/skills/requirements-grilling	.a
 cursor	project	dir	reverse-engineer	.agents/skills/reverse-engineer	.agents/skills/reverse-engineer	-
 cursor	project	dir	security-audit	.agents/skills/security-audit	.agents/skills/security-audit	-
 cursor	project	dir	shared-infra-changes	.agents/skills/shared-infra-changes	.agents/skills/shared-infra-changes	-
+cursor	project	dir	ship	.agents/skills/ship	.agents/skills/ship	-
 cursor	project	dir	smoke-test	.agents/skills/smoke-test	.agents/skills/smoke-test	-
 cursor	project	dir	test-every-change	.agents/skills/test-every-change	.agents/skills/test-every-change	-
 cursor	project	dir	test-strategy	.agents/skills/test-strategy	.agents/skills/test-strategy	-
@@ -1000,7 +1031,10 @@ cursor	project	file	guard.py	hooks/guard.py	.agents/arsenal-hooks/guard.py	-
 cursor	project	file	guard_destructive.py	hooks/guard_destructive.py	.agents/arsenal-hooks/guard_destructive.py	-
 cursor	project	file	guard_lessons.py	hooks/guard_lessons.py	.agents/arsenal-hooks/guard_lessons.py	-
 cursor	project	file	guard_limits.py	hooks/guard_limits.py	.agents/arsenal-hooks/guard_limits.py	-
+cursor	project	file	guard_models.py	hooks/guard_models.py	.agents/arsenal-hooks/guard_models.py	-
+cursor	project	file	guard_scope.py	hooks/guard_scope.py	.agents/arsenal-hooks/guard_scope.py	-
 cursor	project	file	session_core.py	hooks/session_core.py	.agents/arsenal-hooks/session_core.py	-
+cursor	project	file	skill_router.py	hooks/skill_router.py	.agents/arsenal-hooks/skill_router.py	-
 cursor	project	file	core.md	hooks/core.md	.agents/arsenal-hooks/core.md	-
 cursor	project	file	steps.json	dist/hooks/steps.json	.agents/arsenal-hooks/steps.json	-
 cursor	project	hooks	hooks	dist/hooks/cursor.json	.cursor/hooks.json	.agents/arsenal-hooks
@@ -1059,6 +1093,7 @@ windsurf	global	dir	requirements-grilling	.agents/skills/requirements-grilling	.
 windsurf	global	dir	reverse-engineer	.agents/skills/reverse-engineer	.agents/skills/reverse-engineer	-
 windsurf	global	dir	security-audit	.agents/skills/security-audit	.agents/skills/security-audit	-
 windsurf	global	dir	shared-infra-changes	.agents/skills/shared-infra-changes	.agents/skills/shared-infra-changes	-
+windsurf	global	dir	ship	.agents/skills/ship	.agents/skills/ship	-
 windsurf	global	dir	smoke-test	.agents/skills/smoke-test	.agents/skills/smoke-test	-
 windsurf	global	dir	test-every-change	.agents/skills/test-every-change	.agents/skills/test-every-change	-
 windsurf	global	dir	test-strategy	.agents/skills/test-strategy	.agents/skills/test-strategy	-
@@ -1121,6 +1156,7 @@ windsurf	project	dir	requirements-grilling	.agents/skills/requirements-grilling	
 windsurf	project	dir	reverse-engineer	.agents/skills/reverse-engineer	.agents/skills/reverse-engineer	-
 windsurf	project	dir	security-audit	.agents/skills/security-audit	.agents/skills/security-audit	-
 windsurf	project	dir	shared-infra-changes	.agents/skills/shared-infra-changes	.agents/skills/shared-infra-changes	-
+windsurf	project	dir	ship	.agents/skills/ship	.agents/skills/ship	-
 windsurf	project	dir	smoke-test	.agents/skills/smoke-test	.agents/skills/smoke-test	-
 windsurf	project	dir	test-every-change	.agents/skills/test-every-change	.agents/skills/test-every-change	-
 windsurf	project	dir	test-strategy	.agents/skills/test-strategy	.agents/skills/test-strategy	-
@@ -1197,6 +1233,7 @@ copilot	global	dir	requirements-grilling	.agents/skills/requirements-grilling	.a
 copilot	global	dir	reverse-engineer	.agents/skills/reverse-engineer	.agents/skills/reverse-engineer	-
 copilot	global	dir	security-audit	.agents/skills/security-audit	.agents/skills/security-audit	-
 copilot	global	dir	shared-infra-changes	.agents/skills/shared-infra-changes	.agents/skills/shared-infra-changes	-
+copilot	global	dir	ship	.agents/skills/ship	.agents/skills/ship	-
 copilot	global	dir	smoke-test	.agents/skills/smoke-test	.agents/skills/smoke-test	-
 copilot	global	dir	test-every-change	.agents/skills/test-every-change	.agents/skills/test-every-change	-
 copilot	global	dir	test-strategy	.agents/skills/test-strategy	.agents/skills/test-strategy	-
@@ -1227,7 +1264,10 @@ copilot	global	file	guard.py	hooks/guard.py	.agents/arsenal-hooks/guard.py	-
 copilot	global	file	guard_destructive.py	hooks/guard_destructive.py	.agents/arsenal-hooks/guard_destructive.py	-
 copilot	global	file	guard_lessons.py	hooks/guard_lessons.py	.agents/arsenal-hooks/guard_lessons.py	-
 copilot	global	file	guard_limits.py	hooks/guard_limits.py	.agents/arsenal-hooks/guard_limits.py	-
+copilot	global	file	guard_models.py	hooks/guard_models.py	.agents/arsenal-hooks/guard_models.py	-
+copilot	global	file	guard_scope.py	hooks/guard_scope.py	.agents/arsenal-hooks/guard_scope.py	-
 copilot	global	file	session_core.py	hooks/session_core.py	.agents/arsenal-hooks/session_core.py	-
+copilot	global	file	skill_router.py	hooks/skill_router.py	.agents/arsenal-hooks/skill_router.py	-
 copilot	global	file	core.md	hooks/core.md	.agents/arsenal-hooks/core.md	-
 copilot	global	file	steps.json	dist/hooks/steps.json	.agents/arsenal-hooks/steps.json	-
 copilot	global	hooks	hooks	dist/hooks/copilot.json	.copilot/hooks/arsenal.json	.agents/arsenal-hooks
@@ -1286,6 +1326,7 @@ copilot	project	dir	requirements-grilling	.agents/skills/requirements-grilling	.
 copilot	project	dir	reverse-engineer	.agents/skills/reverse-engineer	.agents/skills/reverse-engineer	-
 copilot	project	dir	security-audit	.agents/skills/security-audit	.agents/skills/security-audit	-
 copilot	project	dir	shared-infra-changes	.agents/skills/shared-infra-changes	.agents/skills/shared-infra-changes	-
+copilot	project	dir	ship	.agents/skills/ship	.agents/skills/ship	-
 copilot	project	dir	smoke-test	.agents/skills/smoke-test	.agents/skills/smoke-test	-
 copilot	project	dir	test-every-change	.agents/skills/test-every-change	.agents/skills/test-every-change	-
 copilot	project	dir	test-strategy	.agents/skills/test-strategy	.agents/skills/test-strategy	-
@@ -1330,7 +1371,10 @@ copilot	project	file	guard.py	hooks/guard.py	.agents/arsenal-hooks/guard.py	-
 copilot	project	file	guard_destructive.py	hooks/guard_destructive.py	.agents/arsenal-hooks/guard_destructive.py	-
 copilot	project	file	guard_lessons.py	hooks/guard_lessons.py	.agents/arsenal-hooks/guard_lessons.py	-
 copilot	project	file	guard_limits.py	hooks/guard_limits.py	.agents/arsenal-hooks/guard_limits.py	-
+copilot	project	file	guard_models.py	hooks/guard_models.py	.agents/arsenal-hooks/guard_models.py	-
+copilot	project	file	guard_scope.py	hooks/guard_scope.py	.agents/arsenal-hooks/guard_scope.py	-
 copilot	project	file	session_core.py	hooks/session_core.py	.agents/arsenal-hooks/session_core.py	-
+copilot	project	file	skill_router.py	hooks/skill_router.py	.agents/arsenal-hooks/skill_router.py	-
 copilot	project	file	core.md	hooks/core.md	.agents/arsenal-hooks/core.md	-
 copilot	project	file	steps.json	dist/hooks/steps.json	.agents/arsenal-hooks/steps.json	-
 copilot	project	hooks	hooks	dist/hooks/copilot.json	.github/hooks/arsenal.json	.agents/arsenal-hooks
