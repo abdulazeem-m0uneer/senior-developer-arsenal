@@ -12,6 +12,8 @@ SCRIPT = ROOT / "hooks" / "guard.py"
 
 sys.dont_write_bytecode = True  # importing the hook module must not leave __pycache__ in the plugin
 sys.path.insert(0, str(SCRIPT.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import hook_env  # noqa: E402
 import guard_destructive  # noqa: E402
 
 DANGEROUS = [
@@ -149,6 +151,7 @@ class HookTest(Sandbox):
         base = {key: value for key, value in os.environ.items()
                 if key not in ("ARSENAL_GUARD", "ARSENAL_GUARD_DESTRUCTIVE", "ARSENAL_RUN_LIMITS", "CLAUDE_PROJECT_DIR")}
         base["HANDOFF_SNAPSHOT"] = str(Path(self.tmp.name) / "snap.md")
+        base.update(hook_env.lesson_guard_files(self.tmp.name))
         result = subprocess.run([sys.executable, str(SCRIPT), "pre"], cwd=self.repo, input=stdin, capture_output=True,
                                 text=True, env={**base, **(env or {})})
         self.assertEqual(result.returncode, 0, result.stderr)

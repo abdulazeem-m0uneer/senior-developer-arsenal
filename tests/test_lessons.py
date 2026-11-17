@@ -254,6 +254,21 @@ class SecretFilterTests(LedgerCase):
         for text in harmless:
             self.assertEqual(self.accepted(text), (True, ""), text)
 
+    def test_bearer_tokens_and_payment_secret_keys_are_refused(self):
+        # assembled at run time, so no secret scanner sees a literal one in this file
+        for text in ("Authorization: " + "Bearer " + "a1B2c3D4" * 3, "key " + "sk" + "_live_" + "x7Yq" * 6,
+                     "restricted " + "rk" + "_test_" + "9Gh2" * 4, "Bearer " + "a1b2c3d4" * 2,  # 16: shortest
+                     "key " + "sk" + "_live_" + "a1b2" * 2):  # 8 after the prefix: shortest
+            self.assertEqual(self.accepted(text)[0], False, text)
+        for text in ("send Bearer <token> in the header", "the Bearer token expired at noon",
+                     "prefix sk_live_ alone", "Bearer " + "a1b2c3d4a1b2c3d",  # 15: one short
+                     "key " + "sk" + "_live_" + "a1b2c3d",  # 7: one short
+                     "Bearer authentication-middleware", "Bearer tokens/validation/middleware",
+                     "renamed task_test_abcdefgh12"):
+            self.assertEqual(self.accepted(text), (True, ""), text)
+        # the detector stays on one line (add folds the newline into a space before it checks)
+        self.assertIsNone(ledger_store.find_secret("Bearer\nabcdefghijklmnop2345"))
+
     def test_real_secret_shapes_are_refused(self):
         secrets = [
             "sk-ant-api03-abcdefghijklmnop1234", "ghp_" + "a1B2c3D4e5" * 4, "github_pat_" + "A1b2C3d4E5" * 3,
