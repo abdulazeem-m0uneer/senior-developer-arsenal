@@ -15,7 +15,7 @@ What the arsenal adds to the context of every Claude Code session before any wor
 | SessionStart hook: `snapshot.py show` (hooks/hooks.json, run in an empty project) | 0 | 0 |
 | SessionStart hook: `guard.py baseline` (hooks/hooks.json, run in an empty project) | 0 | 0 |
 | Rules without a path scope (5) (dist/claude/rules/) | 17,797 | 4,449 |
-| `AGENTS.md` block (installer, project scope) | 11,185 | 2,796 |
+| `AGENTS.md` block (installer, project scope) | 11,385 | 2,846 |
 | `CLAUDE.md` block (installer, project scope) | 11 | 3 |
 
 Worst case for the hooks (the only always-on part that grows with project state):
@@ -30,7 +30,7 @@ Worst case for the hooks (the only always-on part that grows with project state)
 | :--- | ---: | ---: | ---: | ---: |
 | Plugin only | 29,060 | 7,265 | 30,424 | 7,606 |
 | Plugin + `install --global --target claude` | 46,857 | 11,714 | 48,221 | 12,055 |
-| Plugin + `install --target claude` in a project | 58,053 | 14,513 | 59,417 | 14,854 |
+| Plugin + `install --target claude` in a project | 58,253 | 14,563 | 59,617 | 14,904 |
 
 Rules that load in every Claude Code session after the installer runs: `defensive-epistemology`, `minimal-change`, `senior-engineer-core`, `testing-standards`, `token-conservation`. A generated Claude rule file loads unconditionally unless it carries `paths:` frontmatter, so a rule without globs is always loaded on this target, whatever its trigger. Path-scoped: `csharp-dotnet-standards`, `database-standards`, `frontend-standards`, `fullstack-standards`, `git-standards`, `nodejs-standards`, `python-standards`, `ui-ux-standards`.
 
@@ -40,8 +40,8 @@ Not part of the totals above. Sizes in characters.
 
 | Content | Files | Min | Median | Max | Total | Total tokens (est.) |
 | :--- | ---: | ---: | ---: | ---: | ---: | ---: |
-| SKILL.md (one per skill, loaded when the skill is invoked) | 61 | 2,355 | 5,548 | 14,644 | 322,020 | 80,505 |
-| Skill reference files (a skill reads the one it needs) | 127 | 844 | 4,821 | 18,052 | 607,156 | 151,789 |
+| SKILL.md (one per skill, loaded when the skill is invoked) | 61 | 2,355 | 5,644 | 15,261 | 324,400 | 81,100 |
+| Skill reference files (a skill reads the one it needs) | 128 | 844 | 4,815 | 18,052 | 609,524 | 152,381 |
 | Subagent prompts (loaded in the subagent's own context) | 18 | 919 | 1,748 | 3,937 | 32,878 | 8,220 |
 | Path-scoped rules (loaded when a matching file is read) | 8 | 2,727 | 3,464 | 7,749 | 31,639 | 7,910 |
 

@@ -179,6 +179,8 @@ Global and project paths for every agent are listed in [docs/TARGETS.md](docs/TA
 
 ### Installer behavior
 
+**Health check.** `arsenal doctor [--project PATH] [--fix]` (or `scripts/arsenal.ps1 doctor` on Windows) checks the Python version, the Claude Code plugin (installed, enabled, version against this checkout, older cached versions no install uses, hooks that parse and compile), every installer target that is only partly present, the lessons ledgers, and whether CodeGraph and Hindsight are configured. It prints the exact repair command for each problem. It changes nothing without `--fix`, and `--fix` only re-runs the installer for the targets with missing files. Older plugin versions are reported, never deleted.
+
 | Option (`install.sh` / `install.ps1`) | Effect |
 | :--- | :--- |
 | `--link` / `-Symlink` | Link each item to this repository instead of copying. |
@@ -262,6 +264,7 @@ The arsenal includes 61 specialized skills conforming to the Agent Skills standa
 - **Includes**:
   - [review-checklist.md](.agents/skills/code-review/references/review-checklist.md): Exhaustive 20-point checklist covering SQLi, IDOR, N+1 queries, async safety, and test coverage.
   - [feedback-rubric.md](.agents/skills/code-review/references/feedback-rubric.md): Standardized review report template categorizing findings into [Blocker], [Performance], [Architecture], and [Suggestion].
+  - [second-opinion.md](.agents/skills/code-review/references/second-opinion.md), bundled `scripts/second_opinion.py`: read-only second review by an installed Codex or Gemini CLI; secret files left out, credential lines redacted, nothing sent when no CLI is installed.
 
 ### 2. investigate (/investigate)
 - **When to use**: Diagnosing elusive bugs, intermittent test failures, unexplained crashes, production outages, or confusing regressions.
@@ -498,7 +501,7 @@ The arsenal includes 61 specialized skills conforming to the Agent Skills standa
 
 ### 52. lessons-learned (/lessons-learned)
 - **When to use**: The agent erred, was corrected, or caught its own mistake in a pre-done self-audit, and the cause is verified: record it as one capped, deduplicated line (mistake, cause, rule, check) in a project ledger, or in a global ledger (`~/.agents/lessons.md`) when it is about a tool or habit rather than the project; writes are locked, so parallel sessions lose nothing. At every session start (plugin `SessionStart` hook in `hooks/hooks.json`, also after compaction) the lessons most relevant to the changed files are loaded as one-line rules (project and global alternated), at most 2,000 characters; `show <id>` prints one in full. `promote` turns a repeated mistake into a rule stub or a test stub and stops injecting it; a lesson that recurs after being archived or promoted comes back. How the whole loop works, what it costs and how each agent loads it: [docs/LEARNING.md](docs/LEARNING.md).
-- **Includes**: [lesson-format-and-promotion.md](.agents/skills/lessons-learned/references/lesson-format-and-promotion.md), [lessons.py](.agents/skills/lessons-learned/scripts/lessons.py), [ledger_store.py](.agents/skills/lessons-learned/scripts/ledger_store.py), [relevance.py](.agents/skills/lessons-learned/scripts/relevance.py).
+- **Includes**: [lesson-format-and-promotion.md](.agents/skills/lessons-learned/references/lesson-format-and-promotion.md), [lessons.py](.agents/skills/lessons-learned/scripts/lessons.py), [ledger_store.py](.agents/skills/lessons-learned/scripts/ledger_store.py), [relevance.py](.agents/skills/lessons-learned/scripts/relevance.py), bundled `scripts/retro.py` (`lessons.py retro [--days 7] [--project]`: weekly retrospective from git history, the ledgers, the failure evidence and guard hits, with the top 3 actions tied to a lesson id or commit).
 
 ### 53. accessibility-audit (/accessibility-audit)
 - **When to use**: WCAG 2.2 AA conformance audit of a running page, app, or screen: scoped states, automated axe pass, keyboard-only pass, screen reader scripts (NVDA, VoiceOver, TalkBack), and a severity-ranked report with fixes.
@@ -530,7 +533,7 @@ The arsenal includes 61 specialized skills conforming to the Agent Skills standa
 
 ### 60. usage-stats (/usage-stats)
 - **When to use**: Numbers on how the arsenal helped in your own sessions (tests with code changes, blocks followed by a fix, failed checks turned green, destructive commands and repeat mistakes stopped, skills used, lessons enforced), for a README, a post or a talk. Local only: counts and names, never prompts, commands or paths.
-- **Includes**: [usage_stats.py](.agents/skills/usage-stats/scripts/usage_stats.py) (`record` as the `SessionEnd` hook, `backfill`, `report --markdown | --json | --readme`).
+- **Includes**: [usage_stats.py](.agents/skills/usage-stats/scripts/usage_stats.py) (`record` as the `SessionEnd` hook, `backfill`, `report --markdown | --json | --readme`, `diagnose --last | --session ID`: missed skills and operating-core gaps in one session; subagent transcripts credit their skills to the session), `diagnose.py`, `skill_triggers.py`.
 
 ### 61. ship (/ship)
 - **When to use**: A finished branch goes out: the repository's local gate, commits staged by explicit path, a push without force, the pull request opened or updated with the verification evidence, CI awaited with `ci-wait` and a fix loop of at most 3 real-fix rounds, then a hand-off; merging waits for the user's explicit approval. Babysits a pull request too: unresolved review threads and failed checks become one classified worklist (fix / question / out-of-scope), worked through the receiving-review protocol until green.

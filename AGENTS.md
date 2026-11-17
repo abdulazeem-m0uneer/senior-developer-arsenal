@@ -66,7 +66,7 @@ Skills: `.agents/skills/<name>/SKILL.md`. Subagents: `.agents/subagents/`.
 
 | Task | Skill(s) | Subagent |
 | :--- | :--- | :--- |
-| Code review | `code-review`; `deep-review` (multi-pass, evidence-verified) | `code-reviewer` |
+| Code review | `code-review` (Step 4a: second opinion from another CLI); `deep-review` (multi-pass, evidence-verified) | `code-reviewer` |
 | Dead code (unused code, imports, exports, commented-out) | `dead-code` | — |
 | Where does X live (cold start, cross-file) | — | `code-explorer` (read-only, cheap) |
 | Root cause / debugging | `investigate` | `epistemic-debugger` |
@@ -106,8 +106,9 @@ Skills: `.agents/skills/<name>/SKILL.md`. Subagents: `.agents/subagents/`.
 | Coordinator checks, milestone risk, delivery delays | `delivery-board-sync`, `lessons-learned` | `risk-manager` |
 | Several sessions delivering one product (coordinator + lanes) | `multi-session-delivery` | — |
 | Session handoff (context nearly full) | `handoff` | — |
-| Learn from mistakes (corrected, confirmed root cause) | `lessons-learned` (load `active` at session start) | — |
-| How useful the arsenal is (own sessions, local numbers) | `usage-stats` | — |
+| Learn from mistakes (corrected, confirmed root cause), weekly retro | `lessons-learned` (load `active` at session start; `retro` weekly) | — |
+| How useful the arsenal is (own sessions, local numbers), session self-diagnosis | `usage-stats` (`report`, `diagnose --last`) | — |
+| Install health, repairs | `arsenal doctor` (`scripts/doctor.py`) | — |
 | Accessibility audit (WCAG 2.2 AA) | `accessibility-audit` | `ui-ux-architect` |
 | Change untested legacy code in place | `refactor-legacy` | — |
 | Design-time threats, new trust boundary | `threat-model` | `security-auditor` |

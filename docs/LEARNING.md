@@ -37,6 +37,7 @@ flowchart TD
 | Look up | Rules only by default; the full lesson on demand. | `lessons.py search WORDS [--full]`, `lessons.py show ID` |
 | Promote | At three hits the lesson becomes a guard and stops being injected. If it recurs, the script prints `GUARD FAILED`. | `lessons.py promote ID [--as test \| --guard PATH]` |
 | Share | A lesson about a tool or habit moves to the global ledger, which every project reads. | `lessons.py globalize ID` |
+| Retro | A weekly Markdown retro (commits by kind, files fixed more than once, reverts, new and repeated lessons, guard hits, failure evidence) ending in three actions, each tied to a lesson id or a commit. | `lessons.py retro [--days 7] [--project]` |
 
 ## Two ledgers
 
