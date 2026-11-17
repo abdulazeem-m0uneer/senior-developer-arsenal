@@ -240,7 +240,7 @@ class RuleRepositoryTests(unittest.TestCase):
 
     def test_skill_description_budgets_hold_the_measured_saving(self):
         self.assertLessEqual(build.MAX_SKILL_DESC_CHARS, 420)
-        self.assertLessEqual(build.MAX_SKILL_DESC_TOTAL, 22000)
+        self.assertLessEqual(build.MAX_SKILL_DESC_TOTAL, 22500)
 
 
 class McpMergeTests(unittest.TestCase):

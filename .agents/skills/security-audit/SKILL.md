@@ -51,6 +51,12 @@ pip-audit -r requirements.txt                              # Python advisories
 ```
 Confirm lockfiles are committed, installs are reproducible (`npm ci`, `dotnet restore --locked-mode`, `pip install --require-hashes`), and no install script pulls unpinned remote code.
 
+### Step 4b: Agent Configuration
+Consult: [Agent Config Rules](./references/agent-config-rules.md)
+1. Run `python3 <skill-dir>/scripts/agent_config_scan.py [--user] <repo>` (exit 1 on a high finding, 0 otherwise, 2 usage error). `--user` adds the home-directory configs; ask before scanning them for someone else.
+2. It covers hooks, MCP servers, permissions and settings for Claude Code, Codex, Cursor, Gemini CLI and VS Code: remote code piped into a shell, plaintext secrets (named by key, never printed), bypass defaults, broad allow rules, unpinned or plain-HTTP MCP servers, and hooks in temp paths.
+3. Done when every high finding is fixed and every medium one is fixed or listed with its reason.
+
 ### Step 5: Rate and Report
 Score each finding and fill the report using the [Audit Checklist & Severity Rubric](./references/audit-checklist.md). Every finding needs: attack vector, preconditions, impact, and a surgical fix.
 

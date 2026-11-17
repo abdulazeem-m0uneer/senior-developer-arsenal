@@ -25,7 +25,7 @@
       "promptFile": "./prompts/db-architect.md",
       "enable_write_tools": true,
       "enable_subagent_tools": false,
-      "recommended_model": "inherit"
+      "recommended_model": "balanced"
     },
     {
       "name": "dotnet-specialist",
@@ -34,7 +34,7 @@
       "promptFile": "./prompts/dotnet-specialist.md",
       "enable_write_tools": true,
       "enable_subagent_tools": false,
-      "recommended_model": "inherit"
+      "recommended_model": "balanced"
     },
     {
       "name": "node-specialist",
@@ -61,7 +61,7 @@
       "promptFile": "./prompts/frontend-architect.md",
       "enable_write_tools": true,
       "enable_subagent_tools": false,
-      "recommended_model": "inherit"
+      "recommended_model": "balanced"
     },
     {
       "name": "fullstack-architect",
@@ -70,7 +70,7 @@
       "promptFile": "./prompts/fullstack-architect.md",
       "enable_write_tools": true,
       "enable_subagent_tools": false,
-      "recommended_model": "pro"
+      "recommended_model": "balanced"
     },
     {
       "name": "python-specialist",
@@ -79,7 +79,7 @@
       "promptFile": "./prompts/python-specialist.md",
       "enable_write_tools": true,
       "enable_subagent_tools": false,
-      "recommended_model": "inherit"
+      "recommended_model": "balanced"
     },
     {
       "name": "epistemic-debugger",
@@ -97,7 +97,7 @@
       "promptFile": "./prompts/ui-ux-architect.md",
       "enable_write_tools": true,
       "enable_subagent_tools": false,
-      "recommended_model": "pro"
+      "recommended_model": "balanced"
     },
     {
       "name": "test-engineer",
@@ -106,7 +106,7 @@
       "promptFile": "./prompts/test-engineer.md",
       "enable_write_tools": true,
       "enable_subagent_tools": false,
-      "recommended_model": "inherit"
+      "recommended_model": "balanced"
     },
     {
       "name": "devops-engineer",
@@ -115,7 +115,7 @@
       "promptFile": "./prompts/devops-engineer.md",
       "enable_write_tools": true,
       "enable_subagent_tools": false,
-      "recommended_model": "inherit"
+      "recommended_model": "balanced"
     },
     {
       "name": "qa-engineer",

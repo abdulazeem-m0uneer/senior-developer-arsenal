@@ -4,12 +4,16 @@ commands and the limits of an unattended run (Claude Code plugin).
 
 Usage (hook input is JSON on stdin):
   guard.py baseline  # SessionStart startup|resume|clear: record HEAD and the already-dirty paths; prints nothing
-  guard.py track     # PostToolUseFailure / PostToolUse on Bash: record failed and passed checks and recorded lessons
-  guard.py pre       # PreToolUse, every tool: deny past a run limit (guard_limits.py); deny a Bash command that
+  guard.py track     # PostToolUseFailure / PostToolUse on Bash: record failed and passed checks and recorded lessons;
+                     # a recorded lesson also appends its preceding failures to the local evidence file (save_evidence)
+  guard.py pre       # PreToolUse, every tool: deny past a run limit (guard_limits.py); deny a file write outside
+                     # the edit-scope lock (guard_scope.py); ask or deny an arsenal subagent call asking for a
+                     # model above its tier (guard_models.py); deny a Bash command that
                      # repeats a recorded lesson (guard_lessons.py, hit logged by guard_hits.py); ask or deny a
                      # destructive Bash command (guard_destructive.py)
   guard.py stop      # Stop: block once when source changed without a test, or a check failed, never passed
-                     # again and no lesson followed; silent once a run limit is reached
+                     # again and no lesson followed, or this session's changes leave dead code (dead_code.py);
+                     # silent once a run limit is reached
 Output: the Stop block {"decision":"block","reason":...} and the PreToolUse decision {"hookSpecificOutput":
 {"hookEventName":"PreToolUse","permissionDecision":"deny"|"ask","permissionDecisionReason":...}}; with nothing
 to enforce a hook prints nothing, so it costs no context. A destructive command is denied in a permission
@@ -23,8 +27,14 @@ when each of them has passed. So a narrower passing run clears a wider failed on
 question, never a wrong block.
 The Stop gate cannot loop: it does nothing while stop_hook_active is true, and every
 block is written to the state file before it is printed, so the same files and the same failures never
-block twice (an explicit "no test applies" or "nothing learned" answer ends it). ARSENAL_GUARD=off disables
-every gate here; ARSENAL_GUARD_DESTRUCTIVE=allow disables only the destructive-command check. Fails open: outside a git repository, when git fails or times out, without a session id, on any
+block twice (an explicit "no test applies" or "nothing learned" answer ends it).
+Switches: ARSENAL_GUARD=off disables every gate here. Each of these disables one check only:
+ARSENAL_GUARD_DESTRUCTIVE=allow (destructive commands; =deny denies them in every mode), ARSENAL_GUARD_DEADCODE=off
+(dead code), ARSENAL_GUARD_SCOPE=off (edit-scope lock), ARSENAL_GUARD_STOP=off (the whole Stop gate),
+ARSENAL_SUBAGENT_MODEL=any (subagent cost guard), ARSENAL_LESSON_GUARDS=off (lesson guards).
+ARSENAL_PROFILE=minimal|standard|strict sets them at once (PROFILES); a switch set explicitly wins over the profile.
+A missing or broken optional helper (guard_destructive, guard_limits, guard_lessons) skips only its own check;
+guard_lessons parses shell with guard_destructive, so losing that one costs both. Fails open: outside a git repository, when git fails or times out, without a session id, on any
 exception, and whenever the diff could name work this session did not do: HEAD is no longer a descendant of
 the baseline (checkout, rebase), a commit since the baseline is older than the session (pull, checkout of a
 branch that was already ahead), or the stop runs in another working tree. Then it exits 0 silently.
@@ -34,10 +44,13 @@ PostToolUseFailure (error "Exit code N", is_interrupt false) and never as PostTo
 from that event only. A pass is recorded only when the check's exit status is the command's: a check followed
 by a pipe, ||, ;, & or another command, or run with --version or --help, is not a pass (pytest | tail).
 State: one JSON line per event in <snapshot file>.guard.jsonl, in the OS temp dir (see snapshot.py).
-Time budget: baseline does at most four git reads and stop at most five, at 2 s each; track and pre run no
-subprocess. pre runs before every tool call: measured at 51 to 53 ms a call on a busy Linux machine with
-Python 3.14, where an empty interpreter takes 13 ms; the rest is importing and compiling, not the checks.
+Time budget: baseline does at most four git reads and stop at most five, at 2 s each, plus the dead-code scan
+(its git calls and scan share one 1.5 s budget); track and pre run no
+subprocess. pre runs before every tool call: measured at 64 to 66 ms a call (median of 25, Read and Bash payloads)
+on a busy Linux machine with Python 3.14, where an empty interpreter takes 13 ms; the rest is importing and compiling,
+not the checks. The scope lock and the cost guard load their modules only for the tools they judge.
 """
+import importlib
 import json
 import os
 import re
@@ -52,19 +65,80 @@ SKILLS = next((path for path in (ROOT / ".agents" / "skills", ROOT / "skills") i
 LESSONS = SKILLS / "lessons-learned" / "scripts" / "lessons.py"
 sys.dont_write_bytecode = True  # importing the helper must not leave __pycache__ in the plugin
 sys.path.insert(0, str(SKILLS / "handoff" / "scripts"))
-sys.path.insert(0, str(LESSONS.parent))  # guard_hits, and ledger_store's secret check for guard_lessons
+sys.path.insert(0, str(LESSONS.parent))  # guard_hits, ledger_store's secret check (guard_lessons, save_evidence)
+sys.path.insert(0, str(SKILLS / "dead-code" / "scripts"))  # dead_code, imported by the stop gate only
 try:
-    import snapshot as hook  # hook input, session id, per-session file path, bounded git
-    import guard_destructive
-    import guard_limits
-    import guard_lessons
+    import snapshot as hook  # hook input, session id, per-session file path, bounded git: every gate needs it
 except Exception:  # a broken install must not break the session either
     sys.exit(0)
+
+
+def optional(name):
+    """The helper module, or None when it is missing or broken: only its own check is skipped."""
+    try:
+        return importlib.import_module(name)
+    except Exception:
+        return None
+
+
+guard_destructive = optional("guard_destructive")
+guard_limits = optional("guard_limits")
+guard_lessons = optional("guard_lessons")
+
+EVIDENCE_FAILURES = 3   # failed commands kept with a lesson: the last ones since the previous lesson
+ERROR_CHARS = 400
+FAILED_COMMAND_CHARS = 300
+LESSON_COMMAND_CHARS = 1200  # the add command carries the lesson's own text: pairs stay usable without an id
+WITHHELD = "[withheld: looks like a secret]"
+MASK = "***"
+REDACT_MARGIN = 512  # redaction reads only what is kept plus this: its cost is bounded whatever the command holds
+EVIDENCE_MAX_BYTES = 5 * 1024 * 1024  # the evidence file stops growing here; it is training data, not a log
+# Secrets that command lines carry as arguments: only the value is masked, so the command stays readable evidence.
+# Rules are tied to the commands that take a password that way, so `gcc -pthread`, `ssh -p22` or `TOKENIZER=` stay.
+VALUE = r"""('[^']*'|"[^"]*"|[^\s'"]+)"""
+CLI_SECRETS = [
+    re.compile(r"(?i)((?<!\S)--(?:password|passwd|pass|passphrase|token|auth|auth-token|with-token|secret|client-secret|"
+               r"api-?key|access-?key|secret-?key|private-?key|http-password|proxy-password)(?:=|\s+))" + VALUE),
+    re.compile(r"(\b(?:mysql|mysqldump|mysqladmin|mysqlimport|mysqlcheck|mysqlshow|mariadb|mariadb-dump)\b"
+               r"[^;&|\n]*?(?<!\S)-p)" + VALUE),  # mysql -pSECRET, -p'SECRET' (never a separate word: that prompts)
+    re.compile(r"(\bsshpass\s+-p\s*)" + VALUE),
+    re.compile(r"(\b(?:docker|podman|nerdctl|buildah|skopeo|helm|oras|az|cf|oc)\s+(?:[^\s;&|]+\s+){0,3}?login\b"
+               r"(?:\s+[^\s;&|]+){0,8}?\s+-p\s+)" + VALUE),  # bounded token counts: no rescanning lazy runs
+    re.compile(r"(\bhtpasswd\s+(?:-\w+\s+)*-\w*b\w*\s+(?:-\w+\s+)*\S+\s+\S+\s+)" + VALUE),
+    re.compile(r"(\bredis-cli\b[^;&|\n]*?(?<!\S)-a\s+)" + VALUE),
+    re.compile(r"(\bopenssl\b[^;&|\n]*?(?<!\S)-(?:k|pass|passin|passout)\s+)" + VALUE),
+    re.compile(r"(\bpass:)" + VALUE),  # openssl -passin pass:SECRET
+    re.compile(r"(\bvault\s+login\s+(?:-\S+\s+)*)([^\s'\"-]\S*)"),
+    re.compile(r"(?i)(\baws\s+configure\s+set\s+\S*(?:secret|token|key)\S*\s+)" + VALUE),
+    re.compile(r"((?<!\S)(?:-u\s*|--user[=\s]+|-a\s+|--auth[=\s]+)['\"]?[^\s:'\"]+:)([^\s'\"]+)"),  # user:PASS
+    re.compile(r"((?<!\S)(?:-b|--cookie)[=\s]+)('[^']*=[^']*'|\"[^\"]*=[^\"]*\"|[^\s'\"=]*=[^\s'\"]*)"),  # not a file
+    re.compile(r"(?i)(\\?[\"'](?:\w*(?:password|passwd|secret|token|api_?key|access_?key|private_?key)\w*)\\?[\"']\s*:"
+               r"\s*)(\\?\"[^\"\\]*\\?\"|'[^']*'|[^\s,}\]]+)"),  # JSON bodies, also with \"escaped\" quotes
+    re.compile(r"(\b(?:sqlcmd|bcp|osql)\b[^;&|\n]{0,400}?(?<!\S)-P\s*)" + VALUE),
+    re.compile(r"(\b(?:zip|unzip|7z|7za)\b[^;&|\n]{0,400}?(?<!\S)-[Pp](?:\s+|(?=[^\s-])))" + VALUE),
+    re.compile(r"(\btwine\b[^;&|\n]{0,400}?(?<!\S)(?:-p|--password)\s+)" + VALUE),
+    re.compile(r"(\bnuget\b[^;&|\n]{0,400}?(?<!\S)(?:-k|--api-key|-p|--password)\s+)" + VALUE),
+    re.compile(r"(\bcargo\s+login\s+)([^\s'\"-]\S*)"),
+    re.compile(r"((?<!\S)--otp[=\s]+)" + VALUE),
+    re.compile(r"(?i)(\b(?:authorization|proxy-authorization|x-api-key|api-key|private-token)\s*[:=]\s*"
+               r"(?:bearer\s+|basic\s+|token\s+)?)([^\s'\"]+)"),
+    re.compile(r"(?i)(\b(?:set-)?cookie\s*:\s*)([^'\"]+)"),
+    re.compile(r"(?i)(\bbearer\s+)([A-Za-z0-9._~+/=-]{6,})"),
+    re.compile(r"(://[^/\s:@'\"]+:)([^@\s/'\"]+)(?=@)"),  # scheme://user:PASS@host
+    re.compile(r"(\b[A-Za-z_][A-Za-z0-9_]*=)" + VALUE),  # NAME=value: masked only when the name says so (secret_name)
+]
+SECRET_WORDS = ("password", "passwd", "secret")  # anywhere in a name: PGPASSWORD, DB_PASSWORD, CLIENT_SECRET
+KEY_PARTS = ("token", "apikey", "pwd")  # whole underscore-separated parts: GITHUB_TOKEN, not TOKENIZER
+KEY_PAIRS = ("api_key", "access_key", "private_key", "secret_key", "auth_token")
+# What lessons.py prints for the lesson it wrote or counted: "added L012", "duplicate of G003: ...", "L012 hits:3".
+LESSON_ID = re.compile(r"\b(?:added|duplicate of) ([LG]\d{3,})\b|^([LG]\d{3,}) hits:\d+", re.M)
+LEDGER_IN_COMMAND = re.compile(r"(?:LESSONS_FILE=|--file[=\s])(\"[^\"]+\"|'[^']+'|[^\s;&|]+)")
 
 MAX_NAMED = 8
 COMMAND_CHARS = 80
 PACKAGE_RUNNERS = ("npm", "pnpm", "yarn", "bun")
 UNATTENDED_MODES = frozenset(("bypassPermissions", "dontAsk", "auto"))  # no human approves each call
+WRITE_TOOLS = frozenset(("Write", "Edit", "MultiEdit", "NotebookEdit"))  # judged by the edit-scope lock
 CODE_EXTENSIONS = frozenset(
     "py js jsx mjs cjs ts tsx mts cts vue svelte cs fs vb go rs java kt kts scala groovy rb php swift dart "
     "c h cc cpp cxx hpp m mm ex exs lua".split())
@@ -170,8 +244,25 @@ def is_check_command(command):
     return isinstance(command, str) and bool(check_keys(command))
 
 
+# ARSENAL_PROFILE maps onto the per-check switches; an explicitly set switch always wins over its profile.
+PROFILES = {
+    "minimal": {"ARSENAL_GUARD_STOP": "off", "ARSENAL_GUARD_DEADCODE": "off",
+                "ARSENAL_LESSON_GUARDS": "off"},  # the destructive-command gate and the subagent cost guard only
+    "standard": {},
+    "strict": {"ARSENAL_GUARD_DESTRUCTIVE": "deny"},  # a destructive command is denied even where a human approves
+}
+
+
+def setting(name):
+    """The switch's explicit value, else what ARSENAL_PROFILE sets for it (unknown profile: standard), else ''."""
+    value = os.environ.get(name, "").strip().lower()
+    if value:
+        return value
+    return PROFILES.get(os.environ.get("ARSENAL_PROFILE", "").strip().lower(), {}).get(name, "")
+
+
 def switched_off(name="ARSENAL_GUARD", value="off"):
-    return os.environ.get(name, "").strip().lower() == value
+    return setting(name) == value
 
 
 def state_path(data):
@@ -258,7 +349,7 @@ def baseline():
     sha = head[0] if head else ""
     dirty = changed_paths(root, sha)
     if dirty is not None:
-        calls, started = guard_limits.usage(load(path))  # a resumed session keeps what its run has used
+        calls, started = guard_limits.usage(load(path)) if guard_limits else (0, 0)  # a resumed run keeps its count
         record(path, {"event": "baseline", "sha": sha, "dirty": sorted(dirty), "root": root, "time": int(time.time())},
                fresh=True)
         if calls:
@@ -266,6 +357,8 @@ def baseline():
 
 
 def track():
+    if switched_off():
+        return  # ARSENAL_GUARD=off records nothing either
     data = hook.hook_input()
     path = state_path(data)
     tool_input = data.get("tool_input")
@@ -274,14 +367,84 @@ def track():
         return
     checks = check_keys(command)
     if data.get("hook_event_name") == "PostToolUseFailure":
-        if checks and data.get("is_interrupt") is not True:
-            record(path, {"event": "fail", "command": " ".join(command.split())[:COMMAND_CHARS], "checks": checks})
+        if data.get("is_interrupt") is not True:
+            record(path, {"event": "error", "command": shown(command, FAILED_COMMAND_CHARS),
+                          "error": shown(str(data.get("error") or ""), ERROR_CHARS)})
+            if checks:
+                record(path, {"event": "fail", "command": shown(command, COMMAND_CHARS), "checks": checks})
         return
     if LESSON_COMMAND.search(bounded(command)):  # PostToolUse: the command exited 0
+        before = load(path)
         record(path, {"event": "lesson"})
+        try:
+            save_evidence(data, command, before)
+        except OSError:  # the evidence file is optional; the gate's own state is already written
+            pass
     checks = check_keys(command, decisive=True)  # a pass hidden by `| tail` or `|| true` proves nothing
     if checks:
         record(path, {"event": "pass", "checks": checks})
+
+
+def secret_name(name):
+    """True for an environment-style name that holds a credential (a short value of a key-ish name stays)."""
+    lower = name.lower().rstrip("=")
+    parts = lower.split("_")
+    return any(word in lower for word in SECRET_WORDS + KEY_PAIRS) or any(part in KEY_PARTS for part in parts)
+
+
+def redact(text):
+    """The text with the values of command-line credentials masked (flags, headers, URLs, NAME=value)."""
+    for pattern in CLI_SECRETS:
+        text = pattern.sub(lambda match: match.group(1) + MASK if match.re is not CLI_SECRETS[-1]
+                           or secret_name(match.group(1)) and len(match.group(2).strip("'\"")) >= 3
+                           else match.group(0), text)
+    return text
+
+
+def shown(text, limit):
+    """One line of at most `limit` characters with command-line credentials masked, or a placeholder when it still
+    looks like it holds a secret. Redaction runs before the cut, so a clipped value cannot escape it."""
+    text = redact(" ".join(bounded(text).split())[:limit + REDACT_MARGIN])[:limit]
+    try:
+        from ledger_store import find_secret  # imported here: `pre` runs before every tool call and never needs it
+    except ImportError:
+        return WITHHELD
+    return WITHHELD if find_secret(text) else text
+
+
+def evidence_path():
+    return Path(os.environ.get("LESSONS_EVIDENCE_FILE") or Path.home() / ".agents" / "lessons-evidence.jsonl")
+
+
+def save_evidence(data, command, events):
+    """Append {lesson, ledger, lesson command, the failures since the previous lesson} to the local evidence file,
+    the labelled pairs a failure-to-lesson matcher can later be trained and measured on. Nothing when no command
+    failed since the previous lesson. Never inside the transcript or the ledger; LESSONS_EVIDENCE=off disables it."""
+    if switched_off("LESSONS_EVIDENCE") or switched_off():
+        return
+    failures = []
+    for event in events:
+        if event.get("event") == "error":
+            failures.append({"command": str(event.get("command", "")), "error": str(event.get("error", ""))})
+        elif event.get("event") == "lesson":
+            failures = []
+    if not failures:
+        return
+    response = data.get("tool_response")
+    stdout = response.get("stdout") if isinstance(response, dict) else None
+    found = LESSON_ID.search(stdout) if isinstance(stdout, str) else None
+    lesson = (found.group(1) or found.group(2)) if found else None
+    named = LEDGER_IN_COMMAND.search(command)
+    ledger = named.group(1).strip("\"'") if named else os.environ.get("LESSONS_FILE") or ".agents/lessons.md"
+    cwd = hook.working_dir(data)
+    entry = {"time": time.strftime("%Y-%m-%dT%H:%M:%S%z"), "lesson": lesson,
+             "ledger": "global" if lesson and lesson.startswith("G") else str(Path(cwd, ledger)),
+             "lesson_command": shown(command, LESSON_COMMAND_CHARS), "failures": failures[-EVIDENCE_FAILURES:]}
+    target = evidence_path()
+    target.parent.mkdir(parents=True, exist_ok=True)
+    if target.exists() and target.stat().st_size > EVIDENCE_MAX_BYTES:
+        return
+    record(target, entry)
 
 
 def decide(decision, text):
@@ -290,17 +453,19 @@ def decide(decision, text):
 
 
 def run_limit(data, cwd, count):
-    """(limits file, why the run must stop) for this session; ('', '') without a limits file. count records the call."""
-    limits_file = guard_limits.find(cwd)
+    """(limits file, why the run must stop, report write) for this session; ('', '', False) without a limits file.
+    report write: the limit is reached and this call is the handoff or report write it still allows. count records
+    the call."""
+    limits_file = guard_limits.find(cwd) if guard_limits else ""
     if not limits_file:
-        return "", ""
+        return "", "", False
     path = state_path(data)
     why, damaged = guard_limits.status(limits_file, load(path) if path else [], time.time())
     if why and guard_limits.is_report_write(data, limits_file, damaged):
-        return limits_file, ""
+        return limits_file, "", True
     if count and path and not why:
         record(path, {"event": "call", "time": int(time.time())})
-    return limits_file, why
+    return limits_file, why, False
 
 
 def pre():
@@ -308,28 +473,58 @@ def pre():
     if switched_off():
         return
     cwd = hook.working_dir(data)
-    limits_file, why = run_limit(data, cwd, count=True)
+    limits_file, why, report_write = run_limit(data, cwd, count=True)
     if why:
         return decide("deny", f"arsenal run limit ({limits_file}): {why}. Start nothing new and make no further tool "
                               "calls: write the handoff or end report (Write or Edit of a .md file still works) and "
                               "end the turn. Only the operator lifts the limit, by editing or deleting that file.")
     tool_input = data.get("tool_input")
+    if data.get("tool_name") in ("Agent", "Task") and not switched_off("ARSENAL_SUBAGENT_MODEL", "any"):
+        refusal = model_refusal(tool_input)
+        if refusal:  # attended: the user may want the dearer model for this one call
+            return decide("deny" if data.get("permission_mode") in UNATTENDED_MODES else "ask", refusal)
+    if data.get("tool_name") in WRITE_TOOLS and not switched_off("ARSENAL_GUARD_SCOPE"):
+        refusal = scope_refusal(data.get("tool_name"), tool_input, cwd, report_write)
+        if refusal:
+            return decide("deny", refusal)
     command = tool_input.get("command") if isinstance(tool_input, dict) else None
     if data.get("tool_name") != "Bash" or not isinstance(command, str):
         return
-    if not switched_off("ARSENAL_LESSON_GUARDS"):
+    if guard_lessons and not switched_off("ARSENAL_LESSON_GUARDS"):
         refusal = lesson_refusal(command, cwd)
         if refusal:
             return decide("deny", refusal)
-    if switched_off("ARSENAL_GUARD_DESTRUCTIVE", "allow"):
+    destructive_mode = setting("ARSENAL_GUARD_DESTRUCTIVE")
+    if not guard_destructive or destructive_mode == "allow":
         return
     danger = guard_destructive.destructive(command, cwd)
     if not danger:
         return
+    if destructive_mode == "deny":
+        return decide("deny", f"arsenal guard: {danger}. Denied by the strict profile (ARSENAL_PROFILE=strict or "
+                              "ARSENAL_GUARD_DESTRUCTIVE=deny); if it is really needed, ask the user to run it.")
     if data.get("permission_mode") in UNATTENDED_MODES:
         return decide("deny", f"arsenal guard: {danger}. Denied because nobody approves each call in this "
                               "permission mode; if it is really needed, park it for the user.")
     decide("ask", f"arsenal guard: {danger}.")
+
+
+def model_refusal(tool_input):
+    """Why an arsenal subagent call asks for a dearer model than its tier, or ''; imported only for Agent calls."""
+    try:
+        import guard_models
+    except Exception:  # a missing helper costs only this check
+        return ""
+    return guard_models.refusal(tool_input, str(ROOT))
+
+
+def scope_refusal(tool_name, tool_input, cwd, report_write=False):
+    """Why a file write breaks the edit-scope lock, or ''; imported here so other tool calls do not pay for it."""
+    try:
+        import guard_scope
+    except Exception:  # a missing helper costs only this check
+        return ""
+    return guard_scope.refusal(tool_name, tool_input, cwd, report_write)
 
 
 def lesson_refusal(command, cwd):
@@ -352,13 +547,20 @@ def lesson_refusal(command, cwd):
     return f"arsenal lesson guard {hit.lesson or hit.rule} ({hit.rule}): {hit.reason}{note}"
 
 
-def untested_sources(root, events):
-    """Source files changed since the baseline, not yet asked about, when no test file changed with them."""
+def session_base(root, events):
+    """The baseline event when the working tree's diff since it is this session's own work, else None."""
     base = next((event for event in events if event.get("event") == "baseline"), None)
     sha = base.get("sha") if base else None
     if not isinstance(sha, str) or base.get("root") != root or foreign_history(root, sha, base.get("time")):
-        return []  # another working tree, or commits this session did not make: the diff would name their files
-    changed = changed_paths(root, sha)
+        return None  # another working tree, or commits this session did not make: the diff would name their files
+    return base
+
+
+def untested_sources(root, events, base):
+    """Source files changed since the baseline, not yet asked about, when no test file changed with them."""
+    if base is None:
+        return []
+    changed = changed_paths(root, base["sha"])
     if changed is None:
         return []
     changed -= set(text_list(base.get("dirty")))
@@ -379,6 +581,21 @@ def foreign_history(root, sha, started):
     return stamps is None or not isinstance(started, int) or any(not s.isdigit() or int(s) < started for s in stamps)
 
 
+def dead_findings(root, events, base):
+    """Dead code in this session's changes (files dirty at the baseline excluded), not yet asked about, described."""
+    if base is None or switched_off("ARSENAL_GUARD_DEADCODE"):
+        return []
+    try:  # imported here, not at the top: pre runs before every tool call, and a missing skill costs only this check
+        import dead_code
+        found = dead_code.findings(root, base["sha"], ignore=set(text_list(base.get("dirty"))),
+                                   is_source=lambda path: kind(path) == "source", git_timeout=hook.GIT_TIMEOUT)
+        asked = {item for event in events if event.get("event") == "asked" for item in text_list(event.get("dead"))}
+        return [(dead_code.key(finding), dead_code.describe(finding)) for finding in found
+                if dead_code.key(finding) not in asked]
+    except Exception:  # the detector failing must not take the test and lesson gates down with it
+        return []
+
+
 def open_failures(events):
     """Failed check commands whose check did not pass again, with no lesson recorded and no question asked since."""
     failed = []  # (command, the checks it ran that have not passed since)
@@ -393,7 +610,7 @@ def open_failures(events):
     return [command for command, _ in failed]
 
 
-def reason(files, failed):
+def reason(files, failed, dead=()):
     parts = []
     if files:
         more = f" (+{len(files) - MAX_NAMED} more)" if len(files) > MAX_NAMED else ""
@@ -404,13 +621,17 @@ def reason(files, failed):
                      "again, and no lesson was recorded. If a verified mistake of your own caused it, record it with the "
                      f"lessons-learned skill: python3 \"{LESSONS}\" add --tags a,b --mistake \"...\" --cause \"...\" "
                      "--rule \"...\" --check \"...\"; otherwise say nothing was learned.")
+    if dead:
+        more = f" (+{len(dead) - MAX_NAMED} more)" if len(dead) > MAX_NAMED else ""
+        parts.append(f"dead code in this session's changes: {', '.join(text for _, text in dead[:MAX_NAMED])}"
+                     f"{more}. Remove it, or tell the user in one sentence why it stays.")
     return "arsenal guard (asked once): " + " Also: ".join(parts) + " Then stop again."
 
 
 def stop():
     data = hook.hook_input()
     path = state_path(data)
-    if not path or data.get("stop_hook_active") is True or switched_off():
+    if not path or data.get("stop_hook_active") is True or switched_off() or switched_off("ARSENAL_GUARD_STOP"):
         return
     if run_limit(data, hook.working_dir(data), count=False)[1]:
         return  # the run was told to stop: asking for more work now would contradict the limit
@@ -418,11 +639,13 @@ def stop():
     if not root:
         return
     events = load(path)
-    files, failed = untested_sources(root, events), open_failures(events)
-    if not files and not failed:
+    base = session_base(root, events)
+    files, failed, dead = untested_sources(root, events, base), open_failures(events), dead_findings(root, events, base)
+    if not files and not failed and not dead:
         return
-    record(path, {"event": "asked", "files": files, "failures": bool(failed)})  # before printing: never ask twice
-    print(json.dumps({"decision": "block", "reason": reason(files, failed)}))
+    record(path, {"event": "asked", "files": files, "failures": bool(failed),  # before printing: never ask twice
+                  "dead": [key for key, _ in dead]})
+    print(json.dumps({"decision": "block", "reason": reason(files, failed, dead)}))
 
 
 def main():

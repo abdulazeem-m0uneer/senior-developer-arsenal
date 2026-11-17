@@ -86,3 +86,4 @@ gh pr merge <number> --rebase --match-head-commit <reviewed-sha>   # refuses if 
 - **Narrow Reads**: Grep and line ranges only; cap the output of every command; never re-read a file already in context.
 - **One Review Pass**: One reviewer per pull request and one re-check of its fixes; never re-run a review that already passed on the same commit.
 - **Few, Larger Helpers**: Prefer one subagent with a wide brief over many small ones, and measure usage before launching it.
+- **Default Subagent Model**: Never pass a `model` override to an arsenal subagent; its default tier is the measured one (a builder on Opus by override cost the most in real usage). End a helper when its task is done instead of reusing it for the next one: every turn of a long helper re-reads its whole context.

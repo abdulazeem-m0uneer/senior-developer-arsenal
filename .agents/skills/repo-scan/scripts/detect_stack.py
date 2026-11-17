@@ -63,7 +63,7 @@ RECOMMENDATIONS = {
                 "fullstack-architect"),
     "styling": ("UI styling", "ui-ux-architect ui-ux-audit", "ui-ux-standards", "ui-ux-architect"),
     "docker": ("Docker", "devops-ci dependency-upgrade", "", "devops-engineer"),
-    "ci": ("CI pipeline", "devops-ci git-release ci-wait quality-gate", "", "devops-engineer"),
+    "ci": ("CI pipeline", "devops-ci git-release ci-wait quality-gate ship", "", "devops-engineer"),
     "infra": ("Infrastructure as code", "shared-infra-changes devops-ci", "", "infra-reviewer devops-engineer"),
     "kubernetes": ("Kubernetes", "kubernetes-ops shared-infra-changes devops-ci", "", "infra-reviewer devops-engineer"),
     "tests": ("Tests present", "test-strategy qa-engineer", "", "test-engineer qa-engineer"),

@@ -25,6 +25,7 @@ Commands:
   remove [project_path]  Uninstall from a project, or globally with -Global
   status                 Show what is installed
   update                 Pull the latest arsenal and re-sync globally
+  doctor [--project P] [--fix]  Check the installation and print repairs
   help                   Show this help
 "@
 }
@@ -71,6 +72,11 @@ switch ($CommandName) {
             if ($LASTEXITCODE -ne 0) { Write-Host "[WARN] git pull failed or the repository has local changes." -ForegroundColor Yellow }
         }
         Invoke-Installer (@("-Global") + $Rest)
+    }
+    "doctor" {
+        $python = if (Get-Command python3 -ErrorAction SilentlyContinue) { "python3" } else { "python" }
+        & $python (Join-Path $PSScriptRoot "doctor.py") @Rest
+        exit $LASTEXITCODE
     }
     { $_ -in "help", "--help", "-h" } { Show-Help }
     default {

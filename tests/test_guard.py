@@ -3,8 +3,10 @@ import os
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPT = ROOT / "hooks" / "guard.py"
@@ -34,6 +36,7 @@ class GuardCase(unittest.TestCase):
         self.write("legacy.py", "dirty before the session")
         self.outside = tempfile.TemporaryDirectory()
         self.state = Path(self.outside.name) / "snap.guard.jsonl"
+        self.evidence = Path(self.outside.name) / "evidence.jsonl"
 
     def tearDown(self):
         self.tmp.cleanup()
@@ -46,8 +49,11 @@ class GuardCase(unittest.TestCase):
 
     def run_hook(self, cmd, payload=None, cwd=None, env=None):
         stdin = payload if isinstance(payload, str) else json.dumps(payload or {})
-        base = {**os.environ, "HANDOFF_SNAPSHOT": str(Path(self.outside.name) / "snap.md")}
-        for name in ("ARSENAL_GUARD", "ARSENAL_GUARD_DESTRUCTIVE", "ARSENAL_RUN_LIMITS", "CLAUDE_PROJECT_DIR"):
+        base = {**os.environ, "HANDOFF_SNAPSHOT": str(Path(self.outside.name) / "snap.md"),
+                "LESSONS_EVIDENCE_FILE": str(self.evidence)}  # never the developer's real evidence file
+        for name in ("ARSENAL_GUARD", "ARSENAL_GUARD_DESTRUCTIVE", "ARSENAL_GUARD_DEADCODE", "ARSENAL_RUN_LIMITS",
+                     "ARSENAL_PROFILE", "ARSENAL_GUARD_STOP", "ARSENAL_GUARD_SCOPE", "ARSENAL_LESSON_GUARDS",
+                     "ARSENAL_SUBAGENT_MODEL", "CLAUDE_PROJECT_DIR", "LESSONS_EVIDENCE", "LESSONS_FILE"):
             base.pop(name, None)  # the developer's own session must not leak into the hook under test
         result = subprocess.run([sys.executable, str(SCRIPT), cmd], cwd=cwd or self.dir, input=stdin,
                                 capture_output=True, text=True, env={**base, **(env or {})})
@@ -248,6 +254,143 @@ class TestGateTest(GuardCase):
             self.assertIsNone(guard.changed_paths(str(self.dir), "HEAD"), failing)
         guard.git_fields = original
         self.assertEqual(guard.changed_paths(str(self.dir), "HEAD"), {"legacy.py"})
+
+
+class EvidenceTest(GuardCase):
+    """A recorded lesson stores the failures that preceded it in the local evidence file."""
+    ADD = 'python3 lessons.py add --tags git --mistake "pushed to the wrong remote" --rule "read git remote -v first"'
+
+    def failed_command(self, command, error="Exit code 1\nfatal: no such remote"):
+        self.bash(command, failed=True, error=error, is_interrupt=False)
+
+    def lesson(self, command=ADD, stdout="added L004", env=None):
+        payload = {"hook_event_name": "PostToolUse", "tool_name": "Bash", "tool_input": {"command": command},
+                   "tool_response": {"stdout": stdout, "stderr": ""}}
+        self.assertEqual(self.run_hook("track", payload, env=env), "")
+
+    def entries(self):
+        if not self.evidence.exists():
+            return []
+        return [json.loads(line) for line in self.evidence.read_text().splitlines()]
+
+    def test_a_lesson_after_a_failure_stores_the_pair(self):
+        self.failed_command("git push upstream main")
+        self.lesson()
+        [entry] = self.entries()
+        self.assertEqual(entry["lesson"], "L004")
+        self.assertEqual(entry["ledger"], str(self.dir / ".agents" / "lessons.md"))
+        self.assertIn('--mistake "pushed to the wrong remote"', entry["lesson_command"])
+        self.assertEqual(entry["failures"], [{"command": "git push upstream main",
+                                              "error": "Exit code 1 fatal: no such remote"}])
+        self.assertEqual(oct(self.evidence.stat().st_mode & 0o777), "0o600")
+
+    def test_no_failure_since_the_previous_lesson_stores_nothing(self):
+        self.lesson()
+        self.assertEqual(self.entries(), [])
+        self.failed_command("cat missing.txt")
+        self.lesson()
+        self.lesson(stdout="L004 hits:2")
+        self.assertEqual(len(self.entries()), 1)
+
+    def test_only_failures_since_the_previous_lesson_and_at_most_three_newest_last(self):
+        self.failed_command("first")
+        self.lesson()
+        for n in range(5):
+            self.failed_command(f"later{n}")
+        self.lesson(stdout="duplicate of G003: hits bumped to 4")
+        first, second = self.entries()
+        self.assertEqual([f["command"] for f in first["failures"]], ["first"])
+        self.assertEqual([f["command"] for f in second["failures"]], ["later2", "later3", "later4"])
+        self.assertEqual((second["lesson"], second["ledger"]), ("G003", "global"))
+
+    def test_bump_output_and_a_named_ledger_are_read(self):
+        self.failed_command("ls nothing-here")
+        self.lesson(command="python3 lessons.py --file docs/l.md bump L012", stdout="L012 hits:3")
+        self.failed_command("ls nothing-here")
+        self.lesson(command="LESSONS_FILE=/abs/ledger.md python3 lessons.py add --tags a", stdout="no id printed")
+        named, unnamed = self.entries()
+        self.assertEqual((named["lesson"], named["ledger"]), ("L012", str(self.dir / "docs" / "l.md")))
+        self.assertEqual((unnamed["lesson"], unnamed["ledger"]), (None, "/abs/ledger.md"))
+
+    def test_secrets_are_withheld(self):
+        token = "ghp_" + "a1B2" * 9
+        self.failed_command(f"curl -H 'Authorization: token {token}' https://api.example.com", error=f"Exit code 22 {token}")
+        self.lesson(command=self.ADD + f" --check 'TOKEN={token}'")
+        [entry] = self.entries()
+        self.assertIn(entry["failures"][0]["command"], (guard.WITHHELD, "curl -H 'Authorization: token ***' "
+                                                                         "https://api.example.com"))
+        self.assertEqual(entry["failures"][0]["error"], guard.WITHHELD)
+        self.assertEqual(entry["lesson_command"], guard.WITHHELD)
+        self.assertNotIn(token, self.evidence.read_text())
+
+    # Command templates whose {s} takes a made-up credential built at run time, so no literal user:password pair sits
+    # in the source for secret scanners to flag. Each must come back with {s} masked (found by independent reviews).
+    FAKE = "".join(("Zq", "7v", "Wm", "4k", "Rt"))
+    CREDENTIAL_TEMPLATES = (
+        "mysql -u root -p{s} -e 'select 1'", "curl -H 'Authorization: Bearer {s}' https://x.io/a",
+        "psql postgres://app:{s}@db/prod -c x", "sshpass -p {s} ssh h", "curl -u admin:{s} https://x",
+        "docker login -u me -p {s} registry", "htpasswd -b f user {s}", "npm publish --token {s}",
+        "DB_PASSWORD={s} pytest -q", "mysql -u root -p'{s} x' db", "curl --user admin:{s} h",
+        "gpg --batch --passphrase '{s} {s}' -d f", "redis-cli -a {s} ping", "openssl enc -k {s}",
+        "openssl rsa -passin pass:{s} -in k", "az login -u me -p {s}", "curl -H 'Cookie: sessionid={s}' h",
+        "aws configure set aws_secret_access_key {s}", "vault login {s}", "export GITHUB_TOKEN={s}",
+        "PGPASSWORD={s} psql", """curl -d '{{"password":"{s}","user":"u"}}' https://a""",
+        """curl -d '{{"token": "{s}"}}' https://a""", r'curl -X POST https://a -d "{{\"password\":\"{s}\"}}"',
+        "curl -b 'a=1; sid={s}' https://a", "curl -uadmin:{s} https://a", "http -a user:{s} https://a",
+        "sqlcmd -S srv -U sa -P {s}", "zip -P {s} a.zip f", "7z a -p{s} a.7z f", "twine upload -u __token__ -p {s}",
+        "dotnet nuget push x.nupkg -k {s}", "cargo login {s}", "netlify deploy --auth {s}", "npm publish --otp={s}",
+    )
+
+    def test_credentials_passed_as_arguments_never_reach_a_file(self):
+        self.start()
+        for template in self.CREDENTIAL_TEMPLATES:
+            command, secret = template.format(s=self.FAKE), self.FAKE
+            with self.subTest(command=template):
+                self.failed_command(command + " && pytest -q")
+                self.lesson()
+                self.assertNotIn(secret, self.evidence.read_text())
+                self.assertNotIn(secret, self.state.read_text())
+                self.assertNotIn(secret, self.stop())  # the Stop reason quotes the last failed command
+
+    def test_redaction_leaves_ordinary_commands_alone(self):
+        for command in ("mkdir -p build/out", "git log -p -3", "docker run -p 8080:80 img", "pytest -q tests/a.py",
+                        "git clone https://github.com/a/b.git", "curl -u admin https://x", "ls -la -p",
+                        "ssh -p 2222 host", "ssh -p22 host", "gcc -pthread x.c", "cp -pr a b", "psql -p5432 db",
+                        "nc -p4444 host", "make -pj4", "pip install -r req.txt", "pytest -p no:cacheprovider",
+                        "export TOKENIZER=fast", "TOKEN_LIMIT=5 run", "grep token_expiry src/auth.py", "DEBUG=1 make",
+                        "curl -b cookies.txt https://a", "zip -r a.zip dir", "unzip -o a.zip", "7z x a.7z",
+                        "git commit -m 'token refresh'", "jq '.items' f.json"):
+            with self.subTest(command=command):
+                self.assertEqual(guard.redact(command), command)
+
+    def test_redaction_stays_linear_on_hostile_commands(self):
+        for command in ("mysql " + "-p " * 7000, "_password" * 2000 + "=", "A=b " * 5000, "htpasswd " + "-b " * 6000,
+                        "cookie: " + "a" * 20000, "://" + "a" * 20000 + ":", "docker login az " * 1250,
+                        '"password":' * 2000, "zip " * 5000, "-b '" + "a=" * 10000):
+            started = time.monotonic()
+            guard.shown(command, 300)
+            self.assertLess(time.monotonic() - started, 0.5, command[:20])
+
+    def test_the_evidence_file_stops_growing_at_its_cap(self):
+        self.evidence.write_text("x" * (guard.EVIDENCE_MAX_BYTES + 1))
+        self.failed_command("git push upstream main")
+        self.lesson()
+        self.assertEqual(self.evidence.stat().st_size, guard.EVIDENCE_MAX_BYTES + 1)
+
+    def test_interrupted_commands_and_the_opt_out_store_nothing(self):
+        self.bash("sleep 100", failed=True, error="Interrupted", is_interrupt=True)
+        self.lesson()
+        self.failed_command("cat missing.txt")
+        self.lesson(env={"LESSONS_EVIDENCE": "off"})
+        self.failed_command("cat missing.txt")
+        self.lesson(env={"ARSENAL_GUARD": "off"})
+        self.assertEqual(self.entries(), [])
+
+    def test_an_unwritable_evidence_file_still_records_the_lesson_for_the_stop_gate(self):
+        self.evidence.mkdir()  # a directory where the file should be: every write fails
+        self.failed_command("git push upstream main")
+        self.lesson()
+        self.assertEqual(json.loads(self.state.read_text().splitlines()[-1]), {"event": "lesson"})
 
 
 class FailOpenTest(GuardCase):
@@ -452,6 +595,100 @@ class LessonGateTest(GuardCase):
         self.start()
         self.bash("pytest " + "x" * 500, failed=True)
         self.assertLess(len(self.stop()), 700)
+
+
+class DeadCodeGateTest(GuardCase):
+    DEAD = "import json\n# return compute(total)\n"  # a commented-out line and an import nothing uses
+
+    def test_dead_code_blocks_once_naming_each_finding(self):
+        self.start()
+        self.write("src/app.py", self.DEAD)
+        self.write("tests/test_app.py", "x")  # the test gate is satisfied: only the dead-code part asks
+        reason = self.stop()
+        self.assertIn("dead code in this session's changes: src/app.py:2 commented-out", reason)
+        self.assertIn("Remove it, or tell the user in one sentence why it stays.", reason)
+        self.assertNotIn("no test change", reason)
+        self.assertEqual(self.stop(), "")  # the same findings are never asked about twice
+
+    def test_a_new_finding_after_a_block_is_named_alone(self):
+        self.start()
+        self.write("tests/test_app.py", "x")
+        self.write("src/a.py", "breakpoint()\n")
+        self.assertIn("src/a.py:1 debug-leftover breakpoint()", self.stop())
+        self.write("src/b.py", "debugger_value = 1\nbreakpoint()\n")
+        reason = self.stop()
+        self.assertIn("src/b.py:2 debug-leftover", reason)
+        self.assertNotIn("src/a.py", reason)
+
+    def test_an_orphaned_import_left_by_a_removed_call_is_named(self):
+        self.write("src/app.py", "import json\nprint(json.dumps(1))\n")
+        git(self.dir, "add", "-A")
+        git(self.dir, "commit", "-qm", "app", env=BEFORE_THE_SESSION)
+        self.start()
+        self.write("src/app.py", "import json\n")
+        self.write("tests/test_app.py", "x")
+        self.assertIn("src/app.py:1 orphaned import json", self.stop())
+
+    def test_files_dirty_at_session_start_are_ignored(self):
+        self.write("legacy.py", self.DEAD)
+        self.start()
+        self.write("legacy.py", self.DEAD + "breakpoint()\n")
+        self.assertEqual(self.stop(), "")
+
+    def test_switch_turns_off_only_the_dead_code_check(self):
+        self.start()
+        self.write("src/app.py", self.DEAD)
+        self.write("tests/test_app.py", "x")
+        self.assertEqual(self.stop(env={"ARSENAL_GUARD_DEADCODE": "off"}), "")
+        self.write("src/other.py", "x")
+        git(self.dir, "rm", "-q", "--cached", "--ignore-unmatch", "tests/test_app.py")
+        (self.dir / "tests" / "test_app.py").unlink()
+        self.assertIn("no test change", self.stop(env={"ARSENAL_GUARD_DEADCODE": "off"}))
+        self.write("src/third.py", "breakpoint()\n")
+        self.assertEqual(self.stop(env={"ARSENAL_GUARD": "off"}), "")
+
+    def test_one_block_combines_the_untested_failed_and_dead_parts(self):
+        self.start()
+        self.write("src/app.py", self.DEAD)
+        self.bash("pytest -q", failed=True)
+        reason = self.stop()
+        for part in ("no test change: src/app.py", "pytest -q", "dead code in this session's changes"):
+            self.assertIn(part, reason)
+        self.assertLess(len(reason), 1300)
+        self.assertEqual(self.stop(), "")
+
+    def test_dead_findings_are_capped_in_the_reason(self):
+        self.start()
+        self.write("tests/test_app.py", "x")
+        self.write("src/app.py", "x = 1\n" + "".join(f"breakpoint()\nx{i} = {i}\n" for i in range(12)))
+        reason = self.stop()
+        self.assertEqual(reason.count("debug-leftover"), guard.MAX_NAMED)
+        self.assertIn("(+4 more)", reason)
+
+    def test_a_clean_session_prints_nothing(self):
+        self.start()
+        self.write("src/app.py", "def total(items):\n    return sum(items)\n")
+        self.write("tests/test_app.py", "from src.app import total\n")
+        self.assertEqual(self.stop(), "")
+
+    def test_a_detector_crash_costs_only_the_dead_code_check(self):
+        import dead_code  # noqa: F401 (guard imports it lazily from the skill's scripts directory)
+        base = {"sha": "", "dirty": []}
+        with mock.patch("dead_code.findings", side_effect=RuntimeError("boom")):
+            self.assertEqual(guard.dead_findings(str(self.dir), [], base), [])
+
+    def test_the_detector_is_not_imported_by_the_other_hooks(self):
+        probe = "import sys; sys.path.insert(0, sys.argv[1]); import guard; print('dead_code' in sys.modules)"
+        out = subprocess.run([sys.executable, "-c", probe, str(SCRIPT.parent)], capture_output=True, text=True)
+        self.assertEqual(out.stdout.strip(), "False")  # pre runs before every tool call: it must not pay for it
+
+    def test_foreign_history_fails_open_for_dead_code_too(self):
+        self.start()
+        self.write("tests/test_app.py", "x")
+        self.write("src/app.py", "breakpoint()\n")
+        git(self.dir, "add", "-A")
+        git(self.dir, "commit", "-qm", "older than the session", env=BEFORE_THE_SESSION)
+        self.assertEqual(self.stop(), "")
 
 
 class ClassificationTest(unittest.TestCase):

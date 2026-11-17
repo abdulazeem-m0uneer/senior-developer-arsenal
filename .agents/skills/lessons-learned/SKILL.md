@@ -42,7 +42,7 @@ Consult: [Lesson Format, Triggers & Promotion](./references/lesson-format-and-pr
 1. Record after the root cause is a fact (inspected, reproduced, or confirmed by the user or by a command you ran), not while it is still a hypothesis. A mistake you found yourself is recorded the same way as one the user pointed out.
 2. Skip typos, one-off environment glitches, and anything that is the user's preference.
 3. Never write secrets, tokens, personal data, or blame of a person. The script refuses credentials (key, password or token assignments, known key and token formats, JWTs, PEM blocks, long random strings) with exit 2; file paths, git SHAs, UUIDs and long identifiers are accepted.
-4. With the Claude Code plugin, a `Stop` hook (`hooks/guard.py`) asks once when a test, build, lint or CI command failed in the session, the same check did not pass again afterwards, and no `add` or `bump` followed (a red run that later goes green, as in red-first TDD, is not asked about). Apply items 1 and 2 to answer: record the verified cause, or say that nothing was learned (a check left red on purpose, a typo). `ARSENAL_GUARD=off` disables it.
+4. With the Claude Code plugin, a `Stop` hook (`hooks/guard.py`) asks once when a test, build, lint or CI command failed in the session, the same check did not pass again afterwards, and no `add` or `bump` followed (a red run that later goes green, as in red-first TDD, is not asked about). Apply items 1 and 2 to answer: record the verified cause, or say that nothing was learned (a check left red on purpose, a typo). `ARSENAL_GUARD=off` disables it. Each successful `add` or `bump` also appends the failed commands that preceded it in the session (at most three, since the previous lesson) to a local evidence file, `$LESSONS_EVIDENCE_FILE` or `~/.agents/lessons-evidence.jsonl`; credential values in commands are masked, secret-looking fields are withheld, the file stops at 5 MB, and `LESSONS_EVIDENCE=off` turns it off (see docs/LEARNING.md).
 
 ### Step 3: Write the Lesson
 1. `python scripts/lessons.py add --tags node,sql --mistake "<what happened, observable>" --cause "<the false belief or skipped step>" --rule "<imperative that would have prevented it>" --check "<command or observation that detects it>"`
@@ -68,6 +68,10 @@ Consult: [Lesson Format, Triggers & Promotion](./references/lesson-format-and-pr
 1. `python scripts/lessons.py unguarded --min 2 [other ledgers...]` lists every lesson seen twice or more without a guard, Archive included (a retired lesson that repeated is still unguarded), most hits first.
 2. Schedule it once a day with the recipe in the reference (a systemd user timer or cron): `unguarded`, `check` and `hits --since 24h` on every ledger, one summary line to the team's inbox, the full list to a file.
 3. Route each unguarded repeat to the agent or person who owns the area it names; that owner builds the guard the same day and runs `promote <id> --guard <path>`. A repeat with no possible mechanical guard gets `promote <id>` (rule line) so it stops appearing.
+
+### Step 4d: Weekly Retro
+1. Once a week (or at the end of a milestone), run `python scripts/lessons.py retro [--days 7] [--project]` in the repository. It reads the commits of the window (feat, fix, revert, files fixed more than once), the ledgers (new lessons, repeats, guards), the failure-evidence file and the guard hit log, and prints "What went well", "What repeated" and the top 3 actions. Each action names a lesson id or a commit.
+2. Act on action 1 the same day, usually a guard for the most repeated unguarded lesson. Paste the retro into the team channel or the handoff; never edit its numbers by hand.
 
 ### Step 4a: Learn From Every Red CI Run
 A red run costs pipeline minutes and a review cycle. Every one is a lesson, the first time:
