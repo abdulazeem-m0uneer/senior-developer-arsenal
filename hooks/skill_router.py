@@ -17,14 +17,19 @@ A "Not for <topic> (use <skill>)" clause whose topic words all appear in the pro
 clause when that skill scored, and then adds 1 to the named skill if it scored too. A question (a question word
 first, or a final "?") gets no change-request score: asking how something works is not a change.
 
-Cost: the parsed trigger table is cached in the OS temp dir (beside the handoff snapshot when HANDOFF_SNAPSHOT is
-set), keyed by the path, mtime and size of every SKILL.md, so a prompt costs one stat per skill and one small read.
+Cost: the parsed trigger table is cached in a private per-user folder of the OS temp dir (arsenal-<uid>, mode 0700,
+owner and mode checked before use; beside the handoff snapshot when HANDOFF_SNAPSHOT is set), keyed by the path, mtime
+and size of every SKILL.md, so a prompt costs one stat per skill and one small read. The cache holds phrases, never
+patterns, and only names of skills that exist: a planted cache cannot inject text or a slow regex.
+Switches: ARSENAL_ROUTER=off or ARSENAL_GUARD=off turn it off; ARSENAL_PROFILE=minimal turns it off unless
+ARSENAL_ROUTER is set.
 Never blocks and never fails the session: any error prints nothing and exits 0. Standard library only.
 """
 import hashlib
 import json
 import os
 import re
+import stat
 import sys
 import tempfile
 from pathlib import Path
@@ -38,7 +43,10 @@ MAX_SKILLS = 2
 MAX_CHARS = 160
 MIN_WORDS = 4
 SCAN_CHARS = 4000  # a pasted log is read at its head only
-CACHE_VERSION = 2
+CACHE_VERSION = 3
+NAME = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+MAX_CACHE_BYTES = 256 * 1024
+MAX_PHRASE = 200
 CORE = ("investigate", "test-every-change", "refactor-legacy", "code-review", "definition-of-done")
 DESCRIPTION = re.compile(r"^description:\s*(['\"])(.*)\1\s*$", re.M)
 TRIGGERS = re.compile(r"Triggers?(?: on)?:(.*?)(?:\.\s*Not for\b|$)", re.S)
@@ -74,8 +82,67 @@ def hook_input():
 
 
 def state_dir():
+    """A folder only this user can write, or None: a shared temp dir must never feed the router."""
     override = os.environ.get("HANDOFF_SNAPSHOT")
-    return Path(override).parent if override else Path(tempfile.gettempdir())
+    if override:
+        return Path(override).parent
+    uid = os.getuid() if hasattr(os, "getuid") else None
+    folder = Path(tempfile.gettempdir()) / f"arsenal-{uid if uid is not None else 'user'}"
+    try:
+        folder.mkdir(mode=0o700, exist_ok=True)
+        info = os.lstat(folder)
+    except OSError:
+        return None
+    if not stat.S_ISDIR(info.st_mode):
+        return None
+    if uid is not None and (info.st_uid != uid or info.st_mode & 0o077):
+        return None  # someone else's folder, or one others can write: no cache, no repeat state
+    return folder
+
+
+def switched_off():
+    def value(name):
+        return os.environ.get(name, "").strip().lower()
+    if "off" in (value("ARSENAL_ROUTER"), value("ARSENAL_GUARD")):
+        return True
+    return value("ARSENAL_PROFILE") == "minimal" and not value("ARSENAL_ROUTER")
+
+
+def read_private(path):
+    """The file's text when it is a regular file under the size cap, read without following a link; else None."""
+    try:
+        handle = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
+    except OSError:
+        return None
+    try:
+        info = os.fstat(handle)
+        if not stat.S_ISREG(info.st_mode) or info.st_size > MAX_CACHE_BYTES:
+            return None
+        return os.read(handle, MAX_CACHE_BYTES).decode("utf-8", errors="replace")
+    except OSError:
+        return None
+    finally:
+        os.close(handle)
+
+
+def valid_table(table, names):
+    """True when a cached table names only real skills and holds only phrases, integer scores and word lists."""
+    if not isinstance(table, dict) or not set(table) <= names:
+        return False
+    for skill in table.values():
+        if not isinstance(skill, dict) or not isinstance(skill.get("triggers"), list) \
+                or not isinstance(skill.get("not_for"), list):
+            return False
+        for trigger in skill["triggers"]:
+            if not (isinstance(trigger, list) and len(trigger) == 3 and isinstance(trigger[0], str)
+                    and len(trigger[0]) <= MAX_PHRASE and type(trigger[1]) is int and 0 < trigger[1] < 10
+                    and isinstance(trigger[2], str)):
+                return False
+        for rule in skill["not_for"]:
+            if not (isinstance(rule, list) and len(rule) == 2 and isinstance(rule[0], list)
+                    and all(isinstance(word, str) for word in rule[0]) and rule[1] in names):
+                return False
+    return True
 
 
 def phrase_pattern(phrase):
@@ -91,7 +158,7 @@ def topic_words(topic):
 
 
 def parse_skill(name, text):
-    """{"triggers": [[pattern, score, probe]], "not_for": [[[words], target]]} from one SKILL.md.
+    """{"triggers": [[phrase, score, probe]], "not_for": [[[words], target]]} from one SKILL.md.
 
     probe is the phrase's first word: a plain substring test that skips compiling a pattern that cannot match."""
     match = DESCRIPTION.search(text)
@@ -99,12 +166,11 @@ def parse_skill(name, text):
     triggers = []
     found = TRIGGERS.search(description)
     for phrase in QUOTED_PHRASE.findall(found.group(1) if found else ""):
-        pattern = phrase_pattern(phrase)
-        if pattern:
-            words = len(phrase.split())
-            triggers.append([pattern, 1 + words if words > 1 else 2 if name.endswith("-expert") else 3,
-                             phrase.lower().split()[0]])
-    triggers.append([phrase_pattern(name.replace("-", " ")), 3, name.split("-")[0]])
+        words = phrase.lower().split()
+        if words and len(phrase) <= MAX_PHRASE:
+            triggers.append([" ".join(words), 1 + len(words) if len(words) > 1 else 2 if name.endswith("-expert") else 3,
+                             words[0]])
+    triggers.append([name.replace("-", " "), 3, name.split("-")[0]])
     not_for = []
     clause = NOT_FOR.search(description)
     for topic, target in NOT_FOR_ITEM.findall(clause.group(1) if clause else ""):
@@ -136,15 +202,19 @@ def load_table():
     if not files:
         return {}
     key = cache_key(files)
-    cache = state_dir() / f"arsenal-router-{hashlib.sha256(str(SKILLS).encode()).hexdigest()[:12]}.json"
+    names = {path.parent.name for path in files if NAME.match(path.parent.name)}
+    folder = state_dir()
+    cache = folder / f"arsenal-router-{hashlib.sha256(str(SKILLS).encode()).hexdigest()[:12]}.json" if folder else None
     try:
-        stored = json.loads(cache.read_text(encoding="utf-8"))
-        if stored.get("key") == key and isinstance(stored.get("skills"), dict):
+        stored = json.loads(read_private(cache) or "null") if cache else None
+        if isinstance(stored, dict) and stored.get("key") == key and valid_table(stored.get("skills"), names):
             return stored["skills"]
-    except (OSError, ValueError, AttributeError):
+    except ValueError:
         pass
     table = {path.parent.name: parse_skill(path.parent.name, path.read_text(encoding="utf-8", errors="replace"))
-             for path in files}
+             for path in files if path.parent.name in names}
+    if cache is None:
+        return table
     try:  # mkstemp: a fresh name opened exclusively, so a planted link in a shared temp dir is never followed
         handle, temporary = tempfile.mkstemp(prefix=cache.name + ".", dir=cache.parent)
         with os.fdopen(handle, "w", encoding="utf-8") as stream:
@@ -165,8 +235,8 @@ def score(prompt, table):
     text = " ".join(prompt[:SCAN_CHARS].lower().split())
     scores = dict.fromkeys(table, 0)
     for name, skill in table.items():
-        for pattern, points, probe in skill["triggers"]:
-            if probe in text and re.search(pattern, text):
+        for phrase, points, probe in skill["triggers"]:
+            if probe in text and re.search(phrase_pattern(phrase), text):
                 scores[name] += points
     for name, pattern in SYNONYMS.items():
         if name in scores and pattern.search(text):
@@ -213,7 +283,10 @@ def repeated(data, line):
     session = re.sub(r"[^A-Za-z0-9_-]", "", str(data.get("session_id", "")))
     if not session:
         return False
-    path = state_dir() / f"arsenal-router-{session}.last"
+    folder = state_dir()
+    if folder is None:
+        return False
+    path = folder / f"arsenal-router-{session}.last"
     try:
         same = path.read_text(encoding="utf-8") == line
     except OSError:
@@ -231,7 +304,7 @@ def repeated(data, line):
 
 def main():
     try:
-        if os.environ.get("ARSENAL_ROUTER", "").strip().lower() == "off":
+        if switched_off():
             return 0
         data = hook_input()
         line = suggestion(data.get("prompt"), load_table())
