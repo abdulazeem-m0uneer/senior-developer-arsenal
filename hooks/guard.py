@@ -27,7 +27,9 @@ The Stop gate cannot loop: it does nothing while stop_hook_active is true, and e
 block is written to the state file before it is printed, so the same files and the same failures never
 block twice (an explicit "no test applies" or "nothing learned" answer ends it). ARSENAL_GUARD=off disables
 every gate here; ARSENAL_GUARD_DESTRUCTIVE=allow disables only the destructive-command check and
-ARSENAL_GUARD_DEADCODE=off only the dead-code check. Fails open: outside a git repository, when git fails or times out, without a session id, on any
+ARSENAL_GUARD_DEADCODE=off only the dead-code check. A missing or broken optional helper (guard_destructive,
+guard_limits, guard_lessons) skips only its own check; guard_lessons parses shell with guard_destructive,
+so losing that one costs both. Fails open: outside a git repository, when git fails or times out, without a session id, on any
 exception, and whenever the diff could name work this session did not do: HEAD is no longer a descendant of
 the baseline (checkout, rebase), a commit since the baseline is older than the session (pull, checkout of a
 branch that was already ahead), or the stop runs in another working tree. Then it exits 0 silently.
@@ -42,6 +44,7 @@ Time budget: baseline does at most four git reads and stop at most five, at 2 s 
 subprocess. pre runs before every tool call: measured at 51 to 53 ms a call on a busy Linux machine with
 Python 3.14, where an empty interpreter takes 13 ms; the rest is importing and compiling, not the checks.
 """
+import importlib
 import json
 import os
 import re
@@ -59,12 +62,22 @@ sys.path.insert(0, str(SKILLS / "handoff" / "scripts"))
 sys.path.insert(0, str(LESSONS.parent))  # guard_hits, ledger_store's secret check (guard_lessons, save_evidence)
 sys.path.insert(0, str(SKILLS / "dead-code" / "scripts"))  # dead_code, imported by the stop gate only
 try:
-    import snapshot as hook  # hook input, session id, per-session file path, bounded git
-    import guard_destructive
-    import guard_limits
-    import guard_lessons
+    import snapshot as hook  # hook input, session id, per-session file path, bounded git: every gate needs it
 except Exception:  # a broken install must not break the session either
     sys.exit(0)
+
+
+def optional(name):
+    """The helper module, or None when it is missing or broken: only its own check is skipped."""
+    try:
+        return importlib.import_module(name)
+    except Exception:
+        return None
+
+
+guard_destructive = optional("guard_destructive")
+guard_limits = optional("guard_limits")
+guard_lessons = optional("guard_lessons")
 
 EVIDENCE_FAILURES = 3   # failed commands kept with a lesson: the last ones since the previous lesson
 ERROR_CHARS = 400
@@ -272,7 +285,7 @@ def baseline():
     sha = head[0] if head else ""
     dirty = changed_paths(root, sha)
     if dirty is not None:
-        calls, started = guard_limits.usage(load(path))  # a resumed session keeps what its run has used
+        calls, started = guard_limits.usage(load(path)) if guard_limits else (0, 0)  # a resumed run keeps its count
         record(path, {"event": "baseline", "sha": sha, "dirty": sorted(dirty), "root": root, "time": int(time.time())},
                fresh=True)
         if calls:
@@ -356,7 +369,7 @@ def decide(decision, text):
 
 def run_limit(data, cwd, count):
     """(limits file, why the run must stop) for this session; ('', '') without a limits file. count records the call."""
-    limits_file = guard_limits.find(cwd)
+    limits_file = guard_limits.find(cwd) if guard_limits else ""
     if not limits_file:
         return "", ""
     path = state_path(data)
@@ -382,11 +395,11 @@ def pre():
     command = tool_input.get("command") if isinstance(tool_input, dict) else None
     if data.get("tool_name") != "Bash" or not isinstance(command, str):
         return
-    if not switched_off("ARSENAL_LESSON_GUARDS"):
+    if guard_lessons and not switched_off("ARSENAL_LESSON_GUARDS"):
         refusal = lesson_refusal(command, cwd)
         if refusal:
             return decide("deny", refusal)
-    if switched_off("ARSENAL_GUARD_DESTRUCTIVE", "allow"):
+    if not guard_destructive or switched_off("ARSENAL_GUARD_DESTRUCTIVE", "allow"):
         return
     danger = guard_destructive.destructive(command, cwd)
     if not danger:
