@@ -37,6 +37,7 @@ class GuardCase(unittest.TestCase):
         self.outside = tempfile.TemporaryDirectory()
         self.state = Path(self.outside.name) / "snap.guard.jsonl"
         self.evidence = Path(self.outside.name) / "evidence.jsonl"
+        self.hits = Path(self.outside.name) / "lesson-guard-hits.jsonl"
 
     def tearDown(self):
         self.tmp.cleanup()
@@ -50,7 +51,9 @@ class GuardCase(unittest.TestCase):
     def run_hook(self, cmd, payload=None, cwd=None, env=None):
         stdin = payload if isinstance(payload, str) else json.dumps(payload or {})
         base = {**os.environ, "HANDOFF_SNAPSHOT": str(Path(self.outside.name) / "snap.md"),
-                "LESSONS_EVIDENCE_FILE": str(self.evidence)}  # never the developer's real evidence file
+                "LESSONS_EVIDENCE_FILE": str(self.evidence),  # never the developer's real evidence file,
+                "LESSONS_GUARD_HITS_FILE": str(self.hits),  # hit log
+                "LESSONS_GUARDS_GLOBAL_FILE": str(Path(self.outside.name) / "no-global-lesson-guards.json")}  # or registry
         for name in ("ARSENAL_GUARD", "ARSENAL_GUARD_DESTRUCTIVE", "ARSENAL_GUARD_DEADCODE", "ARSENAL_RUN_LIMITS",
                      "ARSENAL_PROFILE", "ARSENAL_GUARD_STOP", "ARSENAL_GUARD_SCOPE", "ARSENAL_LESSON_GUARDS",
                      "ARSENAL_SUBAGENT_MODEL", "CLAUDE_PROJECT_DIR", "LESSONS_EVIDENCE", "LESSONS_FILE"):
@@ -802,3 +805,21 @@ class WiringTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class IsolationTest(GuardCase):
+    """The hook under test never writes the developer's own hit log nor reads their guard registry."""
+
+    def test_a_refused_lesson_command_logs_to_the_test_file(self):
+        payload = {"hook_event_name": "PreToolUse", "tool_name": "Bash", "cwd": str(self.dir),
+                   "tool_input": {"command": "while pgrep -f x; do sleep 1; done"}}
+        self.assertIn('"deny"', self.run_hook("pre", payload))
+        self.assertEqual(json.loads(self.hits.read_text())["rule"], "pgrep-wait-loop")
+
+    def test_the_developers_global_registry_is_not_read(self):
+        registry = Path(self.outside.name) / "home" / ".agents" / "lesson-guards.json"
+        registry.parent.mkdir(parents=True)
+        registry.write_text('{"guards": [{"rule": "pgrep-wait-loop", "enabled": false}]}', encoding="utf-8")
+        payload = {"hook_event_name": "PreToolUse", "tool_name": "Bash", "cwd": str(self.dir),
+                   "tool_input": {"command": "while pgrep -f x; do sleep 1; done"}}
+        self.assertIn('"deny"', self.run_hook("pre", payload, env={"HOME": str(registry.parent.parent)}))
