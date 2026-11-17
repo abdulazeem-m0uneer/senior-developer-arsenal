@@ -3,6 +3,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -332,6 +333,18 @@ class EvidenceTest(GuardCase):
         "htpasswd -b f user secret99": "secret99",
         "npm publish --token npm_abcdef123": "npm_abcdef123",
         "DB_PASSWORD=hunter22 pytest -q": "hunter22",
+        "mysql -u root -p'Tr0ub4dor3 x' db": "Tr0ub4dor3",
+        "curl --user admin:Tr0ub4dor3x h": "Tr0ub4dor3x",
+        "gpg --batch --passphrase 'correct horse' -d f": "correct horse",
+        "redis-cli -a Tr0ub4dor3x ping": "Tr0ub4dor3x",
+        "openssl enc -k Tr0ub4dor3x": "Tr0ub4dor3x",
+        "openssl rsa -passin pass:Tr0ub4dor3x -in k": "Tr0ub4dor3x",
+        "az login -u me -p Tr0ub4dor3x": "Tr0ub4dor3x",
+        "curl -H 'Cookie: sessionid=9f8e7d6c5b4a39281706' h": "9f8e7d6c5b4a",
+        "aws configure set aws_secret_access_key wJalrXUtnFEMI/K7MDENG": "wJalrXUtnFEMI",
+        "vault login hvs.CAESIJlWQ0yYtU4m8d1x9z": "CAESIJlWQ0",
+        "export GITHUB_TOKEN=abcdef123456": "abcdef123456",
+        "PGPASSWORD=hunter22 psql": "hunter22",
     }
 
     def test_credentials_passed_as_arguments_never_reach_a_file(self):
@@ -346,9 +359,19 @@ class EvidenceTest(GuardCase):
 
     def test_redaction_leaves_ordinary_commands_alone(self):
         for command in ("mkdir -p build/out", "git log -p -3", "docker run -p 8080:80 img", "pytest -q tests/a.py",
-                        "git clone https://github.com/a/b.git", "curl -u admin https://x", "ls -la -p"):
+                        "git clone https://github.com/a/b.git", "curl -u admin https://x", "ls -la -p",
+                        "ssh -p 2222 host", "ssh -p22 host", "gcc -pthread x.c", "cp -pr a b", "psql -p5432 db",
+                        "nc -p4444 host", "make -pj4", "pip install -r req.txt", "pytest -p no:cacheprovider",
+                        "export TOKENIZER=fast", "TOKEN_LIMIT=5 run", "grep token_expiry src/auth.py", "DEBUG=1 make"):
             with self.subTest(command=command):
                 self.assertEqual(guard.redact(command), command)
+
+    def test_redaction_stays_linear_on_hostile_commands(self):
+        for command in ("mysql " + "-p " * 7000, "_password" * 2000 + "=", "A=b " * 5000, "htpasswd " + "-b " * 6000,
+                        "cookie: " + "a" * 20000, "://" + "a" * 20000 + ":"):
+            started = time.monotonic()
+            guard.shown(command, 300)
+            self.assertLess(time.monotonic() - started, 0.5, command[:20])
 
     def test_the_evidence_file_stops_growing_at_its_cap(self):
         self.evidence.write_text("x" * (guard.EVIDENCE_MAX_BYTES + 1))

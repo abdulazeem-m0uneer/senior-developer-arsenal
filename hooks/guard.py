@@ -93,20 +93,33 @@ WITHHELD = "[withheld: looks like a secret]"
 MASK = "***"
 EVIDENCE_MAX_BYTES = 5 * 1024 * 1024  # the evidence file stops growing here; it is training data, not a log
 # Secrets that command lines carry as arguments: only the value is masked, so the command stays readable evidence.
+# Rules are tied to the commands that take a password that way, so `gcc -pthread`, `ssh -p22` or `TOKENIZER=` stay.
+VALUE = r"""('[^']*'|"[^"]*"|[^\s'"]+)"""
 CLI_SECRETS = [
-    re.compile(r"(?i)(--(?:password|passwd|pass|token|secret|api[-_]?key|access[-_]?key|client[-_]?secret|auth)[=\s]+)"
-               r"('[^']*'|\"[^\"]*\"|\S+)"),
-    re.compile(r"(\bsshpass\s+-p\s*)('[^']*'|\"[^\"]*\"|\S+)"),
-    re.compile(r"(\b(?:docker|podman|helm|oras)\s+(?:\S+\s+)*?login\b[^;&|\n]*?\s-p\s+)('[^']*'|\"[^\"]*\"|\S+)"),
-    re.compile(r"(\bhtpasswd\s+(?:-\w+\s+)*-\w*b\w*\s+(?:-\w+\s+)*\S+\s+\S+\s+)('[^']*'|\"[^\"]*\"|\S+)"),
-    re.compile(r"((?<!\S)-p)([^\s\-'\"][^\s'\"]*)"),  # mysql -pSECRET (a bare -p or `-p dir` is untouched)
-    re.compile(r"((?<!\S)-u\s+['\"]?[^\s:'\"]+:)([^\s'\"]+)"),  # curl -u user:PASS
-    re.compile(r"(?i)(\b(?:authorization|x-api-key|api-key|private-token)\s*[:=]\s*(?:bearer\s+|basic\s+|token\s+)?)"
-               r"([^\s'\"]+)"),
+    re.compile(r"(?i)((?<!\S)--(?:password|passwd|pass|passphrase|token|auth-token|with-token|secret|client-secret|"
+               r"api-?key|access-?key|secret-?key|private-?key|http-password|proxy-password)(?:=|\s+))" + VALUE),
+    re.compile(r"(\b(?:mysql|mysqldump|mysqladmin|mysqlimport|mysqlcheck|mysqlshow|mariadb|mariadb-dump)\b"
+               r"[^;&|\n]*?(?<!\S)-p)" + VALUE),  # mysql -pSECRET, -p'SECRET' (never a separate word: that prompts)
+    re.compile(r"(\bsshpass\s+-p\s*)" + VALUE),
+    re.compile(r"(\b(?:docker|podman|nerdctl|buildah|skopeo|helm|oras|az|cf|oc)\b[^;&|\n]*?\blogin\b[^;&|\n]*?"
+               r"(?<!\S)-p\s+)" + VALUE),
+    re.compile(r"(\bhtpasswd\s+(?:-\w+\s+)*-\w*b\w*\s+(?:-\w+\s+)*\S+\s+\S+\s+)" + VALUE),
+    re.compile(r"(\bredis-cli\b[^;&|\n]*?(?<!\S)-a\s+)" + VALUE),
+    re.compile(r"(\bopenssl\b[^;&|\n]*?(?<!\S)-(?:k|pass|passin|passout)\s+)" + VALUE),
+    re.compile(r"(\bpass:)" + VALUE),  # openssl -passin pass:SECRET
+    re.compile(r"(\bvault\s+login\s+(?:-\S+\s+)*)([^\s'\"-]\S*)"),
+    re.compile(r"(?i)(\baws\s+configure\s+set\s+\S*(?:secret|token|key)\S*\s+)" + VALUE),
+    re.compile(r"((?<!\S)(?:-u|--user)\s+['\"]?[^\s:'\"]+:)([^\s'\"]+)"),  # curl -u user:PASS
+    re.compile(r"(?i)(\b(?:authorization|proxy-authorization|x-api-key|api-key|private-token)\s*[:=]\s*"
+               r"(?:bearer\s+|basic\s+|token\s+)?)([^\s'\"]+)"),
+    re.compile(r"(?i)(\b(?:set-)?cookie\s*:\s*)([^'\"]+)"),
     re.compile(r"(?i)(\bbearer\s+)([A-Za-z0-9._~+/=-]{6,})"),
     re.compile(r"(://[^/\s:@'\"]+:)([^@\s/'\"]+)(?=@)"),  # scheme://user:PASS@host
-    re.compile(r"(?i)(\b\w*(?:password|passwd|secret|token|api_?key|access_?key)\w*=)('[^']*'|\"[^\"]*\"|\S+)"),
+    re.compile(r"(\b[A-Za-z_][A-Za-z0-9_]*=)" + VALUE),  # NAME=value: masked only when the name says so (secret_name)
 ]
+SECRET_WORDS = ("password", "passwd", "secret")  # anywhere in a name: PGPASSWORD, DB_PASSWORD, CLIENT_SECRET
+KEY_PARTS = ("token", "apikey", "pwd")  # whole underscore-separated parts: GITHUB_TOKEN, not TOKENIZER
+KEY_PAIRS = ("api_key", "access_key", "private_key", "secret_key", "auth_token")
 # What lessons.py prints for the lesson it wrote or counted: "added L012", "duplicate of G003: ...", "L012 hits:3".
 LESSON_ID = re.compile(r"\b(?:added|duplicate of) ([LG]\d{3,})\b|^([LG]\d{3,}) hits:\d+", re.M)
 LEDGER_IN_COMMAND = re.compile(r"(?:LESSONS_FILE=|--file[=\s])(\"[^\"]+\"|'[^']+'|[^\s;&|]+)")
@@ -362,10 +375,19 @@ def track():
         record(path, {"event": "pass", "checks": checks})
 
 
+def secret_name(name):
+    """True for an environment-style name that holds a credential (a short value of a key-ish name stays)."""
+    lower = name.lower().rstrip("=")
+    parts = lower.split("_")
+    return any(word in lower for word in SECRET_WORDS + KEY_PAIRS) or any(part in KEY_PARTS for part in parts)
+
+
 def redact(text):
     """The text with the values of command-line credentials masked (flags, headers, URLs, NAME=value)."""
     for pattern in CLI_SECRETS:
-        text = pattern.sub(lambda match: match.group(1) + MASK, text)
+        text = pattern.sub(lambda match: match.group(1) + MASK if match.re is not CLI_SECRETS[-1]
+                           or secret_name(match.group(1)) and len(match.group(2).strip("'\"")) >= 3
+                           else match.group(0), text)
     return text
 
 
@@ -442,8 +464,6 @@ def pre():
         return
     cwd = hook.working_dir(data)
     limits_file, why, report_write = run_limit(data, cwd, count=True)
-    if report_write:
-        return  # the limit promises this write; no other gate may take it back
     if why:
         return decide("deny", f"arsenal run limit ({limits_file}): {why}. Start nothing new and make no further tool "
                               "calls: write the handoff or end report (Write or Edit of a .md file still works) and "
@@ -454,7 +474,7 @@ def pre():
         if refusal:  # attended: the user may want the dearer model for this one call
             return decide("deny" if data.get("permission_mode") in UNATTENDED_MODES else "ask", refusal)
     if data.get("tool_name") in WRITE_TOOLS and not switched_off("ARSENAL_GUARD_SCOPE"):
-        refusal = scope_refusal(data.get("tool_name"), tool_input, cwd)
+        refusal = scope_refusal(data.get("tool_name"), tool_input, cwd, report_write)
         if refusal:
             return decide("deny", refusal)
     command = tool_input.get("command") if isinstance(tool_input, dict) else None
@@ -488,13 +508,13 @@ def model_refusal(tool_input):
     return guard_models.refusal(tool_input, str(ROOT))
 
 
-def scope_refusal(tool_name, tool_input, cwd):
+def scope_refusal(tool_name, tool_input, cwd, report_write=False):
     """Why a file write breaks the edit-scope lock, or ''; imported here so other tool calls do not pay for it."""
     try:
         import guard_scope
     except Exception:  # a missing helper costs only this check
         return ""
-    return guard_scope.refusal(tool_name, tool_input, cwd)
+    return guard_scope.refusal(tool_name, tool_input, cwd, report_write)
 
 
 def lesson_refusal(command, cwd):

@@ -117,6 +117,12 @@ class PreHookTest(ScopeCase):
         self.assertIsNone(self.pre("Read", {"file_path": str(self.root / "src/billing/x.py")}))  # the one call
         handoff = self.pre("Write", {"file_path": str(self.root / "HANDOFF.md")})
         self.assertIsNone(handoff)  # the run-limit message promises that a .md report still works
+        for elsewhere in (self.root.parent / "outside.md", Path.home() / ".claude" / "CLAUDE.md",
+                          self.root / ".." / ".." / "escape.md"):
+            with self.subTest(path=str(elsewhere)):  # the promise covers this project's lock root, nothing beyond
+                decision = self.pre("Write", {"file_path": str(elsewhere)})
+                self.assertEqual(decision["permissionDecision"], "deny")
+                self.assertIn("arsenal scope lock", decision["permissionDecisionReason"])
         code = self.pre("Write", {"file_path": str(self.root / "src/auth/x.py")})
         self.assertEqual(code["permissionDecision"], "deny")
         self.assertIn("run limit", code["permissionDecisionReason"])

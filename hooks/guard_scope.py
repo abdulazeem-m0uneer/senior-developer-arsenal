@@ -78,7 +78,9 @@ def target(tool_input, cwd):
     return os.path.realpath(os.path.join(cwd or os.getcwd(), os.path.expanduser(path)))
 
 
-def refusal(tool_name, tool_input, cwd):
+def refusal(tool_name, tool_input, cwd, report_write=False):
+    """Why the write breaks the lock, or ''. report_write: a reached run limit allows this Markdown report, which the
+    lock then accepts only inside the lock's own root (never ~/.claude or another project)."""
     if tool_name not in WRITE_TOOLS:
         return ""
     root, lock_file = find(cwd)
@@ -92,6 +94,8 @@ def refusal(tool_name, tool_input, cwd):
                 "clears it (scope.py clear).")
     path = target(tool_input, cwd)
     if path is None or any(inside(path, folder) for folder in folders):
+        return ""
+    if report_write and path.lower().endswith(".md") and inside(path, os.path.realpath(root)):
         return ""
     names = ", ".join(os.path.relpath(folder, os.path.realpath(root)) for folder in folders)
     because = f" ({why})" if why else ""
