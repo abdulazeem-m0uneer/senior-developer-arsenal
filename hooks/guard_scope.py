@@ -75,7 +75,22 @@ def target(tool_input, cwd):
     path = tool_input.get("file_path") or tool_input.get("notebook_path")
     if not isinstance(path, str) or not path.strip():
         return None
-    return os.path.realpath(os.path.join(cwd or os.getcwd(), os.path.expanduser(path)))
+    try:
+        return os.path.realpath(os.path.join(cwd or os.getcwd(), os.path.expanduser(path)))
+    except ValueError:  # a NUL byte or another unrepresentable path: judged as outside, never skipped
+        return ""
+
+
+INSTRUCTION_FILES = frozenset(("claude.md", "agents.md", "gemini.md", "skill.md", "copilot-instructions.md"))
+INSTRUCTION_DIRS = frozenset((".claude", ".agents", ".cursor", ".codex", ".gemini", ".github"))
+
+
+def is_report(path, root):
+    """A Markdown file inside the root that does not instruct an agent: the report a reached run limit allows."""
+    if not path.lower().endswith(".md") or not inside(path, root):
+        return False
+    parts = [part.lower() for part in os.path.relpath(path, root).split(os.sep)]
+    return parts[-1] not in INSTRUCTION_FILES and not INSTRUCTION_DIRS.intersection(parts[:-1])
 
 
 def refusal(tool_name, tool_input, cwd, report_write=False):
@@ -95,7 +110,7 @@ def refusal(tool_name, tool_input, cwd, report_write=False):
     path = target(tool_input, cwd)
     if path is None or any(inside(path, folder) for folder in folders):
         return ""
-    if report_write and path.lower().endswith(".md") and inside(path, os.path.realpath(root)):
+    if report_write and path and is_report(path, os.path.realpath(root)):
         return ""
     names = ", ".join(os.path.relpath(folder, os.path.realpath(root)) for folder in folders)
     because = f" ({why})" if why else ""

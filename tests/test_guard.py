@@ -345,6 +345,19 @@ class EvidenceTest(GuardCase):
         "vault login hvs.CAESIJlWQ0yYtU4m8d1x9z": "CAESIJlWQ0",
         "export GITHUB_TOKEN=abcdef123456": "abcdef123456",
         "PGPASSWORD=hunter22 psql": "hunter22",
+        """curl -d '{"password":"S3cretPw","user":"u"}' https://a""": "S3cretPw",
+        """curl -d '{"token": "abcdef123456"}' https://a""": "abcdef123456",
+        "curl -b 'a=1; sid=abcdef123456' https://a": "abcdef123456",
+        "curl -uadmin:S3cretPw https://a": "S3cretPw",
+        "http -a user:S3cretPw https://a": "S3cretPw",
+        "sqlcmd -S srv -U sa -P S3cretPw": "S3cretPw",
+        "zip -P S3cretPw a.zip f": "S3cretPw",
+        "7z a -pS3cretPw a.7z f": "S3cretPw",
+        "twine upload -u __token__ -p pypi-AgEIcHlwaS5vcmc": "pypi-AgEI",
+        "dotnet nuget push x.nupkg -k oy2abcdefghijk": "oy2abcdef",
+        "cargo login abcdef123456abcdef": "abcdef123456",
+        "netlify deploy --auth abcdef123456": "abcdef123456",
+        "npm publish --otp=123456": "123456",
     }
 
     def test_credentials_passed_as_arguments_never_reach_a_file(self):
@@ -362,13 +375,16 @@ class EvidenceTest(GuardCase):
                         "git clone https://github.com/a/b.git", "curl -u admin https://x", "ls -la -p",
                         "ssh -p 2222 host", "ssh -p22 host", "gcc -pthread x.c", "cp -pr a b", "psql -p5432 db",
                         "nc -p4444 host", "make -pj4", "pip install -r req.txt", "pytest -p no:cacheprovider",
-                        "export TOKENIZER=fast", "TOKEN_LIMIT=5 run", "grep token_expiry src/auth.py", "DEBUG=1 make"):
+                        "export TOKENIZER=fast", "TOKEN_LIMIT=5 run", "grep token_expiry src/auth.py", "DEBUG=1 make",
+                        "curl -b cookies.txt https://a", "zip -r a.zip dir", "unzip -o a.zip", "7z x a.7z",
+                        "git commit -m 'token refresh'", "jq '.items' f.json"):
             with self.subTest(command=command):
                 self.assertEqual(guard.redact(command), command)
 
     def test_redaction_stays_linear_on_hostile_commands(self):
         for command in ("mysql " + "-p " * 7000, "_password" * 2000 + "=", "A=b " * 5000, "htpasswd " + "-b " * 6000,
-                        "cookie: " + "a" * 20000, "://" + "a" * 20000 + ":"):
+                        "cookie: " + "a" * 20000, "://" + "a" * 20000 + ":", "docker login az " * 1250,
+                        '"password":' * 2000, "zip " * 5000, "-b '" + "a=" * 10000):
             started = time.monotonic()
             guard.shown(command, 300)
             self.assertLess(time.monotonic() - started, 0.5, command[:20])

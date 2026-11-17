@@ -91,25 +91,35 @@ FAILED_COMMAND_CHARS = 300
 LESSON_COMMAND_CHARS = 1200  # the add command carries the lesson's own text: pairs stay usable without an id
 WITHHELD = "[withheld: looks like a secret]"
 MASK = "***"
+REDACT_MARGIN = 512  # redaction reads only what is kept plus this: its cost is bounded whatever the command holds
 EVIDENCE_MAX_BYTES = 5 * 1024 * 1024  # the evidence file stops growing here; it is training data, not a log
 # Secrets that command lines carry as arguments: only the value is masked, so the command stays readable evidence.
 # Rules are tied to the commands that take a password that way, so `gcc -pthread`, `ssh -p22` or `TOKENIZER=` stay.
 VALUE = r"""('[^']*'|"[^"]*"|[^\s'"]+)"""
 CLI_SECRETS = [
-    re.compile(r"(?i)((?<!\S)--(?:password|passwd|pass|passphrase|token|auth-token|with-token|secret|client-secret|"
+    re.compile(r"(?i)((?<!\S)--(?:password|passwd|pass|passphrase|token|auth|auth-token|with-token|secret|client-secret|"
                r"api-?key|access-?key|secret-?key|private-?key|http-password|proxy-password)(?:=|\s+))" + VALUE),
     re.compile(r"(\b(?:mysql|mysqldump|mysqladmin|mysqlimport|mysqlcheck|mysqlshow|mariadb|mariadb-dump)\b"
                r"[^;&|\n]*?(?<!\S)-p)" + VALUE),  # mysql -pSECRET, -p'SECRET' (never a separate word: that prompts)
     re.compile(r"(\bsshpass\s+-p\s*)" + VALUE),
-    re.compile(r"(\b(?:docker|podman|nerdctl|buildah|skopeo|helm|oras|az|cf|oc)\b[^;&|\n]*?\blogin\b[^;&|\n]*?"
-               r"(?<!\S)-p\s+)" + VALUE),
+    re.compile(r"(\b(?:docker|podman|nerdctl|buildah|skopeo|helm|oras|az|cf|oc)\s+(?:[^\s;&|]+\s+){0,3}?login\b"
+               r"(?:\s+[^\s;&|]+){0,8}?\s+-p\s+)" + VALUE),  # bounded token counts: no rescanning lazy runs
     re.compile(r"(\bhtpasswd\s+(?:-\w+\s+)*-\w*b\w*\s+(?:-\w+\s+)*\S+\s+\S+\s+)" + VALUE),
     re.compile(r"(\bredis-cli\b[^;&|\n]*?(?<!\S)-a\s+)" + VALUE),
     re.compile(r"(\bopenssl\b[^;&|\n]*?(?<!\S)-(?:k|pass|passin|passout)\s+)" + VALUE),
     re.compile(r"(\bpass:)" + VALUE),  # openssl -passin pass:SECRET
     re.compile(r"(\bvault\s+login\s+(?:-\S+\s+)*)([^\s'\"-]\S*)"),
     re.compile(r"(?i)(\baws\s+configure\s+set\s+\S*(?:secret|token|key)\S*\s+)" + VALUE),
-    re.compile(r"((?<!\S)(?:-u|--user)\s+['\"]?[^\s:'\"]+:)([^\s'\"]+)"),  # curl -u user:PASS
+    re.compile(r"((?<!\S)(?:-u\s*|--user[=\s]+|-a\s+|--auth[=\s]+)['\"]?[^\s:'\"]+:)([^\s'\"]+)"),  # user:PASS
+    re.compile(r"((?<!\S)(?:-b|--cookie)[=\s]+)('[^']*=[^']*'|\"[^\"]*=[^\"]*\"|[^\s'\"=]*=[^\s'\"]*)"),  # not a file
+    re.compile(r"(?i)([\"'](?:\w*(?:password|passwd|secret|token|api_?key|access_?key|private_?key)\w*)[\"']\s*:\s*)"
+               r"(\"[^\"]*\"|'[^']*'|[^\s,}\]]+)"),  # JSON bodies: {"password": "..."}
+    re.compile(r"(\b(?:sqlcmd|bcp|osql)\b[^;&|\n]{0,400}?(?<!\S)-P\s*)" + VALUE),
+    re.compile(r"(\b(?:zip|unzip|7z|7za)\b[^;&|\n]{0,400}?(?<!\S)-[Pp](?:\s+|(?=[^\s-])))" + VALUE),
+    re.compile(r"(\btwine\b[^;&|\n]{0,400}?(?<!\S)(?:-p|--password)\s+)" + VALUE),
+    re.compile(r"(\bnuget\b[^;&|\n]{0,400}?(?<!\S)(?:-k|--api-key|-p|--password)\s+)" + VALUE),
+    re.compile(r"(\bcargo\s+login\s+)([^\s'\"-]\S*)"),
+    re.compile(r"((?<!\S)--otp[=\s]+)" + VALUE),
     re.compile(r"(?i)(\b(?:authorization|proxy-authorization|x-api-key|api-key|private-token)\s*[:=]\s*"
                r"(?:bearer\s+|basic\s+|token\s+)?)([^\s'\"]+)"),
     re.compile(r"(?i)(\b(?:set-)?cookie\s*:\s*)([^'\"]+)"),
@@ -394,7 +404,7 @@ def redact(text):
 def shown(text, limit):
     """One line of at most `limit` characters with command-line credentials masked, or a placeholder when it still
     looks like it holds a secret. Redaction runs before the cut, so a clipped value cannot escape it."""
-    text = redact(" ".join(bounded(text).split()))[:limit]
+    text = redact(" ".join(bounded(text).split())[:limit + REDACT_MARGIN])[:limit]
     try:
         from ledger_store import find_secret  # imported here: `pre` runs before every tool call and never needs it
     except ImportError:
