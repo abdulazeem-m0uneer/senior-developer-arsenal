@@ -13,6 +13,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import hook_env  # noqa: E402
 import build  # noqa: E402
 import build_hooks  # noqa: E402
 import hooks_merge  # noqa: E402
@@ -294,7 +296,7 @@ class AdapterCase(unittest.TestCase):
         git(self.repo, "add", "-A")
         git(self.repo, "commit", "-qm", "init")
         self.env = {**os.environ, "HANDOFF_SNAPSHOT": str(base / "snap.md"),
-                    "LESSONS_GLOBAL_FILE": str(base / "no-global-lessons.md")}
+                    "LESSONS_GLOBAL_FILE": str(base / "no-global-lessons.md"), **hook_env.lesson_guard_files(base)}
         for name in ("ARSENAL_GUARD", "ARSENAL_RUN_LIMITS", "CLAUDE_PROJECT_DIR", "LESSONS_FILE"):
             self.env.pop(name, None)
 

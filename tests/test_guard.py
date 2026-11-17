@@ -12,6 +12,8 @@ ROOT = Path(__file__).resolve().parent.parent
 SCRIPT = ROOT / "hooks" / "guard.py"
 
 sys.path.insert(0, str(SCRIPT.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import hook_env  # noqa: E402
 import guard  # noqa: E402
 
 
@@ -37,7 +39,7 @@ class GuardCase(unittest.TestCase):
         self.outside = tempfile.TemporaryDirectory()
         self.state = Path(self.outside.name) / "snap.guard.jsonl"
         self.evidence = Path(self.outside.name) / "evidence.jsonl"
-        self.hits = Path(self.outside.name) / "lesson-guard-hits.jsonl"
+        self.hits = Path(hook_env.lesson_guard_files(self.outside.name)["LESSONS_GUARD_HITS_FILE"])
 
     def tearDown(self):
         self.tmp.cleanup()
@@ -51,9 +53,8 @@ class GuardCase(unittest.TestCase):
     def run_hook(self, cmd, payload=None, cwd=None, env=None):
         stdin = payload if isinstance(payload, str) else json.dumps(payload or {})
         base = {**os.environ, "HANDOFF_SNAPSHOT": str(Path(self.outside.name) / "snap.md"),
-                "LESSONS_EVIDENCE_FILE": str(self.evidence),  # never the developer's real evidence file,
-                "LESSONS_GUARD_HITS_FILE": str(self.hits),  # hit log
-                "LESSONS_GUARDS_GLOBAL_FILE": str(Path(self.outside.name) / "no-global-lesson-guards.json")}  # or registry
+                "LESSONS_EVIDENCE_FILE": str(self.evidence),  # never the developer's real evidence file
+                **hook_env.lesson_guard_files(self.outside.name)}
         for name in ("ARSENAL_GUARD", "ARSENAL_GUARD_DESTRUCTIVE", "ARSENAL_GUARD_DEADCODE", "ARSENAL_RUN_LIMITS",
                      "ARSENAL_PROFILE", "ARSENAL_GUARD_STOP", "ARSENAL_GUARD_SCOPE", "ARSENAL_LESSON_GUARDS",
                      "ARSENAL_SUBAGENT_MODEL", "CLAUDE_PROJECT_DIR", "LESSONS_EVIDENCE", "LESSONS_FILE"):

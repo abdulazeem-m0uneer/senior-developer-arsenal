@@ -11,6 +11,8 @@ ROOT = Path(__file__).resolve().parent.parent
 GUARD = ROOT / "hooks" / "guard.py"
 SCOPE = ROOT / ".agents" / "skills" / "parallel-sessions" / "scripts" / "scope.py"
 sys.path.insert(0, str(ROOT / "hooks"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import hook_env  # noqa: E402
 import guard_scope  # noqa: E402
 
 
@@ -98,7 +100,8 @@ class PreHookTest(ScopeCase):
         payload = {"tool_name": tool, "tool_input": tool_input, "cwd": str(self.root), "permission_mode": "default",
                    "session_id": "scope-test"}
         environment = {k: v for k, v in os.environ.items() if not k.startswith("ARSENAL_")}
-        environment.update(HANDOFF_SNAPSHOT=str(self.root.parent / "snap.md"), **env)
+        environment.update(HANDOFF_SNAPSHOT=str(self.root.parent / "snap.md"), **hook_env.lesson_guard_files(self.root.parent),
+                           **env)
         out = subprocess.run([sys.executable, str(GUARD), "pre"], input=json.dumps(payload), cwd=self.root,
                              capture_output=True, text=True, env=environment)
         self.assertEqual((out.returncode, out.stderr), (0, ""))
