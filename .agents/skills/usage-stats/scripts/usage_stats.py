@@ -388,30 +388,59 @@ def subagent_transcripts(transcript):
     return sorted(folder.glob("*.jsonl")) if folder.is_dir() else []
 
 
+try:
+    import fcntl
+except ImportError:  # Windows
+    fcntl = None
+try:
+    import msvcrt
+except ImportError:  # POSIX
+    msvcrt = None
+
+
+def try_lock(handle):
+    """Take the lock without waiting: True when taken, False when another process holds it."""
+    if fcntl is not None:
+        try:
+            fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            return True
+        except BlockingIOError:
+            return False
+    handle.seek(0)
+    try:
+        msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)  # one byte at offset 0: the whole lock
+        return True
+    except OSError:
+        return False
+
+
+def unlock(handle):
+    if fcntl is not None:
+        fcntl.flock(handle, fcntl.LOCK_UN)
+    else:
+        handle.seek(0)
+        msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+
+
 @contextmanager
 def locked(store):
-    """An exclusive lock beside the store (POSIX); without fcntl the write is still atomic, only not serialised."""
+    """An exclusive lock beside the store (fcntl on POSIX, msvcrt on Windows), waited for at most LOCK_WAIT
+    seconds. Only a platform with neither has no lock, and its write is still atomic, only not serialised."""
     store.parent.mkdir(parents=True, exist_ok=True)
-    try:
-        import fcntl
-    except ImportError:
+    if fcntl is None and msvcrt is None:
         yield
         return
-    flags = os.O_WRONLY | os.O_CREAT | os.O_APPEND | getattr(os, "O_NOFOLLOW", 0)  # never through a planted link
-    with os.fdopen(os.open(store.with_name(store.name + ".lock"), flags, 0o600), "a", encoding="utf-8") as handle:
+    flags = os.O_RDWR | os.O_CREAT | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_BINARY", 0)  # never via a link
+    with os.fdopen(os.open(store.with_name(store.name + ".lock"), flags, 0o600), "r+b") as handle:
         deadline = time.monotonic() + LOCK_WAIT
-        while True:  # bounded: a stuck holder must not pile up one waiting process per finished session
-            try:
-                fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
-                break
-            except BlockingIOError:
-                if time.monotonic() > deadline:
-                    raise TimeoutError(f"{store} stayed locked for {LOCK_WAIT} s") from None
-                time.sleep(0.1)
+        while not try_lock(handle):  # bounded: a stuck holder must not pile up one waiting process per session
+            if time.monotonic() > deadline:
+                raise TimeoutError(f"{store} stayed locked for {LOCK_WAIT} s")
+            time.sleep(0.1)
         try:
             yield
         finally:
-            fcntl.flock(handle, fcntl.LOCK_UN)
+            unlock(handle)
 
 
 def read_store(store):

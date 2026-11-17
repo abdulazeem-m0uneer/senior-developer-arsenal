@@ -372,6 +372,41 @@ class HookTest(Case):
         self.assertEqual(usage_stats.record_transcript(str(path)), 0)  # free again: recorded
         self.assertIn(SESSION, usage_stats.read_store(self.store)[0])
 
+    def test_windows_locks_the_store_with_msvcrt(self):
+        class FakeMsvcrt:  # one byte lock per path, held by one handle at a time, like msvcrt.locking
+            LK_NBLCK, LK_UNLCK = 2, 0
+            held = {}
+
+            @classmethod
+            def locking(cls, fileno, mode, size):
+                key = os.stat(fileno).st_ino
+                if mode == cls.LK_NBLCK:
+                    if cls.held.get(key, fileno) != fileno:
+                        raise OSError("locked")
+                    cls.held[key] = fileno
+                else:
+                    cls.held.pop(key, None)
+
+        with mock.patch.object(usage_stats, "fcntl", None), mock.patch.object(usage_stats, "msvcrt", FakeMsvcrt), \
+                mock.patch.object(usage_stats, "LOCK_WAIT", 0.3):
+            usage_stats.upsert(self.store, [{"session": "a", "first": "2026-01-01"}])  # takes and releases it
+            self.assertEqual(FakeMsvcrt.held, {})
+            lock = self.store.with_name(self.store.name + ".lock")
+            with open(lock, "r+b") as holder:
+                self.assertTrue(usage_stats.try_lock(holder))  # another process holds it now
+                started = time.monotonic()
+                with self.assertRaises(TimeoutError):
+                    usage_stats.upsert(self.store, [{"session": "b", "first": "2026-01-01"}])
+                self.assertLess(time.monotonic() - started, 3)
+                usage_stats.unlock(holder)
+            usage_stats.upsert(self.store, [{"session": "b", "first": "2026-01-01"}])
+        self.assertEqual(sorted(usage_stats.read_store(self.store)[0]), ["a", "b"])
+
+    def test_a_platform_without_any_lock_still_writes(self):
+        with mock.patch.object(usage_stats, "fcntl", None), mock.patch.object(usage_stats, "msvcrt", None):
+            usage_stats.upsert(self.store, [{"session": "a", "first": "2026-01-01"}])
+        self.assertIn("a", usage_stats.read_store(self.store)[0])
+
     def test_record_fails_open_on_bad_input(self):
         for payload in ("", "not json", "[]", json.dumps({"transcript_path": 5}),
                         json.dumps({"transcript_path": str(self.dir / "missing.jsonl")})):
