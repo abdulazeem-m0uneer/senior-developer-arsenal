@@ -16,6 +16,7 @@ Usage:
   lessons.py check [--min N]         # validate the file and list promotion candidates (hits >= N)
   lessons.py unguarded [--min N] [LEDGER...]  # lessons seen N+ times with no guard, archive included, most hits first
   lessons.py hits [--since 24h]      # lesson-guard refusals in the window, from the hit log (guard_hits.py)
+  lessons.py retro [--days 7] [--project]  # Markdown retrospective: git log, ledger, evidence, guard hits (retro.py)
 Options: --file PATH (default: $LESSONS_FILE or .agents/lessons.md); --global on add, bump, archive, promote and
   check targets the global ledger ($LESSONS_GLOBAL_FILE or ~/.agents/lessons.md), as does an id starting with G.
   The promotion threshold N defaults to $LESSONS_PROMOTE_AT, else 3.
@@ -34,6 +35,7 @@ from pathlib import Path
 import guard_hits
 import promotion
 import relevance
+import retro
 from ledger_store import find_secret, locked, write_atomic
 
 ACTIVE_CAP = 15
@@ -384,20 +386,31 @@ def cmd_check(ledger, args):
     return 1 if problems else 0
 
 
+def ledger_sources(ledger, extra=(), shared=True):
+    """This ledger, any ledger named and (unless shared is False) the global one, each once."""
+    missing = [path for path in extra if not Path(path).is_file()]
+    if missing:
+        raise Refused(f"no ledger at {', '.join(missing)}")
+    sources = []
+    for source in [ledger, *(Ledger(Path(path), "L") for path in extra), open_global(ledger.path) if shared else None]:
+        if source and all(source.path.resolve() != seen.path.resolve() for seen in sources):
+            sources.append(source)
+    return sources
+
+
+def unguarded_lessons(sources, threshold):
+    """(source, lesson) seen threshold+ times with no guard, archive included, most hits first."""
+    found = [(source, lesson) for source in sources for lesson in source.lessons
+             if lesson["hits"] >= threshold and not lesson["promoted"]]
+    return sorted(found, key=lambda item: -item[1]["hits"])
+
+
 def cmd_unguarded(ledger, args):
     """Every lesson seen --min times or more with no guard, archive included, from this ledger, the global one and
     any ledger named; a lesson moved to the global ledger is counted there, not here."""
     threshold = promote_at(args.min)
-    missing = [path for path in args.ledgers if not Path(path).is_file()]
-    if missing:
-        raise Refused(f"no ledger at {', '.join(missing)}")
-    sources = []
-    for source in [ledger, *(Ledger(Path(path), "L") for path in args.ledgers), open_global(ledger.path)]:
-        if source and all(source.path.resolve() != seen.path.resolve() for seen in sources):
-            sources.append(source)
-    found = [(source, lesson) for source in sources for lesson in source.lessons
-             if lesson["hits"] >= threshold and not lesson["promoted"]]
-    for source, lesson in sorted(found, key=lambda item: -item[1]["hits"]):
+    found = unguarded_lessons(ledger_sources(ledger, args.ledgers), threshold)
+    for source, lesson in found:
         print(f"{lesson['id']} hits:{lesson['hits']} [{lesson['section']}] {source.path}: {lesson['rule']}")
     print(f"{len(found)} lessons seen {threshold}+ times without a guard")
     return 0
@@ -413,6 +426,15 @@ def cmd_hits(_ledger, args):
         print(f"{lesson} ({rule}) x{count}")
     print(f"{sum(found.values())} guard refusals in the last {args.since} ({guard_hits.path()})"
           + (f"; {damaged} damaged lines skipped" if damaged else ""))
+    return 0
+
+
+def cmd_retro(ledger, args):
+    if args.days < 1:
+        raise Refused("--days must be 1 or more")
+    sources = ledger_sources(ledger, shared=not args.project)
+    print(retro.report(sources, unguarded_lessons(sources, promote_at()), args.days, date.fromisoformat(today()),
+                       Path.cwd()))
     return 0
 
 
@@ -437,6 +459,9 @@ def build_parser():
     unguarded = sub.add_parser("unguarded")
     unguarded.add_argument("ledgers", nargs="*")
     sub.add_parser("hits").add_argument("--since", default="24h")
+    retrospective = sub.add_parser("retro")
+    retrospective.add_argument("--days", type=int, default=7)
+    retrospective.add_argument("--project", action="store_true")
     by_id = [sub.add_parser(name) for name in ("bump", "archive", "globalize")] + [promote]
     for command in by_id:
         command.add_argument("id")
@@ -450,7 +475,7 @@ def build_parser():
 
 COMMANDS = {"add": cmd_add, "active": cmd_active, "search": cmd_search, "bump": cmd_bump, "archive": cmd_archive,
             "promote": cmd_promote, "globalize": cmd_globalize, "check": cmd_check, "show": cmd_show,
-            "unguarded": cmd_unguarded, "hits": cmd_hits}
+            "unguarded": cmd_unguarded, "hits": cmd_hits, "retro": cmd_retro}
 
 
 def refuse_stray(ledger):
