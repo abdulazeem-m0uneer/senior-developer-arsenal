@@ -19,7 +19,8 @@ Bash tool_use commands paired with their tool_result by id, edit tool file paths
 and message.usage. Text inside tool outputs is never searched: a session that prints guard source code quotes
 every marker. Lines with isSidechain true are skipped, and so are files under a subagents/ folder as sessions of their
 own; a session's subagent transcripts (<session>/subagents/*.jsonl) credit only their Skill and Agent use to it.
-Exit codes: 0 on success, 2 on a missing directory, a bad argument or a README without exactly one usage block.
+Exit codes: 0 on success, 1 when backfill finds the store locked for LOCK_WAIT seconds (nothing written), 2 on a
+missing directory, a bad argument or a README without exactly one usage block.
 """
 import argparse
 import hashlib
@@ -717,7 +718,11 @@ def main(argv=None, stdin=None, today=None):
         if not directory.is_dir():
             print(f"not a directory: {directory}", file=sys.stderr)
             return 2
-        found, kept = backfill(directory)
+        try:
+            found, kept = backfill(directory)
+        except TimeoutError as error:
+            print(f"backfill: {error}; nothing was written, run it again", file=sys.stderr)
+            return 1
         print(f"read {found} transcripts, kept {kept} sessions with the arsenal active in {store_path()}")
         return 0
     if options.days is not None and options.days < 0:

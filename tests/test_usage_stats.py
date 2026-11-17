@@ -307,6 +307,13 @@ class StoreTest(Case):
         usage_stats.upsert(self.store, [{"session": "a", "first": "2026-01-01", "n": 2}])
         self.assertEqual(usage_stats.read_store(self.store)[0], {"a": {"session": "a", "first": "2026-01-01", "n": 2}})
 
+    def test_backfill_reports_a_stuck_lock_in_one_line(self):
+        err = io.StringIO()
+        with mock.patch.object(usage_stats, "backfill", side_effect=TimeoutError("store stayed locked")), \
+                contextlib.redirect_stderr(err):
+            self.assertEqual(usage_stats.main(["backfill", "--dir", str(self.dir)]), 1)
+        self.assertEqual(err.getvalue(), "backfill: store stayed locked; nothing was written, run it again\n")
+
     def test_backfill_cli_rejects_a_missing_directory(self):
         with contextlib.redirect_stderr(io.StringIO()):
             self.assertEqual(usage_stats.main(["backfill", "--dir", str(self.dir / "nope")]), 2)
