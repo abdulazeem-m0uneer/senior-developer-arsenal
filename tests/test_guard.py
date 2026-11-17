@@ -347,6 +347,7 @@ class EvidenceTest(GuardCase):
         "PGPASSWORD=hunter22 psql": "hunter22",
         """curl -d '{"password":"S3cretPw","user":"u"}' https://a""": "S3cretPw",
         """curl -d '{"token": "abcdef123456"}' https://a""": "abcdef123456",
+        r'curl -X POST https://a -d "{\"password\":\"S3cretPw\"}"': "S3cretPw",
         "curl -b 'a=1; sid=abcdef123456' https://a": "abcdef123456",
         "curl -uadmin:S3cretPw https://a": "S3cretPw",
         "http -a user:S3cretPw https://a": "S3cretPw",

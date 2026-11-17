@@ -112,8 +112,8 @@ CLI_SECRETS = [
     re.compile(r"(?i)(\baws\s+configure\s+set\s+\S*(?:secret|token|key)\S*\s+)" + VALUE),
     re.compile(r"((?<!\S)(?:-u\s*|--user[=\s]+|-a\s+|--auth[=\s]+)['\"]?[^\s:'\"]+:)([^\s'\"]+)"),  # user:PASS
     re.compile(r"((?<!\S)(?:-b|--cookie)[=\s]+)('[^']*=[^']*'|\"[^\"]*=[^\"]*\"|[^\s'\"=]*=[^\s'\"]*)"),  # not a file
-    re.compile(r"(?i)([\"'](?:\w*(?:password|passwd|secret|token|api_?key|access_?key|private_?key)\w*)[\"']\s*:\s*)"
-               r"(\"[^\"]*\"|'[^']*'|[^\s,}\]]+)"),  # JSON bodies: {"password": "..."}
+    re.compile(r"(?i)(\\?[\"'](?:\w*(?:password|passwd|secret|token|api_?key|access_?key|private_?key)\w*)\\?[\"']\s*:"
+               r"\s*)(\\?\"[^\"\\]*\\?\"|'[^']*'|[^\s,}\]]+)"),  # JSON bodies, also with \"escaped\" quotes
     re.compile(r"(\b(?:sqlcmd|bcp|osql)\b[^;&|\n]{0,400}?(?<!\S)-P\s*)" + VALUE),
     re.compile(r"(\b(?:zip|unzip|7z|7za)\b[^;&|\n]{0,400}?(?<!\S)-[Pp](?:\s+|(?=[^\s-])))" + VALUE),
     re.compile(r"(\btwine\b[^;&|\n]{0,400}?(?<!\S)(?:-p|--password)\s+)" + VALUE),
