@@ -42,6 +42,12 @@ Consult: [Release Preparation & SemVer Guide](./references/release-guide.md)
 ### Step 3: Author Release Changelog
 Group commits into structured sections: `Features`, `Bug Fixes`, `Performance Improvements`, and `Breaking Changes`. Include commit hashes with clickable file links.
 
+### Step 3b: Check the Docs Against the Change
+1. Run `python3 <skill-dir>/scripts/doc_drift.py <last-tag>` (exit 1 drift, 0 clean, 2 git or usage error; `--docs <path>` adds a docs folder).
+2. `undocumented`: a flag, environment variable, route, export or config key the release adds that no README or `docs/` page mentions. Document it, or say in the release notes why it is internal.
+3. `stale`: a name the docs still mention that the code no longer has. Correct or delete that sentence.
+4. Done when the check exits 0, or each remaining line has a reason in the release notes.
+
 ### Step 4: Tag & Publish
 ```bash
 git tag -a vX.Y.Z -m "Release vX.Y.Z"

@@ -45,7 +45,7 @@ Consult: [Documentation Templates](./references/templates.md)
 
 ### Step 4: One Home per Fact
 1. Each fact (a port, a limit, a command, a rule) lives in one document; every other mention is a link to it.
-2. When behaviour changes, search the docs for the old statement and correct every page that makes it, in the same change.
+2. When behaviour changes, search the docs for the old statement and correct every page that makes it, in the same change. `git-release/scripts/doc_drift.py <base-ref>` lists the flags, environment variables, routes, exports and config keys a change adds without docs, or leaves documented after removing them.
 3. Delete what is obsolete; a dated "deprecated" banner is acceptable only with a removal date and a link to the replacement.
 
 ### Step 5: Edit for Plain Words, Then Gate in CI
