@@ -7,7 +7,8 @@ Usage (hook input is JSON on stdin):
   guard.py track     # PostToolUseFailure / PostToolUse on Bash: record failed and passed checks and recorded lessons;
                      # a recorded lesson also appends its preceding failures to the local evidence file (save_evidence)
   guard.py pre       # PreToolUse, every tool: deny past a run limit (guard_limits.py); deny a file write outside
-                     # the edit-scope lock (guard_scope.py); deny a Bash command that
+                     # the edit-scope lock (guard_scope.py); deny an arsenal subagent call asking for a model
+                     # above its tier (guard_models.py); deny a Bash command that
                      # repeats a recorded lesson (guard_lessons.py, hit logged by guard_hits.py); ask or deny a
                      # destructive Bash command (guard_destructive.py)
   guard.py stop      # Stop: block once when source changed without a test, or a check failed, never passed
@@ -26,13 +27,14 @@ when each of them has passed. So a narrower passing run clears a wider failed on
 question, never a wrong block.
 The Stop gate cannot loop: it does nothing while stop_hook_active is true, and every
 block is written to the state file before it is printed, so the same files and the same failures never
-block twice (an explicit "no test applies" or "nothing learned" answer ends it). ARSENAL_GUARD=off disables
-every gate here; ARSENAL_GUARD_DESTRUCTIVE=allow disables only the destructive-command check and
-ARSENAL_GUARD_DEADCODE=off only the dead-code check, ARSENAL_GUARD_SCOPE=off only the edit-scope lock,
-ARSENAL_GUARD_STOP=off only the Stop gate. ARSENAL_PROFILE=minimal|standard|strict sets these switches at once
-(PROFILES); a switch set explicitly wins over the profile. A missing or broken optional helper (guard_destructive,
-guard_limits, guard_lessons) skips only its own check; guard_lessons parses shell with guard_destructive,
-so losing that one costs both. Fails open: outside a git repository, when git fails or times out, without a session id, on any
+block twice (an explicit "no test applies" or "nothing learned" answer ends it).
+Switches: ARSENAL_GUARD=off disables every gate here. Each of these disables one check only:
+ARSENAL_GUARD_DESTRUCTIVE=allow (destructive commands; =deny denies them in every mode), ARSENAL_GUARD_DEADCODE=off
+(dead code), ARSENAL_GUARD_SCOPE=off (edit-scope lock), ARSENAL_GUARD_STOP=off (the whole Stop gate),
+ARSENAL_SUBAGENT_MODEL=any (subagent cost guard), ARSENAL_LESSON_GUARDS=off (lesson guards).
+ARSENAL_PROFILE=minimal|standard|strict sets them at once (PROFILES); a switch set explicitly wins over the profile.
+A missing or broken optional helper (guard_destructive, guard_limits, guard_lessons) skips only its own check;
+guard_lessons parses shell with guard_destructive, so losing that one costs both. Fails open: outside a git repository, when git fails or times out, without a session id, on any
 exception, and whenever the diff could name work this session did not do: HEAD is no longer a descendant of
 the baseline (checkout, rebase), a commit since the baseline is older than the session (pull, checkout of a
 branch that was already ahead), or the stop runs in another working tree. Then it exits 0 silently.
@@ -413,6 +415,10 @@ def pre():
                               "calls: write the handoff or end report (Write or Edit of a .md file still works) and "
                               "end the turn. Only the operator lifts the limit, by editing or deleting that file.")
     tool_input = data.get("tool_input")
+    if data.get("tool_name") in ("Agent", "Task") and not switched_off("ARSENAL_SUBAGENT_MODEL", "any"):
+        refusal = model_refusal(tool_input)
+        if refusal:
+            return decide("deny", refusal)
     if data.get("tool_name") in WRITE_TOOLS and not switched_off("ARSENAL_GUARD_SCOPE"):
         refusal = scope_refusal(data.get("tool_name"), tool_input, cwd)
         if refusal:
@@ -437,6 +443,15 @@ def pre():
         return decide("deny", f"arsenal guard: {danger}. Denied because nobody approves each call in this "
                               "permission mode; if it is really needed, park it for the user.")
     decide("ask", f"arsenal guard: {danger}.")
+
+
+def model_refusal(tool_input):
+    """Why an arsenal subagent call asks for a dearer model than its tier, or ''; imported only for Agent calls."""
+    try:
+        import guard_models
+    except Exception:  # a missing helper costs only this check
+        return ""
+    return guard_models.refusal(tool_input, str(ROOT))
 
 
 def scope_refusal(tool_name, tool_input, cwd):
