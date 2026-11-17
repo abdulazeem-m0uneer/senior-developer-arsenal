@@ -25,6 +25,16 @@ DONE_CLAIM = re.compile(r"\b(?:done|fixed|all (?:tests|checks) pass(?:ing|ed)?|t
 SKILL_DIR = stats.SKILLS
 TAGGED = re.compile(r"<([a-zA-Z][\w-]*)\b[^>]*>.*?</\1>", re.S)  # pasted content, system reminders, IDE selections
 MAX_SKILLS_PER_PROMPT = 2
+# Text that reaches the model as a user turn without being a request: a compaction summary, a background task's
+# notification, or a long pasted brief (a scheduled routine, a document). Real usage showed these were nearly all
+# of the "missed skill" matches, so neither the router nor diagnose reads them.
+LONG_PROMPT = 4000
+NOT_ASKED = re.compile(r"^\s*(?:This session is being continued from a previous conversation|<task-notification>|"
+                       r"<system-reminder>|Caveat: The messages below)", re.I)
+
+
+def not_a_request(text):
+    return len(text) > LONG_PROMPT or bool(NOT_ASKED.match(text))
 
 
 class Session:
@@ -154,6 +164,8 @@ def findings(session, table):
     table = {skill: [phrase for phrase in phrases if not phrase.startswith("/") and len(phrase.split()) > 1]
              for skill, phrases in table.items()}
     for stamp, text in session.prompts:
+        if not_a_request(text):
+            continue
         matched = skill_triggers.matching(TAGGED.sub(" ", text), table)
         if len(matched) > MAX_SKILLS_PER_PROMPT:
             continue

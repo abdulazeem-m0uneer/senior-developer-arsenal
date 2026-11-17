@@ -103,6 +103,13 @@ class SilenceTest(RouterCase):
         self.assertEqual(victim.read_text(encoding="utf-8"), "keep me")
         self.assertFalse(list(Path(self.state.name).glob("*.tmp")))
 
+    def test_summaries_notifications_and_long_briefs_get_no_suggestion(self):
+        crash = "fix the crash in the importer module"
+        self.assertEqual(self.line("This session is being continued from a previous conversation. " + crash), "")
+        self.assertEqual(self.line("<task-notification> " + crash + " </task-notification>"), "")
+        self.assertEqual(self.line("You are the PM running a scheduled routine. " + crash + " " + "x " * 2500), "")
+        self.assertNotEqual(self.line(crash), "")
+
     def test_switch_turns_it_off(self):
         prompt = "fix the crash in the importer module"
         self.assertEqual(self.line(prompt, env={"ARSENAL_ROUTER": "off"}), "")

@@ -268,12 +268,24 @@ def score(prompt, table):
     return ranked[:MAX_SKILLS]
 
 
+# Text that reaches the model as a user turn without being a request: a compaction summary, a background task's
+# notification, or a long pasted brief (a scheduled routine, a document). Real usage showed these were nearly all
+# of the "missed skill" matches, so neither the router nor diagnose reads them.
+LONG_PROMPT = 4000
+NOT_ASKED = re.compile(r"^\s*(?:This session is being continued from a previous conversation|<task-notification>|"
+                       r"<system-reminder>|Caveat: The messages below)", re.I)
+
+
+def not_a_request(text):
+    return len(text) > LONG_PROMPT or bool(NOT_ASKED.match(text))
+
+
 def suggestion(prompt, table):
     """The one context line for the prompt, or "" when nothing should be said."""
     if not isinstance(prompt, str):
         return ""
     stripped = prompt.strip()
-    if not stripped or stripped.startswith("/") or len(stripped.split()) < MIN_WORDS:
+    if not stripped or stripped.startswith("/") or len(stripped.split()) < MIN_WORDS or not_a_request(stripped):
         return ""
     ranked = score(stripped, table)
     if not ranked:

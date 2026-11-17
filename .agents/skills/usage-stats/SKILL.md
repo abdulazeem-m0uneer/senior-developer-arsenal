@@ -40,7 +40,7 @@ Activate this skill when:
 ### Step 4: Diagnose One Session
 1. `python3 <skill-dir>/scripts/usage_stats.py diagnose --last` (or `--session <id>`, or a transcript path; `--json` for machines) reads one session and its subagents.
 2. It reports four kinds of finding:
-   - `missed-skill`: a prompt held a skill's multi-word trigger phrase and that skill never fired. Pasted blocks are ignored, and so are prompts that name three or more skills.
+   - `missed-skill`: a prompt held a skill's multi-word trigger phrase and that skill never fired. Pasted blocks are ignored, and so are prompts that name three or more skills, compaction summaries, task notifications and prompts over 4,000 characters (a scheduled routine's brief is not a request: on real sessions these were 38 of 49 matches).
    - `untested-change`: source was edited and no test was.
    - `unverified-done`: "done" was claimed after the last edit with no passing check after it.
    - `unlearned-fail`: a check failed, never passed again, and no lesson followed.

@@ -112,6 +112,16 @@ class MissedSkillTest(Case):
             line("user", "find root cause", "2026-11-10T10:03:00Z", isMeta=True),
             result("t9", "2026-11-10T10:04:00Z", text="find root cause in the output")), [])
 
+    def test_summaries_notifications_and_long_briefs_are_not_requests(self):
+        self.assertEqual(self.kinds(
+            prompt("This session is being continued from a previous conversation that ran out of context. "
+                   "The user asked to find root cause of the crash.", "2026-11-10T10:00:00Z"),
+            prompt("<task-notification> find root cause done </task-notification>", "2026-11-10T10:01:00Z"),
+            prompt("You are the PM running one scheduled routine. Step 4: find root cause. " + "x " * 2500,
+                   "2026-11-10T10:02:00Z")), [])
+        self.assertEqual(self.kinds(prompt("please find root cause of the crash", "2026-11-10T10:03:00Z")),
+                         [("missed-skill", "investigate")])  # a typed request is still read
+
     def test_each_skill_is_reported_once(self):
         self.assertEqual(self.kinds(prompt("find root cause", "2026-11-10T10:00:00Z"),
                                     prompt("find root cause again", "2026-11-10T10:05:00Z")),
