@@ -164,7 +164,12 @@ class ClassifyTest(unittest.TestCase):
         self.assertEqual(self.klass("Is there a reason for the retry?"), "question")
         self.assertEqual(self.klass("nit: trailing space"), "fix")
         self.assertEqual(self.klass("Can you rename this?"), "fix")  # a request phrased as a question
-        self.assertEqual(self.klass(""), "fix")
+        self.assertEqual(self.klass(""), "question")  # nothing readable: ask, never guess a change
+        self.assertEqual(self.klass("Please extract this into a helper."), "fix")
+        self.assertEqual(self.klass("This should use the shared client."), "fix")
+        self.assertEqual(self.klass("Hmm, interesting approach."), "question")
+        self.assertEqual(self.klass("LGTM overall, small concern on naming here"), "question")
+        self.assertEqual(self.klass("🤔"), "question")
 
     def test_quoted_lines_are_not_the_reviewers_words(self):
         self.assertEqual(self.klass("> why is this here?\nPlease move it to utils."), "fix")

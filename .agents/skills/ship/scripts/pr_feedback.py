@@ -16,8 +16,11 @@ Classification (first rule that applies):
   reviewer asks for reasoning ("why", "what is", "how does", "is there a reason", "could/can you explain",
   "do we need")                                  -> question      answer with evidence; change code only if the
                                                                   answer shows a defect
-  anything else (a suggestion block, a request, a nit)
+  a suggestion block, or a request (an imperative such as rename/remove/add/use/move/extract, "please", "nit",
+  "should", "must", "can/could/would you ...")
                                                  -> fix
+  anything else (a remark the rules cannot read as a request)
+                                                 -> question      ask the user rather than guess a change
 Exit codes:
   0  nothing to fix or answer (out-of-scope items and pending checks may remain)
   1  the worklist holds fix or question items
@@ -42,6 +45,10 @@ DEFERRED = re.compile(r"\b(?:follow[- ]?up|separate (?:pr|pull request|change|ti
                       r"not blocking|non-blocking|later|future (?:pr|change|work))\b", re.I)
 REASONING = re.compile(r"^\s*(?:why\b|what is\b|what's\b|how does\b|is there a reason\b|"
                        r"(?:could|can) you explain\b|do we need\b)", re.I)
+REQUEST = re.compile(
+    r"^\s*(?:nit\b|nitpick\b|please\b|pls\b|suggestion\b)|\b(?:please|should|must|needs? to|let's|can you|could you|"
+    r"would you|rename|remove|delete|add|use|move|extract|replace|change|fix|drop|inline|split|avoid|prefer|consider|"
+    r"revert|simplify|guard|handle|check|validate|document|update)\b", re.I)
 QUERY = """query($owner: String!, $name: String!, $pr: Int!, $cursor: String) {
   repository(owner: $owner, name: $name) {
     pullRequest(number: $pr) {
@@ -77,7 +84,9 @@ def classify_thread(thread, changed):
         return "question", "the reviewer asks for reasoning: answer with evidence"
     if "```suggestion" in (first.get("body") or ""):
         return "fix", "a suggested change"
-    return "fix", "a requested change"
+    if REQUEST.search(words):
+        return "fix", "a requested change"
+    return "question", "not readable as a request: ask the user what the reviewer wants before changing code"
 
 
 def thread_item(thread, changed):
