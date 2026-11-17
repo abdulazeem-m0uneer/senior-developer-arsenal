@@ -7,8 +7,8 @@ Usage (hook input is JSON on stdin):
   guard.py track     # PostToolUseFailure / PostToolUse on Bash: record failed and passed checks and recorded lessons;
                      # a recorded lesson also appends its preceding failures to the local evidence file (save_evidence)
   guard.py pre       # PreToolUse, every tool: deny past a run limit (guard_limits.py); deny a file write outside
-                     # the edit-scope lock (guard_scope.py); deny an arsenal subagent call asking for a model
-                     # above its tier (guard_models.py); deny a Bash command that
+                     # the edit-scope lock (guard_scope.py); ask or deny an arsenal subagent call asking for a
+                     # model above its tier (guard_models.py); deny a Bash command that
                      # repeats a recorded lesson (guard_lessons.py, hit logged by guard_hits.py); ask or deny a
                      # destructive Bash command (guard_destructive.py)
   guard.py stop      # Stop: block once when source changed without a test, or a check failed, never passed
@@ -205,8 +205,8 @@ def is_check_command(command):
 
 # ARSENAL_PROFILE maps onto the per-check switches; an explicitly set switch always wins over its profile.
 PROFILES = {
-    "minimal": {"ARSENAL_GUARD_STOP": "off", "ARSENAL_GUARD_DEADCODE": "off", "ARSENAL_LESSON_GUARDS": "off",
-                "ARSENAL_SUBAGENT_MODEL": "any"},  # the destructive-command gate only
+    "minimal": {"ARSENAL_GUARD_STOP": "off", "ARSENAL_GUARD_DEADCODE": "off",
+                "ARSENAL_LESSON_GUARDS": "off"},  # the destructive-command gate and the subagent cost guard only
     "standard": {},
     "strict": {"ARSENAL_GUARD_DESTRUCTIVE": "deny"},  # a destructive command is denied even where a human approves
 }
@@ -417,8 +417,8 @@ def pre():
     tool_input = data.get("tool_input")
     if data.get("tool_name") in ("Agent", "Task") and not switched_off("ARSENAL_SUBAGENT_MODEL", "any"):
         refusal = model_refusal(tool_input)
-        if refusal:
-            return decide("deny", refusal)
+        if refusal:  # attended: the user may want the dearer model for this one call
+            return decide("deny" if data.get("permission_mode") in UNATTENDED_MODES else "ask", refusal)
     if data.get("tool_name") in WRITE_TOOLS and not switched_off("ARSENAL_GUARD_SCOPE"):
         refusal = scope_refusal(data.get("tool_name"), tool_input, cwd)
         if refusal:

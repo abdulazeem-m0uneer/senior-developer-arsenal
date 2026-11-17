@@ -23,8 +23,7 @@ class SettingTest(unittest.TestCase):
         switches = ("ARSENAL_GUARD_STOP", "ARSENAL_GUARD_DEADCODE", "ARSENAL_LESSON_GUARDS", "ARSENAL_SUBAGENT_MODEL",
                     "ARSENAL_GUARD_DESTRUCTIVE", "ARSENAL_GUARD_SCOPE", "ARSENAL_GUARD")
         expected = {
-            "minimal": {"ARSENAL_GUARD_STOP": "off", "ARSENAL_GUARD_DEADCODE": "off", "ARSENAL_LESSON_GUARDS": "off",
-                        "ARSENAL_SUBAGENT_MODEL": "any"},
+            "minimal": {"ARSENAL_GUARD_STOP": "off", "ARSENAL_GUARD_DEADCODE": "off", "ARSENAL_LESSON_GUARDS": "off"},
             "standard": {}, "": {}, "bogus": {},
             "strict": {"ARSENAL_GUARD_DESTRUCTIVE": "deny"},
         }

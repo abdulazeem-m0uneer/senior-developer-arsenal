@@ -117,10 +117,10 @@ class PreHookTest(ModelCase):
         path.parent.mkdir(parents=True)
         path.write_text(json.dumps(DEFINITIONS))
 
-    def pre(self, tool_input, tool="Agent", **env):
+    def pre(self, tool_input, tool="Agent", mode="bypassPermissions", **env):
         environment = {k: v for k, v in os.environ.items() if not k.startswith("ARSENAL_")}
         environment.update(HANDOFF_SNAPSHOT=str(self.root / "snap.md"), **env)
-        payload = {"tool_name": tool, "tool_input": tool_input, "cwd": str(self.root), "permission_mode": "bypassPermissions"}
+        payload = {"tool_name": tool, "tool_input": tool_input, "cwd": str(self.root), "permission_mode": mode}
         out = subprocess.run([sys.executable, str(self.hooks / "guard.py"), "pre"], input=json.dumps(payload),
                              cwd=self.root, capture_output=True, text=True, env=environment)
         self.assertEqual((out.returncode, out.stderr), (0, ""))
@@ -134,13 +134,19 @@ class PreHookTest(ModelCase):
         self.assertEqual(self.pre({"subagent_type": "arsenal:builder", "model": "fable"}, tool="Task")["permissionDecision"],
                          "deny")
 
-    def test_switches_allow_the_override(self):
+    def test_an_attended_session_is_asked_and_an_unattended_one_is_denied(self):
+        call = {"subagent_type": "arsenal:builder", "model": "opus"}
+        for mode, expected in (("default", "ask"), ("acceptEdits", "ask"), ("plan", "ask"),
+                               ("bypassPermissions", "deny"), ("dontAsk", "deny"), ("auto", "deny")):
+            with self.subTest(mode=mode):
+                self.assertEqual(self.pre(call, mode=mode)["permissionDecision"], expected)
+
+    def test_switches_allow_the_override_and_minimal_keeps_the_guard(self):
         call = {"subagent_type": "arsenal:builder", "model": "opus"}
         self.assertIsNone(self.pre(call, ARSENAL_SUBAGENT_MODEL="any"))
-        self.assertIsNone(self.pre(call, ARSENAL_PROFILE="minimal"))
         self.assertIsNone(self.pre(call, ARSENAL_GUARD="off"))
-        self.assertEqual(self.pre(call, ARSENAL_PROFILE="minimal", ARSENAL_SUBAGENT_MODEL="on")["permissionDecision"],
-                         "deny")
+        self.assertEqual(self.pre(call, ARSENAL_PROFILE="minimal")["permissionDecision"], "deny")
+        self.assertIsNone(self.pre(call, ARSENAL_PROFILE="minimal", ARSENAL_SUBAGENT_MODEL="any"))
 
     def test_a_missing_helper_allows(self):
         (self.hooks / "guard_models.py").unlink()
