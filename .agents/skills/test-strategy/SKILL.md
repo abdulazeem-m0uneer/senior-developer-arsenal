@@ -53,6 +53,12 @@ Consult: [Edge Cases & Flakiness](./references/edge-cases-and-flakiness.md)
 ### Step 5: Diagnose Flaky or Slow Tests
 Reproduce by repetition and order shuffling, classify the cause (timing, shared state, order dependence, real network, unawaited async), then fix the cause. Do not add retries or longer timeouts as the fix.
 
+### Step 6: Audit the Suite for Tests That Cannot Fail
+Consult: [Test Audit](./references/test-audit.md)
+1. Run `python3 <skill-dir>/scripts/test_audit.py <test dirs>` (exit 1 findings, 0 clean, 2 usage error).
+2. Fix each finding at its cause: add the missing assertion, delete or un-skip the skipped test, remove `.only`, merge the duplicate into a table-driven test, replace a source grep with a call to the code.
+3. Done when the audit exits 0, or each remaining finding has a one-line reason in the report.
+
 ---
 
 ## 3. Verification Protocol
