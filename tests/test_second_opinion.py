@@ -4,6 +4,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -155,6 +156,30 @@ class SafetyTest(SecondOpinionCase):
         self.assertEqual(code, 4)
         self.assertIn("over --max-bytes 500", err)
         self.assertIsNone(self.sent())
+
+    def test_a_huge_line_is_refused_or_replaced_fast_and_never_scanned(self):
+        self.stub("codex")
+        (self.repo / "app.py").write_text("a." * 120_000 + "\n")  # 240 KB on one line: quadratic for the check
+        started = time.monotonic()
+        code, _, _ = self.run_cli("--diff", "HEAD")
+        self.assertEqual(code, 4)
+        self.assertLess(time.monotonic() - started, 5)
+        (self.repo / "app.py").write_text("x = 3\n" + "a." * 5000 + "\n")
+        started = time.monotonic()
+        code, _, _ = self.run_cli("--diff", "HEAD")
+        self.assertEqual(code, 0)
+        self.assertLess(time.monotonic() - started, 5)
+        self.assertIn("[redacted: a line over 2000 characters]", self.sent())
+        self.assertNotIn("a." * 1000, self.sent())
+
+    def test_a_ref_that_looks_like_an_option_is_refused(self):
+        self.stub("codex")
+        for ref in ("--output=" + str(self.out / "planted"), "-p", ""):
+            with self.subTest(ref=ref):
+                code, _, err = self.run_cli(f"--diff={ref}")
+                self.assertEqual(code, 2)
+                self.assertFalse((self.out / "planted").exists())
+                self.assertIsNone(self.sent())
 
     def test_a_cli_that_hangs_or_fails_is_exit_5(self):
         self.stub("codex")

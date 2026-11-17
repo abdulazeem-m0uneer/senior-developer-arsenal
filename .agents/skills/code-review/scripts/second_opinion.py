@@ -24,6 +24,7 @@ import sys
 from pathlib import Path
 
 MAX_BYTES = 200_000
+MAX_LINE = 2000  # longer lines are minified or generated: replaced, never scanned or sent
 TIMEOUT = 300
 CLIS = ("codex", "gemini")
 SECRET_NAME = re.compile(  # a file name, not a path: `key` must be its own segment (keys.yaml, not keyboard.ts)
@@ -64,9 +65,12 @@ def looks_secret(path):
 
 
 def git_diff(ref):
+    if not ref or ref.startswith("-"):
+        raise Refused(f"{ref!r} is not a git ref (a leading '-' would be read as an option)")
     try:
         out = subprocess.run(["git", "-c", "core.quotePath=false", "diff", "--no-color", "--no-ext-diff",
-                              "--src-prefix=a/", "--dst-prefix=b/", ref, "--"], capture_output=True, timeout=60)
+                              "--src-prefix=a/", "--dst-prefix=b/", "--end-of-options", ref, "--"],
+                             capture_output=True, timeout=60)
     except (OSError, subprocess.SubprocessError) as error:
         raise Refused(f"git diff failed: {error}") from error
     if out.returncode != 0:
@@ -89,10 +93,11 @@ def drop_secret_files(diff):
 
 
 def redact(text, find_secret):
-    """Each line that looks like a credential replaced by a marker that keeps its diff prefix."""
+    """Each line that looks like a credential replaced by a marker that keeps its diff prefix. A line over
+    MAX_LINE characters (minified or generated) is replaced unread: the secret check costs too much on it."""
     lines = []
     for line in text.split("\n"):
-        reason = find_secret(line)
+        reason = f"a line over {MAX_LINE} characters" if len(line) > MAX_LINE else find_secret(line)
         prefix = line[:1] if line[:1] in "+- " and not line.startswith(("+++", "---")) else ""
         lines.append(f"{prefix}[redacted: {reason}]" if reason else line)
     return "\n".join(lines)
@@ -115,11 +120,13 @@ def material(args, find_secret):
         kind = "diff"
     if not text.strip():
         raise Refused("nothing to review")
-    text = redact(text, find_secret)
-    size = len(text.encode("utf-8"))
-    if size > args.max_bytes:
-        raise Refused(f"{size} bytes to review is over --max-bytes {args.max_bytes}; narrow the ref or the plan "
-                      "(nothing was sent)", code=4)
+    for stage in ("raw", "redacted"):  # refused before redaction too: an oversized input must cost nothing
+        size = len(text.encode("utf-8"))
+        if size > args.max_bytes:
+            raise Refused(f"{size} bytes to review is over --max-bytes {args.max_bytes}; narrow the ref or the plan "
+                          "(nothing was sent)", code=4)
+        if stage == "raw":
+            text = redact(text, find_secret)
     return kind, text
 
 
