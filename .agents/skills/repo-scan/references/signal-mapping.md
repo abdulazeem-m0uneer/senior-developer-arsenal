@@ -18,7 +18,7 @@ The mapping the detector applies, what each signal is detected from, and how to 
 | OpenAPI | `openapi*` or `swagger*` with `.json`, `.yaml`, `.yml` | `api-design`, `fullstack-integration-master`, `docs-writer`, `smoke-test` | `fullstack-standards` | `fullstack-architect` |
 | UI styling | `*.css`, `*.scss`, `*.sass`, `*.less`, `tailwind.config.*` | `ui-ux-architect`, `ui-ux-audit` | `ui-ux-standards` | `ui-ux-architect` |
 | Docker | `Dockerfile`, `Dockerfile.*`, `*.dockerfile`, compose files | `devops-ci`, `dependency-upgrade` | - | `devops-engineer` |
-| CI pipeline | `.github/workflows/`, `.circleci/`, `.gitlab-ci.yml`, `azure-pipelines.yml`, `Jenkinsfile` | `devops-ci`, `git-release`, `ci-wait`, `quality-gate` | - | `devops-engineer` |
+| CI pipeline | `.github/workflows/`, `.circleci/`, `.gitlab-ci.yml`, `azure-pipelines.yml`, `Jenkinsfile` | `devops-ci`, `git-release`, `ci-wait`, `quality-gate`, `ship` | - | `devops-engineer` |
 | Infrastructure as code | `*.tf`, `*.tofu`, `*.bicep`, `Pulumi.yaml`, `Chart.yaml`, `kustomization.yaml` | `shared-infra-changes`, `devops-ci` | - | `infra-reviewer`, `devops-engineer` |
 | Kubernetes | Up to 300 `*.yaml` / `*.yml` files whose first 8 KB has an `apiVersion:` and a workload, service, ingress, config, or autoscaler `kind:`; `kustomization.yaml`, `skaffold.yaml` | `kubernetes-ops`, `shared-infra-changes`, `devops-ci` | - | `infra-reviewer`, `devops-engineer` |
 | Tests present | Vitest / Jest / Playwright config, `pytest.ini`, `conftest.py`, `*.test.*`, `*.spec.*`, `test_*`, `*Tests.cs`, test dependencies, test directories | `test-strategy`, `qa-engineer` | - | `test-engineer`, `qa-engineer` |
