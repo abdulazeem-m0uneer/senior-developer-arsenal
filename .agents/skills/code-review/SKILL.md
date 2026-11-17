@@ -56,6 +56,10 @@ Format the final review report according to the [Feedback Rubric](./references/f
 ### Step 4: Re-Review After Fixes
 A fix is new code. Review the new diff with the same checklist, try to refute each earlier finding against the fixed code, and reissue the verdict with the new commit hash.
 
+### Step 4a: Second Opinion (high-risk changes only)
+Consult: [Second Opinion](./references/second-opinion.md)
+For money, auth, migrations, concurrency or a plan that is hard to reverse, run `python3 <skill-dir>/scripts/second_opinion.py --diff <base>` (or `--plan <file>`). It runs another installed CLI (Codex, Gemini) in read-only mode. Secret-looking files are left out and credential-shaped lines redacted; exit 3 means no CLI is installed, so say so and continue. Verify each finding it reports against the code before adopting it, exactly as in Step 5.
+
 ### Step 5: When the Review Is Addressed to You
 Consult: [Receiving Review Protocol](./references/receiving-review-protocol.md)
 1. Read all findings before acting on any; restate each requirement in your own words or ask. Anything unclear blocks all implementation, not only that item.
