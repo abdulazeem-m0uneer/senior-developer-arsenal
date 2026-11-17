@@ -37,6 +37,17 @@ Activate this skill when:
 2. Say these are counts from the user's own sessions, not proof of cause: there is no comparison group. For a causal claim, point to the evals.
 3. Never invent, round up or extrapolate a number; a 0 of 0 is reported as such.
 
+### Step 4: Diagnose One Session
+1. `python3 <skill-dir>/scripts/usage_stats.py diagnose --last` (or `--session <id>`, or a transcript path; `--json` for machines) reads one session and its subagents.
+2. It reports four kinds of finding:
+   - `missed-skill`: a prompt held a skill's multi-word trigger phrase and that skill never fired. Pasted blocks are ignored, and so are prompts that name three or more skills.
+   - `untested-change`: source was edited and no test was.
+   - `unverified-done`: "done" was claimed after the last edit with no passing check after it.
+   - `unlearned-fail`: a check failed, never passed again, and no lesson followed.
+   Each finding has the turn's timestamp and a one-line fix. Prompts, commands and paths are never printed.
+3. A `missed-skill` finding is a hypothesis. A repeat across sessions means the skill's trigger phrases or its description need work, or the phrase is too common to be a trigger. Fix the description and re-run the trigger eval; never ignore it.
+4. Subagent transcripts (`<session>/subagents/`) count toward their session's skills and subagents in `record`, `backfill` and `diagnose`. Their tokens are not added, so nothing is counted twice.
+
 ---
 
 ## 3. What Is Stored, and What Never Is

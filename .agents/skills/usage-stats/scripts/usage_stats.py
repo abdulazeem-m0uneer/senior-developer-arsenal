@@ -5,6 +5,7 @@ Usage:
   usage_stats.py record                         # SessionEnd hook: hook JSON on stdin; prints nothing, always exits 0
   usage_stats.py backfill [--dir DIR]           # every *.jsonl transcript under DIR (default ~/.claude/projects)
   usage_stats.py report [--days N] [--json | --markdown] [--readme README.md]
+  usage_stats.py diagnose <transcript> | --session ID | --last [--dir DIR] [--json]  # missed skills, core gaps
 Store: one JSON line per session in $ARSENAL_USAGE_FILE (default ~/.agents/arsenal-usage.jsonl), replaced by
 session id with an atomic rewrite under a lock, so record and backfill can run any number of times. A per-machine
 random salt beside it (<store>.salt) hashes the working directory into a project id. Only counts, dates, skill
@@ -16,7 +17,8 @@ inputs, `<command-name>/arsenal:x</command-name>` in user text, the Stop gate's 
 "Stop hook feedback:", PreToolUse denials (a tool_result with is_error true on a line that carries toolDenialKind),
 Bash tool_use commands paired with their tool_result by id, edit tool file paths, SessionStart hook attachments
 and message.usage. Text inside tool outputs is never searched: a session that prints guard source code quotes
-every marker. Lines with isSidechain true and files under a subagents/ folder are skipped.
+every marker. Lines with isSidechain true are skipped, and so are files under a subagents/ folder as sessions of their
+own; a session's subagent transcripts (<session>/subagents/*.jsonl) credit only their Skill and Agent use to it.
 Exit codes: 0 on success, 2 on a missing directory, a bad argument or a README without exactly one usage block.
 """
 import argparse
@@ -203,6 +205,25 @@ class Summary:
                 if isinstance(part, dict) and part.get("type") == "tool_use":
                     self.tool_use(part)
 
+    def feed_subagent(self, raw):
+        """A subagent transcript line: its Skill and Agent use is credited to the parent session. Nothing else is
+        read from it: tokens stay the main session's (counted once), and guards and checks are the parent's."""
+        if '"tool_use"' not in raw:  # most lines; skipped unparsed, so long builder transcripts stay cheap
+            return
+        try:
+            entry = json.loads(raw)
+        except ValueError:
+            return
+        if not isinstance(entry, dict):
+            return
+        message = entry.get("message") if isinstance(entry.get("message"), dict) else {}
+        content = message.get("content")
+        if entry.get("type") == "assistant" and isinstance(content, list):
+            for part in content:
+                if isinstance(part, dict) and part.get("type") == "tool_use" and part.get("name") in (
+                        "Skill", "Agent", "Task"):
+                    self.tool_use(part)
+
     def count_tokens(self, raw):
         if TOKENS is None or '"usage"' not in raw:
             return
@@ -346,7 +367,20 @@ def summarize(transcript, salt="", active=False):
                 summary.feed(raw)
     except OSError:
         return None
+    for path in subagent_transcripts(Path(transcript)):
+        try:
+            with path.open(encoding="utf-8", errors="replace") as lines:
+                for raw in lines:
+                    summary.feed_subagent(raw)
+        except OSError:
+            continue  # one unreadable subagent file costs only its own credit
     return summary.result(salt) if summary.used_arsenal() else None
+
+
+def subagent_transcripts(transcript):
+    """<project>/<session>/subagents/*.jsonl beside <project>/<session>.jsonl (observed on Claude Code 2.1.325)."""
+    folder = transcript.with_suffix("") / "subagents"
+    return sorted(folder.glob("*.jsonl")) if folder.is_dir() else []
 
 
 @contextmanager
@@ -626,12 +660,22 @@ def main(argv=None, stdin=None, today=None):
     style.add_argument("--json", action="store_true")
     style.add_argument("--markdown", action="store_true")
     report.add_argument("--readme", help="rewrite the usage block of this README")
+    check = commands.add_parser("diagnose", help="missed skills and operating-core gaps in one session")
+    check.add_argument("transcript", nargs="?")
+    pick = check.add_mutually_exclusive_group()
+    pick.add_argument("--session")
+    pick.add_argument("--last", action="store_true")
+    check.add_argument("--dir", default=str(Path.home() / ".claude" / "projects"))
+    check.add_argument("--json", action="store_true")
     try:
         options = parser.parse_args(argv)
     except SystemExit as stop:
         return 0 if stop.code == 0 else 2
     if options.command == "record":
         return record_hook(stdin or sys.stdin)
+    if options.command == "diagnose":
+        import diagnose  # here, not at the top: diagnose imports this module
+        return diagnose.run(options.transcript, options.session, options.last, options.dir, options.json)
     if options.command == "backfill":
         directory = Path(options.dir).expanduser()
         if not directory.is_dir():

@@ -190,6 +190,38 @@ class ParsingTest(Case):
                                             isSidechain=True))
         self.assertEqual(record["skills"], {})
 
+    def test_subagent_skill_and_agent_use_is_credited_to_the_parent_without_its_tokens(self):
+        main = self.transcript(start(), use("t1", "Agent", subagent_type="arsenal:node-specialist"))
+        usage = {"input_tokens": 1000, "output_tokens": 1000, "cache_creation_input_tokens": 0,
+                 "cache_read_input_tokens": 0}
+        heavy = json.loads(line("assistant", [{"type": "text", "text": "x"}], isSidechain=True, requestId="r9"))
+        heavy["message"].update({"id": "m9", "usage": usage})
+        sub = [line("assistant", [{"type": "tool_use", "id": "s1", "name": "Skill",
+                                   "input": {"skill": "arsenal:test-every-change"}}], isSidechain=True),
+               line("assistant", [{"type": "tool_use", "id": "s2", "name": "Agent",
+                                   "input": {"subagent_type": "arsenal:code-explorer"}}], isSidechain=True),
+               line("assistant", [{"type": "tool_use", "id": "s3", "name": "Bash",
+                                   "input": {"command": "pytest -q"}}], isSidechain=True),
+               json.dumps(heavy), "not json", "[1]"]
+        folder = main.with_suffix("") / "subagents"
+        folder.mkdir(parents=True)
+        (folder / "agent-a1.jsonl").write_text("\n".join(sub) + "\n")
+        (folder / "agent-broken.jsonl").mkdir()  # an unreadable entry costs only its own credit
+        record = usage_stats.summarize(main, "salt")
+        self.assertEqual(record["skills"], {"test-every-change": 1})
+        self.assertEqual(record["subagents"], {"code-explorer": 1, "node-specialist": 1})
+        self.assertEqual(record["tokens"]["input"], 0)  # the subagent's tokens are not added to the session
+        self.assertEqual(record["checks"]["passed"], 0)
+
+    def test_a_session_whose_only_arsenal_use_is_in_a_subagent_is_kept(self):
+        main = self.transcript(line("user", "hello"))
+        folder = main.with_suffix("") / "subagents"
+        folder.mkdir(parents=True)
+        (folder / "agent-a1.jsonl").write_text(line("assistant", [{"type": "tool_use", "id": "s1", "name": "Skill",
+                                                                   "input": {"skill": "arsenal:investigate"}}],
+                                                    isSidechain=True) + "\n")
+        self.assertEqual(usage_stats.summarize(main, "salt")["skills"], {"investigate": 1})
+
     def test_tokens_are_summed_once_per_message(self):
         usage = {"input_tokens": 10, "output_tokens": 5, "cache_creation_input_tokens": 3, "cache_read_input_tokens": 7}
         message = line("assistant", [{"type": "text", "text": "x"}], requestId="r1")
