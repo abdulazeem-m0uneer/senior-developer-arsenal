@@ -30,6 +30,7 @@ import secrets
 import statistics
 import subprocess
 import sys
+import time
 import tempfile
 from collections import Counter
 from contextlib import contextmanager
@@ -42,6 +43,8 @@ SKILLS = HERE.parent.parent
 # Plugin and repository: <root>/hooks beside <root>/.agents/skills. Installer: <dir>/arsenal-hooks beside <dir>/skills.
 HOOK_DIRS = (SKILLS.parent.parent / "hooks", SKILLS.parent / "arsenal-hooks")
 SCHEMA = 1
+SETTLE = 2.0  # seconds the detached recorder waits for the transcript's last lines
+LOCK_WAIT = 30  # seconds a recorder waits for the store lock before giving up
 
 SKILL_PREFIX = "arsenal:"
 NAME = re.compile(r"^[\w-]{1,64}$")
@@ -395,7 +398,15 @@ def locked(store):
         return
     flags = os.O_WRONLY | os.O_CREAT | os.O_APPEND | getattr(os, "O_NOFOLLOW", 0)  # never through a planted link
     with os.fdopen(os.open(store.with_name(store.name + ".lock"), flags, 0o600), "a", encoding="utf-8") as handle:
-        fcntl.flock(handle, fcntl.LOCK_EX)
+        deadline = time.monotonic() + LOCK_WAIT
+        while True:  # bounded: a stuck holder must not pile up one waiting process per finished session
+            try:
+                fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                break
+            except BlockingIOError:
+                if time.monotonic() > deadline:
+                    raise TimeoutError(f"{store} stayed locked for {LOCK_WAIT} s") from None
+                time.sleep(0.1)
         try:
             yield
         finally:
@@ -458,7 +469,8 @@ def record_hook(stdin):
         if os.environ.get("ARSENAL_USAGE_SYNC", "").strip() == "1":
             return record_transcript(transcript)
         detach = {"creationflags": 0x00000008 | 0x00000200} if os.name == "nt" else {"start_new_session": True}
-        subprocess.Popen([sys.executable, str(Path(__file__).resolve()), "record", "--transcript", transcript],
+        subprocess.Popen([sys.executable, str(Path(__file__).resolve()), "record", "--transcript", transcript,
+                          "--settle", str(SETTLE)],
                          stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                          close_fds=True, **detach)
     except Exception:  # a hook must never break the session
@@ -466,9 +478,11 @@ def record_hook(stdin):
     return 0
 
 
-def record_transcript(transcript):
-    """Summarise one transcript into the store (the detached half of record_hook). Fails open, returns 0."""
+def record_transcript(transcript, settle=0.0):
+    """Summarise one transcript into the store (the detached half of record_hook). Fails open, returns 0.
+    settle: seconds to wait first, so the transcript's last lines are flushed when SessionEnd fires."""
     try:
+        time.sleep(settle)
         store = store_path()
         record = summarize(Path(transcript), machine_salt(store), active=True)
         if record is None:
@@ -671,6 +685,7 @@ def main(argv=None, stdin=None, today=None):
     commands = parser.add_subparsers(dest="command", required=True)
     record = commands.add_parser("record", help="SessionEnd hook: hook JSON on stdin")
     record.add_argument("--transcript", help="record this transcript now (what the hook's detached process runs)")
+    record.add_argument("--settle", type=float, default=0.0, help=argparse.SUPPRESS)
     fill = commands.add_parser("backfill", help="summarise every transcript under --dir")
     fill.add_argument("--dir", default=str(Path.home() / ".claude" / "projects"))
     report = commands.add_parser("report", help="print the numbers")
@@ -691,7 +706,9 @@ def main(argv=None, stdin=None, today=None):
     except SystemExit as stop:
         return 0 if stop.code == 0 else 2
     if options.command == "record":
-        return record_transcript(options.transcript) if options.transcript else record_hook(stdin or sys.stdin)
+        if options.transcript:
+            return record_transcript(options.transcript, max(0.0, min(options.settle, 10.0)))
+        return record_hook(stdin or sys.stdin)
     if options.command == "diagnose":
         import diagnose  # here, not at the top: diagnose imports this module
         return diagnose.run(options.transcript, options.session, options.last, options.dir, options.json)

@@ -346,10 +346,24 @@ class HookTest(Case):
                 mock.patch.object(usage_stats.subprocess, "Popen") as popen:
             self.assertEqual(usage_stats.record_hook(payload), 0)
         args, kwargs = popen.call_args
-        self.assertEqual(args[0][-3:], ["record", "--transcript", str(path)])
+        self.assertEqual(args[0][-5:], ["record", "--transcript", str(path), "--settle", str(usage_stats.SETTLE)])
         self.assertTrue(kwargs.get("start_new_session") or kwargs.get("creationflags"))
         self.assertEqual(kwargs["stdout"], usage_stats.subprocess.DEVNULL)
         self.assertFalse(self.store.exists())  # nothing was read or written inside the hook
+
+    def test_a_stuck_lock_makes_the_recorder_give_up_not_wait_forever(self):
+        import fcntl
+        path = self.transcript(line("user", "hi"), use("t1", "Skill", skill="arsenal:investigate"))
+        self.store.parent.mkdir(parents=True, exist_ok=True)
+        with open(self.store.with_name(self.store.name + ".lock"), "a") as holder, \
+                mock.patch.object(usage_stats, "LOCK_WAIT", 0.3):
+            fcntl.flock(holder, fcntl.LOCK_EX)
+            started = time.monotonic()
+            self.assertEqual(usage_stats.record_transcript(str(path)), 0)  # fails open
+            self.assertLess(time.monotonic() - started, 3)
+        self.assertNotIn(SESSION, usage_stats.read_store(self.store)[0])
+        self.assertEqual(usage_stats.record_transcript(str(path)), 0)  # free again: recorded
+        self.assertIn(SESSION, usage_stats.read_store(self.store)[0])
 
     def test_record_fails_open_on_bad_input(self):
         for payload in ("", "not json", "[]", json.dumps({"transcript_path": 5}),
