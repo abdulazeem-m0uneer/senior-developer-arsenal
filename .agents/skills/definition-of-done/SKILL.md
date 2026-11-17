@@ -60,7 +60,8 @@ Use the commands and evidence rules in [Evidence Commands & Verdict Template](./
 
 1. Every row in the verdict table has evidence produced in this session; no row rests on memory or on a reported result.
 2. The full test suite, lint, type-check, and build were each run after the final code change, not before it.
-3. Output the verdict table:
+3. `python3 <arsenal skills>/dead-code/scripts/dead_code.py --diff` ran before the verdict; each finding is removed or kept with a one-line reason.
+4. Output the verdict table:
 
 | # | Item | Status | Evidence |
 | :---: | :--- | :---: | :--- |

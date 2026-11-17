@@ -12,6 +12,7 @@ antigravity	global	dir	csharp-dotnet-expert	.agents/skills/csharp-dotnet-expert	
 antigravity	global	dir	data-privacy	.agents/skills/data-privacy	.gemini/config/skills/data-privacy	-
 antigravity	global	dir	database-architect	.agents/skills/database-architect	.gemini/config/skills/database-architect	-
 antigravity	global	dir	database-migration	.agents/skills/database-migration	.gemini/config/skills/database-migration	-
+antigravity	global	dir	dead-code	.agents/skills/dead-code	.gemini/config/skills/dead-code	-
 antigravity	global	dir	decision-log	.agents/skills/decision-log	.gemini/config/skills/decision-log	-
 antigravity	global	dir	deep-review	.agents/skills/deep-review	.gemini/config/skills/deep-review	-
 antigravity	global	dir	definition-of-done	.agents/skills/definition-of-done	.gemini/config/skills/definition-of-done	-
@@ -114,6 +115,7 @@ antigravity	project	dir	csharp-dotnet-expert	.agents/skills/csharp-dotnet-expert
 antigravity	project	dir	data-privacy	.agents/skills/data-privacy	.agents/skills/data-privacy	-
 antigravity	project	dir	database-architect	.agents/skills/database-architect	.agents/skills/database-architect	-
 antigravity	project	dir	database-migration	.agents/skills/database-migration	.agents/skills/database-migration	-
+antigravity	project	dir	dead-code	.agents/skills/dead-code	.agents/skills/dead-code	-
 antigravity	project	dir	decision-log	.agents/skills/decision-log	.agents/skills/decision-log	-
 antigravity	project	dir	deep-review	.agents/skills/deep-review	.agents/skills/deep-review	-
 antigravity	project	dir	definition-of-done	.agents/skills/definition-of-done	.agents/skills/definition-of-done	-
@@ -215,6 +217,7 @@ gemini	global	dir	csharp-dotnet-expert	.agents/skills/csharp-dotnet-expert	.agen
 gemini	global	dir	data-privacy	.agents/skills/data-privacy	.agents/skills/data-privacy	-
 gemini	global	dir	database-architect	.agents/skills/database-architect	.agents/skills/database-architect	-
 gemini	global	dir	database-migration	.agents/skills/database-migration	.agents/skills/database-migration	-
+gemini	global	dir	dead-code	.agents/skills/dead-code	.agents/skills/dead-code	-
 gemini	global	dir	decision-log	.agents/skills/decision-log	.agents/skills/decision-log	-
 gemini	global	dir	deep-review	.agents/skills/deep-review	.agents/skills/deep-review	-
 gemini	global	dir	definition-of-done	.agents/skills/definition-of-done	.agents/skills/definition-of-done	-
@@ -302,6 +305,7 @@ gemini	project	dir	csharp-dotnet-expert	.agents/skills/csharp-dotnet-expert	.age
 gemini	project	dir	data-privacy	.agents/skills/data-privacy	.agents/skills/data-privacy	-
 gemini	project	dir	database-architect	.agents/skills/database-architect	.agents/skills/database-architect	-
 gemini	project	dir	database-migration	.agents/skills/database-migration	.agents/skills/database-migration	-
+gemini	project	dir	dead-code	.agents/skills/dead-code	.agents/skills/dead-code	-
 gemini	project	dir	decision-log	.agents/skills/decision-log	.agents/skills/decision-log	-
 gemini	project	dir	deep-review	.agents/skills/deep-review	.agents/skills/deep-review	-
 gemini	project	dir	definition-of-done	.agents/skills/definition-of-done	.agents/skills/definition-of-done	-
@@ -425,6 +429,7 @@ codex	global	dir	csharp-dotnet-expert	.agents/skills/csharp-dotnet-expert	.agent
 codex	global	dir	data-privacy	.agents/skills/data-privacy	.agents/skills/data-privacy	-
 codex	global	dir	database-architect	.agents/skills/database-architect	.agents/skills/database-architect	-
 codex	global	dir	database-migration	.agents/skills/database-migration	.agents/skills/database-migration	-
+codex	global	dir	dead-code	.agents/skills/dead-code	.agents/skills/dead-code	-
 codex	global	dir	decision-log	.agents/skills/decision-log	.agents/skills/decision-log	-
 codex	global	dir	deep-review	.agents/skills/deep-review	.agents/skills/deep-review	-
 codex	global	dir	definition-of-done	.agents/skills/definition-of-done	.agents/skills/definition-of-done	-
@@ -526,6 +531,7 @@ codex	project	dir	csharp-dotnet-expert	.agents/skills/csharp-dotnet-expert	.agen
 codex	project	dir	data-privacy	.agents/skills/data-privacy	.agents/skills/data-privacy	-
 codex	project	dir	database-architect	.agents/skills/database-architect	.agents/skills/database-architect	-
 codex	project	dir	database-migration	.agents/skills/database-migration	.agents/skills/database-migration	-
+codex	project	dir	dead-code	.agents/skills/dead-code	.agents/skills/dead-code	-
 codex	project	dir	decision-log	.agents/skills/decision-log	.agents/skills/decision-log	-
 codex	project	dir	deep-review	.agents/skills/deep-review	.agents/skills/deep-review	-
 codex	project	dir	definition-of-done	.agents/skills/definition-of-done	.agents/skills/definition-of-done	-
@@ -627,6 +633,7 @@ opencode	global	dir	csharp-dotnet-expert	.agents/skills/csharp-dotnet-expert	.ag
 opencode	global	dir	data-privacy	.agents/skills/data-privacy	.agents/skills/data-privacy	-
 opencode	global	dir	database-architect	.agents/skills/database-architect	.agents/skills/database-architect	-
 opencode	global	dir	database-migration	.agents/skills/database-migration	.agents/skills/database-migration	-
+opencode	global	dir	dead-code	.agents/skills/dead-code	.agents/skills/dead-code	-
 opencode	global	dir	decision-log	.agents/skills/decision-log	.agents/skills/decision-log	-
 opencode	global	dir	deep-review	.agents/skills/deep-review	.agents/skills/deep-review	-
 opencode	global	dir	definition-of-done	.agents/skills/definition-of-done	.agents/skills/definition-of-done	-
@@ -719,6 +726,7 @@ opencode	project	dir	csharp-dotnet-expert	.agents/skills/csharp-dotnet-expert	.a
 opencode	project	dir	data-privacy	.agents/skills/data-privacy	.agents/skills/data-privacy	-
 opencode	project	dir	database-architect	.agents/skills/database-architect	.agents/skills/database-architect	-
 opencode	project	dir	database-migration	.agents/skills/database-migration	.agents/skills/database-migration	-
+opencode	project	dir	dead-code	.agents/skills/dead-code	.agents/skills/dead-code	-
 opencode	project	dir	decision-log	.agents/skills/decision-log	.agents/skills/decision-log	-
 opencode	project	dir	deep-review	.agents/skills/deep-review	.agents/skills/deep-review	-
 opencode	project	dir	definition-of-done	.agents/skills/definition-of-done	.agents/skills/definition-of-done	-
@@ -811,6 +819,7 @@ cursor	global	dir	csharp-dotnet-expert	.agents/skills/csharp-dotnet-expert	.agen
 cursor	global	dir	data-privacy	.agents/skills/data-privacy	.agents/skills/data-privacy	-
 cursor	global	dir	database-architect	.agents/skills/database-architect	.agents/skills/database-architect	-
 cursor	global	dir	database-migration	.agents/skills/database-migration	.agents/skills/database-migration	-
+cursor	global	dir	dead-code	.agents/skills/dead-code	.agents/skills/dead-code	-
 cursor	global	dir	decision-log	.agents/skills/decision-log	.agents/skills/decision-log	-
 cursor	global	dir	deep-review	.agents/skills/deep-review	.agents/skills/deep-review	-
 cursor	global	dir	definition-of-done	.agents/skills/definition-of-done	.agents/skills/definition-of-done	-
@@ -898,6 +907,7 @@ cursor	project	dir	csharp-dotnet-expert	.agents/skills/csharp-dotnet-expert	.age
 cursor	project	dir	data-privacy	.agents/skills/data-privacy	.agents/skills/data-privacy	-
 cursor	project	dir	database-architect	.agents/skills/database-architect	.agents/skills/database-architect	-
 cursor	project	dir	database-migration	.agents/skills/database-migration	.agents/skills/database-migration	-
+cursor	project	dir	dead-code	.agents/skills/dead-code	.agents/skills/dead-code	-
 cursor	project	dir	decision-log	.agents/skills/decision-log	.agents/skills/decision-log	-
 cursor	project	dir	deep-review	.agents/skills/deep-review	.agents/skills/deep-review	-
 cursor	project	dir	definition-of-done	.agents/skills/definition-of-done	.agents/skills/definition-of-done	-
@@ -999,6 +1009,7 @@ windsurf	global	dir	csharp-dotnet-expert	.agents/skills/csharp-dotnet-expert	.ag
 windsurf	global	dir	data-privacy	.agents/skills/data-privacy	.agents/skills/data-privacy	-
 windsurf	global	dir	database-architect	.agents/skills/database-architect	.agents/skills/database-architect	-
 windsurf	global	dir	database-migration	.agents/skills/database-migration	.agents/skills/database-migration	-
+windsurf	global	dir	dead-code	.agents/skills/dead-code	.agents/skills/dead-code	-
 windsurf	global	dir	decision-log	.agents/skills/decision-log	.agents/skills/decision-log	-
 windsurf	global	dir	deep-review	.agents/skills/deep-review	.agents/skills/deep-review	-
 windsurf	global	dir	definition-of-done	.agents/skills/definition-of-done	.agents/skills/definition-of-done	-
@@ -1059,6 +1070,7 @@ windsurf	project	dir	csharp-dotnet-expert	.agents/skills/csharp-dotnet-expert	.a
 windsurf	project	dir	data-privacy	.agents/skills/data-privacy	.agents/skills/data-privacy	-
 windsurf	project	dir	database-architect	.agents/skills/database-architect	.agents/skills/database-architect	-
 windsurf	project	dir	database-migration	.agents/skills/database-migration	.agents/skills/database-migration	-
+windsurf	project	dir	dead-code	.agents/skills/dead-code	.agents/skills/dead-code	-
 windsurf	project	dir	decision-log	.agents/skills/decision-log	.agents/skills/decision-log	-
 windsurf	project	dir	deep-review	.agents/skills/deep-review	.agents/skills/deep-review	-
 windsurf	project	dir	definition-of-done	.agents/skills/definition-of-done	.agents/skills/definition-of-done	-
@@ -1133,6 +1145,7 @@ copilot	global	dir	csharp-dotnet-expert	.agents/skills/csharp-dotnet-expert	.age
 copilot	global	dir	data-privacy	.agents/skills/data-privacy	.agents/skills/data-privacy	-
 copilot	global	dir	database-architect	.agents/skills/database-architect	.agents/skills/database-architect	-
 copilot	global	dir	database-migration	.agents/skills/database-migration	.agents/skills/database-migration	-
+copilot	global	dir	dead-code	.agents/skills/dead-code	.agents/skills/dead-code	-
 copilot	global	dir	decision-log	.agents/skills/decision-log	.agents/skills/decision-log	-
 copilot	global	dir	deep-review	.agents/skills/deep-review	.agents/skills/deep-review	-
 copilot	global	dir	definition-of-done	.agents/skills/definition-of-done	.agents/skills/definition-of-done	-
@@ -1220,6 +1233,7 @@ copilot	project	dir	csharp-dotnet-expert	.agents/skills/csharp-dotnet-expert	.ag
 copilot	project	dir	data-privacy	.agents/skills/data-privacy	.agents/skills/data-privacy	-
 copilot	project	dir	database-architect	.agents/skills/database-architect	.agents/skills/database-architect	-
 copilot	project	dir	database-migration	.agents/skills/database-migration	.agents/skills/database-migration	-
+copilot	project	dir	dead-code	.agents/skills/dead-code	.agents/skills/dead-code	-
 copilot	project	dir	decision-log	.agents/skills/decision-log	.agents/skills/decision-log	-
 copilot	project	dir	deep-review	.agents/skills/deep-review	.agents/skills/deep-review	-
 copilot	project	dir	definition-of-done	.agents/skills/definition-of-done	.agents/skills/definition-of-done	-

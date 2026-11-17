@@ -281,7 +281,7 @@ class AdapterCase(unittest.TestCase):
         for name in [path.name for path in (ROOT / "hooks").glob("*.py")] + ["core.md"]:
             place(ROOT / "hooks" / name, self.hooks / name)
         place(ROOT / build_hooks.STEPS_PATH, self.hooks / "steps.json")
-        for skill in ("lessons-learned", "handoff"):
+        for skill in ("lessons-learned", "handoff", "dead-code"):  # the skills whose scripts the hooks import
             if self.link:
                 (base / "agents" / "skills").mkdir(exist_ok=True)
                 os.symlink(ROOT / ".agents" / "skills" / skill, base / "agents" / "skills" / skill)
@@ -389,6 +389,20 @@ class StopGateTest(AdapterCase):
                 self.assertEqual(len(out), 1 if target == "cursor" else 2)
                 self.assertEqual(self.run_hook(target, "Stop", self.stopping(target)), self.IDLE.get(target))
                 (self.repo / "app.py").unlink()
+
+    def test_dead_code_in_the_session_blocks_once_in_each_agents_contract(self):
+        for target in self.BLOCK:
+            with self.subTest(target=target):
+                self.env["HANDOFF_SNAPSHOT"] = str(self.hooks.parent / f"{target}-dead.md")
+                self.run_hook(target, "SessionStart", self.session(target))
+                (self.repo / "app.py").write_text("x = 1\nbreakpoint()\n")
+                (self.repo / "test_app.py").write_text("x")  # the test gate is satisfied: only dead code asks
+                verb, reason = self.BLOCK[target](self.run_hook(target, "Stop", self.stopping(target)))
+                self.assertEqual(verb, self.VERB[target])
+                self.assertIn("app.py:2 debug-leftover breakpoint()", reason)
+                self.assertEqual(self.run_hook(target, "Stop", self.stopping(target)), self.IDLE.get(target))
+                for name in ("app.py", "test_app.py"):
+                    (self.repo / name).unlink()
 
     def test_the_session_is_keyed_by_the_agents_own_id_field(self):
         del self.env["HANDOFF_SNAPSHOT"]

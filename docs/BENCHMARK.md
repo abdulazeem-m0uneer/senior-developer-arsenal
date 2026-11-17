@@ -8,14 +8,14 @@ What the arsenal adds to the context of every Claude Code session before any wor
 
 | Component | Characters | Tokens (est.) |
 | :--- | ---: | ---: |
-| Skill listing (58 names and descriptions) (.agents/skills/*/SKILL.md frontmatter) | 23,325 | 5,831 |
+| Skill listing (59 names and descriptions) (.agents/skills/*/SKILL.md frontmatter) | 23,612 | 5,903 |
 | Subagent listing (18 names and descriptions) (.agents/subagents/subagent-definitions.json) | 3,569 | 892 |
-| SessionStart hook: `session_core.py` (hooks/hooks.json, run in an empty project) | 991 | 248 |
+| SessionStart hook: `session_core.py` (hooks/hooks.json, run in an empty project) | 997 | 249 |
 | SessionStart hook: `lessons.py active --hook` (hooks/hooks.json, run in an empty project) | 347 | 87 |
 | SessionStart hook: `snapshot.py show` (hooks/hooks.json, run in an empty project) | 0 | 0 |
 | SessionStart hook: `guard.py baseline` (hooks/hooks.json, run in an empty project) | 0 | 0 |
 | Rules without a path scope (5) (dist/claude/rules/) | 17,797 | 4,449 |
-| `AGENTS.md` block (installer, project scope) | 10,943 | 2,736 |
+| `AGENTS.md` block (installer, project scope) | 11,022 | 2,756 |
 | `CLAUDE.md` block (installer, project scope) | 11 | 3 |
 
 Worst case for the hooks (the only always-on part that grows with project state):
@@ -28,9 +28,9 @@ Worst case for the hooks (the only always-on part that grows with project state)
 
 | Route | Characters | Tokens (est.) | Characters, full ledger | Tokens (est.), full ledger |
 | :--- | ---: | ---: | ---: | ---: |
-| Plugin only | 28,232 | 7,058 | 29,596 | 7,399 |
-| Plugin + `install --global --target claude` | 46,029 | 11,507 | 47,393 | 11,848 |
-| Plugin + `install --target claude` in a project | 56,983 | 14,246 | 58,347 | 14,587 |
+| Plugin only | 28,525 | 7,131 | 29,889 | 7,472 |
+| Plugin + `install --global --target claude` | 46,322 | 11,580 | 47,686 | 11,922 |
+| Plugin + `install --target claude` in a project | 57,355 | 14,339 | 58,719 | 14,680 |
 
 Rules that load in every Claude Code session after the installer runs: `defensive-epistemology`, `minimal-change`, `senior-engineer-core`, `testing-standards`, `token-conservation`. A generated Claude rule file loads unconditionally unless it carries `paths:` frontmatter, so a rule without globs is always loaded on this target, whatever its trigger. Path-scoped: `csharp-dotnet-standards`, `database-standards`, `frontend-standards`, `fullstack-standards`, `git-standards`, `nodejs-standards`, `python-standards`, `ui-ux-standards`.
 
@@ -40,8 +40,8 @@ Not part of the totals above. Sizes in characters.
 
 | Content | Files | Min | Median | Max | Total | Total tokens (est.) |
 | :--- | ---: | ---: | ---: | ---: | ---: | ---: |
-| SKILL.md (one per skill, loaded when the skill is invoked) | 58 | 2,355 | 5,396 | 14,315 | 304,374 | 76,094 |
-| Skill reference files (a skill reads the one it needs) | 124 | 844 | 4,950 | 18,052 | 599,246 | 149,812 |
+| SKILL.md (one per skill, loaded when the skill is invoked) | 59 | 2,355 | 5,364 | 14,315 | 308,410 | 77,102 |
+| Skill reference files (a skill reads the one it needs) | 125 | 844 | 4,900 | 18,052 | 601,804 | 150,451 |
 | Subagent prompts (loaded in the subagent's own context) | 18 | 919 | 1,748 | 3,937 | 32,878 | 8,220 |
 | Path-scoped rules (loaded when a matching file is read) | 8 | 2,727 | 3,464 | 7,749 | 31,639 | 7,910 |
 
@@ -57,7 +57,7 @@ Last recorded 2026-11-13 with Claude Code 2.1.321, model `haiku`, arsenal 1.3.1.
 | `overhead`, without plugin | 1 | 2 | 7,780 | 24,365 | 4 | 0.0019 |
 | `bugfix` | not yet run |  |  |  |  |  |
 
-On `overhead` the plugin added 9,584 input-side tokens (input + cache write + cache read, with minus without). The offline estimate for the plugin-only route is 7,058.
+On `overhead` the plugin added 9,584 input-side tokens (input + cache write + cache read, with minus without). The offline estimate for the plugin-only route is 7,131.
 
 A sample this small shows that the mode works and what one session costs. It is not evidence about savings or quality on real work.
 

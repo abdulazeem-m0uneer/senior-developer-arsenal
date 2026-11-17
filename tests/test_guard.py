@@ -5,6 +5,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPT = ROOT / "hooks" / "guard.py"
@@ -47,7 +48,8 @@ class GuardCase(unittest.TestCase):
     def run_hook(self, cmd, payload=None, cwd=None, env=None):
         stdin = payload if isinstance(payload, str) else json.dumps(payload or {})
         base = {**os.environ, "HANDOFF_SNAPSHOT": str(Path(self.outside.name) / "snap.md")}
-        for name in ("ARSENAL_GUARD", "ARSENAL_GUARD_DESTRUCTIVE", "ARSENAL_RUN_LIMITS", "CLAUDE_PROJECT_DIR"):
+        for name in ("ARSENAL_GUARD", "ARSENAL_GUARD_DESTRUCTIVE", "ARSENAL_GUARD_DEADCODE", "ARSENAL_RUN_LIMITS",
+                     "CLAUDE_PROJECT_DIR"):
             base.pop(name, None)  # the developer's own session must not leak into the hook under test
         result = subprocess.run([sys.executable, str(SCRIPT), cmd], cwd=cwd or self.dir, input=stdin,
                                 capture_output=True, text=True, env={**base, **(env or {})})
@@ -452,6 +454,100 @@ class LessonGateTest(GuardCase):
         self.start()
         self.bash("pytest " + "x" * 500, failed=True)
         self.assertLess(len(self.stop()), 700)
+
+
+class DeadCodeGateTest(GuardCase):
+    DEAD = "import json\n# return compute(total)\n"  # a commented-out line and an import nothing uses
+
+    def test_dead_code_blocks_once_naming_each_finding(self):
+        self.start()
+        self.write("src/app.py", self.DEAD)
+        self.write("tests/test_app.py", "x")  # the test gate is satisfied: only the dead-code part asks
+        reason = self.stop()
+        self.assertIn("dead code in this session's changes: src/app.py:2 commented-out", reason)
+        self.assertIn("Remove it, or tell the user in one sentence why it stays.", reason)
+        self.assertNotIn("no test change", reason)
+        self.assertEqual(self.stop(), "")  # the same findings are never asked about twice
+
+    def test_a_new_finding_after_a_block_is_named_alone(self):
+        self.start()
+        self.write("tests/test_app.py", "x")
+        self.write("src/a.py", "breakpoint()\n")
+        self.assertIn("src/a.py:1 debug-leftover breakpoint()", self.stop())
+        self.write("src/b.py", "debugger_value = 1\nbreakpoint()\n")
+        reason = self.stop()
+        self.assertIn("src/b.py:2 debug-leftover", reason)
+        self.assertNotIn("src/a.py", reason)
+
+    def test_an_orphaned_import_left_by_a_removed_call_is_named(self):
+        self.write("src/app.py", "import json\nprint(json.dumps(1))\n")
+        git(self.dir, "add", "-A")
+        git(self.dir, "commit", "-qm", "app", env=BEFORE_THE_SESSION)
+        self.start()
+        self.write("src/app.py", "import json\n")
+        self.write("tests/test_app.py", "x")
+        self.assertIn("src/app.py:1 orphaned import json", self.stop())
+
+    def test_files_dirty_at_session_start_are_ignored(self):
+        self.write("legacy.py", self.DEAD)
+        self.start()
+        self.write("legacy.py", self.DEAD + "breakpoint()\n")
+        self.assertEqual(self.stop(), "")
+
+    def test_switch_turns_off_only_the_dead_code_check(self):
+        self.start()
+        self.write("src/app.py", self.DEAD)
+        self.write("tests/test_app.py", "x")
+        self.assertEqual(self.stop(env={"ARSENAL_GUARD_DEADCODE": "off"}), "")
+        self.write("src/other.py", "x")
+        git(self.dir, "rm", "-q", "--cached", "--ignore-unmatch", "tests/test_app.py")
+        (self.dir / "tests" / "test_app.py").unlink()
+        self.assertIn("no test change", self.stop(env={"ARSENAL_GUARD_DEADCODE": "off"}))
+        self.write("src/third.py", "breakpoint()\n")
+        self.assertEqual(self.stop(env={"ARSENAL_GUARD": "off"}), "")
+
+    def test_one_block_combines_the_untested_failed_and_dead_parts(self):
+        self.start()
+        self.write("src/app.py", self.DEAD)
+        self.bash("pytest -q", failed=True)
+        reason = self.stop()
+        for part in ("no test change: src/app.py", "pytest -q", "dead code in this session's changes"):
+            self.assertIn(part, reason)
+        self.assertLess(len(reason), 1300)
+        self.assertEqual(self.stop(), "")
+
+    def test_dead_findings_are_capped_in_the_reason(self):
+        self.start()
+        self.write("tests/test_app.py", "x")
+        self.write("src/app.py", "x = 1\n" + "".join(f"breakpoint()\nx{i} = {i}\n" for i in range(12)))
+        reason = self.stop()
+        self.assertEqual(reason.count("debug-leftover"), guard.MAX_NAMED)
+        self.assertIn("(+4 more)", reason)
+
+    def test_a_clean_session_prints_nothing(self):
+        self.start()
+        self.write("src/app.py", "def total(items):\n    return sum(items)\n")
+        self.write("tests/test_app.py", "from src.app import total\n")
+        self.assertEqual(self.stop(), "")
+
+    def test_a_detector_crash_costs_only_the_dead_code_check(self):
+        import dead_code  # noqa: F401 (guard imports it lazily from the skill's scripts directory)
+        base = {"sha": "", "dirty": []}
+        with mock.patch("dead_code.findings", side_effect=RuntimeError("boom")):
+            self.assertEqual(guard.dead_findings(str(self.dir), [], base), [])
+
+    def test_the_detector_is_not_imported_by_the_other_hooks(self):
+        probe = "import sys; sys.path.insert(0, sys.argv[1]); import guard; print('dead_code' in sys.modules)"
+        out = subprocess.run([sys.executable, "-c", probe, str(SCRIPT.parent)], capture_output=True, text=True)
+        self.assertEqual(out.stdout.strip(), "False")  # pre runs before every tool call: it must not pay for it
+
+    def test_foreign_history_fails_open_for_dead_code_too(self):
+        self.start()
+        self.write("tests/test_app.py", "x")
+        self.write("src/app.py", "breakpoint()\n")
+        git(self.dir, "add", "-A")
+        git(self.dir, "commit", "-qm", "older than the session", env=BEFORE_THE_SESSION)
+        self.assertEqual(self.stop(), "")
 
 
 class ClassificationTest(unittest.TestCase):

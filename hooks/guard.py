@@ -9,7 +9,8 @@ Usage (hook input is JSON on stdin):
                      # repeats a recorded lesson (guard_lessons.py, hit logged by guard_hits.py); ask or deny a
                      # destructive Bash command (guard_destructive.py)
   guard.py stop      # Stop: block once when source changed without a test, or a check failed, never passed
-                     # again and no lesson followed; silent once a run limit is reached
+                     # again and no lesson followed, or this session's changes leave dead code (dead_code.py);
+                     # silent once a run limit is reached
 Output: the Stop block {"decision":"block","reason":...} and the PreToolUse decision {"hookSpecificOutput":
 {"hookEventName":"PreToolUse","permissionDecision":"deny"|"ask","permissionDecisionReason":...}}; with nothing
 to enforce a hook prints nothing, so it costs no context. A destructive command is denied in a permission
@@ -24,7 +25,8 @@ question, never a wrong block.
 The Stop gate cannot loop: it does nothing while stop_hook_active is true, and every
 block is written to the state file before it is printed, so the same files and the same failures never
 block twice (an explicit "no test applies" or "nothing learned" answer ends it). ARSENAL_GUARD=off disables
-every gate here; ARSENAL_GUARD_DESTRUCTIVE=allow disables only the destructive-command check. Fails open: outside a git repository, when git fails or times out, without a session id, on any
+every gate here; ARSENAL_GUARD_DESTRUCTIVE=allow disables only the destructive-command check and
+ARSENAL_GUARD_DEADCODE=off only the dead-code check. Fails open: outside a git repository, when git fails or times out, without a session id, on any
 exception, and whenever the diff could name work this session did not do: HEAD is no longer a descendant of
 the baseline (checkout, rebase), a commit since the baseline is older than the session (pull, checkout of a
 branch that was already ahead), or the stop runs in another working tree. Then it exits 0 silently.
@@ -34,7 +36,8 @@ PostToolUseFailure (error "Exit code N", is_interrupt false) and never as PostTo
 from that event only. A pass is recorded only when the check's exit status is the command's: a check followed
 by a pipe, ||, ;, & or another command, or run with --version or --help, is not a pass (pytest | tail).
 State: one JSON line per event in <snapshot file>.guard.jsonl, in the OS temp dir (see snapshot.py).
-Time budget: baseline does at most four git reads and stop at most five, at 2 s each; track and pre run no
+Time budget: baseline does at most four git reads and stop at most five, at 2 s each, plus the dead-code scan
+(its git calls and scan share one 1.5 s budget); track and pre run no
 subprocess. pre runs before every tool call: measured at 51 to 53 ms a call on a busy Linux machine with
 Python 3.14, where an empty interpreter takes 13 ms; the rest is importing and compiling, not the checks.
 """
@@ -53,6 +56,7 @@ LESSONS = SKILLS / "lessons-learned" / "scripts" / "lessons.py"
 sys.dont_write_bytecode = True  # importing the helper must not leave __pycache__ in the plugin
 sys.path.insert(0, str(SKILLS / "handoff" / "scripts"))
 sys.path.insert(0, str(LESSONS.parent))  # guard_hits, and ledger_store's secret check for guard_lessons
+sys.path.insert(0, str(SKILLS / "dead-code" / "scripts"))  # dead_code, imported by the stop gate only
 try:
     import snapshot as hook  # hook input, session id, per-session file path, bounded git
     import guard_destructive
@@ -352,13 +356,20 @@ def lesson_refusal(command, cwd):
     return f"arsenal lesson guard {hit.lesson or hit.rule} ({hit.rule}): {hit.reason}{note}"
 
 
-def untested_sources(root, events):
-    """Source files changed since the baseline, not yet asked about, when no test file changed with them."""
+def session_base(root, events):
+    """The baseline event when the working tree's diff since it is this session's own work, else None."""
     base = next((event for event in events if event.get("event") == "baseline"), None)
     sha = base.get("sha") if base else None
     if not isinstance(sha, str) or base.get("root") != root or foreign_history(root, sha, base.get("time")):
-        return []  # another working tree, or commits this session did not make: the diff would name their files
-    changed = changed_paths(root, sha)
+        return None  # another working tree, or commits this session did not make: the diff would name their files
+    return base
+
+
+def untested_sources(root, events, base):
+    """Source files changed since the baseline, not yet asked about, when no test file changed with them."""
+    if base is None:
+        return []
+    changed = changed_paths(root, base["sha"])
     if changed is None:
         return []
     changed -= set(text_list(base.get("dirty")))
@@ -379,6 +390,21 @@ def foreign_history(root, sha, started):
     return stamps is None or not isinstance(started, int) or any(not s.isdigit() or int(s) < started for s in stamps)
 
 
+def dead_findings(root, events, base):
+    """Dead code in this session's changes (files dirty at the baseline excluded), not yet asked about, described."""
+    if base is None or switched_off("ARSENAL_GUARD_DEADCODE"):
+        return []
+    try:  # imported here, not at the top: pre runs before every tool call, and a missing skill costs only this check
+        import dead_code
+        found = dead_code.findings(root, base["sha"], ignore=set(text_list(base.get("dirty"))),
+                                   is_source=lambda path: kind(path) == "source", git_timeout=hook.GIT_TIMEOUT)
+        asked = {item for event in events if event.get("event") == "asked" for item in text_list(event.get("dead"))}
+        return [(dead_code.key(finding), dead_code.describe(finding)) for finding in found
+                if dead_code.key(finding) not in asked]
+    except Exception:  # the detector failing must not take the test and lesson gates down with it
+        return []
+
+
 def open_failures(events):
     """Failed check commands whose check did not pass again, with no lesson recorded and no question asked since."""
     failed = []  # (command, the checks it ran that have not passed since)
@@ -393,7 +419,7 @@ def open_failures(events):
     return [command for command, _ in failed]
 
 
-def reason(files, failed):
+def reason(files, failed, dead=()):
     parts = []
     if files:
         more = f" (+{len(files) - MAX_NAMED} more)" if len(files) > MAX_NAMED else ""
@@ -404,6 +430,10 @@ def reason(files, failed):
                      "again, and no lesson was recorded. If a verified mistake of your own caused it, record it with the "
                      f"lessons-learned skill: python3 \"{LESSONS}\" add --tags a,b --mistake \"...\" --cause \"...\" "
                      "--rule \"...\" --check \"...\"; otherwise say nothing was learned.")
+    if dead:
+        more = f" (+{len(dead) - MAX_NAMED} more)" if len(dead) > MAX_NAMED else ""
+        parts.append(f"dead code in this session's changes: {', '.join(text for _, text in dead[:MAX_NAMED])}"
+                     f"{more}. Remove it, or tell the user in one sentence why it stays.")
     return "arsenal guard (asked once): " + " Also: ".join(parts) + " Then stop again."
 
 
@@ -418,11 +448,13 @@ def stop():
     if not root:
         return
     events = load(path)
-    files, failed = untested_sources(root, events), open_failures(events)
-    if not files and not failed:
+    base = session_base(root, events)
+    files, failed, dead = untested_sources(root, events, base), open_failures(events), dead_findings(root, events, base)
+    if not files and not failed and not dead:
         return
-    record(path, {"event": "asked", "files": files, "failures": bool(failed)})  # before printing: never ask twice
-    print(json.dumps({"decision": "block", "reason": reason(files, failed)}))
+    record(path, {"event": "asked", "files": files, "failures": bool(failed),  # before printing: never ask twice
+                  "dead": [key for key, _ in dead]})
+    print(json.dumps({"decision": "block", "reason": reason(files, failed, dead)}))
 
 
 def main():

@@ -67,6 +67,7 @@ Skills: `.agents/skills/<name>/SKILL.md`. Subagents: `.agents/subagents/`.
 | Task | Skill(s) | Subagent |
 | :--- | :--- | :--- |
 | Code review | `code-review`; `deep-review` (multi-pass, evidence-verified) | `code-reviewer` |
+| Dead code (unused code, imports, exports, commented-out) | `dead-code` | — |
 | Where does X live (cold start, cross-file) | — | `code-explorer` (read-only, cheap) |
 | Root cause / debugging | `investigate` | `epistemic-debugger` |
 | Frontend architecture | `frontend-architecture-expert`, `frontend-audit` | `frontend-architect` |
