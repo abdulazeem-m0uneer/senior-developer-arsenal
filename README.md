@@ -9,6 +9,8 @@ An enterprise-grade, polyglot AI engineering toolkit for **Senior Software Engin
 
 One source of truth (`.agents/`), usable from **any AI coding agent**: Claude Code, Codex CLI, OpenCode, Cursor, Windsurf, GitHub Copilot, Gemini CLI, and Google Antigravity. Deploy it per project or globally with strict **Token Conservation Protocols**, **Applied Rationality**, and **Context Engineering Guardrails**.
 
+**Measured, not claimed.** In 55 paired runs on 11 real tasks (Sonnet, with and without the plugin), every run with the arsenal that had to prove its change shipped a test that fails on the untouched code and passes on the final code (30 of 30), and no run without it did (0 of 30); hidden acceptance tests passed equally in both arms. The cost is about twice the tokens per task. Every number, run and cost is in [docs/EVALS.md](docs/EVALS.md#proof-160-2026-11-17).
+
 ---
 
 ## 📈 GitHub Trending Rank

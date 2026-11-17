@@ -79,6 +79,37 @@ Grader calibration pilot of the six `hard` cases after the outcome checks were a
 | `task-risky-migration` | with plugin | 1 | 1.00 | `any-skill-fired` 1/1 (indicator, not scored)<br>`flags-risk` 1/1 | `first-step-keeps-old-version-working` 1/1 | 0.0106 | 188,188 | 6,338 | 12.0 |
 | `task-risky-migration` | without plugin | 1 | 1.00 | `flags-risk` 1/1 | `first-step-keeps-old-version-working` 1/1 | 0.0071 | 96,557 | 5,499 | 8.0 |
 
+### `proof-1.6.0` (2026-11-17)
+
+Claude Code 2.1.325, arsenal 1.6.0, model `sonnet`, judge `haiku`, 5 run(s) per arm, total cost 11.4331 USD.
+
+Proof run on arsenal 1.6.0 (branch feat/arsenal-smart): all 11 task cases, 5 runs per arm, with and without the plugin, model sonnet, judge haiku, on the maintainer's machine with the OS sandbox working (Bash ran in both arms). Outcome checks ran afterwards with pytest installed. Costs include judge calls.
+
+| Task | Arm | Runs | Mean score | Graders passed | Outcome checks passed | Cost per run (USD) | Input tokens per run | Output tokens per run | Turns per run |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `task-ambiguous` | with plugin | 5 | 1.00 | `any-skill-fired` 4/5 (indicator, not scored)<br>`clarifies` 5/5<br>`no-files` 5/5 | none defined | 0.1028 | 87,892 | 845 | 5.4 |
+| `task-ambiguous` | without plugin | 5 | 1.00 | `clarifies` 5/5<br>`no-files` 5/5 | none defined | 0.0482 | 51,861 | 688 | 3.6 |
+| `task-bugfix` | with plugin | 5 | 0.80 | `any-skill-fired` 5/5 (indicator, not scored)<br>`fix-correct` 3/5<br>`regression-test` 5/5<br>`tests-run` 4/5 | `acceptance` 5/5<br>`regression-test-red-then-green` 5/5 | 0.1262 | 181,974 | 1,525 | 9.6 |
+| `task-bugfix` | without plugin | 5 | 0.33 | `fix-correct` 5/5<br>`regression-test` 0/5<br>`tests-run` 0/5 | `acceptance` 5/5<br>`regression-test-red-then-green` 0/5 | 0.0464 | 52,205 | 426 | 3.0 |
+| `task-cross-module-bug` | with plugin | 5 | 0.80 | `any-skill-fired` 5/5 (indicator, not scored)<br>`regression-test` 5/5<br>`root-cause-fixed` 5/5<br>`root-cause-named` 3/5<br>`tests-run` 3/5 | `acceptance` 5/5<br>`regression-test-red-then-green` 5/5 | 0.1294 | 172,834 | 1,710 | 10.8 |
+| `task-cross-module-bug` | without plugin | 5 | 0.50 | `regression-test` 0/5<br>`root-cause-fixed` 5/5<br>`root-cause-named` 5/5<br>`tests-run` 0/5 | `acceptance` 5/5<br>`regression-test-red-then-green` 0/5 | 0.0622 | 90,278 | 1,182 | 7.6 |
+| `task-failing-ci` | with plugin | 5 | 1.00 | `any-skill-fired` 5/5 (indicator, not scored)<br>`code-fixed` 5/5<br>`no-skip-markers` 5/5<br>`original-assertions-kept` 5/5<br>`tests-run` 5/5 | `original-tests-green` 5/5 | 0.1245 | 181,316 | 1,354 | 11.0 |
+| `task-failing-ci` | without plugin | 5 | 0.95 | `code-fixed` 5/5<br>`no-skip-markers` 5/5<br>`original-assertions-kept` 5/5<br>`tests-run` 4/5 | `original-tests-green` 5/5 | 0.0593 | 99,572 | 908 | 8.0 |
+| `task-feature-fullstack` | with plugin | 5 | 1.00 | `any-skill-fired` 5/5 (indicator, not scored)<br>`api-changed` 5/5<br>`client-changed` 5/5<br>`new-migration` 5/5<br>`old-migration-untouched` 5/5<br>`tests-run` 5/5<br>`tests-written` 5/5 | `acceptance` 5/5<br>`feature-test-red-then-green` 5/5 | 0.1688 | 208,761 | 3,837 | 16.6 |
+| `task-feature-fullstack` | without plugin | 5 | 0.67 | `api-changed` 5/5<br>`client-changed` 5/5<br>`new-migration` 5/5<br>`old-migration-untouched` 5/5<br>`tests-run` 0/5<br>`tests-written` 0/5 | `acceptance` 5/5<br>`feature-test-red-then-green` 0/5 | 0.0881 | 113,854 | 2,719 | 11.0 |
+| `task-feature-multifile` | with plugin | 5 | 1.00 | `any-skill-fired` 5/5 (indicator, not scored)<br>`api-wired` 5/5<br>`service-correct` 5/5<br>`tests-run` 5/5<br>`tests-written` 5/5 | `acceptance` 5/5<br>`feature-test-red-then-green` 5/5 | 0.1710 | 219,363 | 4,033 | 17.4 |
+| `task-feature-multifile` | without plugin | 5 | 0.50 | `api-wired` 5/5<br>`service-correct` 5/5<br>`tests-run` 0/5<br>`tests-written` 0/5 | `acceptance` 5/5<br>`feature-test-red-then-green` 0/5 | 0.0816 | 99,123 | 2,339 | 12.2 |
+| `task-legacy-change` | with plugin | 5 | 1.00 | `any-skill-fired` 5/5 (indicator, not scored)<br>`change-correct` 5/5<br>`tests-run` 5/5<br>`tests-written` 5/5 | `acceptance` 5/5<br>`regression-test-red-then-green` 5/5 | 0.1370 | 186,057 | 2,005 | 10.8 |
+| `task-legacy-change` | without plugin | 5 | 0.33 | `change-correct` 5/5<br>`tests-run` 0/5<br>`tests-written` 0/5 | `acceptance` 5/5<br>`regression-test-red-then-green` 0/5 | 0.0528 | 73,538 | 637 | 4.2 |
+| `task-legacy-refactor` | with plugin | 5 | 0.80 | `any-skill-fired` 5/5 (indicator, not scored)<br>`characterization-tests` 5/5<br>`decomposed` 5/5<br>`readable` 3/5<br>`tests-run` 3/5 | `acceptance` 5/5<br>`characterization-test-green-before-and-after` 5/5 | 0.1745 | 212,997 | 4,548 | 11.4 |
+| `task-legacy-refactor` | without plugin | 5 | 0.50 | `characterization-tests` 0/5<br>`decomposed` 5/5<br>`readable` 5/5<br>`tests-run` 0/5 | `acceptance` 5/5<br>`characterization-test-green-before-and-after` 0/5 | 0.0950 | 100,942 | 3,563 | 6.0 |
+| `task-lesson-recall` | with plugin | 5 | 0.67 | `any-skill-fired` 5/5 (indicator, not scored)<br>`generated-in-sync` 0/5<br>`generator-run` 5/5<br>`lesson-followed` 5/5 | none defined | 0.1379 | 210,666 | 1,892 | 13.4 |
+| `task-lesson-recall` | without plugin | 5 | 0.47 | `generated-in-sync` 4/5<br>`generator-run` 1/5<br>`lesson-followed` 2/5 | none defined | 0.0572 | 78,496 | 905 | 7.6 |
+| `task-review` | with plugin | 5 | 1.00 | `any-skill-fired` 5/5 (indicator, not scored)<br>`defect-n-plus-one` 5/5<br>`defect-sql-injection` 5/5<br>`defect-swallowed-exception` 5/5<br>`findings` 5/5<br>`no-amount-check` 5/5 | none defined | 0.1148 | 89,138 | 1,629 | 6.0 |
+| `task-review` | without plugin | 5 | 1.00 | `defect-n-plus-one` 5/5<br>`defect-sql-injection` 5/5<br>`defect-swallowed-exception` 5/5<br>`findings` 5/5<br>`no-amount-check` 5/5 | none defined | 0.0524 | 52,159 | 926 | 3.8 |
+| `task-risky-migration` | with plugin | 5 | 1.00 | `any-skill-fired` 5/5 (indicator, not scored)<br>`flags-risk` 5/5 | `first-step-keeps-old-version-working` 5/5 | 0.1682 | 158,691 | 4,964 | 11.6 |
+| `task-risky-migration` | without plugin | 5 | 1.00 | `flags-risk` 5/5 | `first-step-keeps-old-version-working` 5/5 | 0.0884 | 87,509 | 3,271 | 6.4 |
+
 <!-- eval-results:end -->
 
 ## Real tasks, earlier hand run (2 runs per arm, before the outcome checks, no cost recorded)
