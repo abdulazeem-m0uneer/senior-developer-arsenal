@@ -173,6 +173,8 @@ def mention_pattern(item):
         return re.compile(rf"(?<!\w){body.rstrip('/') or '/'}(?![\w-])")
     if item.kind == "flag":
         return re.compile(rf"(?<![\w-])--?{re.escape(item.name)}(?![\w-])")
+    if item.kind == "env":  # docs write $NAME, ${NAME} and %NAME% as often as the bare name
+        return re.compile(rf"(?<![\w.-]){re.escape(item.name)}(?![\w-])")
     return re.compile(rf"(?<![\w$.-]){re.escape(item.name)}(?![\w$-])")
 
 

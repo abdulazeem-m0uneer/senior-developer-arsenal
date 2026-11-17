@@ -69,6 +69,15 @@ class DriftTest(DriftCase):
         self.write("README.md", README + "\nUse `--verbose` for more output.\n")
         self.assertEqual(self.drift(), set())
 
+    def test_env_vars_documented_with_a_shell_sigil_count(self):
+        for form in ("$CACHE_DIR_PATH", "${CACHE_DIR_PATH}", "%CACHE_DIR_PATH%", "`CACHE_DIR_PATH`"):
+            with self.subTest(form=form):
+                self.write("cli.py", CLI + '\nCACHE = os.environ.get("CACHE_DIR_PATH")\n')
+                self.write("README.md", README + f"\nSet {form} to move the cache.\n")
+                self.assertEqual(self.drift(), set())
+        self.write("README.md", README + "\nSet CACHE_DIR_PATH_OLD to move the cache.\n")
+        self.assertIn(("undocumented", "env", "CACHE_DIR_PATH"), self.drift())  # a longer name is not a mention
+
     def test_renamed_flag_is_undocumented_and_the_old_one_is_stale(self):
         self.write("cli.py", CLI.replace('"--out"', '"--output"'))
         self.assertEqual(self.drift(), {("undocumented", "flag", "--output"), ("stale", "flag", "--out")})
