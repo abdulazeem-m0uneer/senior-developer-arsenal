@@ -51,7 +51,8 @@ class GuardCase(unittest.TestCase):
         base = {**os.environ, "HANDOFF_SNAPSHOT": str(Path(self.outside.name) / "snap.md"),
                 "LESSONS_EVIDENCE_FILE": str(self.evidence)}  # never the developer's real evidence file
         for name in ("ARSENAL_GUARD", "ARSENAL_GUARD_DESTRUCTIVE", "ARSENAL_GUARD_DEADCODE", "ARSENAL_RUN_LIMITS",
-                     "CLAUDE_PROJECT_DIR", "LESSONS_EVIDENCE", "LESSONS_FILE"):
+                     "ARSENAL_PROFILE", "ARSENAL_GUARD_STOP", "ARSENAL_GUARD_SCOPE", "ARSENAL_LESSON_GUARDS",
+                     "ARSENAL_SUBAGENT_MODEL", "CLAUDE_PROJECT_DIR", "LESSONS_EVIDENCE", "LESSONS_FILE"):
             base.pop(name, None)  # the developer's own session must not leak into the hook under test
         result = subprocess.run([sys.executable, str(SCRIPT), cmd], cwd=cwd or self.dir, input=stdin,
                                 capture_output=True, text=True, env={**base, **(env or {})})

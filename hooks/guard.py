@@ -28,7 +28,9 @@ The Stop gate cannot loop: it does nothing while stop_hook_active is true, and e
 block is written to the state file before it is printed, so the same files and the same failures never
 block twice (an explicit "no test applies" or "nothing learned" answer ends it). ARSENAL_GUARD=off disables
 every gate here; ARSENAL_GUARD_DESTRUCTIVE=allow disables only the destructive-command check and
-ARSENAL_GUARD_DEADCODE=off only the dead-code check, ARSENAL_GUARD_SCOPE=off only the edit-scope lock. A missing or broken optional helper (guard_destructive,
+ARSENAL_GUARD_DEADCODE=off only the dead-code check, ARSENAL_GUARD_SCOPE=off only the edit-scope lock,
+ARSENAL_GUARD_STOP=off only the Stop gate. ARSENAL_PROFILE=minimal|standard|strict sets these switches at once
+(PROFILES); a switch set explicitly wins over the profile. A missing or broken optional helper (guard_destructive,
 guard_limits, guard_lessons) skips only its own check; guard_lessons parses shell with guard_destructive,
 so losing that one costs both. Fails open: outside a git repository, when git fails or times out, without a session id, on any
 exception, and whenever the diff could name work this session did not do: HEAD is no longer a descendant of
@@ -199,8 +201,25 @@ def is_check_command(command):
     return isinstance(command, str) and bool(check_keys(command))
 
 
+# ARSENAL_PROFILE maps onto the per-check switches; an explicitly set switch always wins over its profile.
+PROFILES = {
+    "minimal": {"ARSENAL_GUARD_STOP": "off", "ARSENAL_GUARD_DEADCODE": "off", "ARSENAL_LESSON_GUARDS": "off",
+                "ARSENAL_SUBAGENT_MODEL": "any"},  # the destructive-command gate only
+    "standard": {},
+    "strict": {"ARSENAL_GUARD_DESTRUCTIVE": "deny"},  # a destructive command is denied even where a human approves
+}
+
+
+def setting(name):
+    """The switch's explicit value, else what ARSENAL_PROFILE sets for it (unknown profile: standard), else ''."""
+    value = os.environ.get(name, "").strip().lower()
+    if value:
+        return value
+    return PROFILES.get(os.environ.get("ARSENAL_PROFILE", "").strip().lower(), {}).get(name, "")
+
+
 def switched_off(name="ARSENAL_GUARD", value="off"):
-    return os.environ.get(name, "").strip().lower() == value
+    return setting(name) == value
 
 
 def state_path(data):
@@ -405,11 +424,15 @@ def pre():
         refusal = lesson_refusal(command, cwd)
         if refusal:
             return decide("deny", refusal)
-    if not guard_destructive or switched_off("ARSENAL_GUARD_DESTRUCTIVE", "allow"):
+    destructive_mode = setting("ARSENAL_GUARD_DESTRUCTIVE")
+    if not guard_destructive or destructive_mode == "allow":
         return
     danger = guard_destructive.destructive(command, cwd)
     if not danger:
         return
+    if destructive_mode == "deny":
+        return decide("deny", f"arsenal guard: {danger}. Denied by the strict profile (ARSENAL_PROFILE=strict or "
+                              "ARSENAL_GUARD_DESTRUCTIVE=deny); if it is really needed, ask the user to run it.")
     if data.get("permission_mode") in UNATTENDED_MODES:
         return decide("deny", f"arsenal guard: {danger}. Denied because nobody approves each call in this "
                               "permission mode; if it is really needed, park it for the user.")
@@ -529,7 +552,7 @@ def reason(files, failed, dead=()):
 def stop():
     data = hook.hook_input()
     path = state_path(data)
-    if not path or data.get("stop_hook_active") is True or switched_off():
+    if not path or data.get("stop_hook_active") is True or switched_off() or switched_off("ARSENAL_GUARD_STOP"):
         return
     if run_limit(data, hook.working_dir(data), count=False)[1]:
         return  # the run was told to stop: asking for more work now would contradict the limit
