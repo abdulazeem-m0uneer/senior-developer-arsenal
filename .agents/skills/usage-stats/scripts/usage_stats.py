@@ -28,6 +28,7 @@ import os
 import re
 import secrets
 import statistics
+import subprocess
 import sys
 import tempfile
 from collections import Counter
@@ -392,7 +393,8 @@ def locked(store):
     except ImportError:
         yield
         return
-    with open(store.with_name(store.name + ".lock"), "a", encoding="utf-8") as handle:
+    flags = os.O_WRONLY | os.O_CREAT | os.O_APPEND | getattr(os, "O_NOFOLLOW", 0)  # never through a planted link
+    with os.fdopen(os.open(store.with_name(store.name + ".lock"), flags, 0o600), "a", encoding="utf-8") as handle:
         fcntl.flock(handle, fcntl.LOCK_EX)
         try:
             yield
@@ -443,7 +445,9 @@ def own_version():
 
 
 def record_hook(stdin):
-    """SessionEnd: summarise this session's transcript into the store. Fails open: prints nothing, returns 0."""
+    """SessionEnd: hand this session's transcript to a detached process and return at once. Claude Code gives a
+    SessionEnd hook little time on exit, and a long transcript takes seconds to read; the detached process outlives
+    the hook. ARSENAL_USAGE_SYNC=1 records inline instead. Fails open: prints nothing, returns 0."""
     if os.environ.get("ARSENAL_USAGE", "").strip().lower() == "off":
         return 0
     try:
@@ -451,6 +455,20 @@ def record_hook(stdin):
         transcript = data.get("transcript_path") if isinstance(data, dict) else None
         if not isinstance(transcript, str) or not transcript:
             return 0
+        if os.environ.get("ARSENAL_USAGE_SYNC", "").strip() == "1":
+            return record_transcript(transcript)
+        detach = {"creationflags": 0x00000008 | 0x00000200} if os.name == "nt" else {"start_new_session": True}
+        subprocess.Popen([sys.executable, str(Path(__file__).resolve()), "record", "--transcript", transcript],
+                         stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                         close_fds=True, **detach)
+    except Exception:  # a hook must never break the session
+        pass
+    return 0
+
+
+def record_transcript(transcript):
+    """Summarise one transcript into the store (the detached half of record_hook). Fails open, returns 0."""
+    try:
         store = store_path()
         record = summarize(Path(transcript), machine_salt(store), active=True)
         if record is None:
@@ -651,7 +669,8 @@ def update_readme(text, block):
 def main(argv=None, stdin=None, today=None):
     parser = argparse.ArgumentParser(description="Local usage statistics of the arsenal.")
     commands = parser.add_subparsers(dest="command", required=True)
-    commands.add_parser("record", help="SessionEnd hook: hook JSON on stdin")
+    record = commands.add_parser("record", help="SessionEnd hook: hook JSON on stdin")
+    record.add_argument("--transcript", help="record this transcript now (what the hook's detached process runs)")
     fill = commands.add_parser("backfill", help="summarise every transcript under --dir")
     fill.add_argument("--dir", default=str(Path.home() / ".claude" / "projects"))
     report = commands.add_parser("report", help="print the numbers")
@@ -672,7 +691,7 @@ def main(argv=None, stdin=None, today=None):
     except SystemExit as stop:
         return 0 if stop.code == 0 else 2
     if options.command == "record":
-        return record_hook(stdin or sys.stdin)
+        return record_transcript(options.transcript) if options.transcript else record_hook(stdin or sys.stdin)
     if options.command == "diagnose":
         import diagnose  # here, not at the top: diagnose imports this module
         return diagnose.run(options.transcript, options.session, options.last, options.dir, options.json)

@@ -6,6 +6,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from datetime import date
 from pathlib import Path
@@ -313,7 +314,7 @@ class StoreTest(Case):
 
 class HookTest(Case):
     def run_hook(self, payload, env=None):
-        environment = {**os.environ, **(env or {})}
+        environment = {**os.environ, "ARSENAL_USAGE_SYNC": "1", **(env or {})}
         done = subprocess.run([sys.executable, str(SCRIPT), "record"], input=payload, capture_output=True,
                               text=True, env=environment, timeout=60)
         return done
@@ -325,6 +326,30 @@ class HookTest(Case):
         records, _ = usage_stats.read_store(self.store)
         self.assertEqual(records[SESSION]["skills"], {"investigate": 1})
         self.assertRegex(records[SESSION]["arsenal_version"], r"^\d+\.\d+\.\d+$")
+
+    def test_the_hook_returns_at_once_and_a_detached_process_records(self):
+        path = self.transcript(line("user", "hi"), use("t1", "Skill", skill="arsenal:investigate"))
+        started = time.monotonic()
+        done = self.run_hook(json.dumps({"session_id": SESSION, "transcript_path": str(path)}),
+                             env={"ARSENAL_USAGE_SYNC": ""})
+        self.assertEqual((done.returncode, done.stdout, done.stderr), (0, "", ""))
+        self.assertLess(time.monotonic() - started, 5)
+        deadline = time.monotonic() + 30
+        while time.monotonic() < deadline and SESSION not in usage_stats.read_store(self.store)[0]:
+            time.sleep(0.1)  # the detached process finishes after the hook has returned
+        self.assertEqual(usage_stats.read_store(self.store)[0][SESSION]["skills"], {"investigate": 1})
+
+    def test_the_hook_itself_only_spawns_the_detached_recorder(self):
+        path = self.transcript(line("user", "hi"))
+        payload = io.StringIO(json.dumps({"session_id": SESSION, "transcript_path": str(path)}))
+        with mock.patch.dict(os.environ, {"ARSENAL_USAGE_SYNC": ""}), \
+                mock.patch.object(usage_stats.subprocess, "Popen") as popen:
+            self.assertEqual(usage_stats.record_hook(payload), 0)
+        args, kwargs = popen.call_args
+        self.assertEqual(args[0][-3:], ["record", "--transcript", str(path)])
+        self.assertTrue(kwargs.get("start_new_session") or kwargs.get("creationflags"))
+        self.assertEqual(kwargs["stdout"], usage_stats.subprocess.DEVNULL)
+        self.assertFalse(self.store.exists())  # nothing was read or written inside the hook
 
     def test_record_fails_open_on_bad_input(self):
         for payload in ("", "not json", "[]", json.dumps({"transcript_path": 5}),

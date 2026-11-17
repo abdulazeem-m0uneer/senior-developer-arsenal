@@ -25,7 +25,7 @@ Activate this skill when:
 
 ### Step 1: Make Sure There Is Data
 1. Resolve the script path relative to the directory that contains this file: `<skill-dir>/scripts/usage_stats.py`.
-2. With the Claude Code plugin, a `SessionEnd` hook (`usage_stats.py record`) adds each finished session to `~/.agents/arsenal-usage.jsonl` (`$ARSENAL_USAGE_FILE`). `ARSENAL_USAGE=off` stops that hook; it does not stop an explicit backfill.
+2. With the Claude Code plugin, a `SessionEnd` hook (`usage_stats.py record`) adds each finished session to `~/.agents/arsenal-usage.jsonl` (`$ARSENAL_USAGE_FILE`). `ARSENAL_USAGE=off` stops that hook; it does not stop an explicit backfill. The hook only starts a detached `usage_stats.py record --transcript <path>` and returns, so a short SessionEnd deadline never cuts it off; the same command records one transcript by hand.
 3. First run, or sessions from before the hook: `python3 <skill-dir>/scripts/usage_stats.py backfill` reads every transcript under `~/.claude/projects` (`--dir` for another folder). It can run any number of times: a session is replaced, never added twice.
 
 ### Step 2: Produce the Report
