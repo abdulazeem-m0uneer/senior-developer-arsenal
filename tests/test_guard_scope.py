@@ -111,6 +111,16 @@ class PreHookTest(ScopeCase):
         self.assertIn("arsenal scope lock", decision["permissionDecisionReason"])
         self.assertIsNone(self.pre("Edit", {"file_path": str(self.root / "src/billing/x.py")}))
 
+    def test_the_report_write_a_reached_run_limit_allows_is_not_taken_back_by_the_lock(self):
+        self.lock({"allow": ["src/billing"]})
+        (self.root / ".claude" / "arsenal-run-limits.json").write_text(json.dumps({"max_tool_calls": 1}))
+        self.assertIsNone(self.pre("Read", {"file_path": str(self.root / "src/billing/x.py")}))  # the one call
+        handoff = self.pre("Write", {"file_path": str(self.root / "HANDOFF.md")})
+        self.assertIsNone(handoff)  # the run-limit message promises that a .md report still works
+        code = self.pre("Write", {"file_path": str(self.root / "src/auth/x.py")})
+        self.assertEqual(code["permissionDecision"], "deny")
+        self.assertIn("run limit", code["permissionDecisionReason"])
+
     def test_switches_turn_the_lock_off(self):
         self.lock({"allow": ["src/billing"]})
         path = {"file_path": str(self.root / "src/auth/x.py")}

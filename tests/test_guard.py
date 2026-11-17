@@ -316,9 +316,45 @@ class EvidenceTest(GuardCase):
         self.failed_command(f"curl -H 'Authorization: token {token}' https://api.example.com", error=f"Exit code 22 {token}")
         self.lesson(command=self.ADD + f" --check 'TOKEN={token}'")
         [entry] = self.entries()
-        self.assertEqual(entry["failures"][0], {"command": guard.WITHHELD, "error": guard.WITHHELD})
+        self.assertIn(entry["failures"][0]["command"], (guard.WITHHELD, "curl -H 'Authorization: token ***' "
+                                                                         "https://api.example.com"))
+        self.assertEqual(entry["failures"][0]["error"], guard.WITHHELD)
         self.assertEqual(entry["lesson_command"], guard.WITHHELD)
         self.assertNotIn(token, self.evidence.read_text())
+
+    CREDENTIAL_COMMANDS = {  # command -> the secret value that must never be stored (found by an independent review)
+        "mysql -u root -pS3cretPass1 -e 'select 1'": "S3cretPass1",
+        "curl -H 'Authorization: Bearer abcDEF123' https://x.io/a": "abcDEF123",
+        "psql postgres://app:pw0rd@db/prod -c x": "pw0rd",
+        "sshpass -p mypassw0rd ssh h": "mypassw0rd",
+        "curl -u admin:Pa55word https://x": "Pa55word",
+        "docker login -u me -p Tr0ub4dor registry": "Tr0ub4dor",
+        "htpasswd -b f user secret99": "secret99",
+        "npm publish --token npm_abcdef123": "npm_abcdef123",
+        "DB_PASSWORD=hunter22 pytest -q": "hunter22",
+    }
+
+    def test_credentials_passed_as_arguments_never_reach_a_file(self):
+        self.start()
+        for command, secret in self.CREDENTIAL_COMMANDS.items():
+            with self.subTest(command=command):
+                self.failed_command(command + " && pytest -q")
+                self.lesson()
+                self.assertNotIn(secret, self.evidence.read_text())
+                self.assertNotIn(secret, self.state.read_text())
+                self.assertNotIn(secret, self.stop())  # the Stop reason quotes the last failed command
+
+    def test_redaction_leaves_ordinary_commands_alone(self):
+        for command in ("mkdir -p build/out", "git log -p -3", "docker run -p 8080:80 img", "pytest -q tests/a.py",
+                        "git clone https://github.com/a/b.git", "curl -u admin https://x", "ls -la -p"):
+            with self.subTest(command=command):
+                self.assertEqual(guard.redact(command), command)
+
+    def test_the_evidence_file_stops_growing_at_its_cap(self):
+        self.evidence.write_text("x" * (guard.EVIDENCE_MAX_BYTES + 1))
+        self.failed_command("git push upstream main")
+        self.lesson()
+        self.assertEqual(self.evidence.stat().st_size, guard.EVIDENCE_MAX_BYTES + 1)
 
     def test_interrupted_commands_and_the_opt_out_store_nothing(self):
         self.bash("sleep 100", failed=True, error="Interrupted", is_interrupt=True)

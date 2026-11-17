@@ -46,8 +46,9 @@ by a pipe, ||, ;, & or another command, or run with --version or --help, is not 
 State: one JSON line per event in <snapshot file>.guard.jsonl, in the OS temp dir (see snapshot.py).
 Time budget: baseline does at most four git reads and stop at most five, at 2 s each, plus the dead-code scan
 (its git calls and scan share one 1.5 s budget); track and pre run no
-subprocess. pre runs before every tool call: measured at 51 to 53 ms a call on a busy Linux machine with
-Python 3.14, where an empty interpreter takes 13 ms; the rest is importing and compiling, not the checks.
+subprocess. pre runs before every tool call: measured at 64 to 66 ms a call (median of 25, Read and Bash payloads)
+on a busy Linux machine with Python 3.14, where an empty interpreter takes 13 ms; the rest is importing and compiling,
+not the checks. The scope lock and the cost guard load their modules only for the tools they judge.
 """
 import importlib
 import json
@@ -89,6 +90,23 @@ ERROR_CHARS = 400
 FAILED_COMMAND_CHARS = 300
 LESSON_COMMAND_CHARS = 1200  # the add command carries the lesson's own text: pairs stay usable without an id
 WITHHELD = "[withheld: looks like a secret]"
+MASK = "***"
+EVIDENCE_MAX_BYTES = 5 * 1024 * 1024  # the evidence file stops growing here; it is training data, not a log
+# Secrets that command lines carry as arguments: only the value is masked, so the command stays readable evidence.
+CLI_SECRETS = [
+    re.compile(r"(?i)(--(?:password|passwd|pass|token|secret|api[-_]?key|access[-_]?key|client[-_]?secret|auth)[=\s]+)"
+               r"('[^']*'|\"[^\"]*\"|\S+)"),
+    re.compile(r"(\bsshpass\s+-p\s*)('[^']*'|\"[^\"]*\"|\S+)"),
+    re.compile(r"(\b(?:docker|podman|helm|oras)\s+(?:\S+\s+)*?login\b[^;&|\n]*?\s-p\s+)('[^']*'|\"[^\"]*\"|\S+)"),
+    re.compile(r"(\bhtpasswd\s+(?:-\w+\s+)*-\w*b\w*\s+(?:-\w+\s+)*\S+\s+\S+\s+)('[^']*'|\"[^\"]*\"|\S+)"),
+    re.compile(r"((?<!\S)-p)([^\s\-'\"][^\s'\"]*)"),  # mysql -pSECRET (a bare -p or `-p dir` is untouched)
+    re.compile(r"((?<!\S)-u\s+['\"]?[^\s:'\"]+:)([^\s'\"]+)"),  # curl -u user:PASS
+    re.compile(r"(?i)(\b(?:authorization|x-api-key|api-key|private-token)\s*[:=]\s*(?:bearer\s+|basic\s+|token\s+)?)"
+               r"([^\s'\"]+)"),
+    re.compile(r"(?i)(\bbearer\s+)([A-Za-z0-9._~+/=-]{6,})"),
+    re.compile(r"(://[^/\s:@'\"]+:)([^@\s/'\"]+)(?=@)"),  # scheme://user:PASS@host
+    re.compile(r"(?i)(\b\w*(?:password|passwd|secret|token|api_?key|access_?key)\w*=)('[^']*'|\"[^\"]*\"|\S+)"),
+]
 # What lessons.py prints for the lesson it wrote or counted: "added L012", "duplicate of G003: ...", "L012 hits:3".
 LESSON_ID = re.compile(r"\b(?:added|duplicate of) ([LG]\d{3,})\b|^([LG]\d{3,}) hits:\d+", re.M)
 LEDGER_IN_COMMAND = re.compile(r"(?:LESSONS_FILE=|--file[=\s])(\"[^\"]+\"|'[^']+'|[^\s;&|]+)")
@@ -316,6 +334,8 @@ def baseline():
 
 
 def track():
+    if switched_off():
+        return  # ARSENAL_GUARD=off records nothing either
     data = hook.hook_input()
     path = state_path(data)
     tool_input = data.get("tool_input")
@@ -328,7 +348,7 @@ def track():
             record(path, {"event": "error", "command": shown(command, FAILED_COMMAND_CHARS),
                           "error": shown(str(data.get("error") or ""), ERROR_CHARS)})
             if checks:
-                record(path, {"event": "fail", "command": " ".join(command.split())[:COMMAND_CHARS], "checks": checks})
+                record(path, {"event": "fail", "command": shown(command, COMMAND_CHARS), "checks": checks})
         return
     if LESSON_COMMAND.search(bounded(command)):  # PostToolUse: the command exited 0
         before = load(path)
@@ -342,9 +362,17 @@ def track():
         record(path, {"event": "pass", "checks": checks})
 
 
+def redact(text):
+    """The text with the values of command-line credentials masked (flags, headers, URLs, NAME=value)."""
+    for pattern in CLI_SECRETS:
+        text = pattern.sub(lambda match: match.group(1) + MASK, text)
+    return text
+
+
 def shown(text, limit):
-    """One line of at most `limit` characters, or a placeholder when it looks like it holds a secret."""
-    text = " ".join(text.split())[:limit]
+    """One line of at most `limit` characters with command-line credentials masked, or a placeholder when it still
+    looks like it holds a secret. Redaction runs before the cut, so a clipped value cannot escape it."""
+    text = redact(" ".join(bounded(text).split()))[:limit]
     try:
         from ledger_store import find_secret  # imported here: `pre` runs before every tool call and never needs it
     except ImportError:
@@ -382,6 +410,8 @@ def save_evidence(data, command, events):
              "lesson_command": shown(command, LESSON_COMMAND_CHARS), "failures": failures[-EVIDENCE_FAILURES:]}
     target = evidence_path()
     target.parent.mkdir(parents=True, exist_ok=True)
+    if target.exists() and target.stat().st_size > EVIDENCE_MAX_BYTES:
+        return
     record(target, entry)
 
 
@@ -391,17 +421,19 @@ def decide(decision, text):
 
 
 def run_limit(data, cwd, count):
-    """(limits file, why the run must stop) for this session; ('', '') without a limits file. count records the call."""
+    """(limits file, why the run must stop, report write) for this session; ('', '', False) without a limits file.
+    report write: the limit is reached and this call is the handoff or report write it still allows. count records
+    the call."""
     limits_file = guard_limits.find(cwd) if guard_limits else ""
     if not limits_file:
-        return "", ""
+        return "", "", False
     path = state_path(data)
     why, damaged = guard_limits.status(limits_file, load(path) if path else [], time.time())
     if why and guard_limits.is_report_write(data, limits_file, damaged):
-        return limits_file, ""
+        return limits_file, "", True
     if count and path and not why:
         record(path, {"event": "call", "time": int(time.time())})
-    return limits_file, why
+    return limits_file, why, False
 
 
 def pre():
@@ -409,7 +441,9 @@ def pre():
     if switched_off():
         return
     cwd = hook.working_dir(data)
-    limits_file, why = run_limit(data, cwd, count=True)
+    limits_file, why, report_write = run_limit(data, cwd, count=True)
+    if report_write:
+        return  # the limit promises this write; no other gate may take it back
     if why:
         return decide("deny", f"arsenal run limit ({limits_file}): {why}. Start nothing new and make no further tool "
                               "calls: write the handoff or end report (Write or Edit of a .md file still works) and "
