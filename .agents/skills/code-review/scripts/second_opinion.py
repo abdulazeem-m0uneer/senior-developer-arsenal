@@ -7,8 +7,10 @@ Usage:
 --diff reviews the working tree against <ref> (`git diff <ref>`); --plan reviews a plan or design document.
 Before anything is sent: diff blocks of files that look like secrets (.env, *.pem, *.key, id_rsa, names with a
 key, secret or credential segment) are dropped and named on stderr, every remaining line that looks like a
-credential (lessons-learned's ledger_store.find_secret) is replaced by a redaction marker, and material over
---max-bytes (default 200,000) is refused, never truncated. --dry-run prints the prompt and sends nothing.
+credential (lessons-learned's ledger_store.find_secret) is replaced by a redaction marker, a line over 2,000
+characters (minified or generated, or one long prose paragraph of a plan: split it to have it reviewed) is replaced
+by a marker unread, and a ref starting with '-' is refused. Material over --max-bytes (default 200,000) is refused
+before any of that, never truncated. --dry-run prints the prompt and sends nothing.
 CLIs, run non-interactively in read-only mode with the prompt on stdin:
   codex   codex exec --sandbox read-only --skip-git-repo-check --color never -
   gemini  gemini -p <instruction>   (never --yolo: the CLI cannot run edit or shell tools unattended)

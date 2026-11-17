@@ -90,7 +90,7 @@ So the Claude Code plugin now records the pairs as they happen. When `lessons.py
 | Path | `$LESSONS_EVIDENCE_FILE`, default `~/.agents/lessons-evidence.jsonl` (mode 600, never inside a repository by default) |
 | When | Only after a failed Bash command since the previous lesson in the session; at most the last three failures |
 | Size | Failed command 300 characters, error 400, the lesson command 1,200 (it holds the lesson's own text, so a pair stays usable when the id could not be read) |
-| Privacy | A field that looks like a secret is replaced by `[withheld: looks like a secret]`; the file stays on the machine |
+| Privacy | Credential values in a command are masked first (`--password`/`--token` style flags, `mysql -pX`, `sshpass -p`, `docker login -p`, `curl -u user:pass`, `redis-cli -a`, `openssl -k`, `vault login`, `Authorization`, `Bearer` and `Cookie` headers, `user:pass@` URLs, `*_PASSWORD=`/`*_TOKEN=` assignments); a field that still looks like a secret is replaced by `[withheld: looks like a secret]`. The file stops growing at 5 MB and stays on the machine |
 | Context cost | None: the hook prints nothing and runs no subprocess |
 | Off switch | `LESSONS_EVIDENCE=off` (or `ARSENAL_GUARD=off` for every guard) |
 
