@@ -19,6 +19,8 @@ import os
 import subprocess
 import sys
 
+import ghcli
+
 EXIT_OK, EXIT_USAGE, EXIT_UNSAFE, EXIT_NOTHING, EXIT_GH = 0, 2, 3, 4, 5
 GIT_TIMEOUT = 15
 GH_TIMEOUT = 30
@@ -103,26 +105,14 @@ def in_progress(repo):
 def gh_pr(repo, branch, timeout):
     """The open pull request of the branch as a dict, None when there is none; Failure(EXIT_GH) when unknown."""
     try:
-        out = subprocess.run(["gh", "pr", "view", branch, "--json", "number,url,state,isDraft,baseRefName"],
-                             cwd=repo, capture_output=True, text=True, timeout=timeout)
-    except FileNotFoundError as error:
-        raise Failure(EXIT_GH, "gh is not installed: install it and run `gh auth login`") from error
-    except subprocess.TimeoutExpired as error:
-        raise Failure(EXIT_GH, f"gh pr view did not answer within {timeout}s") from error
-    except OSError as error:
-        raise Failure(EXIT_GH, f"gh: {error}") from error
-    if out.returncode == 0:
-        try:
-            pr = json.loads(out.stdout)
-        except ValueError as error:
-            raise Failure(EXIT_GH, "gh pr view returned unreadable output") from error
-        return pr if isinstance(pr, dict) and pr.get("state") == "OPEN" else None
-    message = out.stderr.strip()
-    if "no pull requests found" in message.lower():
-        return None
-    if "auth" in message.lower() or "login" in message.lower():
-        raise Failure(EXIT_GH, "gh is not authenticated: run `gh auth login`")
-    raise Failure(EXIT_GH, f"gh pr view failed: {message or out.returncode}")
+        pr = ghcli.run_json(["pr", "view", branch, "--json", "number,url,state,isDraft,baseRefName"], repo, timeout)
+    except ghcli.GhUnavailable as error:
+        raise Failure(EXIT_GH, str(error)) from error
+    except ghcli.GhFailed as error:
+        if "no pull requests found" in str(error).lower():
+            return None
+        raise Failure(EXIT_GH, f"gh pr view failed: {error}") from error
+    return pr if isinstance(pr, dict) and pr.get("state") == "OPEN" else None
 
 
 def inspect(repo, base=None, gh_timeout=GH_TIMEOUT):
