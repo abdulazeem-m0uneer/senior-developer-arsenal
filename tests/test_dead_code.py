@@ -359,6 +359,10 @@ class ReviewRegressionTest(Repo):
             "hooks.py": "class Cmd:\n    def setUp(self):\n        pass\n    def forward(self, x):\n        return x\n"},
             kinds=("unreferenced",))
 
+    def test_pytest_and_unittest_hooks_are_called_by_their_framework(self):
+        self.assert_clean({"svc.py": "def pytest_configure(config):\n    pass\ndef setup_module(module):\n    pass\n"
+                                     "def setUpModule():\n    pass\n"}, kinds=("unreferenced",))
+
     def test_attributes_and_multi_line_decorators_mark_a_definition_as_registered(self):
         self.assert_clean({
             "a.rs": "#[test]\nfn parses_input() {}\n#[tokio::main]\nasync fn entry_point() {}\n",

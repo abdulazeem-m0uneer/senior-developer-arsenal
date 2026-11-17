@@ -246,9 +246,14 @@ def any_definition(text):
     return None
 
 
+FRAMEWORK_HOOKS = frozenset("setup_module teardown_module setup_function teardown_function setup_class teardown_class "
+                            "setup_method teardown_method setUpModule tearDownModule".split())
+
+
 def skipped_name(name):
-    return (len(name) <= 3 or name in ("main", "Main") or name.startswith(("test", "Test"))
-            or name.startswith("__") and name.endswith("__"))
+    """Names a framework calls by convention: entry points, test runners' hooks and pytest plugin hooks."""
+    return (len(name) <= 3 or name in ("main", "Main") or name in FRAMEWORK_HOOKS
+            or name.startswith(("test", "Test", "pytest_")) or name.startswith("__") and name.endswith("__"))
 
 
 def annotated(lines, number):
