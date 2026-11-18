@@ -569,7 +569,7 @@ def lesson_refusal(command, cwd, data=None):
         path = state_path(data) if data else None
         return {"red": red_checks(load(path)) if path else set(), "keys": set(check_keys(command))}
     try:
-        hit = guard_lessons.judge(command, cwd, session)
+        hit = guard_lessons.judge(command, cwd, session, is_check_command)
     except ImportError as error:  # the secret rule's helper is missing: a broken install must not pass the command
         return f"arsenal lesson guards cannot judge this command ({error}); reinstall the plugin."
     if not hit:

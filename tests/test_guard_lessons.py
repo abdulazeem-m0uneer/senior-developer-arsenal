@@ -1,5 +1,6 @@
 """Tests for the lesson-pattern guard (hooks/guard_lessons.py), its hit log, and its place in guard.py pre."""
 import json
+import re
 import os
 import subprocess
 import sys
@@ -58,6 +59,64 @@ class BuiltInRuleTests(RegistryCase):
             self.assertEqual(self.rule(command), rule, command)
         for command in passes:
             self.assertIsNone(self.rule(command), command)
+
+    def pipe(self, command):
+        is_check = lambda text: bool(re.search(r"\b(?:npm test|pytest|make test|pnpm lint|gh pr checks)\b", text))
+        hit = guard_lessons.judge(command, str(self.project), is_check=is_check)
+        return hit.rule if hit else None
+
+    def test_pipe_exit_refuses_acting_on_a_filtered_check(self):
+        for command in ("./gate.sh | tail -n 2 && node flow", "npm test | grep ok && deploy",
+                        "pytest | tee out.log || exit 1", "if make test | grep -q PASS; then x; fi",
+                        "pnpm lint | tail -5; echo rc=$?", "pnpm lint | tail -5\n[ $? -eq 0 ] && ok",
+                        "while ./wait.sh | grep -q busy; do sleep 1; done", "! npm test | grep FAIL",
+                        "bash run.sh 2>&1 | tail -20 && git push", "cd app && npm test | tail && deploy",
+                        "( pytest | tail ) && deploy", "gh pr checks 7 | grep -q pass && merge",
+                        "set +o pipefail; npm test | tail && x", "python3 tools/gate.py | sort | head -3 && x",
+                        "npm test | tail &&\nnext", "npm test | tail\n\necho $?", "npm test | tail;\necho rc=$?",
+                        "npm test |\n tail && x", "bash -c 'npm test | tail && x'", "eval 'npm test | tail && x'",
+                        "{ npm test | tail; } && x", "npm test |& tail && x", "until npm test | grep -q ok; do :; done",
+                        "if a; then :; elif npm test | tail; then :; fi", "npm test | tail & echo $?",
+                        "echo PIPESTATUS; npm test | tail && x", "npm test | tail && set -o pipefail",
+                        "bash -c 'set -o pipefail'; npm test | tail && x", "case $1 in t) npm test | tail && x;; esac",
+                        "f() { npm test | tail && x; }", "x=$(npm test | tail) && next",
+                        "npm test | tail; [ ${?} -eq 0 ] && ok"):
+            self.assertEqual(self.pipe(command), "pipe-exit", command)
+
+    def test_pipe_exit_passes_pipefail_pipestatus_files_and_plain_pipes(self):
+        for command in ("set -o pipefail; npm test | tail && x", "set -euo pipefail; npm test | tail && x",
+                        "set -eo pipefail\npytest | tail -3 || exit 1", "npm test | tail; echo ${PIPESTATUS[0]}",
+                        "npm test > out.txt 2>&1; echo rc=$?", "git branch | grep -q main && echo yes",
+                        "cat f | grep x && echo y", "npm test | tail -5", "npm test | tail -5; ls",
+                        'echo "npm test | tail && x"', "npm test && echo ok | tail", "echo data | pytest && x",
+                        "npm test | tail -5; echo done", "pytest -q 2>&1 | tail -3",
+                        "npm test | tail && echo ${PIPESTATUS[0]}", "echo pipefail; ls",
+                        "cat <<EOF\nnpm test | tail && x\nEOF", "npm test | tail; echo hi",
+                        "set -o pipefail\nnpm test | tail && x", "( cd a; npm test ) | tail",
+                        "bash -c 'set -o pipefail; npm test | tail && x'", "echo { a b } && ls"):
+            self.assertIsNone(self.pipe(command), command)
+
+    def test_pipe_exit_finds_the_command_position_with_the_hooks_classifier(self):
+        import guard  # the real classifier: a check counts only where a command starts
+        for command, refused in (("case $1 in t) npm test | tail && x;; esac", True),
+                                 ("f() { npm test | tail && x; }", True),
+                                 ("set -o pipefail; set +o pipefail; npm test | tail && x", True),
+                                 ("echo case in npm test | tail && x", False)):
+            hit = guard_lessons.judge(command, str(self.project), is_check=guard.is_check_command)
+            self.assertEqual(bool(hit), refused, command)
+
+    def test_pipe_exit_without_a_classifier_still_sees_local_scripts(self):
+        hit = guard_lessons.judge("./gate.sh | tail && next", str(self.project))
+        self.assertEqual(hit.rule, "pipe-exit")
+        self.assertIsNone(guard_lessons.judge("npm test | tail && next", str(self.project)))  # no classifier
+
+    def test_pipe_exit_can_be_switched_off_and_tied_to_a_lesson(self):
+        self.registry([{"rule": "pipe-exit", "lesson": "G004"}])
+        self.assertEqual(guard_lessons.judge("./gate.sh | tail && x", str(self.project)).lesson, "G004")
+        self.registry([{"rule": "pipe-exit", "enabled": False}])
+        self.assertIsNone(self.pipe("./gate.sh | tail && x"))
+        self.registry([{"rule": "pipe-exit", "reason": "Read the gate log first."}])
+        self.assertEqual(guard_lessons.judge("./gate.sh | tail && x", str(self.project)).reason, "Read the gate log first.")
 
     def test_pgrep_wait_loop(self):
         self.assert_rule("pgrep-wait-loop", [
@@ -407,6 +466,14 @@ class HookTests(RegistryCase):
         self.assertEqual(out["permissionDecision"], "deny")
         self.assertIn("G021 (secret-in-message)", out["permissionDecisionReason"])
         self.assertNotIn(FAKE_VALUE, out["permissionDecisionReason"] + self.hits.read_text())
+
+    def test_pipe_exit_uses_the_hooks_own_check_classifier(self):
+        self.registry([{"rule": "pipe-exit", "lesson": "G004"}])
+        out = self.pre("npm test 2>&1 | tail -n 2 && git push")
+        self.assertEqual(out["permissionDecision"], "deny")
+        self.assertIn("G004 (pipe-exit)", out["permissionDecisionReason"])
+        self.assertIn("set -o pipefail", out["permissionDecisionReason"])
+        self.assertIsNone(self.pre("set -o pipefail; npm test 2>&1 | tail -n 2 && git push"))
 
     def test_destructive_commands_are_still_asked_about(self):
         self.assertEqual(self.pre("git reset --hard")["permissionDecision"], "ask")

@@ -33,6 +33,10 @@ Built-in rules:
                      command named in `programs`) run with --help, or with -h as its only argument: it may not parse
                      the flag and run for real.
   secret-in-message  a secret-looking value in the arguments of a command named in `programs` (none by default).
+  pipe-exit          a check (the Stop gate's test, build, lint or CI classifier) or a local script piped into a
+                     later command, whose exit status is then acted on (&&, ||, if/while/until/!, or $? read by
+                     the next command) without set -o pipefail or ${PIPESTATUS[...]}: the status is the last
+                     command's, so a failed check reads as success.
   rerun-after-red    off until a registry entry names it. A test, build, lint or check command (the same check as the
                      Stop gate counts: tool and subcommand, flags and wrappers ignored) or a `git push` (same
                      operands) that failed last in this session and has no later pass, run again before a cause note
@@ -75,6 +79,9 @@ BUILT_IN_REASONS = {
     "help-probe": "Do not probe a local script with --help or -h: it may not parse the flag and run for real. Read "
                   "its usage header or source first.",
     "secret-in-message": "A message must not carry a secret value. Name the file that holds the secret instead.",
+    "pipe-exit": "A pipeline's exit status is its last command's, so `check | tail && next` goes on even when the "
+                 "check failed. Use `set -o pipefail;` first, read ${PIPESTATUS[0]}, or run `check > out.log 2>&1; "
+                 "echo rc=$?` and read the file.",
     "rerun-after-red": "This check or push failed and was not read. Read the failing lines, state the cause, record it "
                        'with `python3 {lessons} cause "<failing assertion or check>: <cause or unknown>"`, then rerun.',
 }
@@ -266,7 +273,9 @@ def secret_in_message(cmd, entry):
 
 
 BUILT_IN = {"pgrep-wait-loop": pgrep_wait_loop, "hook-bypass": hook_bypass, "help-probe": help_probe,
-            "secret-in-message": secret_in_message, "rerun-after-red": rerun_after_red}
+            "secret-in-message": secret_in_message, "rerun-after-red": rerun_after_red,
+            "pipe-exit": lambda cmd, entry: False}  # judged on the whole command: see pipe_exit
+WHOLE_COMMAND = frozenset(("pipe-exit",))
 
 
 def custom_match(cmd, entry):
@@ -410,13 +419,139 @@ def rules(cwd):
             if entry.get("enabled", True)] + custom
 
 
-def judge(command, cwd, session=None):
+CONDITION_WORDS = frozenset(("if", "elif", "while", "until", "!"))
+GROUP_WORDS = frozenset(("then", "do", "else", "{", "}"))
+CHAIN_OPERATORS = frozenset(("&&", "||"))
+LIST_ENDS = frozenset((";", "\n", "&", ";;"))
+OPERATOR = re.compile(r"\|\||&&|\|&|;;|\||;|&|\(|\)|\n")
+STATUS_READ = re.compile(r"\$(?:\?|\{\?\})")
+PIPESTATUS_READ = re.compile(r"\$\{?PIPESTATUS\b")
+
+
+def operators(word):
+    """The shell operators a token holds ('&&\n' is && then a newline), or None for an ordinary word."""
+    if word.strip(" \t") and set(word) <= set("|&;()\n \t"):
+        return OPERATOR.findall(word)
+    return None
+
+
+def list_items(command):
+    """The command as an ordered list of items, each {"stages": [word lists], "op": the operator after it,
+    "condition": the item is the condition of if/elif/while/until/!}. An item with no stages is an empty list entry,
+    such as the `&&` after a `{ ...; }` group or a `( ... )` subshell."""
+    items, stages, current, condition, depth = [], [], [], False, 0
+
+    def close(op):
+        nonlocal stages, current, condition
+        if current:
+            stages.append(current)
+        items.append({"stages": stages, "op": op, "condition": condition})
+        stages, current, condition = [], [], False
+
+    for word in shell.tokens(shell.split_heredocs(command)[0]) + [";"]:
+        ops = operators(word)
+        if ops is None:
+            if word in ("{", "}") and not stages:
+                current = []  # a group or function body opens or closes: what came before is not this command
+                continue
+            if not stages and not current and word in CONDITION_WORDS:
+                condition = True
+            elif not stages and not current and word in GROUP_WORDS:
+                condition = False
+            else:
+                current.append(word)
+            continue
+        for op in ops:
+            if op in ("|", "|&"):
+                if current:
+                    stages.append(current)
+                current = []
+            elif op == "\n" and (stages and not current):
+                continue  # a newline after a pipe continues the pipeline
+            elif op == "(":
+                depth += 1
+            elif op == ")":
+                if depth:
+                    depth -= 1  # the end of a subshell or of $(...): its words stay in this item
+                else:
+                    current = []  # the end of a case pattern: the pattern is not a command
+            else:
+                close(op)
+    return items
+
+
+def set_pipefail(words, state):
+    """The pipefail state after a `set` command (set -o pipefail, set -euo pipefail, set +o pipefail)."""
+    if not words or words[0] != "set" or "pipefail" not in words:
+        return state
+    at = words.index("pipefail")
+    flag = words[at - 1] if at else ""
+    if re.fullmatch(r"-[a-zA-Z]*o", flag):
+        return True
+    if re.fullmatch(r"\+[a-zA-Z]*o", flag):
+        return False
+    return state
+
+
+def pipe_exit(command, is_check, depth=0):
+    """True when a check or a local script feeds a later command and the pipeline's exit status is acted on (&&, ||,
+    if/elif/while/until/!, a group or subshell ending in it that is acted on, or $? read by the next command), with
+    no pipefail turned on earlier in the same shell and no ${PIPESTATUS[...]} read after it. The script of sh -c and
+    eval is judged as its own shell."""
+    def runs_check(stage):
+        text = " ".join(stage)
+        parsed = commands(text)
+        script = script_and_args(parsed[0])[0] if parsed else ""
+        return bool(is_check and is_check(text)) or (bool(script) and is_local_script(script, []))
+
+    items = list_items(command)
+    pipefail, pending = False, None
+    for index, item in enumerate(items):
+        stages = item["stages"]
+        later = [word for rest in items[index + 1:] for stage in rest["stages"] for word in stage]
+        if pending is not None:  # the pipeline before this item, ended by ; or a newline or &
+            if (stages and any(STATUS_READ.search(word) for word in stages[0])) or \
+                    (not stages and item["op"] in CHAIN_OPERATORS):
+                return True
+            if stages:
+                pending = None
+        if len(stages) == 1:
+            pipefail = set_pipefail(stages[0], pipefail)
+        if len(stages) < 2 or pipefail or any(PIPESTATUS_READ.search(word) for word in later):
+            continue
+        if not (any(runs_check(stage) for stage in stages[:-1]) and not runs_check(stages[-1])):
+            continue
+        if item["op"] in CHAIN_OPERATORS or item["condition"]:
+            return True
+        if item["op"] in LIST_ENDS:
+            pending = item
+    if depth < MAX_DEPTH:
+        for argv, _piped, _heredoc in shell.simple_commands(shell.split_heredocs(command)[0]):
+            name, args = shell.program(argv)
+            script = ""
+            if name in shell.SHELLS:
+                flag = next((i for i, arg in enumerate(args) if re.match(r"^-[a-z]*c$", arg)), None)
+                script = args[flag + 1] if flag is not None and flag + 1 < len(args) else ""
+            elif name == "eval":
+                script = " ".join(args)
+            if script and pipe_exit(script, is_check, depth + 1):
+                return True
+    return False
+
+
+def judge(command, cwd, session=None, is_check=None):
     """The first rule the command breaks, as Hit(lesson id or None, rule name, reason); None when it breaks none.
     session: a function returning {"red": failed check and push keys, "keys": the command's check keys}, called only
-    by a rule that needs it. A registry problem never raises: the entry is skipped (registry_problems lists it)."""
+    by a rule that needs it. is_check: a function telling whether a command text runs a test, build, lint or CI
+    check (guard.py passes its own); without it only local scripts count as checks for pipe-exit. A registry problem
+    never raises: the entry is skipped (registry_problems lists it)."""
     if not isinstance(command, str) or not command.strip():
         return None
     active = rules(cwd)
+    for name, entry, _ in active:
+        if name in WHOLE_COMMAND and pipe_exit(command, is_check):
+            return Hit(entry.get("lesson"), name, entry.get("reason") or BUILT_IN_REASONS[name])
+    active = [rule for rule in active if rule[0] not in WHOLE_COMMAND]
     state = []
     for cmd in commands(command):
         for name, entry, matcher in active:
