@@ -8,7 +8,7 @@ import tempfile
 import time
 import unittest
 import unittest.mock
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -962,3 +962,27 @@ class EtaOnEverythingTests(unittest.TestCase):
             self.assertEqual(self.health(None, *bad)[0], 2, bad)
         (self.bus / "events.jsonl").unlink()
         self.assertEqual(self.health()[0], 0)  # no events yet is healthy
+
+    def test_bus_now_stamps_every_line_so_tests_never_depend_on_the_real_clock(self):
+        def send(now, line="START C-1 x ETA 11-19 10:00"):
+            env = {**self.base_env(), "TZ": "Asia/Riyadh", "BUS_LOCK_TRIES": "3"}  # UTC+3, no daylight saving
+            if now:
+                env["BUS_NOW"] = now
+            return subprocess.run(["bash", str(self.bus / "send.sh"), "pm", "backend", line], capture_output=True,
+                                  text=True, env=env)
+        self.assertEqual(send("2026-11-18T16:00:00").returncode, 0)  # local time, read in Riyadh
+        self.assertEqual(self.events()[-1]["time"], "2026-11-18T13:00:00Z")
+        self.assertTrue(self.inbox_lines()[-1].startswith("2026-11-18T13:00:00Z | from backend |"))
+        self.assertEqual(send("2026-11-18T16:00:00+05:00").returncode, 0)  # an explicit offset wins
+        self.assertEqual(self.events()[-1]["time"], "2026-11-18T11:00:00Z")
+        bad = send("not-a-time")
+        self.assertEqual(bad.returncode, 6)  # send_check.py refuses the clock
+        self.assertIn("BUS_NOW", bad.stderr)
+        self.assertEqual(self.events()[-1]["outcome"], "refused-eta")
+        self.assert_real_clock(self.events()[-1]["time"])
+        self.assertEqual(send(None, "plain note").returncode, 0)
+        self.assert_real_clock(self.events()[-1]["time"])
+
+    def assert_real_clock(self, stamp):
+        written = datetime.strptime(stamp, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+        self.assertLess(abs((datetime.now(timezone.utc) - written).total_seconds()), 60, stamp)

@@ -21,8 +21,18 @@ msg=$(printf '%s' "$3" | tr '\r\n' '  ')
 # One line per attempt in events.jsonl, never the message text (it may hold what the guards refuse):
 # sent | refused-weekday | refused-eta | unchecked (the check could not run) | untracked (the record failed).
 # overdue.py --health counts them. Usage errors (exit 2) and a locked bus (exit 3) are not logged.
+# Every line is stamped in UTC when it is written; $BUS_NOW (the test clock send_check.py reads too) replaces the
+# real one, and an unreadable BUS_NOW falls back to the real clock with its error shown.
+now_stamp() {
+  if [ -n "${BUS_NOW:-}" ]; then
+    python3 -I -c 'import datetime as d, sys
+t = d.datetime.fromisoformat(sys.argv[1]); t = t if t.tzinfo else t.astimezone()
+print(t.astimezone(d.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"))' "$BUS_NOW" && return
+  fi
+  date -u +%Y-%m-%dT%H:%M:%SZ
+}
 bus_event() {
-  printf '{"time":"%s","from":"%s","to":"%s","outcome":"%s"}\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$from" "$to" "$1" \
+  printf '{"time":"%s","from":"%s","to":"%s","outcome":"%s"}\n' "$(now_stamp)" "$from" "$to" "$1" \
     >> "${BUS_EVENTS:-$dir/events.jsonl}" 2>/dev/null || echo "send.sh: warning: event not logged" >&2
 }
 # ETA on everything (send_check.py): exit 4 for a weekday that does not match its date, exit 6 for a START or
@@ -38,7 +48,7 @@ case $rc in
      record=""; outcome=unchecked ;;
 esac
 . "$dir/lock.sh"
-printf '%s | from %s | %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$from" "$msg" >> "$dir/inbox-$to.md"
+printf '%s | from %s | %s\n' "$(now_stamp)" "$from" "$msg" >> "$dir/inbox-$to.md"
 # The line is delivered: a failed record must not make the sender retry it (a second copy in the inbox).
 if [ -n "$record" ] && ! printf '%s\n' "$record" >> "$dir/open-items.tsv"; then
   echo "send.sh: warning: line sent but not tracked in open-items.tsv" >&2; outcome=untracked
