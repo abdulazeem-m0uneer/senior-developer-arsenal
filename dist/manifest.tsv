@@ -102,6 +102,7 @@ antigravity	global	file	session_core.py	hooks/session_core.py	.gemini/config/ars
 antigravity	global	file	skill_router.py	hooks/skill_router.py	.gemini/config/arsenal-hooks/skill_router.py	-
 antigravity	global	file	core.md	hooks/core.md	.gemini/config/arsenal-hooks/core.md	-
 antigravity	global	file	steps.json	dist/hooks/steps.json	.gemini/config/arsenal-hooks/steps.json	-
+antigravity	global	file	VERSION	dist/hooks/VERSION	.gemini/config/arsenal-hooks/VERSION	-
 antigravity	global	hooks	hooks	dist/hooks/antigravity.json	.gemini/config/hooks.json	.gemini/config/arsenal-hooks
 antigravity	global	mcp	codegraph	dist/mcp/serverurl/codegraph.json	.gemini/config/mcp_config.json	mcpServers:json
 antigravity	global	mcp-if-exists	codegraph	dist/mcp/serverurl/codegraph.json	.gemini/antigravity/mcp.json	mcpServers:json
@@ -211,6 +212,7 @@ antigravity	project	file	session_core.py	hooks/session_core.py	.agents/arsenal-h
 antigravity	project	file	skill_router.py	hooks/skill_router.py	.agents/arsenal-hooks/skill_router.py	-
 antigravity	project	file	core.md	hooks/core.md	.agents/arsenal-hooks/core.md	-
 antigravity	project	file	steps.json	dist/hooks/steps.json	.agents/arsenal-hooks/steps.json	-
+antigravity	project	file	VERSION	dist/hooks/VERSION	.agents/arsenal-hooks/VERSION	-
 antigravity	project	hooks	hooks	dist/hooks/antigravity.json	.agents/hooks.json	.agents/arsenal-hooks
 antigravity	project	mcp	codegraph	dist/mcp/serverurl/codegraph.json	.agents/mcp_config.json	mcpServers:json
 antigravity	project	mcp	hindsight	dist/mcp/serverurl/hindsight.json	.agents/mcp_config.json	mcpServers:json
@@ -304,6 +306,7 @@ gemini	global	file	session_core.py	hooks/session_core.py	.agents/arsenal-hooks/s
 gemini	global	file	skill_router.py	hooks/skill_router.py	.agents/arsenal-hooks/skill_router.py	-
 gemini	global	file	core.md	hooks/core.md	.agents/arsenal-hooks/core.md	-
 gemini	global	file	steps.json	dist/hooks/steps.json	.agents/arsenal-hooks/steps.json	-
+gemini	global	file	VERSION	dist/hooks/VERSION	.agents/arsenal-hooks/VERSION	-
 gemini	global	hooks	hooks	dist/hooks/gemini.json	.gemini/settings.json	.agents/arsenal-hooks
 gemini	global	mcp	codegraph	dist/mcp/gemini/codegraph.json	.gemini/settings.json	mcpServers:json
 gemini	global	mcp	hindsight	dist/mcp/gemini/hindsight.json	.gemini/settings.json	mcpServers:json
@@ -399,6 +402,7 @@ gemini	project	file	session_core.py	hooks/session_core.py	.agents/arsenal-hooks/
 gemini	project	file	skill_router.py	hooks/skill_router.py	.agents/arsenal-hooks/skill_router.py	-
 gemini	project	file	core.md	hooks/core.md	.agents/arsenal-hooks/core.md	-
 gemini	project	file	steps.json	dist/hooks/steps.json	.agents/arsenal-hooks/steps.json	-
+gemini	project	file	VERSION	dist/hooks/VERSION	.agents/arsenal-hooks/VERSION	-
 gemini	project	hooks	hooks	dist/hooks/gemini.json	.gemini/settings.json	.agents/arsenal-hooks
 gemini	project	mcp	codegraph	dist/mcp/gemini/codegraph.json	.gemini/settings.json	mcpServers:json
 gemini	project	mcp	hindsight	dist/mcp/gemini/hindsight.json	.gemini/settings.json	mcpServers:json
@@ -540,6 +544,7 @@ codex	global	file	session_core.py	hooks/session_core.py	.agents/arsenal-hooks/se
 codex	global	file	skill_router.py	hooks/skill_router.py	.agents/arsenal-hooks/skill_router.py	-
 codex	global	file	core.md	hooks/core.md	.agents/arsenal-hooks/core.md	-
 codex	global	file	steps.json	dist/hooks/steps.json	.agents/arsenal-hooks/steps.json	-
+codex	global	file	VERSION	dist/hooks/VERSION	.agents/arsenal-hooks/VERSION	-
 codex	global	hooks	hooks	dist/hooks/codex.json	.codex/hooks.json	.agents/arsenal-hooks
 codex	global	mcp	codegraph	dist/mcp/codex/codegraph.toml	.codex/config.toml	mcp_servers:toml
 codex	global	mcp	hindsight	dist/mcp/codex/hindsight.toml	.codex/config.toml	mcp_servers:toml
@@ -647,6 +652,7 @@ codex	project	file	session_core.py	hooks/session_core.py	.agents/arsenal-hooks/s
 codex	project	file	skill_router.py	hooks/skill_router.py	.agents/arsenal-hooks/skill_router.py	-
 codex	project	file	core.md	hooks/core.md	.agents/arsenal-hooks/core.md	-
 codex	project	file	steps.json	dist/hooks/steps.json	.agents/arsenal-hooks/steps.json	-
+codex	project	file	VERSION	dist/hooks/VERSION	.agents/arsenal-hooks/VERSION	-
 codex	project	hooks	hooks	dist/hooks/codex.json	.codex/hooks.json	.agents/arsenal-hooks
 codex	project	mcp	codegraph	dist/mcp/codex/codegraph.toml	.codex/config.toml	mcp_servers:toml
 codex	project	mcp	hindsight	dist/mcp/codex/hindsight.toml	.codex/config.toml	mcp_servers:toml
@@ -930,6 +936,7 @@ cursor	global	file	session_core.py	hooks/session_core.py	.agents/arsenal-hooks/s
 cursor	global	file	skill_router.py	hooks/skill_router.py	.agents/arsenal-hooks/skill_router.py	-
 cursor	global	file	core.md	hooks/core.md	.agents/arsenal-hooks/core.md	-
 cursor	global	file	steps.json	dist/hooks/steps.json	.agents/arsenal-hooks/steps.json	-
+cursor	global	file	VERSION	dist/hooks/VERSION	.agents/arsenal-hooks/VERSION	-
 cursor	global	hooks	hooks	dist/hooks/cursor.json	.cursor/hooks.json	.agents/arsenal-hooks
 cursor	global	mcp	codegraph	dist/mcp/cursor/codegraph.json	.cursor/mcp.json	mcpServers:json
 cursor	global	mcp	hindsight	dist/mcp/cursor/hindsight.json	.cursor/mcp.json	mcpServers:json
@@ -1037,6 +1044,7 @@ cursor	project	file	session_core.py	hooks/session_core.py	.agents/arsenal-hooks/
 cursor	project	file	skill_router.py	hooks/skill_router.py	.agents/arsenal-hooks/skill_router.py	-
 cursor	project	file	core.md	hooks/core.md	.agents/arsenal-hooks/core.md	-
 cursor	project	file	steps.json	dist/hooks/steps.json	.agents/arsenal-hooks/steps.json	-
+cursor	project	file	VERSION	dist/hooks/VERSION	.agents/arsenal-hooks/VERSION	-
 cursor	project	hooks	hooks	dist/hooks/cursor.json	.cursor/hooks.json	.agents/arsenal-hooks
 cursor	project	mcp	codegraph	dist/mcp/cursor/codegraph.json	.cursor/mcp.json	mcpServers:json
 cursor	project	mcp	hindsight	dist/mcp/cursor/hindsight.json	.cursor/mcp.json	mcpServers:json
@@ -1270,6 +1278,7 @@ copilot	global	file	session_core.py	hooks/session_core.py	.agents/arsenal-hooks/
 copilot	global	file	skill_router.py	hooks/skill_router.py	.agents/arsenal-hooks/skill_router.py	-
 copilot	global	file	core.md	hooks/core.md	.agents/arsenal-hooks/core.md	-
 copilot	global	file	steps.json	dist/hooks/steps.json	.agents/arsenal-hooks/steps.json	-
+copilot	global	file	VERSION	dist/hooks/VERSION	.agents/arsenal-hooks/VERSION	-
 copilot	global	hooks	hooks	dist/hooks/copilot.json	.copilot/hooks/arsenal.json	.agents/arsenal-hooks
 copilot	global	mcp	codegraph	dist/mcp/copilot-cli/codegraph.json	.copilot/mcp-config.json	mcpServers:json
 copilot	global	mcp	hindsight	dist/mcp/copilot-cli/hindsight.json	.copilot/mcp-config.json	mcpServers:json
@@ -1377,6 +1386,7 @@ copilot	project	file	session_core.py	hooks/session_core.py	.agents/arsenal-hooks
 copilot	project	file	skill_router.py	hooks/skill_router.py	.agents/arsenal-hooks/skill_router.py	-
 copilot	project	file	core.md	hooks/core.md	.agents/arsenal-hooks/core.md	-
 copilot	project	file	steps.json	dist/hooks/steps.json	.agents/arsenal-hooks/steps.json	-
+copilot	project	file	VERSION	dist/hooks/VERSION	.agents/arsenal-hooks/VERSION	-
 copilot	project	hooks	hooks	dist/hooks/copilot.json	.github/hooks/arsenal.json	.agents/arsenal-hooks
 copilot	project	mcp	codegraph	dist/mcp/vscode/codegraph.json	.vscode/mcp.json	servers:json
 copilot	project	mcp	hindsight	dist/mcp/vscode/hindsight.json	.vscode/mcp.json	servers:json

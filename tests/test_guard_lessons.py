@@ -174,7 +174,7 @@ class RegistryTests(RegistryCase):
                         "SKIP_TESTS=0 make", "curl -sf localhost:8080"):
             self.assertIsNone(self.rule(command), command)
 
-    def test_unusable_registries_are_refused_with_the_file_and_the_fault(self):
+    def test_unusable_entries_are_skipped_with_the_file_and_the_fault(self):
         cases = [
             ("{not json", "lesson-guards.json"),
             (json.dumps([]), "expected"),
@@ -198,9 +198,109 @@ class RegistryTests(RegistryCase):
         ]
         for text, fault in cases:
             self.registry(text)
-            with self.assertRaises(guard_lessons.RegistryError, msg=text) as raised:
-                guard_lessons.judge("ls", str(self.project))
-            self.assertIn(fault, str(raised.exception), text)
+            self.assertIsNone(guard_lessons.judge("ls", str(self.project)), text)  # never refused for the registry
+            self.assertEqual(self.rule("git commit --no-verify"), "hook-bypass", text)  # built-in rules still apply
+            [problem] = guard_lessons.registry_problems(str(self.project))
+            self.assertIn(fault, problem, text)
+            self.assertIn("lesson-guards.json", problem, text)
+            self.assertIn("skipped", problem, text)
+
+    def test_one_bad_entry_skips_only_itself(self):
+        self.registry([{"rule": "no-such-rule", "lesson": "L001"},
+                       {"rule": "hook-bypass", "lesson": "G027", "reason": "Hooks are the gate."},
+                       {"lesson": "L031", "program": "git", "subcommand": "push", "args_any": ["-f"], "reason": "x"}])
+        self.assertEqual(guard_lessons.judge("git commit --no-verify", str(self.project)),
+                         guard_lessons.Hit("G027", "hook-bypass", "Hooks are the gate."))
+        self.assertEqual(self.rule("git push -f"), "L031")
+        [problem] = guard_lessons.registry_problems(str(self.project))
+        self.assertIn("entry 1", problem)
+
+    def test_min_version_skips_an_entry_for_a_newer_hook_without_a_problem(self):
+        self.registry([{"rule": "help-probe", "enabled": False, "min_version": "99.0.0"},  # a future hook's entry
+                       {"rule": "hook-bypass", "lesson": "G027", "min_version": "0.1.0"},
+                       {"lesson": "L050", "program": "make", "reason": "x", "min_version": "99.0.0"}])
+        self.assertEqual(self.rule("./run.sh --help"), "help-probe")  # the disabling entry was skipped
+        self.assertEqual(guard_lessons.judge("git commit -n", str(self.project)).lesson, "G027")
+        self.assertIsNone(self.rule("make all"))
+        self.assertEqual(guard_lessons.registry_problems(str(self.project)), [])
+        for bad in ("1.9", "v1.9.0", 190, ""):
+            self.registry([{"rule": "hook-bypass", "min_version": bad}])
+            [problem] = guard_lessons.registry_problems(str(self.project))
+            self.assertIn("min_version must be a version", problem, bad)
+
+    def test_without_a_version_file_min_version_entries_apply(self):
+        with mock.patch.object(guard_lessons, "HOOK_VERSION", None):
+            self.registry([{"rule": "help-probe", "enabled": False, "min_version": "99.0.0"}])
+            self.assertIsNone(self.rule("./run.sh --help"))
+
+    def test_odd_values_skip_only_their_entry_and_never_escape(self):
+        for odd in ([{"rule": ["hook-bypass"]}], [{"rule": {"x": 1}}], [{"rule": "hook-bypass", "lesson": ["G027"]}],
+                    [{"lesson": "L001", "program": "git", "reason": "x", "args_any": [["-f"]]}],
+                    [{"rule": "help-probe", "min_version": "1" * 5000 + ".0.0"}],
+                    [{"rule": "help-probe", "min_version": "\u0661.\u0662.\u0663"}]):  # Arabic-Indic digits
+            self.registry(odd + [{"rule": "hook-bypass", "lesson": "G027"}])
+            self.assertEqual(guard_lessons.judge("git commit -n", str(self.project)).lesson, "G027", odd)
+            self.assertEqual(len(guard_lessons.registry_problems(str(self.project))), 1, odd)
+
+    def test_any_unexpected_fault_in_an_entry_skips_only_that_entry(self):
+        self.registry([{"rule": "help-probe", "enabled": False}, {"rule": "hook-bypass", "lesson": "G027"}])
+        real = guard_lessons.validate
+
+        def flaky(entry, where):
+            if entry.get("rule") == "help-probe":
+                raise TypeError("unexpected")
+            return real(entry, where)
+        with mock.patch.object(guard_lessons, "validate", side_effect=flaky):
+            self.assertEqual(self.rule("./run.sh --help"), "help-probe")  # the disabling entry was skipped
+            self.assertEqual(guard_lessons.judge("git commit -n", str(self.project)).lesson, "G027")
+            [problem] = guard_lessons.registry_problems(str(self.project))
+            self.assertIn("TypeError: unexpected (entry skipped)", problem)
+
+    def test_a_file_too_deep_or_too_large_is_skipped_whole(self):
+        self.registry('{"guards": ' + "[" * 100000 + "]" * 100000 + "}")
+        [problem] = guard_lessons.registry_problems(str(self.project))
+        self.assertIn("RecursionError", problem)
+        self.registry(json.dumps({"guards": [{"rule": "hook-bypass", "reason": "x" * 1_100_000}]}))
+        [problem] = guard_lessons.registry_problems(str(self.project))
+        self.assertIn("larger than", problem)
+        self.assertEqual(self.rule("git commit -n"), "hook-bypass")
+
+    def test_min_version_skips_an_unknown_rule_quietly_and_compares_as_numbers(self):
+        self.registry([{"rule": "rule-from-the-future", "lesson": "L190", "min_version": "99.0.0"},
+                       {"lesson": "L051", "program": "make", "reason": "x", "new_key": 1, "min_version": "99.0.0"}])
+        self.assertEqual(guard_lessons.registry_problems(str(self.project)), [])  # not reported: meant for later
+        with mock.patch.object(guard_lessons, "HOOK_VERSION", (1, 9, 0)):
+            self.registry([{"rule": "help-probe", "enabled": False, "min_version": "1.10.0"}])
+            self.assertEqual(self.rule("./run.sh --help"), "help-probe")  # 1.10.0 is newer than 1.9.0: skipped
+            self.registry([{"rule": "help-probe", "enabled": False, "min_version": "1.9.0"}])
+            self.assertIsNone(self.rule("./run.sh --help"))  # equal: applied
+            self.registry([{"rule": "help-probe", "enabled": False, "min_version": "1.9.1"}])
+            self.assertEqual(self.rule("./run.sh --help"), "help-probe")  # one patch above: skipped
+        with mock.patch.object(guard_lessons, "HOOK_VERSION", (1, 10, 0)):
+            self.registry([{"rule": "help-probe", "enabled": False, "min_version": "1.9.0"}])
+            self.assertIsNone(self.rule("./run.sh --help"))
+
+    def test_hook_version_beside_the_hook_first_then_the_plugin_root(self):
+        root = self.dir / "plugin"
+        hooks = root / "hooks"
+        hooks.mkdir(parents=True)
+        self.assertIsNone(guard_lessons.hook_version(hooks))
+        (root / "VERSION").write_text("1.11.2\n")  # plugin layout: the root
+        self.assertEqual(guard_lessons.hook_version(hooks), (1, 11, 2))
+        (hooks / "VERSION").write_text("1.10.0\n")  # installer layout: beside the hook wins
+        self.assertEqual(guard_lessons.hook_version(hooks), (1, 10, 0))
+        for junk in (b"1.12.0-rc1\n", b"\xff\xfe not utf-8", b"project version 3"):  # passed over, never raised
+            (hooks / "VERSION").write_bytes(junk)
+            self.assertEqual(guard_lessons.hook_version(hooks), (1, 11, 2), junk)
+        (hooks / "VERSION").write_bytes(b"\xef\xbb\xbf1.10.0\n")  # a byte-order mark is not part of the version
+        self.assertEqual(guard_lessons.hook_version(hooks), (1, 10, 0))
+
+    def test_problems_come_from_every_registry(self):
+        self.registry([{"rule": "hook-bypass", "lesson": "G027"}], self.global_file)
+        self.registry([{"rule": "no-such-rule"}])
+        [problem] = guard_lessons.registry_problems(str(self.project / "sub"))
+        self.assertIn(str(self.project / ".agents" / "lesson-guards.json"), problem)
+        self.assertEqual(guard_lessons.judge("git commit -n", str(self.project)).lesson, "G027")
 
     def test_a_registry_that_is_a_directory_is_refused(self):
         (self.project / ".agents" / "lesson-guards.json").mkdir(parents=True)
@@ -271,12 +371,15 @@ class HookTests(RegistryCase):
         out = self.pre("git commit --no-verify", env={"ARSENAL_GUARD_DESTRUCTIVE": "allow"})
         self.assertEqual(out["permissionDecision"], "deny")  # the destructive switch does not lift lesson guards
 
-    def test_an_unusable_registry_denies_with_the_fault(self):
+    def test_an_unusable_registry_never_blocks_commands(self):
         self.registry("{broken")
-        out = self.pre("ls")
-        self.assertEqual(out["permissionDecision"], "deny")
-        self.assertIn("registry is unusable", out["permissionDecisionReason"])
-        self.assertIn("lesson-guards.json", out["permissionDecisionReason"])
+        self.assertIsNone(self.pre("ls"))
+        self.assertEqual(self.pre("git commit --no-verify")["permissionDecision"], "deny")  # built-ins still hold
+        self.registry([{"rule": "rule-of-a-newer-version", "lesson": "L190"}])
+        self.assertIsNone(self.pre("ls"))
+        self.registry([{"rule": ["a", "list"]}, {"rule": "hook-bypass", "lesson": "G027"}])
+        self.assertIn("G027", self.pre("git commit --no-verify")["permissionDecisionReason"])  # never fails open
+        self.assertEqual(self.pre("git reset --hard")["permissionDecision"], "ask")  # the destructive check still runs
 
     def test_an_unwritable_hit_log_still_refuses_and_says_so(self):
         self.hits.parent.mkdir(parents=True)

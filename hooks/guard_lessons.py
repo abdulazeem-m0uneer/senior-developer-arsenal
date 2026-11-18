@@ -15,8 +15,12 @@ A rule of your own matches a simple command by its program (a name or a list of 
 optionally its first operand (subcommand; for git, after the values of -C, -c, --git-dir and the like), any of `args_any` (exact words; a single letter such as -f also
 matches inside a cluster such as -fq), any of `assignments_any` (VAR=value words before the program), and
 `in_loop` (the command is the condition of while/until). A built-in rule named in both registries takes the
-project entry. A registry that cannot be read or does not follow the format is reported as the reason for
-refusing every Bash command until it is fixed (an Edit fixes it), so a typo cannot silently drop a guard.
+project entry. Any entry may carry "min_version": "X.Y.Z", the oldest hook that should apply it; an older hook
+skips it, so a registry shared by sessions on different versions stays usable everywhere. The registry fails
+safe per entry: an entry this hook cannot use (unknown rule or key, wrong type) is skipped, and a file that does
+not parse is skipped whole, but every other entry and every built-in rule still apply and no command is refused
+for it. registry_problems(cwd) lists what was skipped; `lessons.py guards` checks the registries against every
+installed hook version, and the session-start lessons header reports skipped entries.
 Words are judged after quotes are removed, so `grep "while pgrep -f"`, commit messages and echo text pass;
 here-document bodies are dropped; the script of `sh -c` and `eval` is judged too. Not seen: commands built
 from variables, run through xargs, ssh or a script file.
@@ -42,6 +46,7 @@ import json
 import os
 import re
 from collections import namedtuple
+from pathlib import Path
 
 import guard_destructive as shell
 
@@ -74,9 +79,32 @@ BUILT_IN_REASONS = {
                        'with `python3 {lessons} cause "<failing assertion or check>: <cause or unknown>"`, then rerun.',
 }
 OPT_IN = frozenset(("rerun-after-red",))  # off until a registry entry names it
-ENTRY_KEYS = {"rule", "lesson", "reason", "enabled", "programs"}
+ENTRY_KEYS = {"rule", "lesson", "reason", "enabled", "programs", "min_version"}
 TAKES_PROGRAMS = ("help-probe", "secret-in-message")
-CUSTOM_KEYS = {"lesson", "reason", "program", "subcommand", "args_any", "assignments_any", "in_loop"}
+CUSTOM_KEYS = {"lesson", "reason", "program", "subcommand", "args_any", "assignments_any", "in_loop", "min_version"}
+VERSION_SHAPE = re.compile(r"\d{1,6}\.\d{1,6}\.\d{1,6}", re.ASCII)
+REGISTRY_MAX_BYTES = 1_000_000
+
+
+def version_tuple(text):
+    return tuple(int(part) for part in text.split("."))
+
+
+def hook_version(folder=None):
+    """This hook's arsenal version: VERSION next to the hook (an installer copy ships it there), else at the plugin
+    root; a file that is unreadable or not X.Y.Z is passed over. None when neither gives a version."""
+    folder = Path(folder or Path(__file__).resolve().parent)
+    for candidate in (folder / "VERSION", folder.parent / "VERSION"):
+        try:
+            text = candidate.read_text(encoding="utf-8").strip().lstrip("\ufeff")
+        except (OSError, ValueError):  # ValueError: not UTF-8; this runs at import and must never fail it
+            continue
+        if VERSION_SHAPE.fullmatch(text):
+            return version_tuple(text)
+    return None
+
+
+HOOK_VERSION = hook_version()
 
 
 class RegistryError(ValueError):
@@ -268,6 +296,8 @@ def validate(entry, where):
     """Raise RegistryError when one registry entry does not follow the format."""
     if not isinstance(entry, dict):
         raise RegistryError(f"{where}: an entry is not an object")
+    if "min_version" in entry and not valid_min_version(entry["min_version"]):
+        raise RegistryError(f"{where}: min_version must be a version such as 1.10.0")
     lesson = entry.get("lesson")
     if lesson is not None and not (isinstance(lesson, str) and LESSON_ID.fullmatch(lesson)):
         raise RegistryError(f"{where}: lesson {lesson!r} is not a lesson id such as L012 or G003")
@@ -292,7 +322,7 @@ def validate(entry, where):
             raise RegistryError(f"{where}: in_loop must be true or false")
         return
     unknown = set(entry) - ENTRY_KEYS
-    if entry.get("rule") not in BUILT_IN or unknown:
+    if not isinstance(entry.get("rule"), str) or entry["rule"] not in BUILT_IN or unknown:
         raise RegistryError(f"{where}: rule must be one of {sorted(BUILT_IN)} (or give program for a rule of your "
                             "own)" + (f"; unknown keys {sorted(unknown)}" if unknown else ""))
     if "enabled" in entry and not isinstance(entry["enabled"], bool):
@@ -301,26 +331,59 @@ def validate(entry, where):
         raise RegistryError(f"{where}: programs is a list of names, for {' and '.join(TAKES_PROGRAMS)} only")
 
 
+def valid_min_version(value):
+    return isinstance(value, str) and VERSION_SHAPE.fullmatch(value) is not None
+
+
+def needs_newer_hook(entry):
+    """An entry for a newer hook: skipped quietly, before the rest of it is judged (its rule may not exist here)."""
+    value = entry.get("min_version") if isinstance(entry, dict) else None
+    return HOOK_VERSION is not None and valid_min_version(value) and version_tuple(value) > HOOK_VERSION
+
+
 def read_registry(path):
+    """(entries this hook applies, problems): a bad entry is skipped with a problem line, a file that does not parse
+    gives no entries, and an entry asking for a newer hook (min_version) is skipped without one."""
     try:
+        if os.path.getsize(path) > REGISTRY_MAX_BYTES:
+            return [], [f"{path}: skipped, larger than {REGISTRY_MAX_BYTES} bytes"]
         with open(path, encoding="utf-8") as handle:
             data = json.load(handle)
-    except (OSError, ValueError) as error:
-        raise RegistryError(f"{path}: {error}") from None
+    except (OSError, ValueError, RecursionError) as error:
+        return [], [f"{path}: skipped, {type(error).__name__}: {error}"]
     if not isinstance(data, dict) or not isinstance(data.get("guards"), list) or set(data) - {"guards"}:
-        raise RegistryError(f'{path}: expected {{"guards": [...]}}')
+        return [], [f'{path}: skipped, expected {{"guards": [...]}}']
+    entries, problems = [], []
     for index, entry in enumerate(data["guards"]):
-        validate(entry, f"{path} entry {index + 1}")
-    return data["guards"]
+        where = f"{path} entry {index + 1}"
+        try:
+            if needs_newer_hook(entry):
+                continue
+            validate(entry, where)
+        except RegistryError as error:
+            problems.append(f"{error} (entry skipped)")
+            continue
+        except Exception as error:  # any fault in one entry skips that entry only, never the hook
+            problems.append(f"{where}: {type(error).__name__}: {error} (entry skipped)")
+            continue
+        entries.append(entry)
+    return entries, problems
 
 
-def registry_paths(cwd):
-    """[global registry, project registry], each only when it exists."""
+def registry_problems(cwd):
+    """Every problem line of the registries that apply in cwd; empty when all entries are usable."""
+    return [problem for path in registry_paths(cwd) for problem in read_registry(path)[1]]
+
+
+def registry_paths(cwd, home=None, project=None):
+    """[global registry, project registry], each only when it exists. home replaces ~, and project replaces
+    $CLAUDE_PROJECT_DIR and cwd as the search start (both for checks run on behalf of another place)."""
     found = []
-    global_file = os.environ.get(GLOBAL_ENV) or os.path.join(os.path.expanduser("~"), ".agents", "lesson-guards.json")
+    global_file = os.environ.get(GLOBAL_ENV) or os.path.join(home or os.path.expanduser("~"), ".agents",
+                                                             "lesson-guards.json")
     if os.path.isfile(global_file):
         found.append(global_file)
-    folder = os.path.abspath(os.environ.get("CLAUDE_PROJECT_DIR") or cwd)
+    folder = os.path.abspath(project or os.environ.get("CLAUDE_PROJECT_DIR") or cwd)
     while True:
         path = os.path.join(folder, PROJECT_FILE)
         if os.path.isfile(path):
@@ -338,7 +401,7 @@ def rules(cwd):
     built_in = {name: {"rule": name} for name in BUILT_IN if name not in OPT_IN}
     custom = []
     for path in registry_paths(cwd):
-        for entry in read_registry(path):
+        for entry in read_registry(path)[0]:
             if "program" in entry:
                 custom.append((entry.get("lesson"), entry, custom_match))
             else:
@@ -350,7 +413,7 @@ def rules(cwd):
 def judge(command, cwd, session=None):
     """The first rule the command breaks, as Hit(lesson id or None, rule name, reason); None when it breaks none.
     session: a function returning {"red": failed check and push keys, "keys": the command's check keys}, called only
-    by a rule that needs it. Raises RegistryError when a registry file is unusable."""
+    by a rule that needs it. A registry problem never raises: the entry is skipped (registry_problems lists it)."""
     if not isinstance(command, str) or not command.strip():
         return None
     active = rules(cwd)

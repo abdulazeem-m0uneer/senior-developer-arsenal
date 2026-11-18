@@ -557,7 +557,7 @@ def generate(sources):
              "description": f"Optional {name} MCP server."} for name in sources["servers"]],
     }, indent=2) + "\n"
 
-    out.update(build_hooks.outputs(sources["hook_steps"]))
+    out.update(build_hooks.outputs(sources["hook_steps"], sources["version"]))
 
     header = "target\tscope\tkind\tname\tsource\tdestination\textra\n"
     out[f"{DIST}/manifest.tsv"] = header + "".join("\t".join(row) + "\n" for row in manifest_rows(sources))

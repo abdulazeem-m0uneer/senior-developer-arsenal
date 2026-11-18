@@ -17,6 +17,7 @@ Usage:
   lessons.py unguarded [--min N] [LEDGER...]  # lessons seen N+ times with no guard, archive included, most hits first
   lessons.py hits [--since 24h]      # lesson-guard refusals in the window, from the hit log (guard_hits.py)
   lessons.py retro [--days 7] [--project]  # Markdown retrospective: git log, ledger, evidence, guard hits (retro.py)
+  lessons.py guards                  # check the lesson-guard registries with this hook and every installed version
 Options: --file PATH (default: $LESSONS_FILE or .agents/lessons.md); --global on add, bump, archive, promote and
   check targets the global ledger ($LESSONS_GLOBAL_FILE or ~/.agents/lessons.md), as does an id starting with G.
   The promotion threshold N defaults to $LESSONS_PROMOTE_AT, else 3.
@@ -33,6 +34,7 @@ from datetime import date
 from pathlib import Path
 
 import guard_hits
+import guard_registry
 import promotion
 import relevance
 import retro
@@ -270,14 +272,26 @@ def hook_text(project, shared):
     return "\n".join(out)
 
 
+def registry_note():
+    """One header line when the lesson-guard registry has entries this hook skips; '' otherwise or on any failure."""
+    try:
+        count = len(guard_registry.current_problems(relevance.session_cwd()))
+    except Exception:  # the session-start hook never fails over a report line
+        return ""
+    if not count:
+        return ""
+    return (f"Lesson-guard registry: {count} entr{'y' if count == 1 else 'ies'} skipped (not applied); "
+            f"run `python3 {Path(__file__).resolve()} guards` and fix them.")
+
+
 def cmd_active(ledger, args):
     project = ledger.section("active")
     other = open_global(ledger.path)
     shared = [lesson for lesson in (other.section("active") if other else [])
               if all(similarity(lesson, mine) < SIMILAR_AT for mine in project)]
     if args.hook:
-        print(json.dumps({"hookSpecificOutput": {"hookEventName": "SessionStart",
-                                                 "additionalContext": hook_text(project, shared)}}))
+        context = "\n".join(filter(None, (hook_text(project, shared), registry_note())))
+        print(json.dumps({"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": context}}))
         return 0
     for line in [Ledger.render(x) for x in project] + ([GLOBAL_LABEL] if shared else []) + \
             [Ledger.render(x) for x in shared]:
@@ -448,6 +462,26 @@ def cmd_retro(ledger, args):
     return 0
 
 
+def cmd_guards(_ledger, _args):
+    """Every registry problem, as this hook and as each installed hook version sees it; exit 1 when any."""
+    paths = guard_registry.registry_paths(relevance.session_cwd())
+    if not paths:
+        print("no lesson-guard registry applies here (.agents/lesson-guards.json, ~/.agents/lesson-guards.json)")
+        return 0
+    print("registries: " + ", ".join(map(str, paths)))
+    found = guard_registry.report(paths)
+    effects = {"refuses": ", REFUSES every Bash command", "fails-open": ", runs NO lesson guard (fails open)"}
+    for label, problems, effect in found:
+        state = "ok" if not problems else f"{len(problems)} problem(s)" + effects.get(effect, "")
+        print(f"{label}: {state}")
+        for problem in problems:
+            print(f"  - {problem}")
+    if any(problems for _, problems, _ in found):
+        print('fix the entries, or give a new rule "min_version" so older hooks skip it')
+        return 1
+    return 0
+
+
 def build_parser():
     parser = argparse.ArgumentParser(description="Lessons-learned ledger (project and global).")
     parser.add_argument("--file", default=os.environ.get("LESSONS_FILE") or ".agents/lessons.md")
@@ -470,6 +504,7 @@ def build_parser():
     unguarded.add_argument("ledgers", nargs="*")
     sub.add_parser("cause").add_argument("note", nargs="*")
     sub.add_parser("hits").add_argument("--since", default="24h")
+    sub.add_parser("guards")
     retrospective = sub.add_parser("retro")
     retrospective.add_argument("--days", type=int, default=7)
     retrospective.add_argument("--project", action="store_true")
@@ -486,7 +521,8 @@ def build_parser():
 
 COMMANDS = {"add": cmd_add, "active": cmd_active, "search": cmd_search, "bump": cmd_bump, "archive": cmd_archive,
             "promote": cmd_promote, "globalize": cmd_globalize, "check": cmd_check, "show": cmd_show,
-            "unguarded": cmd_unguarded, "cause": cmd_cause, "hits": cmd_hits, "retro": cmd_retro}
+            "unguarded": cmd_unguarded, "cause": cmd_cause, "hits": cmd_hits, "retro": cmd_retro,
+            "guards": cmd_guards}
 
 
 def refuse_stray(ledger):
