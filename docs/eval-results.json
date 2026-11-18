@@ -4531,6 +4531,1282 @@
           ]
         }
       }
+    },
+    {
+      "label": "smart-sonnet",
+      "note": "Calibration of the four smart-* cases (built to catch plausible wrong fixes; unit tests prove each wrong fix fails acceptance): 3 runs per arm, model sonnet; no OS sandbox, so Bash was not granted and tests ran only in the outcome checks. Both arms passed acceptance 3/3 on every case, so these cases do not separate the arms on this model.",
+      "recorded": "2026-11-18",
+      "claude_version": "2.1.327",
+      "arsenal_version": "1.6.1",
+      "model": "sonnet",
+      "judge_model": "haiku",
+      "runs_per_arm": 3,
+      "cost_usd": 2.5076328,
+      "partial": false,
+      "cases": {
+        "smart-allocation": {
+          "with": [
+            {
+              "score": 1,
+              "cost_usd": 0.1491446,
+              "judge_cost_usd": 0,
+              "turns": 9,
+              "duration_seconds": 25,
+              "error": null,
+              "tokens": {
+                "input_tokens": 14,
+                "cache_creation_input_tokens": 29100,
+                "cache_read_input_tokens": 136766,
+                "output_tokens": 1904
+              },
+              "graders": {
+                "any-skill-fired": {
+                  "passed": true,
+                  "scored": false
+                },
+                "tests-run": {
+                  "passed": true,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass"
+              }
+            },
+            {
+              "score": 1,
+              "cost_usd": 0.1422856,
+              "judge_cost_usd": 0,
+              "turns": 9,
+              "duration_seconds": 22,
+              "error": null,
+              "tokens": {
+                "input_tokens": 12,
+                "cache_creation_input_tokens": 28705,
+                "cache_read_input_tokens": 108916,
+                "output_tokens": 1655
+              },
+              "graders": {
+                "any-skill-fired": {
+                  "passed": true,
+                  "scored": false
+                },
+                "tests-run": {
+                  "passed": true,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass"
+              }
+            },
+            {
+              "score": 0,
+              "cost_usd": 0.1538296,
+              "judge_cost_usd": 0,
+              "turns": 10,
+              "duration_seconds": 26,
+              "error": null,
+              "tokens": {
+                "input_tokens": 12,
+                "cache_creation_input_tokens": 31135,
+                "cache_read_input_tokens": 82756,
+                "output_tokens": 2099
+              },
+              "graders": {
+                "any-skill-fired": {
+                  "passed": true,
+                  "scored": false
+                },
+                "tests-run": {
+                  "passed": false,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass"
+              }
+            }
+          ],
+          "without": [
+            {
+              "score": 0,
+              "cost_usd": 0.07459049999999999,
+              "judge_cost_usd": 0,
+              "turns": 3,
+              "duration_seconds": 15,
+              "error": null,
+              "tokens": {
+                "input_tokens": 6,
+                "cache_creation_input_tokens": 15885,
+                "cache_read_input_tokens": 30585,
+                "output_tokens": 798
+              },
+              "graders": {
+                "tests-run": {
+                  "passed": false,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass"
+              }
+            },
+            {
+              "score": 0,
+              "cost_usd": 0.0752339,
+              "judge_cost_usd": 0,
+              "turns": 3,
+              "duration_seconds": 14,
+              "error": null,
+              "tokens": {
+                "input_tokens": 6,
+                "cache_creation_input_tokens": 15913,
+                "cache_read_input_tokens": 30599,
+                "output_tokens": 851
+              },
+              "graders": {
+                "tests-run": {
+                  "passed": false,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass"
+              }
+            },
+            {
+              "score": 0,
+              "cost_usd": 0.0765372,
+              "judge_cost_usd": 0,
+              "turns": 3,
+              "duration_seconds": 16,
+              "error": null,
+              "tokens": {
+                "input_tokens": 6,
+                "cache_creation_input_tokens": 15979,
+                "cache_read_input_tokens": 30592,
+                "output_tokens": 955
+              },
+              "graders": {
+                "tests-run": {
+                  "passed": false,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass"
+              }
+            }
+          ]
+        },
+        "smart-hidden-caller": {
+          "with": [
+            {
+              "score": 1,
+              "cost_usd": 0.15292129999999998,
+              "judge_cost_usd": 0,
+              "turns": 11,
+              "duration_seconds": 23,
+              "error": null,
+              "tokens": {
+                "input_tokens": 13,
+                "cache_creation_input_tokens": 30179,
+                "cache_read_input_tokens": 140293,
+                "output_tokens": 1815
+              },
+              "graders": {
+                "any-skill-fired": {
+                  "passed": true,
+                  "scored": false
+                },
+                "tests-run": {
+                  "passed": true,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass"
+              }
+            },
+            {
+              "score": 0,
+              "cost_usd": 0.1547465,
+              "judge_cost_usd": 0,
+              "turns": 13,
+              "duration_seconds": 22,
+              "error": null,
+              "tokens": {
+                "input_tokens": 11,
+                "cache_creation_input_tokens": 30593,
+                "cache_read_input_tokens": 110925,
+                "output_tokens": 2126
+              },
+              "graders": {
+                "any-skill-fired": {
+                  "passed": true,
+                  "scored": false
+                },
+                "tests-run": {
+                  "passed": false,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass"
+              }
+            },
+            {
+              "score": 0,
+              "cost_usd": 0.1317035,
+              "judge_cost_usd": 0,
+              "turns": 14,
+              "duration_seconds": 23,
+              "error": null,
+              "tokens": {
+                "input_tokens": 13,
+                "cache_creation_input_tokens": 22774,
+                "cache_read_input_tokens": 149715,
+                "output_tokens": 2561
+              },
+              "graders": {
+                "any-skill-fired": {
+                  "passed": true,
+                  "scored": false
+                },
+                "tests-run": {
+                  "passed": false,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass"
+              }
+            }
+          ],
+          "without": [
+            {
+              "score": 0,
+              "cost_usd": 0.0694781,
+              "judge_cost_usd": 0,
+              "turns": 12,
+              "duration_seconds": 19,
+              "error": null,
+              "tokens": {
+                "input_tokens": 15,
+                "cache_creation_input_tokens": 9752,
+                "cache_read_input_tokens": 122001,
+                "output_tokens": 1824
+              },
+              "graders": {
+                "tests-run": {
+                  "passed": false,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass"
+              }
+            },
+            {
+              "score": 0,
+              "cost_usd": 0.06347370000000001,
+              "judge_cost_usd": 0,
+              "turns": 10,
+              "duration_seconds": 16,
+              "error": null,
+              "tokens": {
+                "input_tokens": 12,
+                "cache_creation_input_tokens": 9271,
+                "cache_read_input_tokens": 86857,
+                "output_tokens": 1768
+              },
+              "graders": {
+                "tests-run": {
+                  "passed": false,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass"
+              }
+            },
+            {
+              "score": 0,
+              "cost_usd": 0.0528803,
+              "judge_cost_usd": 0,
+              "turns": 6,
+              "duration_seconds": 13,
+              "error": null,
+              "tokens": {
+                "input_tokens": 8,
+                "cache_creation_input_tokens": 8512,
+                "cache_read_input_tokens": 55063,
+                "output_tokens": 1331
+              },
+              "graders": {
+                "tests-run": {
+                  "passed": false,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass"
+              }
+            }
+          ]
+        },
+        "smart-stale-cache": {
+          "with": [
+            {
+              "score": 0,
+              "cost_usd": 0.12419950000000002,
+              "judge_cost_usd": 0,
+              "turns": 13,
+              "duration_seconds": 23,
+              "error": null,
+              "tokens": {
+                "input_tokens": 13,
+                "cache_creation_input_tokens": 21925,
+                "cache_read_input_tokens": 149035,
+                "output_tokens": 2157
+              },
+              "graders": {
+                "any-skill-fired": {
+                  "passed": true,
+                  "scored": false
+                },
+                "tests-run": {
+                  "passed": false,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass"
+              }
+            },
+            {
+              "score": 1,
+              "cost_usd": 0.1313302,
+              "judge_cost_usd": 0,
+              "turns": 15,
+              "duration_seconds": 22,
+              "error": null,
+              "tokens": {
+                "input_tokens": 13,
+                "cache_creation_input_tokens": 23603,
+                "cache_read_input_tokens": 155022,
+                "output_tokens": 2139
+              },
+              "graders": {
+                "any-skill-fired": {
+                  "passed": true,
+                  "scored": false
+                },
+                "tests-run": {
+                  "passed": true,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass"
+              }
+            },
+            {
+              "score": 1,
+              "cost_usd": 0.1235545,
+              "judge_cost_usd": 0,
+              "turns": 13,
+              "duration_seconds": 20,
+              "error": null,
+              "tokens": {
+                "input_tokens": 14,
+                "cache_creation_input_tokens": 22018,
+                "cache_read_input_tokens": 148745,
+                "output_tokens": 2058
+              },
+              "graders": {
+                "any-skill-fired": {
+                  "passed": true,
+                  "scored": false
+                },
+                "tests-run": {
+                  "passed": true,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass"
+              }
+            }
+          ],
+          "without": [
+            {
+              "score": 0,
+              "cost_usd": 0.05085730000000001,
+              "judge_cost_usd": 0,
+              "turns": 7,
+              "duration_seconds": 12,
+              "error": null,
+              "tokens": {
+                "input_tokens": 10,
+                "cache_creation_input_tokens": 8428,
+                "cache_read_input_tokens": 71253,
+                "output_tokens": 1000
+              },
+              "graders": {
+                "tests-run": {
+                  "passed": false,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass"
+              }
+            },
+            {
+              "score": 0,
+              "cost_usd": 0.0498289,
+              "judge_cost_usd": 0,
+              "turns": 7,
+              "duration_seconds": 12,
+              "error": null,
+              "tokens": {
+                "input_tokens": 10,
+                "cache_creation_input_tokens": 8214,
+                "cache_read_input_tokens": 70829,
+                "output_tokens": 987
+              },
+              "graders": {
+                "tests-run": {
+                  "passed": false,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass"
+              }
+            },
+            {
+              "score": 0,
+              "cost_usd": 0.0510918,
+              "judge_cost_usd": 0,
+              "turns": 7,
+              "duration_seconds": 12,
+              "error": null,
+              "tokens": {
+                "input_tokens": 10,
+                "cache_creation_input_tokens": 8417,
+                "cache_read_input_tokens": 71238,
+                "output_tokens": 1028
+              },
+              "graders": {
+                "tests-run": {
+                  "passed": false,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass"
+              }
+            }
+          ]
+        },
+        "smart-unicode-search": {
+          "with": [
+            {
+              "score": 1,
+              "cost_usd": 0.15006750000000002,
+              "judge_cost_usd": 0,
+              "turns": 14,
+              "duration_seconds": 28,
+              "error": null,
+              "tokens": {
+                "input_tokens": 19,
+                "cache_creation_input_tokens": 23365,
+                "cache_read_input_tokens": 241995,
+                "output_tokens": 3237
+              },
+              "graders": {
+                "any-skill-fired": {
+                  "passed": true,
+                  "scored": false
+                },
+                "tests-run": {
+                  "passed": true,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass"
+              }
+            },
+            {
+              "score": 1,
+              "cost_usd": 0.13621060000000001,
+              "judge_cost_usd": 0,
+              "turns": 13,
+              "duration_seconds": 25,
+              "error": null,
+              "tokens": {
+                "input_tokens": 17,
+                "cache_creation_input_tokens": 22118,
+                "cache_read_input_tokens": 206846,
+                "output_tokens": 2702
+              },
+              "graders": {
+                "any-skill-fired": {
+                  "passed": true,
+                  "scored": false
+                },
+                "tests-run": {
+                  "passed": true,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass"
+              }
+            },
+            {
+              "score": 1,
+              "cost_usd": 0.1495416,
+              "judge_cost_usd": 0,
+              "turns": 14,
+              "duration_seconds": 28,
+              "error": null,
+              "tokens": {
+                "input_tokens": 19,
+                "cache_creation_input_tokens": 23369,
+                "cache_read_input_tokens": 242276,
+                "output_tokens": 3180
+              },
+              "graders": {
+                "any-skill-fired": {
+                  "passed": true,
+                  "scored": false
+                },
+                "tests-run": {
+                  "passed": true,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass"
+              }
+            }
+          ],
+          "without": [
+            {
+              "score": 1,
+              "cost_usd": 0.08682420000000002,
+              "judge_cost_usd": 0,
+              "turns": 12,
+              "duration_seconds": 26,
+              "error": null,
+              "tokens": {
+                "input_tokens": 17,
+                "cache_creation_input_tokens": 10749,
+                "cache_read_input_tokens": 143242,
+                "output_tokens": 2947
+              },
+              "graders": {
+                "tests-run": {
+                  "passed": true,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass"
+              }
+            },
+            {
+              "score": 1,
+              "cost_usd": 0.07825399999999999,
+              "judge_cost_usd": 0,
+              "turns": 11,
+              "duration_seconds": 21,
+              "error": null,
+              "tokens": {
+                "input_tokens": 15,
+                "cache_creation_input_tokens": 10270,
+                "cache_read_input_tokens": 125140,
+                "output_tokens": 2463
+              },
+              "graders": {
+                "tests-run": {
+                  "passed": true,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass"
+              }
+            },
+            {
+              "score": 0,
+              "cost_usd": 0.0790479,
+              "judge_cost_usd": 0,
+              "turns": 11,
+              "duration_seconds": 22,
+              "error": null,
+              "tokens": {
+                "input_tokens": 15,
+                "cache_creation_input_tokens": 10258,
+                "cache_read_input_tokens": 124559,
+                "output_tokens": 2553
+              },
+              "graders": {
+                "tests-run": {
+                  "passed": false,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "label": "smart-haiku",
+      "note": "Same four smart-* cases on model haiku, 3 runs per arm, same conditions. Both arms passed acceptance 3/3 on every case: the weaker model also solves them without the plugin.",
+      "recorded": "2026-11-18",
+      "claude_version": "2.1.327",
+      "arsenal_version": "1.6.1",
+      "model": "haiku",
+      "judge_model": "haiku",
+      "runs_per_arm": 3,
+      "cost_usd": 0.16203251,
+      "partial": false,
+      "cases": {
+        "smart-allocation": {
+          "with": [
+            {
+              "score": 1,
+              "cost_usd": 0.00796381,
+              "judge_cost_usd": 0,
+              "turns": 10,
+              "duration_seconds": 28,
+              "error": null,
+              "tokens": {
+                "input_tokens": 12,
+                "cache_creation_input_tokens": 23468,
+                "cache_read_input_tokens": 152651,
+                "output_tokens": 3485
+              },
+              "graders": {
+                "any-skill-fired": {
+                  "passed": true,
+                  "scored": false
+                },
+                "tests-run": {
+                  "passed": true,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass"
+              }
+            },
+            {
+              "score": 1,
+              "cost_usd": 0.008294270000000001,
+              "judge_cost_usd": 0,
+              "turns": 10,
+              "duration_seconds": 30,
+              "error": null,
+              "tokens": {
+                "input_tokens": 14,
+                "cache_creation_input_tokens": 23449,
+                "cache_read_input_tokens": 183007,
+                "output_tokens": 3546
+              },
+              "graders": {
+                "any-skill-fired": {
+                  "passed": true,
+                  "scored": false
+                },
+                "tests-run": {
+                  "passed": true,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass"
+              }
+            },
+            {
+              "score": 1,
+              "cost_usd": 0.00859367,
+              "judge_cost_usd": 0,
+              "turns": 10,
+              "duration_seconds": 32,
+              "error": null,
+              "tokens": {
+                "input_tokens": 14,
+                "cache_creation_input_tokens": 23819,
+                "cache_read_input_tokens": 183447,
+                "output_tokens": 3988
+              },
+              "graders": {
+                "any-skill-fired": {
+                  "passed": true,
+                  "scored": false
+                },
+                "tests-run": {
+                  "passed": true,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass"
+              }
+            }
+          ],
+          "without": [
+            {
+              "score": 1,
+              "cost_usd": 0.0058613400000000005,
+              "judge_cost_usd": 0,
+              "turns": 7,
+              "duration_seconds": 21,
+              "error": null,
+              "tokens": {
+                "input_tokens": 10,
+                "cache_creation_input_tokens": 18692,
+                "cache_read_input_tokens": 67594,
+                "output_tokens": 2892
+              },
+              "graders": {
+                "tests-run": {
+                  "passed": true,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass"
+              }
+            },
+            {
+              "score": 1,
+              "cost_usd": 0.0057950400000000004,
+              "judge_cost_usd": 0,
+              "turns": 8,
+              "duration_seconds": 22,
+              "error": null,
+              "tokens": {
+                "input_tokens": 10,
+                "cache_creation_input_tokens": 18538,
+                "cache_read_input_tokens": 67494,
+                "output_tokens": 2823
+              },
+              "graders": {
+                "tests-run": {
+                  "passed": true,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass"
+              }
+            },
+            {
+              "score": 1,
+              "cost_usd": 0.0071235000000000005,
+              "judge_cost_usd": 0,
+              "turns": 10,
+              "duration_seconds": 27,
+              "error": null,
+              "tokens": {
+                "input_tokens": 20,
+                "cache_creation_input_tokens": 19922,
+                "cache_read_input_tokens": 158510,
+                "output_tokens": 3104
+              },
+              "graders": {
+                "tests-run": {
+                  "passed": true,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass"
+              }
+            }
+          ]
+        },
+        "smart-hidden-caller": {
+          "with": [
+            {
+              "score": 1,
+              "cost_usd": 0.008611589999999999,
+              "judge_cost_usd": 0,
+              "turns": 15,
+              "duration_seconds": 28,
+              "error": null,
+              "tokens": {
+                "input_tokens": 16,
+                "cache_creation_input_tokens": 24406,
+                "cache_read_input_tokens": 216629,
+                "output_tokens": 3125
+              },
+              "graders": {
+                "any-skill-fired": {
+                  "passed": true,
+                  "scored": false
+                },
+                "tests-run": {
+                  "passed": true,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass"
+              }
+            },
+            {
+              "score": 1,
+              "cost_usd": 0.008152650000000001,
+              "judge_cost_usd": 0,
+              "turns": 13,
+              "duration_seconds": 25,
+              "error": null,
+              "tokens": {
+                "input_tokens": 14,
+                "cache_creation_input_tokens": 23925,
+                "cache_read_input_tokens": 185925,
+                "output_tokens": 3014
+              },
+              "graders": {
+                "any-skill-fired": {
+                  "passed": true,
+                  "scored": false
+                },
+                "tests-run": {
+                  "passed": true,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass"
+              }
+            },
+            {
+              "score": 1,
+              "cost_usd": 0.00796115,
+              "judge_cost_usd": 0,
+              "turns": 12,
+              "duration_seconds": 23,
+              "error": null,
+              "tokens": {
+                "input_tokens": 12,
+                "cache_creation_input_tokens": 24029,
+                "cache_read_input_tokens": 155465,
+                "output_tokens": 3199
+              },
+              "graders": {
+                "any-skill-fired": {
+                  "passed": true,
+                  "scored": false
+                },
+                "tests-run": {
+                  "passed": true,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass"
+              }
+            }
+          ],
+          "without": [
+            {
+              "score": 1,
+              "cost_usd": 0.0044705,
+              "judge_cost_usd": 0,
+              "turns": 11,
+              "duration_seconds": 16,
+              "error": null,
+              "tokens": {
+                "input_tokens": 10,
+                "cache_creation_input_tokens": 11610,
+                "cache_read_input_tokens": 76950,
+                "output_tokens": 2756
+              },
+              "graders": {
+                "tests-run": {
+                  "passed": true,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass"
+              }
+            },
+            {
+              "score": 1,
+              "cost_usd": 0.0046351100000000004,
+              "judge_cost_usd": 0,
+              "turns": 12,
+              "duration_seconds": 16,
+              "error": null,
+              "tokens": {
+                "input_tokens": 12,
+                "cache_creation_input_tokens": 11738,
+                "cache_read_input_tokens": 95331,
+                "output_tokens": 2666
+              },
+              "graders": {
+                "tests-run": {
+                  "passed": true,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass"
+              }
+            },
+            {
+              "score": 1,
+              "cost_usd": 0.00426433,
+              "judge_cost_usd": 0,
+              "turns": 11,
+              "duration_seconds": 18,
+              "error": null,
+              "tokens": {
+                "input_tokens": 10,
+                "cache_creation_input_tokens": 11158,
+                "cache_read_input_tokens": 75623,
+                "output_tokens": 2551
+              },
+              "graders": {
+                "tests-run": {
+                  "passed": true,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass"
+              }
+            }
+          ]
+        },
+        "smart-stale-cache": {
+          "with": [
+            {
+              "score": 1,
+              "cost_usd": 0.008720539999999999,
+              "judge_cost_usd": 0,
+              "turns": 16,
+              "duration_seconds": 29,
+              "error": null,
+              "tokens": {
+                "input_tokens": 16,
+                "cache_creation_input_tokens": 24429,
+                "cache_read_input_tokens": 217864,
+                "output_tokens": 3309
+              },
+              "graders": {
+                "any-skill-fired": {
+                  "passed": true,
+                  "scored": false
+                },
+                "tests-run": {
+                  "passed": true,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass"
+              }
+            },
+            {
+              "score": 0,
+              "cost_usd": 0.00881133,
+              "judge_cost_usd": 0,
+              "turns": 15,
+              "duration_seconds": 24,
+              "error": null,
+              "tokens": {
+                "input_tokens": 16,
+                "cache_creation_input_tokens": 25206,
+                "cache_read_input_tokens": 224503,
+                "output_tokens": 3047
+              },
+              "graders": {
+                "any-skill-fired": {
+                  "passed": true,
+                  "scored": false
+                },
+                "tests-run": {
+                  "passed": false,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass"
+              }
+            },
+            {
+              "score": 1,
+              "cost_usd": 0.009064049999999999,
+              "judge_cost_usd": 0,
+              "turns": 14,
+              "duration_seconds": 26,
+              "error": null,
+              "tokens": {
+                "input_tokens": 14,
+                "cache_creation_input_tokens": 25991,
+                "cache_read_input_tokens": 193695,
+                "output_tokens": 3855
+              },
+              "graders": {
+                "any-skill-fired": {
+                  "passed": true,
+                  "scored": false
+                },
+                "tests-run": {
+                  "passed": true,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass"
+              }
+            }
+          ],
+          "without": [
+            {
+              "score": 0,
+              "cost_usd": 0.00424195,
+              "judge_cost_usd": 0,
+              "turns": 10,
+              "duration_seconds": 17,
+              "error": null,
+              "tokens": {
+                "input_tokens": 14,
+                "cache_creation_input_tokens": 10521,
+                "cache_read_input_tokens": 110985,
+                "output_tokens": 2053
+              },
+              "graders": {
+                "tests-run": {
+                  "passed": false,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass"
+              }
+            },
+            {
+              "score": 0,
+              "cost_usd": 0.00432559,
+              "judge_cost_usd": 0,
+              "turns": 11,
+              "duration_seconds": 16,
+              "error": null,
+              "tokens": {
+                "input_tokens": 14,
+                "cache_creation_input_tokens": 10779,
+                "cache_read_input_tokens": 111189,
+                "output_tokens": 2113
+              },
+              "graders": {
+                "tests-run": {
+                  "passed": false,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass"
+              }
+            },
+            {
+              "score": 0,
+              "cost_usd": 0.00424541,
+              "judge_cost_usd": 0,
+              "turns": 11,
+              "duration_seconds": 16,
+              "error": null,
+              "tokens": {
+                "input_tokens": 12,
+                "cache_creation_input_tokens": 10741,
+                "cache_read_input_tokens": 94201,
+                "output_tokens": 2308
+              },
+              "graders": {
+                "tests-run": {
+                  "passed": false,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass"
+              }
+            }
+          ]
+        },
+        "smart-unicode-search": {
+          "with": [
+            {
+              "score": 1,
+              "cost_usd": 0.0075102300000000006,
+              "judge_cost_usd": 0,
+              "turns": 13,
+              "duration_seconds": 19,
+              "error": null,
+              "tokens": {
+                "input_tokens": 12,
+                "cache_creation_input_tokens": 23306,
+                "cache_read_input_tokens": 153633,
+                "output_tokens": 2623
+              },
+              "graders": {
+                "any-skill-fired": {
+                  "passed": true,
+                  "scored": false
+                },
+                "tests-run": {
+                  "passed": true,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass"
+              }
+            },
+            {
+              "score": 1,
+              "cost_usd": 0.00707621,
+              "judge_cost_usd": 0,
+              "turns": 11,
+              "duration_seconds": 18,
+              "error": null,
+              "tokens": {
+                "input_tokens": 10,
+                "cache_creation_input_tokens": 23082,
+                "cache_read_input_tokens": 123931,
+                "output_tokens": 2439
+              },
+              "graders": {
+                "any-skill-fired": {
+                  "passed": true,
+                  "scored": false
+                },
+                "tests-run": {
+                  "passed": true,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass"
+              }
+            },
+            {
+              "score": 1,
+              "cost_usd": 0.011804019999999998,
+              "judge_cost_usd": 0,
+              "turns": 15,
+              "duration_seconds": 43,
+              "error": null,
+              "tokens": {
+                "input_tokens": 22,
+                "cache_creation_input_tokens": 27182,
+                "cache_read_input_tokens": 321492,
+                "output_tokens": 6301
+              },
+              "graders": {
+                "any-skill-fired": {
+                  "passed": true,
+                  "scored": false
+                },
+                "tests-run": {
+                  "passed": true,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass"
+              }
+            }
+          ],
+          "without": [
+            {
+              "score": 1,
+              "cost_usd": 0.0037062600000000003,
+              "judge_cost_usd": 0,
+              "turns": 7,
+              "duration_seconds": 15,
+              "error": null,
+              "tokens": {
+                "input_tokens": 10,
+                "cache_creation_input_tokens": 9748,
+                "cache_read_input_tokens": 75116,
+                "output_tokens": 2009
+              },
+              "graders": {
+                "tests-run": {
+                  "passed": true,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass"
+              }
+            },
+            {
+              "score": 1,
+              "cost_usd": 0.00733236,
+              "judge_cost_usd": 0,
+              "turns": 13,
+              "duration_seconds": 32,
+              "error": null,
+              "tokens": {
+                "input_tokens": 18,
+                "cache_creation_input_tokens": 14188,
+                "cache_read_input_tokens": 156196,
+                "output_tokens": 5862
+              },
+              "graders": {
+                "tests-run": {
+                  "passed": true,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass"
+              }
+            },
+            {
+              "score": 1,
+              "cost_usd": 0.0034675999999999995,
+              "judge_cost_usd": 0,
+              "turns": 8,
+              "duration_seconds": 13,
+              "error": null,
+              "tokens": {
+                "input_tokens": 8,
+                "cache_creation_input_tokens": 9830,
+                "cache_read_input_tokens": 57680,
+                "output_tokens": 1848
+              },
+              "graders": {
+                "tests-run": {
+                  "passed": true,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass"
+              }
+            }
+          ]
+        }
+      }
     }
   ]
 }

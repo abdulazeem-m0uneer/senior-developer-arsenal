@@ -40,6 +40,10 @@ Each `task-*` case gives a real task in a small fixture and runs it with the plu
 | `task-cross-module-bug` | symptom in the invoice, cause in the money module | acceptance; regression test red then green |
 | `task-legacy-refactor` | refactor untested code, behaviour unchanged | acceptance (equal to the original on a grid); characterization test green before and after |
 | `task-feature-fullstack` | migration, API and client change for one feature | acceptance (old database keeps rows, API and client agree); feature test red then green |
+| `smart-hidden-caller` | change a date format used by two other callers | acceptance (screen changes, CSV export and API stay ISO) |
+| `smart-unicode-search` | search misses accented names; looks like case, is Unicode normalization | acceptance |
+| `smart-allocation` | proportional split does not add up | acceptance (sum exact, each part within one cent of its share) |
+| `smart-stale-cache` | header shows an old name; cause is a cache two modules away | acceptance (new name shown, cache still spares the database) |
 
 ## Real tasks: recorded runs
 
@@ -109,6 +113,40 @@ Proof run on arsenal 1.6.0 (branch feat/arsenal-smart): all 11 task cases, 5 run
 | `task-review` | without plugin | 5 | 1.00 | `defect-n-plus-one` 5/5<br>`defect-sql-injection` 5/5<br>`defect-swallowed-exception` 5/5<br>`findings` 5/5<br>`no-amount-check` 5/5 | none defined | 0.0524 | 52,159 | 926 | 3.8 |
 | `task-risky-migration` | with plugin | 5 | 1.00 | `any-skill-fired` 5/5 (indicator, not scored)<br>`flags-risk` 5/5 | `first-step-keeps-old-version-working` 5/5 | 0.1682 | 158,691 | 4,964 | 11.6 |
 | `task-risky-migration` | without plugin | 5 | 1.00 | `flags-risk` 5/5 | `first-step-keeps-old-version-working` 5/5 | 0.0884 | 87,509 | 3,271 | 6.4 |
+
+### `smart-sonnet` (2026-11-18)
+
+Claude Code 2.1.327, arsenal 1.6.1, model `sonnet`, judge `haiku`, 3 run(s) per arm, total cost 2.5076 USD.
+
+Calibration of the four smart-* cases (built to catch plausible wrong fixes; unit tests prove each wrong fix fails acceptance): 3 runs per arm, model sonnet; no OS sandbox, so Bash was not granted and tests ran only in the outcome checks. Both arms passed acceptance 3/3 on every case, so these cases do not separate the arms on this model.
+
+| Task | Arm | Runs | Mean score | Graders passed | Outcome checks passed | Cost per run (USD) | Input tokens per run | Output tokens per run | Turns per run |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `smart-allocation` | with plugin | 3 | 0.67 | `any-skill-fired` 3/3 (indicator, not scored)<br>`tests-run` 2/3 | `acceptance` 3/3 | 0.1484 | 139,139 | 1,886 | 9.3 |
+| `smart-allocation` | without plugin | 3 | 0.00 | `tests-run` 0/3 | `acceptance` 3/3 | 0.0755 | 46,524 | 868 | 3.0 |
+| `smart-hidden-caller` | with plugin | 3 | 0.33 | `any-skill-fired` 3/3 (indicator, not scored)<br>`tests-run` 1/3 | `acceptance` 3/3 | 0.1465 | 161,505 | 2,167 | 12.7 |
+| `smart-hidden-caller` | without plugin | 3 | 0.00 | `tests-run` 0/3 | `acceptance` 3/3 | 0.0619 | 97,164 | 1,641 | 9.3 |
+| `smart-stale-cache` | with plugin | 3 | 0.67 | `any-skill-fired` 3/3 (indicator, not scored)<br>`tests-run` 2/3 | `acceptance` 3/3 | 0.1264 | 173,463 | 2,118 | 13.7 |
+| `smart-stale-cache` | without plugin | 3 | 0.00 | `tests-run` 0/3 | `acceptance` 3/3 | 0.0506 | 79,470 | 1,005 | 7.0 |
+| `smart-unicode-search` | with plugin | 3 | 1.00 | `any-skill-fired` 3/3 (indicator, not scored)<br>`tests-run` 3/3 | `acceptance` 3/3 | 0.1453 | 253,341 | 3,040 | 13.7 |
+| `smart-unicode-search` | without plugin | 3 | 0.67 | `tests-run` 2/3 | `acceptance` 3/3 | 0.0814 | 141,422 | 2,654 | 11.3 |
+
+### `smart-haiku` (2026-11-18)
+
+Claude Code 2.1.327, arsenal 1.6.1, model `haiku`, judge `haiku`, 3 run(s) per arm, total cost 0.1620 USD.
+
+Same four smart-* cases on model haiku, 3 runs per arm, same conditions. Both arms passed acceptance 3/3 on every case: the weaker model also solves them without the plugin.
+
+| Task | Arm | Runs | Mean score | Graders passed | Outcome checks passed | Cost per run (USD) | Input tokens per run | Output tokens per run | Turns per run |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `smart-allocation` | with plugin | 3 | 1.00 | `any-skill-fired` 3/3 (indicator, not scored)<br>`tests-run` 3/3 | `acceptance` 3/3 | 0.0083 | 196,627 | 3,673 | 10.0 |
+| `smart-allocation` | without plugin | 3 | 1.00 | `tests-run` 3/3 | `acceptance` 3/3 | 0.0063 | 116,930 | 2,940 | 8.3 |
+| `smart-hidden-caller` | with plugin | 3 | 1.00 | `any-skill-fired` 3/3 (indicator, not scored)<br>`tests-run` 3/3 | `acceptance` 3/3 | 0.0082 | 210,140 | 3,113 | 13.3 |
+| `smart-hidden-caller` | without plugin | 3 | 1.00 | `tests-run` 3/3 | `acceptance` 3/3 | 0.0045 | 94,147 | 2,658 | 11.3 |
+| `smart-stale-cache` | with plugin | 3 | 0.67 | `any-skill-fired` 3/3 (indicator, not scored)<br>`tests-run` 2/3 | `acceptance` 3/3 | 0.0089 | 237,245 | 3,404 | 15.0 |
+| `smart-stale-cache` | without plugin | 3 | 0.00 | `tests-run` 0/3 | `acceptance` 3/3 | 0.0043 | 116,152 | 2,158 | 10.7 |
+| `smart-unicode-search` | with plugin | 3 | 1.00 | `any-skill-fired` 3/3 (indicator, not scored)<br>`tests-run` 3/3 | `acceptance` 3/3 | 0.0088 | 224,223 | 3,788 | 13.0 |
+| `smart-unicode-search` | without plugin | 3 | 1.00 | `tests-run` 3/3 | `acceptance` 3/3 | 0.0048 | 107,598 | 3,240 | 9.3 |
 
 <!-- eval-results:end -->
 
