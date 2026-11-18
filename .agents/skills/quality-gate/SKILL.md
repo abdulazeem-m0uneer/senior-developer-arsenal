@@ -1,7 +1,8 @@
 ---
 name: quality-gate
-description: 'Use whenever the user wants local checks to match CI, one pre-push command, or an explanation of a failing check. Designs and runs one local command that equals CI. Triggers: "quality gate", "run the gate", "pre-push checks", "same as CI locally", "failures only after pushing", /quality-gate. Not for building the pipeline (use devops-ci) or choosing tests for a change (use test-every-change).'
+description: 'One local command that equals CI. Use to make local checks match CI, set up pre-push checks, or explain a failing check.'
 ---
+<!-- routing (read by the skill router, not loaded into the skill listing): Use whenever the user wants local checks to match CI, one pre-push command, or an explanation of a failing check. Designs and runs one local command that equals CI. Triggers: "quality gate", "run the gate", "pre-push checks", "same as CI locally", "failures only after pushing", /quality-gate. Not for building the pipeline (use devops-ci) or choosing tests for a change (use test-every-change). -->
 
 # Quality Gate Procedure
 

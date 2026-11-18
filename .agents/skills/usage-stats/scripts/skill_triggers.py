@@ -1,4 +1,5 @@
-"""Trigger phrases of each arsenal skill, read from the `Triggers:` part of its SKILL.md description.
+"""Trigger phrases of each arsenal skill, read from the `Triggers:` part of its SKILL.md routing comment
+(or, without one, its description).
 
 Imported by diagnose.py; not a command. Standard library only.
   triggers(skills_dir) -> {skill name: [phrase, ...]}   quoted phrases plus the /slash-command
@@ -8,6 +9,7 @@ import re
 from pathlib import Path
 
 DESCRIPTION = re.compile(r"^description:\s*'((?:[^']|'')*)'\s*$", re.M)
+ROUTING = re.compile(r"^<!-- routing[^:]*: (.*) -->\s*$", re.M)  # preferred: the short description has no triggers
 TRIGGERS = re.compile(r"Triggers?:\s*(.*?)(?:\.\s+Not for\b|\.\s*$|$)", re.S)
 QUOTED = re.compile(r'"([^"]{2,80})"')
 SLASH = re.compile(r"(?<![\w/])/([a-z0-9]+(?:-[a-z0-9]+)*)")
@@ -17,10 +19,12 @@ def triggers(skills_dir):
     table = {}
     for skill_md in sorted(Path(skills_dir).glob("*/SKILL.md")):
         try:
-            found = DESCRIPTION.search(skill_md.read_text(encoding="utf-8"))
+            text = skill_md.read_text(encoding="utf-8")
         except (OSError, UnicodeDecodeError):
             continue
-        part = TRIGGERS.search(found.group(1).replace("''", "'")) if found else None
+        routing, found = ROUTING.search(text), DESCRIPTION.search(text)
+        source = routing.group(1) if routing else found.group(1).replace("''", "'") if found else ""
+        part = TRIGGERS.search(source)
         if not part:
             continue
         phrases = QUOTED.findall(part.group(1)) + [f"/{name}" for name in SLASH.findall(part.group(1))]

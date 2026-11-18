@@ -1,7 +1,8 @@
 ---
 name: kubernetes-ops
-description: 'Kubernetes manifests, Helm and kustomize, validation before apply, debugging with read-only kubectl first. Use to write, review or debug manifests, a Helm chart, or a failing pod or rollout. Triggers: "Kubernetes manifest", "Helm chart", "CrashLoopBackOff", "Pending pod", "kubectl", /kubernetes-ops. Not for a live shared cluster (use shared-infra-changes) or Dockerfiles and pipelines (use devops-ci).'
+description: 'Kubernetes manifests, Helm, kustomize and rollout debugging. Use for manifests, charts, or a failing pod or rollout.'
 ---
+<!-- routing (read by the skill router, not loaded into the skill listing): Kubernetes manifests, Helm and kustomize, validation before apply, debugging with read-only kubectl first. Use to write, review or debug manifests, a Helm chart, or a failing pod or rollout. Triggers: "Kubernetes manifest", "Helm chart", "CrashLoopBackOff", "Pending pod", "kubectl", /kubernetes-ops. Not for a live shared cluster (use shared-infra-changes) or Dockerfiles and pipelines (use devops-ci). -->
 
 # Kubernetes Operations Procedure
 

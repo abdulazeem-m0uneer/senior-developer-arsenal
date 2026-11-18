@@ -2,19 +2,13 @@
 
 The skill-triggering results below and the earlier hand run of the real tasks were measured with `claude plugin eval` on 2026-11-13 (the version is not recorded here; the runs in `docs/eval-results.json` state theirs), model `sonnet`, judge `sonnet`; the recorded runs state their own conditions. Re-run after changing skill descriptions or `hooks/core.md`; commands are in [CONTRIBUTING.md](../CONTRIBUTING.md).
 
-## Skill triggering (58 skills + 1 negative case, 1 run each)
+## Skill triggering
 
-Measured on the descriptions as of commit `e385c72`, before they were shortened by about 30 percent. Not re-run since (no paid run was made), so these numbers do not describe the current descriptions, and they are not recorded in `docs/eval-results.json`. Re-run with `--tag trigger` before relying on them.
+Re-run on 2026-11-18 after every skill description was cut to at most 180 characters (61 descriptions: about 24,100 characters before, 7,756 after) and the trigger phrases and "Not for" routes moved to a `<!-- routing: ... -->` comment in each SKILL.md body, which the skill router and `usage-stats` read and the skill listing does not load. 1 run per case, model `sonnet`, cost 5.67 USD.
 
-56 of 59 cases passed on the first full run. The three misses were re-run 3 times each after their descriptions were rewritten:
+61 of 62 cases passed (61 skills plus one negative case). The miss was `trigger-agent-memory`, which also missed on 1 of 3 runs before the change.
 
-| Skill | Result after rewrite | Note |
-| :--- | :--- | :--- |
-| `agent-memory` | 2 of 3 | |
-| `quality-gate` | 2 of 3 | |
-| `create-skill` | 1 of 3 | The failing runs refused because the test machine's own host instructions said skills cannot be created there; not reproduced elsewhere. |
-
-Some cases accept either of two overlapping skills (for example `code-review` or `deep-review`); see each case's `graders/skill-fired.md`.
+The earlier run (2026-11-13, 59 cases on the long descriptions) passed 56 of 59.
 
 ## Real tasks: what is checked
 
@@ -147,6 +141,23 @@ Same four smart-* cases on model haiku, 3 runs per arm, same conditions. Both ar
 | `smart-stale-cache` | without plugin | 3 | 0.00 | `tests-run` 0/3 | `acceptance` 3/3 | 0.0043 | 116,152 | 2,158 | 10.7 |
 | `smart-unicode-search` | with plugin | 3 | 1.00 | `any-skill-fired` 3/3 (indicator, not scored)<br>`tests-run` 3/3 | `acceptance` 3/3 | 0.0088 | 224,223 | 3,788 | 13.0 |
 | `smart-unicode-search` | without plugin | 3 | 1.00 | `tests-run` 3/3 | `acceptance` 3/3 | 0.0048 | 107,598 | 3,240 | 9.3 |
+
+### `smart-sonnet-short-listing` (2026-11-18)
+
+Claude Code 2.1.327, arsenal 1.7.0, model `sonnet`, judge `haiku`, 3 run(s) per arm, total cost 2.0177 USD.
+
+The four smart-* cases after the skill descriptions were cut from about 24,100 to 7,800 characters (trigger phrases moved to a routing comment the router reads), 3 runs per arm, model sonnet, no OS sandbox. Acceptance 3/3 in both arms, as before; the with-plugin arm costs about 22 percent less than in smart-sonnet, and its first call carries about 20,900 input tokens against 25,600 before.
+
+| Task | Arm | Runs | Mean score | Graders passed | Outcome checks passed | Cost per run (USD) | Input tokens per run | Output tokens per run | Turns per run |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `smart-allocation` | with plugin | 3 | 1.00 | `any-skill-fired` 3/3 (indicator, not scored)<br>`tests-run` 3/3 | `acceptance` 3/3 | 0.0990 | 141,592 | 1,871 | 10.0 |
+| `smart-allocation` | without plugin | 3 | 0.00 | `tests-run` 0/3 | `acceptance` 3/3 | 0.0430 | 46,521 | 877 | 3.0 |
+| `smart-hidden-caller` | with plugin | 3 | 0.67 | `any-skill-fired` 3/3 (indicator, not scored)<br>`tests-run` 2/3 | `acceptance` 3/3 | 0.1035 | 160,219 | 1,957 | 10.7 |
+| `smart-hidden-caller` | without plugin | 3 | 0.33 | `tests-run` 1/3 | `acceptance` 3/3 | 0.0633 | 101,948 | 1,661 | 10.3 |
+| `smart-stale-cache` | with plugin | 3 | 0.67 | `any-skill-fired` 3/3 (indicator, not scored)<br>`tests-run` 2/3 | `acceptance` 3/3 | 0.0988 | 133,365 | 1,927 | 12.7 |
+| `smart-stale-cache` | without plugin | 3 | 0.00 | `tests-run` 0/3 | `acceptance` 3/3 | 0.0548 | 95,756 | 1,172 | 8.0 |
+| `smart-unicode-search` | with plugin | 3 | 0.67 | `any-skill-fired` 3/3 (indicator, not scored)<br>`tests-run` 2/3 | `acceptance` 3/3 | 0.1236 | 220,485 | 3,039 | 13.7 |
+| `smart-unicode-search` | without plugin | 3 | 1.00 | `tests-run` 3/3 | `acceptance` 3/3 | 0.0867 | 165,443 | 2,902 | 12.3 |
 
 <!-- eval-results:end -->
 

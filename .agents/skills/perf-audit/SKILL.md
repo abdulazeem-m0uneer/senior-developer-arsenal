@@ -1,7 +1,8 @@
 ---
 name: perf-audit
-description: 'Backend performance audit: database query bottlenecks, event loop lag, memory leaks, thread pool starvation. Use to audit backend performance or latency, or profile slow queries. Triggers: "performance audit", "slow queries", "event loop lag", "memory leak", "thread starvation", /perf-audit. Not for frontend re-render profiling (use frontend-audit).'
+description: 'Backend performance: slow queries, event loop lag, memory leaks, pool starvation. Use when latency or memory gets worse.'
 ---
+<!-- routing (read by the skill router, not loaded into the skill listing): Backend performance audit: database query bottlenecks, event loop lag, memory leaks, thread pool starvation. Use to audit backend performance or latency, or profile slow queries. Triggers: "performance audit", "slow queries", "event loop lag", "memory leak", "thread starvation", /perf-audit. Not for frontend re-render profiling (use frontend-audit). -->
 
 # Systems Performance & Latency Audit Skill
 

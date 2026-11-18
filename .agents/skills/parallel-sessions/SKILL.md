@@ -1,7 +1,8 @@
 ---
 name: parallel-sessions
-description: 'Several agents or people in one repository at once: one worktree per task, staging by explicit path. Use to work alongside other sessions or stop duplicated or overwritten work. Triggers: "another session", "shared checkout", "parallel agents", "use a worktree", /parallel-sessions. Not for a coordinator plus lanes (use multi-session-delivery) or rebasing (use git-workflow-master).'
+description: 'Several sessions in one repository: a worktree per task, staging by path. Use when another session or agent shares the checkout.'
 ---
+<!-- routing (read by the skill router, not loaded into the skill listing): Several agents or people in one repository at once: one worktree per task, staging by explicit path. Use to work alongside other sessions or stop duplicated or overwritten work. Triggers: "another session", "shared checkout", "parallel agents", "use a worktree", /parallel-sessions. Not for a coordinator plus lanes (use multi-session-delivery) or rebasing (use git-workflow-master). -->
 
 # Parallel Sessions Procedure
 

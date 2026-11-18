@@ -1,7 +1,8 @@
 ---
 name: threat-model
-description: 'Design-time threat modelling: data flows and trust boundaries, STRIDE, abuse cases, rated mitigations. Use to work out what an attacker could do to a feature, service or API before or while building it. Triggers: "threat model", "STRIDE", "abuse cases", "new trust boundary", /threat-model. Not for flaws in existing code (use security-audit) or personal data flows (use data-privacy).'
+description: 'Design-time threat model: data flows, trust boundaries, STRIDE, abuse cases. Use before building a feature with a new attack surface.'
 ---
+<!-- routing (read by the skill router, not loaded into the skill listing): Design-time threat modelling: data flows and trust boundaries, STRIDE, abuse cases, rated mitigations. Use to work out what an attacker could do to a feature, service or API before or while building it. Triggers: "threat model", "STRIDE", "abuse cases", "new trust boundary", /threat-model. Not for flaws in existing code (use security-audit) or personal data flows (use data-privacy). -->
 
 # Threat Model Procedure
 

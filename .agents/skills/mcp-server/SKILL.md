@@ -1,7 +1,8 @@
 ---
 name: mcp-server
-description: 'Build an MCP tool server that lets agents call an outside API or service. Use to expose a service, database or internal API to agents as tools. Triggers: "build an MCP server", "expose this API to agents", "write tools for the agent", "tool server", /mcp-server. Not for wrapping a provider inside the application (use provider-sdk) or its own HTTP API (use api-design).'
+description: 'Build an MCP tool server so agents can call a service or API. Use to expose an API, database or service to agents as tools.'
 ---
+<!-- routing (read by the skill router, not loaded into the skill listing): Build an MCP tool server that lets agents call an outside API or service. Use to expose a service, database or internal API to agents as tools. Triggers: "build an MCP server", "expose this API to agents", "write tools for the agent", "tool server", /mcp-server. Not for wrapping a provider inside the application (use provider-sdk) or its own HTTP API (use api-design). -->
 
 # Agent Tool Server Procedure
 

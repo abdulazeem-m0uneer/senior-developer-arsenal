@@ -1,7 +1,8 @@
 ---
 name: usage-stats
-description: 'Local numbers on how the arsenal helped in your own sessions. Triggers: "usage stats", "how useful is the arsenal", "arsenal report", "marketing numbers", /usage-stats. Not for run token spend (use autonomous-run).'
+description: 'Local numbers on how the arsenal helped in your sessions. Use when asked for usage stats or an arsenal report.'
 ---
+<!-- routing (read by the skill router, not loaded into the skill listing): Local numbers on how the arsenal helped in your own sessions. Triggers: "usage stats", "how useful is the arsenal", "arsenal report", "marketing numbers", /usage-stats. Not for run token spend (use autonomous-run). -->
 
 # Usage Stats Procedure
 

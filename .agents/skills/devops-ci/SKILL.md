@@ -1,7 +1,8 @@
 ---
 name: devops-ci
-description: 'CI/CD and containers. Use to write or harden a Dockerfile, build or speed up a pipeline, plan a deployment, or fix a failing workflow. Triggers: "Dockerfile", "GitHub Actions", "CI pipeline", "deploy strategy", "rollback", /devops-ci. Not for version bumps and release notes (use git-release) or latency profiling (use perf-audit).'
+description: 'Dockerfiles, CI/CD pipelines, deployments and rollbacks. Use to write or harden a Dockerfile or pipeline, or fix a failing workflow.'
 ---
+<!-- routing (read by the skill router, not loaded into the skill listing): CI/CD and containers. Use to write or harden a Dockerfile, build or speed up a pipeline, plan a deployment, or fix a failing workflow. Triggers: "Dockerfile", "GitHub Actions", "CI pipeline", "deploy strategy", "rollback", /devops-ci. Not for version bumps and release notes (use git-release) or latency profiling (use perf-audit). -->
 
 # DevOps, CI/CD & Containerisation Procedure
 

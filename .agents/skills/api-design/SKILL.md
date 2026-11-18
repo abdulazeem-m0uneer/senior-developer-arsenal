@@ -1,7 +1,8 @@
 ---
 name: api-design
-description: 'Design REST or RPC API contracts, input validation and service interfaces (ASP.NET Core, Node.js). Use to design endpoints, DTOs, request and response schemas or an error format. Triggers: "design API", "create endpoints", "API schema", /api-design. Not for client state or fullstack synchronization (use fullstack-integration-master).'
+description: 'Design REST or RPC endpoints: DTOs, validation, errors, pagination, idempotency. Use when adding or changing an endpoint contract.'
 ---
+<!-- routing (read by the skill router, not loaded into the skill listing): Design REST or RPC API contracts, input validation and service interfaces (ASP.NET Core, Node.js). Use to design endpoints, DTOs, request and response schemas or an error format. Triggers: "design API", "create endpoints", "API schema", /api-design. Not for client state or fullstack synchronization (use fullstack-integration-master). -->
 
 # API Design & Interface Specification Skill
 

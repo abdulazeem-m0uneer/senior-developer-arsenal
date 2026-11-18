@@ -1,7 +1,8 @@
 ---
 name: lessons-learned
-description: 'Use whenever the user says the agent made or repeated a mistake, corrects it, or asks to record a lesson, and after a confirmed root cause. Records it in the mistake ledger. Triggers: "you made this mistake before", "learn from this", "record this lesson", "never do that again", /lessons-learned. Not for preferences or facts (use agent-memory), decisions (use decision-log) or incidents (use incident-response).'
+description: 'Mistake ledger. Use whenever the user says the agent made or repeated a mistake or corrects it, and after any confirmed root cause.'
 ---
+<!-- routing (read by the skill router, not loaded into the skill listing): Use whenever the user says the agent made or repeated a mistake, corrects it, or asks to record a lesson, and after a confirmed root cause. Records it in the mistake ledger. Triggers: "you made this mistake before", "learn from this", "record this lesson", "never do that again", /lessons-learned. Not for preferences or facts (use agent-memory), decisions (use decision-log) or incidents (use incident-response). -->
 
 # Lessons Learned Procedure
 

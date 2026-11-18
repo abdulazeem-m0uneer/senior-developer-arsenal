@@ -1,7 +1,8 @@
 ---
 name: reverse-engineer
-description: 'Understand one feature of a third-party app (native, Electron, .NET, APK, web) with the REA MCP server, then rebuild it clean-room. Use to trace, decompile or rebuild a feature. Triggers: "reverse engineer", "decompile", "trace the feature", "REA", /reverse-engineer. Not for your own legacy code (use legacy-parity), a production bug (use investigate) or bypassing licensing, DRM or paywalls (refuse).'
+description: 'Trace one feature of a third-party app with the REA MCP server, then rebuild it clean-room. Use to reverse engineer or decompile a feature.'
 ---
+<!-- routing (read by the skill router, not loaded into the skill listing): Understand one feature of a third-party app (native, Electron, .NET, APK, web) with the REA MCP server, then rebuild it clean-room. Use to trace, decompile or rebuild a feature. Triggers: "reverse engineer", "decompile", "trace the feature", "REA", /reverse-engineer. Not for your own legacy code (use legacy-parity), a production bug (use investigate) or bypassing licensing, DRM or paywalls (refuse). -->
 
 # Feature Reverse-Engineering Procedure
 

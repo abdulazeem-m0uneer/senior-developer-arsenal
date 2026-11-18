@@ -1,7 +1,8 @@
 ---
 name: refactor-legacy
-description: 'Change untested code safely in place: pin behaviour with characterization tests, then refactor in tiny green steps. Use to change, clean up or extend code that has no tests. Triggers: "legacy code", "safely refactor", "characterization test", "golden master", "strangler fig", /refactor-legacy. Not for rebuilding elsewhere (use legacy-parity) or new-feature tests (use test-every-change).'
+description: 'Change untested code safely: characterization tests first, then tiny green steps. Use when changing code that has no tests.'
 ---
+<!-- routing (read by the skill router, not loaded into the skill listing): Change untested code safely in place: pin behaviour with characterization tests, then refactor in tiny green steps. Use to change, clean up or extend code that has no tests. Triggers: "legacy code", "safely refactor", "characterization test", "golden master", "strangler fig", /refactor-legacy. Not for rebuilding elsewhere (use legacy-parity) or new-feature tests (use test-every-change). -->
 
 # Refactor Legacy Procedure
 

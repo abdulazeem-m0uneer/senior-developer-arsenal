@@ -1,7 +1,8 @@
 ---
 name: architecture-design-adr
-description: 'System architecture design, trade-off evaluation and Architecture Decision Record (ADR) authoring. Use when planning a subsystem, choosing between technologies, or documenting an architectural decision. Triggers: "architecture design", "ADR", "trade-off evaluation", "monolith vs microservices". Not for UI design (use ui-ux-architect) or indexing alone (use database-architect).'
+description: 'Architecture trade-offs and ADRs. Use when choosing between technologies, designing a subsystem or boundary, or recording an architectural decision.'
 ---
+<!-- routing (read by the skill router, not loaded into the skill listing): System architecture design, trade-off evaluation and Architecture Decision Record (ADR) authoring. Use when planning a subsystem, choosing between technologies, or documenting an architectural decision. Triggers: "architecture design", "ADR", "trade-off evaluation", "monolith vs microservices". Not for UI design (use ui-ux-architect) or indexing alone (use database-architect). -->
 
 # Architecture Design & ADR Authoring Skill
 

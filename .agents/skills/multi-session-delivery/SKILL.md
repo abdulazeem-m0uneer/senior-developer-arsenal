@@ -1,7 +1,8 @@
 ---
 name: multi-session-delivery
-description: 'Operating model for several long-running agent sessions on one product: a coordinator that writes no code plus build lanes and a message bus. Use for two or more apps or repos, or work too big for one session. Triggers: "PM session", "coordinator session", "lanes", "session bus", /multi-session-delivery. Not for collisions in one checkout (use parallel-sessions) or one unattended run (use autonomous-run).'
+description: 'Coordinator plus build lanes for several long-running agent sessions on one product. Use for multi-repo or multi-session delivery.'
 ---
+<!-- routing (read by the skill router, not loaded into the skill listing): Operating model for several long-running agent sessions on one product: a coordinator that writes no code plus build lanes and a message bus. Use for two or more apps or repos, or work too big for one session. Triggers: "PM session", "coordinator session", "lanes", "session bus", /multi-session-delivery. Not for collisions in one checkout (use parallel-sessions) or one unattended run (use autonomous-run). -->
 
 # Multi-Session Delivery Procedure
 

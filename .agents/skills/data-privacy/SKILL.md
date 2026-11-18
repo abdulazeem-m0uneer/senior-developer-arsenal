@@ -1,7 +1,8 @@
 ---
 name: data-privacy
-description: 'Privacy review of a code change: trace the personal data it touches to logs, stored copies, API responses, outside services and exports. Triggers: "privacy review", "PII in logs", "personal data leak", "redact", /data-privacy. Not for injection or broken authentication (use security-audit) or diff quality (use code-review).'
+description: 'Privacy review of a change: where personal data goes (logs, stores, responses, outside services, exports). Use for PII, redaction or privacy checks.'
 ---
+<!-- routing (read by the skill router, not loaded into the skill listing): Privacy review of a code change: trace the personal data it touches to logs, stored copies, API responses, outside services and exports. Triggers: "privacy review", "PII in logs", "personal data leak", "redact", /data-privacy. Not for injection or broken authentication (use security-audit) or diff quality (use code-review). -->
 
 # Data Privacy Review Procedure
 

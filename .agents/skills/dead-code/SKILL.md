@@ -1,7 +1,8 @@
 ---
 name: dead-code
-description: 'Dead-code sweep: unused functions, imports, exports, dependencies and commented-out code, verified before removal. Triggers: "dead code", "unused code", "unused imports", "unused exports", "remove dead code", /dead-code. Not for untested code (use refactor-legacy).'
+description: 'Find and remove unused functions, imports, exports, dependencies and commented-out code, each verified first. Use for dead or unused code.'
 ---
+<!-- routing (read by the skill router, not loaded into the skill listing): Dead-code sweep: unused functions, imports, exports, dependencies and commented-out code, verified before removal. Triggers: "dead code", "unused code", "unused imports", "unused exports", "remove dead code", /dead-code. Not for untested code (use refactor-legacy). -->
 
 # Dead Code Sweep Procedure
 
