@@ -29,6 +29,10 @@ Built-in rules:
                      command named in `programs`) run with --help, or with -h as its only argument: it may not parse
                      the flag and run for real.
   secret-in-message  a secret-looking value in the arguments of a command named in `programs` (none by default).
+  rerun-after-red    off until a registry entry names it. A test, build, lint or check command (the same check as the
+                     Stop gate counts: tool and subcommand, flags and wrappers ignored) or a `git push` (same
+                     operands) that failed last in this session and has no later pass, run again before a cause note
+                     (`lessons.py cause "<assertion or check>: <cause or unknown>"`) was recorded after the failure.
 Also not seen: a pgrep inside a quoted "$(...)" in a loop condition or in the loop body (`while true; do pgrep -f x
 || break; done`), and a here-document fed to a shell
 (`bash <<EOF`), whose body is dropped as data.
@@ -66,7 +70,10 @@ BUILT_IN_REASONS = {
     "help-probe": "Do not probe a local script with --help or -h: it may not parse the flag and run for real. Read "
                   "its usage header or source first.",
     "secret-in-message": "A message must not carry a secret value. Name the file that holds the secret instead.",
+    "rerun-after-red": "This check or push failed and was not read. Read the failing lines, state the cause, record it "
+                       'with `python3 {lessons} cause "<failing assertion or check>: <cause or unknown>"`, then rerun.',
 }
+OPT_IN = frozenset(("rerun-after-red",))  # off until a registry entry names it
 ENTRY_KEYS = {"rule", "lesson", "reason", "enabled", "programs"}
 TAKES_PROGRAMS = ("help-probe", "secret-in-message")
 CUSTOM_KEYS = {"lesson", "reason", "program", "subcommand", "args_any", "assignments_any", "in_loop"}
@@ -111,6 +118,34 @@ def has_option(args, letter, long_name=None):
     """A single-letter option given alone or inside a cluster (-af), or the long option (--full, --full=x)."""
     return any((long_name and (arg == long_name or arg.startswith(long_name + "=")))
                or (re.match(r"^-[A-Za-z]+$", arg) and letter in arg[1:]) for arg in args)
+
+
+def push_key(cmd):
+    """`git push origin feat` for a git push (its operands, no options), else ''."""
+    if cmd.name != "git":
+        return ""
+    index, subcommand = git_subcommand(cmd.args)
+    if subcommand != "push":
+        return ""
+    return " ".join(["git push", *(a for a in cmd.args[index + 1:] if not a.startswith("-"))])
+
+
+def push_keys(command):
+    return [key for key in map(push_key, commands(command)) if key]
+
+
+def is_cause_command(cmd):
+    script, args = script_and_args(cmd)
+    return script.rpartition("/")[2] in ("lessons", "lessons.py") and "cause" in args[:3]
+
+
+def rerun_after_red(cmd, entry):
+    """The same check, or the same push, that failed last in this session and has no cause note since."""
+    session = entry.get("session")
+    if not session or is_cause_command(cmd):
+        return False
+    state = session()
+    return bool((state["keys"] | {push_key(cmd)}) & state["red"])
 
 
 def pgrep_wait_loop(cmd, _entry):
@@ -203,7 +238,7 @@ def secret_in_message(cmd, entry):
 
 
 BUILT_IN = {"pgrep-wait-loop": pgrep_wait_loop, "hook-bypass": hook_bypass, "help-probe": help_probe,
-            "secret-in-message": secret_in_message}
+            "secret-in-message": secret_in_message, "rerun-after-red": rerun_after_red}
 
 
 def custom_match(cmd, entry):
@@ -300,26 +335,31 @@ def registry_paths(cwd):
 
 def rules(cwd):
     """[(rule name, entry, matcher)]: built-in rules merged with the registries (project last, so it wins)."""
-    built_in = {name: {"rule": name} for name in BUILT_IN}
+    built_in = {name: {"rule": name} for name in BUILT_IN if name not in OPT_IN}
     custom = []
     for path in registry_paths(cwd):
         for entry in read_registry(path):
             if "program" in entry:
                 custom.append((entry.get("lesson"), entry, custom_match))
             else:
-                built_in[entry["rule"]] = {**built_in[entry["rule"]], **entry}
+                built_in[entry["rule"]] = {**built_in.get(entry["rule"], {}), **entry}
     return [(name, entry, BUILT_IN[name]) for name, entry in built_in.items()
             if entry.get("enabled", True)] + custom
 
 
-def judge(command, cwd):
+def judge(command, cwd, session=None):
     """The first rule the command breaks, as Hit(lesson id or None, rule name, reason); None when it breaks none.
-    Raises RegistryError when a registry file is unusable."""
+    session: a function returning {"red": failed check and push keys, "keys": the command's check keys}, called only
+    by a rule that needs it. Raises RegistryError when a registry file is unusable."""
     if not isinstance(command, str) or not command.strip():
         return None
     active = rules(cwd)
+    state = []
     for cmd in commands(command):
         for name, entry, matcher in active:
+            if name == "rerun-after-red" and session:
+                state = state or [session()]
+                entry = {**entry, "session": lambda: state[0]}
             if matcher(cmd, entry):
                 return Hit(entry.get("lesson"), name, entry.get("reason") or BUILT_IN_REASONS[name])
     return None

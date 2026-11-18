@@ -85,19 +85,20 @@ A promoted lesson is no longer injected at session start. If the mistake happens
 
 ### Lesson guard registry
 
-The plugin's `PreToolUse` hook (`hooks/guard_lessons.py`) applies the built-in rules `pgrep-wait-loop`, `hook-bypass`, `help-probe` and `secret-in-message`, adjusted by `~/.agents/lesson-guards.json` (`$LESSONS_GUARDS_GLOBAL_FILE`) and then the project's `.agents/lesson-guards.json` (searched upward from the project directory; its entry for a built-in rule wins):
+The plugin's `PreToolUse` hook (`hooks/guard_lessons.py`) applies the built-in rules `pgrep-wait-loop`, `hook-bypass`, `help-probe` and `secret-in-message` (and the opt-in `rerun-after-red`), adjusted by `~/.agents/lesson-guards.json` (`$LESSONS_GUARDS_GLOBAL_FILE`) and then the project's `.agents/lesson-guards.json` (searched upward from the project directory; its entry for a built-in rule wins):
 
 ```json
 {"guards": [
   {"rule": "hook-bypass", "lesson": "G027"},
   {"rule": "help-probe", "enabled": false},
+  {"rule": "rerun-after-red", "lesson": "L083"},
   {"rule": "secret-in-message", "lesson": "G021", "programs": ["notify.sh"]},
   {"lesson": "L031", "program": "git", "subcommand": "push", "args_any": ["--force", "-f"],
    "reason": "Force-pushed a shared branch. Push a new branch instead."}
 ]}
 ```
 
-`help-probe` judges scripts with a known suffix (`.sh`, `.py`, `.mjs` and the like) run directly or through an interpreter; its `programs` adds extensionless scripts by name. `hook-bypass` counts `HUSKY=0` only on a git command (set on it, or exported earlier in the same command line), so `HUSKY=0 npm ci` passes. A rule of your own needs `lesson`, `reason` and `program` (a name or list of names, never a path); `subcommand` (first operand; for git, after global options such as `-C dir`), `args_any` (exact words; `-f` also matches in a cluster such as `-fu`), `assignments_any` (`VAR=value` before the program) and `in_loop` (the condition of `while`/`until`) narrow it. Every key is checked: an unknown key, a wrong type or broken JSON makes the hook deny every Bash command with the file and the fault until it is fixed (an Edit fixes it), so a typo never silently drops a guard. `secret-in-message` does nothing until `programs` names the commands that send messages. Not judged: commands built from variables or run through `xargs`, `ssh` or a script file. The hook ships with the Claude Code plugin only; other agents get the same rules from a test or CI check.
+`rerun-after-red` is off until an entry names it. It refuses a test, build, lint or check command (the same check as the Stop gate: tool and subcommand, flags and wrappers ignored) or a `git push` (same operands) that failed last in the session, with no later pass, until a cause note was recorded after the failure: `python3 scripts/lessons.py cause "<failing assertion or check>: <cause or unknown>"` (both sides required; the note writes nothing, the hook sees it ran). A different command, a passed check and the note command itself are never refused. `help-probe` judges scripts with a known suffix (`.sh`, `.py`, `.mjs` and the like) run directly or through an interpreter; its `programs` adds extensionless scripts by name. `hook-bypass` counts `HUSKY=0` only on a git command (set on it, or exported earlier in the same command line), so `HUSKY=0 npm ci` passes. A rule of your own needs `lesson`, `reason` and `program` (a name or list of names, never a path); `subcommand` (first operand; for git, after global options such as `-C dir`), `args_any` (exact words; `-f` also matches in a cluster such as `-fu`), `assignments_any` (`VAR=value` before the program) and `in_loop` (the condition of `while`/`until`) narrow it. Every key is checked: an unknown key, a wrong type or broken JSON makes the hook deny every Bash command with the file and the fault until it is fixed (an Edit fixes it), so a typo never silently drops a guard. `secret-in-message` does nothing until `programs` names the commands that send messages. Not judged: commands built from variables or run through `xargs`, `ssh` or a script file. The hook ships with the Claude Code plugin only; other agents get the same rules from a test or CI check.
 
 ### Daily repeat check
 

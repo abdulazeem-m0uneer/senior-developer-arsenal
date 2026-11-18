@@ -9,7 +9,8 @@ Usage (hook input is JSON on stdin):
   guard.py pre       # PreToolUse, every tool: deny past a run limit (guard_limits.py); deny a file write outside
                      # the edit-scope lock (guard_scope.py); ask or deny an arsenal subagent call asking for a
                      # model above its tier (guard_models.py); deny a Bash command that
-                     # repeats a recorded lesson (guard_lessons.py, hit logged by guard_hits.py); ask or deny a
+                     # repeats a recorded lesson (guard_lessons.py, hit logged by guard_hits.py; the opt-in rerun-after-red also reads
+                     # this session's failed checks and pushes and the `lessons.py cause` notes); ask or deny a
                      # destructive Bash command (guard_destructive.py)
   guard.py stop      # Stop: block once when source changed without a test, or a check failed, never passed
                      # again and no lesson followed, or this session's changes leave dead code (dead_code.py);
@@ -181,6 +182,9 @@ CHECK_COMMAND = re.compile(
 LESSON_COMMAND = re.compile(
     PREFIX + r"(?:(?:\S*/)?py(?:thon[\d.]*)?(?:\s+-\S+)*\s+)?(?:\"[^\"\n]*lessons\.py\"|'[^'\n]*lessons\.py'|[^\s\"';&|]*lessons\.py)"
     r"(?:\s+--file[=\s](?:\"[^\"]*\"|'[^']*'|\S+))?\s+(?:add|bump)\b(?![^;&|\n]*\s(?:--help|-h)(?:\s|$))")
+CAUSE_COMMAND = re.compile(  # `lessons.py cause <note>` run as a command, as LESSON_COMMAND does for add and bump
+    PREFIX + r"(?:(?:\S*/)?py(?:thon[\d.]*)?(?:\s+-\S+)*\s+)?(?:\"[^\"\n]*lessons(?:\.py)?\"|'[^'\n]*lessons(?:\.py)?'"
+    r"|[^\s\"';&|]*lessons(?:\.py)?)\s+cause\b(?![^;&|\n]*\s(?:--help|-h)(?:\s|$))")
 
 
 def kind(path):
@@ -356,6 +360,32 @@ def baseline():
             record(path, {"event": "run", "calls": calls, "time": started})
 
 
+def pushes(command):
+    """The `git push` operand keys in a command; none when the lesson guards are missing."""
+    try:
+        return guard_lessons.push_keys(bounded(command)) if guard_lessons else []
+    except Exception:  # shell parsing must not break the tracker
+        return []
+
+
+def red_checks(events):
+    """Check and push keys that failed and neither passed nor got a cause note (`lessons.py cause`) since."""
+    red = set()
+    for event in events:
+        kind_, key = event.get("event"), event.get("key")
+        if kind_ == "fail":
+            red |= set(text_list(event.get("checks")))
+        elif kind_ == "pass":
+            red -= set(text_list(event.get("checks")))
+        elif kind_ == "push_fail" and isinstance(key, str):
+            red.add(key)
+        elif kind_ == "push_ok":
+            red.discard(key)
+        elif kind_ == "cause":
+            red.clear()
+    return red
+
+
 def track():
     if switched_off():
         return  # ARSENAL_GUARD=off records nothing either
@@ -370,6 +400,8 @@ def track():
         if data.get("is_interrupt") is not True:
             record(path, {"event": "error", "command": shown(command, FAILED_COMMAND_CHARS),
                           "error": shown(str(data.get("error") or ""), ERROR_CHARS)})
+            for key in pushes(command):  # not a "fail": a refused push is no failed check at the Stop gate
+                record(path, {"event": "push_fail", "key": key})
             if checks:
                 record(path, {"event": "fail", "command": shown(command, COMMAND_CHARS), "checks": checks})
         return
@@ -380,6 +412,10 @@ def track():
             save_evidence(data, command, before)
         except OSError:  # the evidence file is optional; the gate's own state is already written
             pass
+    if CAUSE_COMMAND.search(bounded(command)):
+        record(path, {"event": "cause"})
+    for key in pushes(command):
+        record(path, {"event": "push_ok", "key": key})
     checks = check_keys(command, decisive=True)  # a pass hidden by `| tail` or `|| true` proves nothing
     if checks:
         record(path, {"event": "pass", "checks": checks})
@@ -491,7 +527,7 @@ def pre():
     if data.get("tool_name") != "Bash" or not isinstance(command, str):
         return
     if guard_lessons and not switched_off("ARSENAL_LESSON_GUARDS"):
-        refusal = lesson_refusal(command, cwd)
+        refusal = lesson_refusal(command, cwd, data)
         if refusal:
             return decide("deny", refusal)
     destructive_mode = setting("ARSENAL_GUARD_DESTRUCTIVE")
@@ -527,10 +563,13 @@ def scope_refusal(tool_name, tool_input, cwd, report_write=False):
     return guard_scope.refusal(tool_name, tool_input, cwd, report_write)
 
 
-def lesson_refusal(command, cwd):
+def lesson_refusal(command, cwd, data=None):
     """Why the command is refused under a lesson guard (the hit is logged), or ''."""
+    def session():
+        path = state_path(data) if data else None
+        return {"red": red_checks(load(path)) if path else set(), "keys": set(check_keys(command))}
     try:
-        hit = guard_lessons.judge(command, cwd)
+        hit = guard_lessons.judge(command, cwd, session)
     except guard_lessons.RegistryError as error:
         return (f"arsenal lesson guards: the registry is unusable ({error}). Fix the file with the Edit tool (or restart "
                 "the session with ARSENAL_LESSON_GUARDS=off); until then no Bash command runs, so no guard is silently lost.")
@@ -544,7 +583,8 @@ def lesson_refusal(command, cwd):
         guard_hits.append(hit.lesson, hit.rule, cwd)
     except Exception as error:  # the log is a report (no home directory, unwritable file); the refusal stands
         note = f" (hit not logged: {error})"
-    return f"arsenal lesson guard {hit.lesson or hit.rule} ({hit.rule}): {hit.reason}{note}"
+    why = hit.reason.replace("{lessons}", str(LESSONS))
+    return f"arsenal lesson guard {hit.lesson or hit.rule} ({hit.rule}): {why}{note}"
 
 
 def session_base(root, events):

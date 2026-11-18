@@ -416,6 +416,16 @@ def cmd_unguarded(ledger, args):
     return 0
 
 
+def cmd_cause(_ledger, args):
+    """Accept a cause note, `<check or assertion>: <cause or unknown>`; writes nothing: the guard hook records that this
+    command ran, which lifts the rerun-after-red refusal for the failed check."""
+    what, _, cause = " ".join(args.note).partition(":")
+    if not what.strip() or not cause.strip():
+        raise Refused('a cause note reads "<check or assertion>: <cause or unknown>"')
+    print("cause noted; rerun the failed command now")
+    return 0
+
+
 def cmd_hits(_ledger, args):
     try:
         seconds = guard_hits.window_seconds(args.since)
@@ -458,6 +468,7 @@ def build_parser():
     promote.add_argument("--keep-rule", action="store_true")
     unguarded = sub.add_parser("unguarded")
     unguarded.add_argument("ledgers", nargs="*")
+    sub.add_parser("cause").add_argument("note", nargs="*")
     sub.add_parser("hits").add_argument("--since", default="24h")
     retrospective = sub.add_parser("retro")
     retrospective.add_argument("--days", type=int, default=7)
@@ -475,7 +486,7 @@ def build_parser():
 
 COMMANDS = {"add": cmd_add, "active": cmd_active, "search": cmd_search, "bump": cmd_bump, "archive": cmd_archive,
             "promote": cmd_promote, "globalize": cmd_globalize, "check": cmd_check, "show": cmd_show,
-            "unguarded": cmd_unguarded, "hits": cmd_hits, "retro": cmd_retro}
+            "unguarded": cmd_unguarded, "cause": cmd_cause, "hits": cmd_hits, "retro": cmd_retro}
 
 
 def refuse_stray(ledger):
