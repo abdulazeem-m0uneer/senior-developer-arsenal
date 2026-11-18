@@ -1,4 +1,6 @@
-"""lessons.py commands that turn repeats into guards: unguarded, hits, the promotion threshold, promote --keep-rule."""
+"""lessons.py commands that turn repeats into guards: unguarded, hits, the promotion threshold, promote --keep-rule,
+and the lesson-guard registry check."""
+import json
 import os
 import re
 import sys
@@ -6,7 +8,7 @@ from pathlib import Path
 from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from test_lessons import LedgerCase, promotion  # noqa: E402
+from test_lessons import LedgerCase, lessons, promotion  # noqa: E402
 
 import guard_hits  # noqa: E402  (on sys.path through test_lessons)
 
@@ -167,3 +169,141 @@ class HitsCommandTests(GuardLedgerCase):
         code, _, err = self.run_cli("hits", "--since", "yesterday")
         self.assertEqual(code, 2)
         self.assertIn("not a positive number", err)
+
+
+OLD_HOOK = '''import json
+
+
+class RegistryError(ValueError):
+    pass
+
+
+def read_registry(path):
+    """An old hook: any rule it does not know makes it refuse the whole file."""
+    data = json.load(open(path))
+    for index, entry in enumerate(data["guards"]):
+        if entry.get("rule") not in ("hook-bypass", "help-probe"):
+            raise RegistryError(f"{path} entry {index + 1}: rule must be one of ['help-probe', 'hook-bypass']")
+    return data["guards"]
+'''
+
+
+class RegistryCheckTests(GuardLedgerCase):
+    """`lessons.py guards` and the session-start note: every installed hook version is asked about the registry."""
+
+    def setUp(self):
+        super().setUp()
+        self.project = self.dir / "project"
+        (self.project / ".agents").mkdir(parents=True)
+        self.registry = self.dir / "home" / "lesson-guards.json"
+        self.registry.parent.mkdir(parents=True, exist_ok=True)
+        self.cache = self.dir / "cache"
+        patch = mock.patch.dict(os.environ, {"LESSONS_GUARDS_GLOBAL_FILE": str(self.registry),
+                                             "ARSENAL_CACHE": str(self.cache),
+                                             "CLAUDE_PROJECT_DIR": str(self.project)})
+        patch.start()
+        self.addCleanup(patch.stop)
+        cwd = os.getcwd()
+        os.chdir(self.project)
+        self.addCleanup(os.chdir, cwd)
+
+    def write_registry(self, guards):
+        self.registry.write_text(json.dumps({"guards": guards}), encoding="utf-8")
+
+    def install(self, version, source=OLD_HOOK):
+        hooks = self.cache / version / "hooks"
+        hooks.mkdir(parents=True)
+        (hooks / "guard_lessons.py").write_text(source, encoding="utf-8")
+
+    def test_no_registry(self):
+        code, out, _ = self.run_cli("guards")
+        self.assertEqual(code, 0)
+        self.assertIn("no lesson-guard registry", out)
+
+    def test_an_entry_an_older_installed_hook_refuses_is_reported(self):
+        self.install("1.6.1")
+        self.install("1.10.0")  # sorted as a version, after 1.6.1
+        (self.cache / "notes").mkdir()  # not a version folder: ignored
+        self.write_registry([{"rule": "hook-bypass", "lesson": "G027"},
+                             {"rule": "rerun-after-red", "lesson": "L083"}])
+        code, out, _ = self.run_cli("guards")
+        self.assertEqual(code, 1)
+        lines = out.splitlines()
+        self.assertIn("this hook: ok", lines)
+        self.assertEqual([line.split(":")[0] for line in lines if line.startswith("installed")],
+                         ["installed 1.6.1", "installed 1.10.0"])
+        self.assertIn("installed 1.6.1: 1 problem(s), REFUSES every Bash command", lines)
+        self.assertIn("installed 1.10.0: 1 problem(s), REFUSES every Bash command", lines)
+        self.assertIn("min_version", lines[-1])
+
+    def test_min_version_does_not_help_a_hook_that_predates_it_and_says_so(self):
+        self.install("1.6.1")
+        self.write_registry([{"rule": "rerun-after-red", "min_version": "1.7.0"}])
+        code, out, _ = self.run_cli("guards")
+        self.assertEqual(code, 1)  # the old hook still reads the rule: the report says which version
+        self.assertIn("installed 1.6.1: 1 problem(s)", out)
+
+    def test_this_hooks_problems_and_a_version_that_cannot_be_checked(self):
+        self.install("1.5.0", "this is not python\n")
+        self.write_registry([{"rule": "no-such-rule"}])
+        code, out, _ = self.run_cli("guards")
+        self.assertEqual(code, 1)
+        self.assertIn("this hook: 1 problem(s)", out)
+        self.assertIn("rule must be one of", out)
+        self.assertIn("installed 1.5.0: 1 problem(s)", out)
+        self.assertIn("installed 1.5.0: 1 problem(s)", out)
+        self.assertIn("could not load this version's guard: NameError", out)  # valid syntax, nothing defined
+
+    def test_all_clear(self):
+        self.install("1.6.1")
+        self.write_registry([{"rule": "hook-bypass", "lesson": "G027"}])
+        code, out, _ = self.run_cli("guards")
+        self.assertEqual(code, 0)
+        self.assertIn("installed 1.6.1: ok", out)
+
+    def test_the_session_start_header_counts_skipped_entries(self):
+        os.chdir(self.dir)  # the session's directory comes from the hook input, not this process
+        stdin = json.dumps({"cwd": str(self.project)})
+        self.assertNotIn("Lesson-guard registry", self.hook_context(stdin))
+        self.assertEqual(lessons.registry_note(), "")
+        self.write_registry([{"rule": "no-such-rule"}, {"rule": "hook-bypass", "enabled": "no"}])
+        context = self.hook_context(stdin)
+        self.assertIn("Lesson-guard registry: 2 entries skipped (not applied)", context)
+        self.assertIn(" guards` and fix them.", context)
+        with mock.patch("guard_registry.current_problems", side_effect=RuntimeError("boom")):
+            self.assertNotIn("Lesson-guard registry", self.hook_context(stdin))  # never breaks the session start
+
+    def test_versions_that_hang_crash_or_print_nonsense_are_reported(self):
+        self.install("1.6.0", "import time\ntime.sleep(30)\n")
+        self.install("1.6.1", "def read_registry(path):\n    raise TypeError('old bug')\nclass RegistryError(ValueError):\n    pass\n")
+        self.install("1.6.2", "import sys\nprint('not json')\nsys.exit(0)\n")
+        self.write_registry([{"rule": "hook-bypass"}])
+        with mock.patch("guard_registry.CHECK_SECONDS", 2):
+            code, out, _ = self.run_cli("guards")
+        self.assertEqual(code, 1)
+        self.assertIn("could not check: no answer within 2s", out)
+        self.assertIn("installed 1.6.1: 1 problem(s), runs NO lesson guard (fails open)", out)  # its hook swallows it
+        self.assertIn("TypeError: old bug", out)
+        self.assertIn("installed 1.6.2: 1 problem(s)", out)
+        self.assertNotIn("time.sleep", out)  # never the probe source
+
+    def test_every_registry_is_checked_by_every_version(self):
+        self.install("1.6.1")
+        self.write_registry([{"rule": "hook-bypass"}])
+        (self.project / ".agents" / "lesson-guards.json").write_text(
+            json.dumps({"guards": [{"rule": "rerun-after-red"}]}), encoding="utf-8")
+        code, out, _ = self.run_cli("guards")
+        self.assertEqual(code, 1)
+        self.assertIn(str(self.registry), out.splitlines()[0])
+        self.assertIn(str(self.project / ".agents" / "lesson-guards.json"), out)
+        self.assertIn("installed 1.6.1: 1 problem(s), REFUSES", out)
+
+    def test_a_project_registry_is_found_from_the_session_folder(self):
+        (self.project / ".agents" / "lesson-guards.json").write_text(
+            json.dumps({"guards": [{"rule": "no-such-rule"}]}), encoding="utf-8")
+        (self.project / "src").mkdir()
+        os.chdir(self.project / "src")
+        with mock.patch.dict(os.environ, {"CLAUDE_PROJECT_DIR": ""}):
+            code, out, _ = self.run_cli("guards")
+        self.assertEqual(code, 1)
+        self.assertIn(str(self.project / ".agents" / "lesson-guards.json"), out)

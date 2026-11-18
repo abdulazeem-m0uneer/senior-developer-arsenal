@@ -19,6 +19,7 @@ HOOK_DIR = "arsenal-hooks"
 ADAPTER = "agent_hook.py"
 PLACEHOLDER = "{{ARSENAL_HOOKS}}"
 STEPS_PATH = "dist/hooks/steps.json"
+VERSION_PATH = "dist/hooks/VERSION"  # beside the installed hooks, for min_version in the lesson-guard registry
 HOOK_NAME = "senior-developer-arsenal"
 PORTED_EVENTS = ("SessionStart", "Stop")
 # snapshot.py show only re-injects what its PreCompact pair wrote, and compaction is not ported.
@@ -100,9 +101,9 @@ def render_config(target, steps):
     return json.dumps(config, indent=2) + "\n"
 
 
-def outputs(steps):
+def outputs(steps, version):
     """{repo-relative path: text} of the generated hook files."""
-    out = {STEPS_PATH: json.dumps(steps, indent=2) + "\n"}
+    out = {STEPS_PATH: json.dumps(steps, indent=2) + "\n", VERSION_PATH: f"{version}\n"}
     for target in HOOK_TARGETS:
         out[f"dist/hooks/{target}.json"] = render_config(target, steps)
     return out
@@ -121,6 +122,7 @@ def manifest_rows(root, target, scope):
     names = sorted(path.name for path in (root / "hooks").glob("*.py")) + ["core.md"]
     rows = [("file", name, f"hooks/{name}", f"{directory}/{name}", "-") for name in names]
     rows.append(("file", "steps.json", STEPS_PATH, f"{directory}/steps.json", "-"))
+    rows.append(("file", "VERSION", VERSION_PATH, f"{directory}/VERSION", "-"))
     _, global_config, project_config = HOOK_TARGETS[target]
     rows.append(("hooks", "hooks", f"dist/hooks/{target}.json",
                  global_config if scope == "global" else project_config, directory))

@@ -570,9 +570,6 @@ def lesson_refusal(command, cwd, data=None):
         return {"red": red_checks(load(path)) if path else set(), "keys": set(check_keys(command))}
     try:
         hit = guard_lessons.judge(command, cwd, session)
-    except guard_lessons.RegistryError as error:
-        return (f"arsenal lesson guards: the registry is unusable ({error}). Fix the file with the Edit tool (or restart "
-                "the session with ARSENAL_LESSON_GUARDS=off); until then no Bash command runs, so no guard is silently lost.")
     except ImportError as error:  # the secret rule's helper is missing: a broken install must not pass the command
         return f"arsenal lesson guards cannot judge this command ({error}); reinstall the plugin."
     if not hit:

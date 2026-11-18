@@ -219,5 +219,107 @@ class CliTest(DoctorCase):
         self.assertIn("ok,", result.stdout)
 
 
+REFUSING_HOOK = '''import json
+
+
+class RegistryError(ValueError):
+    pass
+
+
+def read_registry(path):
+    for index, entry in enumerate(json.load(open(path))["guards"]):
+        if entry.get("rule") != "hook-bypass":
+            raise RegistryError(f"{path} entry {index + 1}: unknown rule")
+    return []
+'''
+
+
+class RegistryTest(DoctorCase):
+    def setUp(self):
+        super().setUp()
+        patch = mock.patch.dict(os.environ, {"LESSONS_GUARDS_GLOBAL_FILE": "", "ARSENAL_CACHE": "",
+                                             "CLAUDE_PROJECT_DIR": str(self.project)})
+        patch.start()
+        self.addCleanup(patch.stop)
+
+    def registry(self, guards):
+        self.write_json(".agents/lesson-guards.json", {"guards": guards})
+
+    def old_version(self, version="1.6.1"):
+        hooks = self.home / CACHE / version / "hooks"
+        hooks.mkdir(parents=True)
+        (hooks / "guard_lessons.py").write_text(REFUSING_HOOK)
+
+    def test_no_registry_is_ok(self):
+        report, _ = self.rows(self.project)
+        self.assertTrue(self.find(report, "ok", "no lesson-guard registry"), report.render())
+
+    def test_a_readable_registry_is_ok(self):
+        self.old_version()
+        self.registry([{"rule": "hook-bypass", "lesson": "G027"}])
+        report, _ = self.rows(self.project)
+        self.assertTrue(self.find(report, "ok", "readable by this hook and 1 installed version(s)"), report.render())
+
+    def test_an_entry_only_this_hook_skips_is_a_warning(self):
+        self.registry([{"rule": "hook-bypass", "enabled": "no"}])
+        report, _ = self.rows(self.project)
+        [(text, repair)] = self.find(report, "warn", "lesson-guard registry")
+        self.assertIn("1 entry skipped", text)
+        self.assertIn("lessons.py guards", repair)
+        self.assertFalse(report.failed(), report.render())
+
+    def test_an_installed_version_that_would_block_every_command_fails(self):
+        self.old_version()
+        self.registry([{"rule": "rerun-after-red", "lesson": "L083"}])
+        report, _ = self.rows(self.project)
+        [(text, _)] = self.find(report, "fail", "lesson-guard registry")
+        self.assertIn("installed 1.6.1", text)
+        self.assertTrue(report.failed())
+
+    def test_the_project_registry_is_read_too(self):
+        path = self.project / ".agents" / "lesson-guards.json"
+        path.parent.mkdir(parents=True)
+        path.write_text(json.dumps({"guards": [{"rule": "no-such-rule"}]}))
+        report, _ = self.rows(self.project)
+        self.assertTrue(self.find(report, "warn", "lesson-guard registry"), report.render())
+
+    def test_an_installed_version_that_would_run_no_guard_fails(self):
+        hooks = self.home / CACHE / "1.6.2" / "hooks"
+        hooks.mkdir(parents=True)
+        (hooks / "guard_lessons.py").write_text("class RegistryError(ValueError):\n    pass\n"
+                                                "def read_registry(path):\n    raise KeyError('rule')\n")
+        self.registry([{"rule": "hook-bypass"}])
+        report, _ = self.rows(self.project)
+        [(text, _)] = self.find(report, "fail", "lesson-guard registry")
+        self.assertIn("would run no lesson guard", text)
+        self.assertNotIn("refuse every Bash command", text)
+
+    def test_the_project_option_beats_another_projects_environment(self):
+        path = self.project / ".agents" / "lesson-guards.json"
+        path.parent.mkdir(parents=True)
+        path.write_text(json.dumps({"guards": [{"rule": "no-such-rule"}]}))
+        elsewhere = self.home / "elsewhere"
+        elsewhere.mkdir()
+        with mock.patch.dict(os.environ, {"CLAUDE_PROJECT_DIR": str(elsewhere)}):
+            report, _ = self.rows(self.project)
+        self.assertTrue(self.find(report, "warn", "lesson-guard registry"), report.render())
+
+    def test_the_registry_is_found_from_a_subfolder_as_the_hook_finds_it(self):
+        path = self.project / ".agents" / "lesson-guards.json"
+        path.parent.mkdir(parents=True)
+        path.write_text(json.dumps({"guards": [{"rule": "no-such-rule"}]}))
+        sub = self.project / "src" / "deep"
+        sub.mkdir(parents=True)
+        with mock.patch.dict(os.environ, {"CLAUDE_PROJECT_DIR": ""}):  # found by walking up from sub
+            report, _ = self.rows(sub)
+        self.assertTrue(self.find(report, "warn", "lesson-guard registry"), report.render())
+
+    def test_a_missing_checker_is_a_warning(self):
+        self.registry([{"rule": "hook-bypass"}])
+        with mock.patch.dict(sys.modules, {"guard_registry": None}):
+            report, _ = self.rows(self.project)
+        self.assertTrue(self.find(report, "warn", "lesson-guard registry not checked"), report.render())
+
+
 if __name__ == "__main__":
     unittest.main()

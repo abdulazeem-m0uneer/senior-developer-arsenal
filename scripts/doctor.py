@@ -6,7 +6,8 @@ Usage (also `arsenal doctor` / `arsenal.ps1 doctor`):
 Checks: the Python version; the Claude Code plugin (installed, enabled, its cached version against this checkout's
 VERSION, older cached versions no install uses); the plugin's and this checkout's hooks.json (parses, each script
 it runs exists and compiles); every installer target whose files are partly present globally, or in --project, read
-from dist/manifest.tsv; the global and project lessons ledgers; whether the CodeGraph and Hindsight MCP servers are
+from dist/manifest.tsv; the global and project lessons ledgers; the lesson-guard registries, read by this hook and by
+every installed plugin version (a version that would refuse every Bash command over an entry is a failure); whether the CodeGraph and Hindsight MCP servers are
 configured (configured or not, never contacted).
 Nothing is changed without --fix, and --fix only re-runs the installer for the targets with missing files. Older
 plugin versions are reported, never deleted. A missing plugin is a warning: an installer-only setup is valid.
@@ -224,6 +225,33 @@ def check_mcp(report, home):
                         f"./install.sh --global --target claude --{name} or /plugin install {plugin}")
 
 
+def check_registry(report, home, project):
+    """The lesson-guard registries as this hook and each installed plugin version reads them."""
+    sys.path.insert(0, str(ROOT / ".agents" / "skills" / "lessons-learned" / "scripts"))
+    try:
+        import guard_registry
+    except ImportError as error:
+        report.warn(f"lesson-guard registry not checked: {error}", "reinstall from a complete checkout")
+        return
+    paths = guard_registry.registry_paths(project or Path.cwd(), home, project)  # found as the hook finds them
+    if not paths:
+        report.ok("no lesson-guard registry")
+        return
+    found = guard_registry.report(paths, guard_registry.default_cache(home))
+    problems = [f"{label}: {problem}" for label, items, _ in found for problem in items]
+    effects = {effect for _, _, effect in found}
+    repair = f"python3 {ROOT / '.agents/skills/lessons-learned/scripts/lessons.py'} guards; fix or add min_version"
+    if effects & {"refuses", "fails-open"}:
+        what = " and ".join(text for effect, text in (("refuses", "refuse every Bash command"),
+                                                      ("fails-open", "run no lesson guard")) if effect in effects)
+        report.fail(f"lesson-guard registry: an installed version would {what} ({'; '.join(problems)})", repair)
+    elif problems:
+        report.warn(f"lesson-guard registry: {len(problems)} entr{'y' if len(problems) == 1 else 'ies'} skipped "
+                    f"({'; '.join(problems)})", repair)
+    else:
+        report.ok(f"lesson-guard registry readable by this hook and {len(found) - 1} installed version(s)")
+
+
 def diagnose(home, project):
     report = Report()
     check_python(report)
@@ -239,6 +267,7 @@ def diagnose(home, project):
     lessons_global = Path(os.environ.get("LESSONS_GLOBAL_FILE") or home / ".agents" / "lessons.md")
     check_ledger(report, lessons_global, "global")
     check_ledger(report, (project or Path.cwd()) / ".agents" / "lessons.md", "project")
+    check_registry(report, home, project)
     check_mcp(report, home)
     return report
 
