@@ -85,7 +85,7 @@ A promoted lesson is no longer injected at session start. If the mistake happens
 
 ### Lesson guard registry
 
-The plugin's `PreToolUse` hook (`hooks/guard_lessons.py`) applies the built-in rules `pgrep-wait-loop`, `hook-bypass`, `help-probe` and `secret-in-message` (and the opt-in `rerun-after-red`), adjusted by `~/.agents/lesson-guards.json` (`$LESSONS_GUARDS_GLOBAL_FILE`) and then the project's `.agents/lesson-guards.json` (searched upward from the project directory; its entry for a built-in rule wins):
+The plugin's `PreToolUse` hook (`hooks/guard_lessons.py`) applies the built-in rules `pgrep-wait-loop`, `pipe-exit`, `hook-bypass`, `help-probe` and `secret-in-message` (and the opt-in `rerun-after-red`), adjusted by `~/.agents/lesson-guards.json` (`$LESSONS_GUARDS_GLOBAL_FILE`) and then the project's `.agents/lesson-guards.json` (searched upward from the project directory; its entry for a built-in rule wins):
 
 ```json
 {"guards": [
