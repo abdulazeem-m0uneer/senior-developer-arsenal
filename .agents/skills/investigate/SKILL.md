@@ -1,7 +1,8 @@
 ---
 name: investigate
-description: 'Root-cause investigation with competing hypotheses and 5-Whys causal analysis. Use for an elusive bug, intermittent test failure, unexplained crash or regression. Triggers: "investigate bug", "debug crash", "find root cause", /investigate. Not for running a live outage (use incident-response), PR review (use code-review) or performance profiling (use perf-audit).'
+description: 'Root cause with competing hypotheses and evidence. Use for any bug, wrong behaviour, crash or intermittent failure before fixing it.'
 ---
+<!-- routing (read by the skill router, not loaded into the skill listing): Root-cause investigation with competing hypotheses and 5-Whys causal analysis. Use for an elusive bug, intermittent test failure, unexplained crash or regression. Triggers: "investigate bug", "debug crash", "find root cause", /investigate. Not for running a live outage (use incident-response), PR review (use code-review) or performance profiling (use perf-audit). -->
 
 # Epistemic Root-Cause Investigation Procedure
 

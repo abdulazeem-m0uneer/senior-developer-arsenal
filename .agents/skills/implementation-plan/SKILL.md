@@ -1,7 +1,8 @@
 ---
 name: implementation-plan
-description: 'Turn an approved brief into bite-sized tasks with exact files, tests and verification commands. Use when a brief is approved and the work spans more than one sitting or file. Triggers: "write the plan", "break this down", "implementation plan", "execute the plan", /implementation-plan. Not for requirements (use requirements-grilling) or board status (use delivery-board-sync).'
+description: 'Turn an approved brief into small tasks with files, tests and verify commands. Use when work spans more than one sitting or file.'
 ---
+<!-- routing (read by the skill router, not loaded into the skill listing): Turn an approved brief into bite-sized tasks with exact files, tests and verification commands. Use when a brief is approved and the work spans more than one sitting or file. Triggers: "write the plan", "break this down", "implementation plan", "execute the plan", /implementation-plan. Not for requirements (use requirements-grilling) or board status (use delivery-board-sync). -->
 
 # Implementation Plan Procedure
 

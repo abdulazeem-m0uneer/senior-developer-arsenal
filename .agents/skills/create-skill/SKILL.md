@@ -1,7 +1,8 @@
 ---
 name: create-skill
-description: 'Use whenever the user wants a new agent skill created, scaffolded or customized, including a team-specific checker or runbook to be packaged as a skill. Interviews, scaffolds and installs it. Triggers: "create a skill", "new skill", "scaffold a skill", "author skill", /create-skill. Not for ADR authoring (use architecture-design-adr).'
+description: 'Create, scaffold or customize an agent skill. Use whenever the user wants a new skill, including a team checker or runbook packaged as one.'
 ---
+<!-- routing (read by the skill router, not loaded into the skill listing): Use whenever the user wants a new agent skill created, scaffolded or customized, including a team-specific checker or runbook to be packaged as a skill. Interviews, scaffolds and installs it. Triggers: "create a skill", "new skill", "scaffold a skill", "author skill", /create-skill. Not for ADR authoring (use architecture-design-adr). -->
 
 # Skill Authoring & Scaffolding Procedure
 

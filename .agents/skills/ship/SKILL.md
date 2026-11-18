@@ -1,7 +1,8 @@
 ---
 name: ship
-description: 'Ship a finished branch: local gate, commit by path, push, open the PR, wait for CI with a bounded fix loop, hand off for merge. Triggers: "ship it", "open a PR", "push and open a PR", /ship. Not for merge strategy (use git-workflow-master) or only waiting on checks (use ci-wait).'
+description: 'Ship a finished branch: gate, commit, push, open the PR, wait for CI with a bounded fix loop. Use when asked to ship or open a PR.'
 ---
+<!-- routing (read by the skill router, not loaded into the skill listing): Ship a finished branch: local gate, commit by path, push, open the PR, wait for CI with a bounded fix loop, hand off for merge. Triggers: "ship it", "open a PR", "push and open a PR", /ship. Not for merge strategy (use git-workflow-master) or only waiting on checks (use ci-wait). -->
 
 # Ship Procedure
 

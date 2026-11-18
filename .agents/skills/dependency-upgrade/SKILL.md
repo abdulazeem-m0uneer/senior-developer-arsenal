@@ -1,7 +1,8 @@
 ---
 name: dependency-upgrade
-description: 'Dependency and runtime upgrades: outdated and vulnerable packages, one major at a time, full suite after each. Use to upgrade a package, runtime or base image. Triggers: "upgrade dependency", "bump version", "update packages", "major upgrade", /dependency-upgrade. Not for flaws in own code (use security-audit) or schema changes (use database-migration).'
+description: 'Upgrade packages, runtimes or base images one major at a time, full suite after each. Use for any dependency or version upgrade.'
 ---
+<!-- routing (read by the skill router, not loaded into the skill listing): Dependency and runtime upgrades: outdated and vulnerable packages, one major at a time, full suite after each. Use to upgrade a package, runtime or base image. Triggers: "upgrade dependency", "bump version", "update packages", "major upgrade", /dependency-upgrade. Not for flaws in own code (use security-audit) or schema changes (use database-migration). -->
 
 # Safe Dependency Upgrade Procedure
 

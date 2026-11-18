@@ -1,7 +1,8 @@
 ---
 name: incident-response
-description: 'Production incident runbook: severity, roles, mitigate before diagnosing, timeline, postmortem. Use to handle an outage or write a status update or postmortem. Triggers: "production is down", "we have an incident", "status update", "write a postmortem", /incident-response. Not for root-cause method (use investigate) or deploy pipeline design (use devops-ci).'
+description: 'Production incident: severity, mitigate first, timeline, status updates, postmortem. Use when production is down or degraded.'
 ---
+<!-- routing (read by the skill router, not loaded into the skill listing): Production incident runbook: severity, roles, mitigate before diagnosing, timeline, postmortem. Use to handle an outage or write a status update or postmortem. Triggers: "production is down", "we have an incident", "status update", "write a postmortem", /incident-response. Not for root-cause method (use investigate) or deploy pipeline design (use devops-ci). -->
 
 # Production Incident Response Procedure
 

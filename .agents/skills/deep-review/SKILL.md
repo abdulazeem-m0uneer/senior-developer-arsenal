@@ -1,7 +1,8 @@
 ---
 name: deep-review
-description: 'Exhaustive multi-pass review of a change or repository area, every finding verified at file:line. Use for a thorough or complete review or a pre-release audit. Triggers: "deep review", "review everything", "thorough review", /deep-review. Not for a single-pass diff review (use code-review) or a security-only audit (use security-audit).'
+description: 'Exhaustive multi-pass review, every finding verified at file:line. Use for a thorough, complete or pre-release review.'
 ---
+<!-- routing (read by the skill router, not loaded into the skill listing): Exhaustive multi-pass review of a change or repository area, every finding verified at file:line. Use for a thorough or complete review or a pre-release audit. Triggers: "deep review", "review everything", "thorough review", /deep-review. Not for a single-pass diff review (use code-review) or a security-only audit (use security-audit). -->
 
 # Deep Multi-Pass Review Procedure
 

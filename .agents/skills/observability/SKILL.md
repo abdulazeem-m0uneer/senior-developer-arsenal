@@ -1,7 +1,8 @@
 ---
 name: observability
-description: 'Instrument a service: structured logs, metrics, OpenTelemetry traces, health endpoints, alerts. Use to add instrumentation, define alerts, or look up what a request logged. Triggers: "add logging", "structured logs", "add tracing", "metrics and alerts", "query the logs", /observability. Not for root-cause analysis (use investigate) or latency profiling (use perf-audit).'
+description: 'Structured logs, metrics, traces, health checks and alerts. Use to instrument a service or find what a request logged.'
 ---
+<!-- routing (read by the skill router, not loaded into the skill listing): Instrument a service: structured logs, metrics, OpenTelemetry traces, health endpoints, alerts. Use to add instrumentation, define alerts, or look up what a request logged. Triggers: "add logging", "structured logs", "add tracing", "metrics and alerts", "query the logs", /observability. Not for root-cause analysis (use investigate) or latency profiling (use perf-audit). -->
 
 # Observability & Telemetry Query Procedure
 

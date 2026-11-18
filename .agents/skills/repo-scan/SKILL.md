@@ -1,7 +1,8 @@
 ---
 name: repo-scan
-description: 'Scan the repository and report which arsenal skills, rules and subagents apply, plus gaps (no tests, no CI, oversized files). Use when starting in a new or unfamiliar repository or when asked which skills to use. Triggers: "scan this repo", "which skills apply", "detect the stack", /repo-scan. Not for reviewing code quality (use deep-review).'
+description: 'Report which arsenal skills, rules and subagents fit this repository, and its gaps. Use when starting in an unfamiliar repository.'
 ---
+<!-- routing (read by the skill router, not loaded into the skill listing): Scan the repository and report which arsenal skills, rules and subagents apply, plus gaps (no tests, no CI, oversized files). Use when starting in a new or unfamiliar repository or when asked which skills to use. Triggers: "scan this repo", "which skills apply", "detect the stack", /repo-scan. Not for reviewing code quality (use deep-review). -->
 
 # Repository Scan & Skill Applicability Procedure
 

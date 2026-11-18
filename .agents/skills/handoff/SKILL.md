@@ -1,7 +1,8 @@
 ---
 name: handoff
-description: 'Compact the conversation into one short document a fresh agent reads instead of the history. Use before context fills, at the end of a long task, or when switching agents or machines. Triggers: "handoff", "hand off", "continue in a new session", "context is full", "summary for the next agent", /handoff. Not for a decision record (use decision-log) or a postmortem (use incident-response).'
+description: 'Compact the session into one short document a fresh agent reads. Use before context fills or when switching sessions.'
 ---
+<!-- routing (read by the skill router, not loaded into the skill listing): Compact the conversation into one short document a fresh agent reads instead of the history. Use before context fills, at the end of a long task, or when switching agents or machines. Triggers: "handoff", "hand off", "continue in a new session", "context is full", "summary for the next agent", /handoff. Not for a decision record (use decision-log) or a postmortem (use incident-response). -->
 
 # Session Handoff Procedure
 

@@ -1,7 +1,8 @@
 ---
 name: git-release
-description: 'Release preparation: verify build and tests, bump the version by SemVer, write release notes or a changelog, cut the tag. Use to prepare a release, bump versions or cut a tag. Triggers: "prepare release", "cut tag", "bump version", "release notes", /git-release. Not for rebasing or merge conflicts (use git-workflow-master).'
+description: 'Prepare a release: verify build and tests, bump the SemVer version, write the changelog, cut the tag. Use for any release.'
 ---
+<!-- routing (read by the skill router, not loaded into the skill listing): Release preparation: verify build and tests, bump the version by SemVer, write release notes or a changelog, cut the tag. Use to prepare a release, bump versions or cut a tag. Triggers: "prepare release", "cut tag", "bump version", "release notes", /git-release. Not for rebasing or merge conflicts (use git-workflow-master). -->
 
 # Production Release Preparation Skill
 

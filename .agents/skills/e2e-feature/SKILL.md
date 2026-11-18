@@ -1,7 +1,8 @@
 ---
 name: e2e-feature
-description: 'Build one feature across the whole stack: database migration, backend endpoint, frontend view. Use when asked to implement a feature end to end. Triggers: "build feature", "end to end", "fullstack feature", "implement slice", /e2e-feature. Not for backend API design alone (use api-design) or a UI audit (use frontend-audit).'
+description: 'Build one feature across the stack: migration, endpoint, UI, tests at each layer. Use when asked to implement a feature end to end.'
 ---
+<!-- routing (read by the skill router, not loaded into the skill listing): Build one feature across the whole stack: database migration, backend endpoint, frontend view. Use when asked to implement a feature end to end. Triggers: "build feature", "end to end", "fullstack feature", "implement slice", /e2e-feature. Not for backend API design alone (use api-design) or a UI audit (use frontend-audit). -->
 
 # End-to-End Vertical Slice Feature Skill
 

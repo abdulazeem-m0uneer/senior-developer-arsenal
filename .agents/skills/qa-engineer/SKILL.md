@@ -1,7 +1,8 @@
 ---
 name: qa-engineer
-description: 'QA engineering: acceptance criteria, test plans and cases, exploratory testing, bug reports, release sign-off. Use for a test plan, test cases, a bug report or QA sign-off. Triggers: "test plan", "test cases", "acceptance criteria", "bug report", /qa-engineer. Not for automated test code design (use test-strategy) or tests for a code change (use test-every-change).'
+description: 'Acceptance criteria, test plans and cases, bug reports, QA sign-off. Use for a test plan or release sign-off.'
 ---
+<!-- routing (read by the skill router, not loaded into the skill listing): QA engineering: acceptance criteria, test plans and cases, exploratory testing, bug reports, release sign-off. Use for a test plan, test cases, a bug report or QA sign-off. Triggers: "test plan", "test cases", "acceptance criteria", "bug report", /qa-engineer. Not for automated test code design (use test-strategy) or tests for a code change (use test-every-change). -->
 
 # QA Engineering Procedure
 

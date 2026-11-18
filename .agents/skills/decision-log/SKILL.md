@@ -1,7 +1,8 @@
 ---
 name: decision-log
-description: 'One numbered decision log: dated one-line entries, amendments marked not rewritten, open questions with owners. Use to record a decision, apply an owner answer, or reverse a recorded rule. Triggers: "record this decision", "the owner answered", "we decided", "reverse that decision", /decision-log. Not for architecture trade-offs (use architecture-design-adr) or board status (use delivery-board-sync).'
+description: 'One numbered log of dated decisions and open questions. Use to record a decision, apply an owner answer, or reverse a recorded rule.'
 ---
+<!-- routing (read by the skill router, not loaded into the skill listing): One numbered decision log: dated one-line entries, amendments marked not rewritten, open questions with owners. Use to record a decision, apply an owner answer, or reverse a recorded rule. Triggers: "record this decision", "the owner answered", "we decided", "reverse that decision", /decision-log. Not for architecture trade-offs (use architecture-design-adr) or board status (use delivery-board-sync). -->
 
 # Decision Log Procedure
 

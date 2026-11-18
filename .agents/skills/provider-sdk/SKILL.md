@@ -1,7 +1,8 @@
 ---
 name: provider-sdk
-description: 'Integrate an outside provider (payments, SMS, maps, identity) as one package with a mock mode and a live mode behind the same calls. Use to add, wrap, mock or test a third-party API. Triggers: "integrate a provider", "third-party client", "mock the provider", "webhook signature", /provider-sdk. Not for designing your own API (use api-design) or ledger rules (use payments-integrity).'
+description: 'Wrap a third-party API (payments, SMS, maps, identity) as one package with mock and live modes. Use to add or mock a provider.'
 ---
+<!-- routing (read by the skill router, not loaded into the skill listing): Integrate an outside provider (payments, SMS, maps, identity) as one package with a mock mode and a live mode behind the same calls. Use to add, wrap, mock or test a third-party API. Triggers: "integrate a provider", "third-party client", "mock the provider", "webhook signature", /provider-sdk. Not for designing your own API (use api-design) or ledger rules (use payments-integrity). -->
 
 # Provider SDK Integration Procedure
 

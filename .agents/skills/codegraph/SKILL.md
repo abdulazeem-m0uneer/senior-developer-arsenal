@@ -1,7 +1,8 @@
 ---
 name: codegraph
-description: 'AST code intelligence through the CodeGraph MCP: symbols, call paths, callers, blast radius, instead of broad greps. Use when asked who calls a symbol, how a flow works, or what a change would break. Triggers: "codegraph", "find callers", "find callees", "blast radius", "who calls", "call hierarchy", /codegraph. Not for non-code config files or when no CodeGraph MCP server is connected.'
+description: 'Structural code queries through CodeGraph: callers, callees, call paths, blast radius. Use when asked who calls something or what a change would break.'
 ---
+<!-- routing (read by the skill router, not loaded into the skill listing): AST code intelligence through the CodeGraph MCP: symbols, call paths, callers, blast radius, instead of broad greps. Use when asked who calls a symbol, how a flow works, or what a change would break. Triggers: "codegraph", "find callers", "find callees", "blast radius", "who calls", "call hierarchy", /codegraph. Not for non-code config files or when no CodeGraph MCP server is connected. -->
 
 # CodeGraph Structural Navigation Procedure
 

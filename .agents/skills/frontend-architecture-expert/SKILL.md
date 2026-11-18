@@ -1,7 +1,8 @@
 ---
 name: frontend-architecture-expert
-description: 'Frontend architecture for React and Angular. Use when designing components and state management, configuring Signals or Hooks, or designing out unnecessary re-renders. Triggers: "React", "Angular", "RSC", "Signals", "Zustand", "OnPush", "frontend architecture". Not for auditing an existing page (use frontend-audit), visual audits (use ui-ux-audit) or design tokens (use ui-ux-architect).'
+description: 'React and Angular architecture: components, state, Signals, Hooks, rendering. Use to design or build frontend structure.'
 ---
+<!-- routing (read by the skill router, not loaded into the skill listing): Frontend architecture for React and Angular. Use when designing components and state management, configuring Signals or Hooks, or designing out unnecessary re-renders. Triggers: "React", "Angular", "RSC", "Signals", "Zustand", "OnPush", "frontend architecture". Not for auditing an existing page (use frontend-audit), visual audits (use ui-ux-audit) or design tokens (use ui-ux-architect). -->
 
 # Frontend Architecture Skill (React & Angular)
 

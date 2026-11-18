@@ -1,7 +1,8 @@
 ---
 name: accessibility-audit
-description: 'WCAG 2.2 AA audit of a running page, app or screen: axe, keyboard, screen readers, contrast, target size. Use for an accessibility or WCAG check, screen reader test, or VPAT/ACR input. Triggers: "accessibility audit", "a11y audit", "WCAG audit", "screen reader test", /accessibility-audit. Not for design gates (use ui-ux-audit) or render performance (use frontend-audit).'
+description: 'WCAG 2.2 AA audit of a page, app or screen: axe, keyboard, screen readers, contrast, target size. Use for any accessibility, a11y or screen reader check.'
 ---
+<!-- routing (read by the skill router, not loaded into the skill listing): WCAG 2.2 AA audit of a running page, app or screen: axe, keyboard, screen readers, contrast, target size. Use for an accessibility or WCAG check, screen reader test, or VPAT/ACR input. Triggers: "accessibility audit", "a11y audit", "WCAG audit", "screen reader test", /accessibility-audit. Not for design gates (use ui-ux-audit) or render performance (use frontend-audit). -->
 
 # Accessibility Audit Procedure
 

@@ -1,7 +1,8 @@
 ---
 name: delivery-board-sync
-description: 'Keep a task board (Jira, Linear, GitHub Projects, Trello) in step with the plan document. Use to update the board or seed tasks from the plan. Triggers: "update the board", "sync the tracker", "move the ticket", "create tasks from the plan", /delivery-board-sync. Not for recording a decision (use decision-log) or proving work is done (use definition-of-done).'
+description: 'Keep a task board (Jira, Linear, GitHub Projects, Trello) in step with the plan. Use to update the board or seed tasks from the plan.'
 ---
+<!-- routing (read by the skill router, not loaded into the skill listing): Keep a task board (Jira, Linear, GitHub Projects, Trello) in step with the plan document. Use to update the board or seed tasks from the plan. Triggers: "update the board", "sync the tracker", "move the ticket", "create tasks from the plan", /delivery-board-sync. Not for recording a decision (use decision-log) or proving work is done (use definition-of-done). -->
 
 # Delivery Board Sync Procedure
 

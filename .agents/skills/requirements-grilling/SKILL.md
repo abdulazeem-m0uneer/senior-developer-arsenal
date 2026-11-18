@@ -1,7 +1,8 @@
 ---
 name: requirements-grilling
-description: 'Pre-build interrogation: a question tree with recommended answers, a written brief, nothing built until it is approved. Use when a request is non-trivial and under-specified, before any plan or code. Triggers: "grill me", "stress-test this plan", "before you build", "what do you need from me", /requirements-grilling. Not for clear one-line tasks (do them) or ADRs (use architecture-design-adr).'
+description: 'Question tree with recommended answers and a written brief before building. Use when a request is vague or under-specified.'
 ---
+<!-- routing (read by the skill router, not loaded into the skill listing): Pre-build interrogation: a question tree with recommended answers, a written brief, nothing built until it is approved. Use when a request is non-trivial and under-specified, before any plan or code. Triggers: "grill me", "stress-test this plan", "before you build", "what do you need from me", /requirements-grilling. Not for clear one-line tasks (do them) or ADRs (use architecture-design-adr). -->
 
 # Requirements Grilling Procedure
 

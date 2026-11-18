@@ -1,7 +1,8 @@
 ---
 name: database-architect
-description: 'Relational schema design, query optimization and indexing for PostgreSQL, SQLite and MSSQL. Use to design schemas, fix slow queries with EXPLAIN ANALYZE, or build an index strategy. Triggers: "database architecture", "EXPLAIN ANALYZE", "index strategy", "slow query", "PostgreSQL", "MSSQL", "SQLite WAL". Not for writing a migration (use database-migration) or API routes (use api-design).'
+description: 'Schema design, indexing and slow-query fixes with EXPLAIN ANALYZE (PostgreSQL, SQLite, MSSQL). Use for schema or query performance work.'
 ---
+<!-- routing (read by the skill router, not loaded into the skill listing): Relational schema design, query optimization and indexing for PostgreSQL, SQLite and MSSQL. Use to design schemas, fix slow queries with EXPLAIN ANALYZE, or build an index strategy. Triggers: "database architecture", "EXPLAIN ANALYZE", "index strategy", "slow query", "PostgreSQL", "MSSQL", "SQLite WAL". Not for writing a migration (use database-migration) or API routes (use api-design). -->
 
 # Database Architecture & Query Optimization Skill
 

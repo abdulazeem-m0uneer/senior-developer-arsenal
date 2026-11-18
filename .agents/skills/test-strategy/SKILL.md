@@ -1,7 +1,8 @@
 ---
 name: test-strategy
-description: 'Test suite design: pyramid, unit vs integration vs end-to-end scope, test doubles, flaky-test diagnosis. Use to plan or improve a test suite, fix flaky tests or raise coverage. Triggers: "write tests", "test strategy", "add coverage", "flaky test", /test-strategy. Not for the tests of one change (use test-every-change), reviewing a diff (use code-review) or manual test plans (use qa-engineer).'
+description: 'Test suite design: pyramid, test doubles, flaky tests, coverage. Use to plan or fix a test suite.'
 ---
+<!-- routing (read by the skill router, not loaded into the skill listing): Test suite design: pyramid, unit vs integration vs end-to-end scope, test doubles, flaky-test diagnosis. Use to plan or improve a test suite, fix flaky tests or raise coverage. Triggers: "write tests", "test strategy", "add coverage", "flaky test", /test-strategy. Not for the tests of one change (use test-every-change), reviewing a diff (use code-review) or manual test plans (use qa-engineer). -->
 
 # Test Strategy & Test Authoring Procedure
 
