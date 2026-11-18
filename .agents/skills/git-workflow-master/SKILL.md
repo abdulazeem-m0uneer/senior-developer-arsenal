@@ -1,7 +1,8 @@
 ---
 name: git-workflow-master
-description: 'Git operations: rebase, branches, conventional commits, conflicts, history, pull requests. Use when formatting commits, rebasing onto main, resolving merge conflicts or squashing. Triggers: "git rebase", "merge conflict", "conventional commits", "squash commits", "git bisect". Not for version bumps and tag publishing (use git-release).'
+description: 'Rebase, conflicts, conventional commits, squashing, history, pull requests. Use for git operations.'
 ---
+<!-- routing (read by the skill router, not loaded into the skill listing): Git operations: rebase, branches, conventional commits, conflicts, history, pull requests. Use when formatting commits, rebasing onto main, resolving merge conflicts or squashing. Triggers: "git rebase", "merge conflict", "conventional commits", "squash commits", "git bisect". Not for version bumps and tag publishing (use git-release). -->
 
 # Git Workflow & Advanced Operations Skill
 

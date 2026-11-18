@@ -1,7 +1,8 @@
 ---
 name: ui-ux-audit
-description: 'UI/UX audit of screens and components against anti-slop gates, DTCG tokens, state completeness and contrast. Use to audit UI, check anti-slop gates, or verify contrast and touch targets. Triggers: "ui audit", "ux audit", "anti-slop audit", "audit contrast", /ui-ux-audit. Not for a full WCAG audit of a running page (use accessibility-audit) or re-render profiling (use frontend-audit).'
+description: 'Audit screens against anti-slop gates, tokens, states, contrast and target sizes. Use to audit a UI.'
 ---
+<!-- routing (read by the skill router, not loaded into the skill listing): UI/UX audit of screens and components against anti-slop gates, DTCG tokens, state completeness and contrast. Use to audit UI, check anti-slop gates, or verify contrast and touch targets. Triggers: "ui audit", "ux audit", "anti-slop audit", "audit contrast", /ui-ux-audit. Not for a full WCAG audit of a running page (use accessibility-audit) or re-render profiling (use frontend-audit). -->
 
 # UI/UX & Design Audit Workflow Skill
 

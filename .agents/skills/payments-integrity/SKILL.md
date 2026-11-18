@@ -1,7 +1,8 @@
 ---
 name: payments-integrity
-description: 'Code that moves money (charges, refunds, payouts, wallet balances, gateway webhooks): ledger, idempotency, signed webhooks, reconciliation. Use to add or review a payment flow, refund or webhook handler. Triggers: "payment flow", "refund", "gateway webhook", "double charge", /payments-integrity. Not for wrapping a provider API (use provider-sdk) or vulnerability hunting (use security-audit).'
+description: 'Code that moves money: ledger, idempotency, signed webhooks, refunds, reconciliation. Use for any payment, refund, payout or gateway change.'
 ---
+<!-- routing (read by the skill router, not loaded into the skill listing): Code that moves money (charges, refunds, payouts, wallet balances, gateway webhooks): ledger, idempotency, signed webhooks, reconciliation. Use to add or review a payment flow, refund or webhook handler. Triggers: "payment flow", "refund", "gateway webhook", "double charge", /payments-integrity. Not for wrapping a provider API (use provider-sdk) or vulnerability hunting (use security-audit). -->
 
 # Payments Integrity Procedure
 

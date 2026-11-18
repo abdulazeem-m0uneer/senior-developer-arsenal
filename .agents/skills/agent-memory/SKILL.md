@@ -1,7 +1,8 @@
 ---
 name: agent-memory
-description: 'Use whenever the user asks to remember something for future sessions, save a project fact or rule, or recall what is known about the project. Long-term memory through the Hindsight MCP server. Triggers: "remember this", "save architectural rule", "recall project context", "what do you know about", "hindsight memory", /agent-memory. Not for reading source code (use codegraph) or decisions (use decision-log).'
+description: 'Long-term memory through Hindsight. Use whenever the user says remember this, save a project fact or rule, or asks what is known about the project.'
 ---
+<!-- routing (read by the skill router, not loaded into the skill listing): Use whenever the user asks to remember something for future sessions, save a project fact or rule, or recall what is known about the project. Long-term memory through the Hindsight MCP server. Triggers: "remember this", "save architectural rule", "recall project context", "what do you know about", "hindsight memory", /agent-memory. Not for reading source code (use codegraph) or decisions (use decision-log). -->
 
 # Agent Memory Procedure
 

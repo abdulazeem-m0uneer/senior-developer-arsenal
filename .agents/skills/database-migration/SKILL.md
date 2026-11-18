@@ -1,7 +1,8 @@
 ---
 name: database-migration
-description: 'Safe, non-blocking database migrations for PostgreSQL, SQLite and MSSQL. Use to create a migration, alter a table, or add a column or index on a live table. Triggers: "database migration", "schema migration", "alter table", "add column", /database-migration. Not for query plan profiling or indexing strategy (use database-architect).'
+description: 'Safe, non-blocking migrations on live tables (expand and contract). Use to create a migration, alter a table, or add a column or index.'
 ---
+<!-- routing (read by the skill router, not loaded into the skill listing): Safe, non-blocking database migrations for PostgreSQL, SQLite and MSSQL. Use to create a migration, alter a table, or add a column or index on a live table. Triggers: "database migration", "schema migration", "alter table", "add column", /database-migration. Not for query plan profiling or indexing strategy (use database-architect). -->
 
 # Safe Database Migration Procedure
 

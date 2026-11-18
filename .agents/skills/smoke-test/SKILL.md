@@ -1,7 +1,8 @@
 ---
 name: smoke-test
-description: 'Build and run an API smoke suite that creates its own data and runs locally and against the deployed environment after each release. Use to smoke test an API, verify a release or add a smoke case. Triggers: "smoke test", "verify the release", "works on staging", "post-deploy check", /smoke-test. Not for browser journeys (use e2e-feature) or the test plan (use test-strategy).'
+description: 'API smoke suite that makes its own data and runs after each release. Use to verify a release or add a smoke case.'
 ---
+<!-- routing (read by the skill router, not loaded into the skill listing): Build and run an API smoke suite that creates its own data and runs locally and against the deployed environment after each release. Use to smoke test an API, verify a release or add a smoke case. Triggers: "smoke test", "verify the release", "works on staging", "post-deploy check", /smoke-test. Not for browser journeys (use e2e-feature) or the test plan (use test-strategy). -->
 
 # API Smoke Test Procedure
 

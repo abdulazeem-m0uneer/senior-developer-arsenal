@@ -1,7 +1,8 @@
 ---
 name: frontend-audit
-description: 'Performance, re-render and change-detection audit of an existing React or Angular app. Use to audit frontend performance, find unnecessary re-renders, or inspect change detection. Triggers: "frontend audit", "audit renders", "re-render churn", "OnPush audit", /frontend-audit. Not for visual taste and design tokens (use ui-ux-audit), WCAG audits (use accessibility-audit) or backend profiling (use perf-audit).'
+description: 'Audit an existing React or Angular app for re-renders, change detection and performance. Use for slow or janky frontend screens.'
 ---
+<!-- routing (read by the skill router, not loaded into the skill listing): Performance, re-render and change-detection audit of an existing React or Angular app. Use to audit frontend performance, find unnecessary re-renders, or inspect change detection. Triggers: "frontend audit", "audit renders", "re-render churn", "OnPush audit", /frontend-audit. Not for visual taste and design tokens (use ui-ux-audit), WCAG audits (use accessibility-audit) or backend profiling (use perf-audit). -->
 
 # Frontend Performance & Re-render Audit Skill
 

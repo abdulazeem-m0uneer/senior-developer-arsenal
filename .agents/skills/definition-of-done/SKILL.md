@@ -1,7 +1,8 @@
 ---
 name: definition-of-done
-description: 'Verification gate: prove every Definition of Done item with evidence, then a DONE or NOT DONE verdict. Use when asked whether work is finished, ready to merge or ready to ship, and before reporting it complete. Triggers: "definition of done", "is this done", "verify the feature", "ready to merge", /definition-of-done. Not for finding defects (use code-review) or writing missing tests (use test-every-change).'
+description: 'Prove each done item with evidence, then DONE or NOT DONE. Use before reporting work complete and when asked if it is finished or ready to merge.'
 ---
+<!-- routing (read by the skill router, not loaded into the skill listing): Verification gate: prove every Definition of Done item with evidence, then a DONE or NOT DONE verdict. Use when asked whether work is finished, ready to merge or ready to ship, and before reporting it complete. Triggers: "definition of done", "is this done", "verify the feature", "ready to merge", /definition-of-done. Not for finding defects (use code-review) or writing missing tests (use test-every-change). -->
 
 # Definition of Done Verification Gate
 

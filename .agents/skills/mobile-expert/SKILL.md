@@ -1,7 +1,8 @@
 ---
 name: mobile-expert
-description: 'Use for any React Native, Expo or Flutter task: slow or janky screens, lists, startup, navigation, offline sync, store releases. Triggers: "React Native", "Expo", "Flutter", "mobile app", "EAS Build", "certificate pinning", "App Store release", /mobile-expert. Not for visual design (use ui-ux-architect), accessibility (use accessibility-audit), threat modelling (use threat-model) or CI (use devops-ci).'
+description: 'React Native, Expo and Flutter: performance, navigation, offline sync, security, store releases. Use for any mobile app task.'
 ---
+<!-- routing (read by the skill router, not loaded into the skill listing): Use for any React Native, Expo or Flutter task: slow or janky screens, lists, startup, navigation, offline sync, store releases. Triggers: "React Native", "Expo", "Flutter", "mobile app", "EAS Build", "certificate pinning", "App Store release", /mobile-expert. Not for visual design (use ui-ux-architect), accessibility (use accessibility-audit), threat modelling (use threat-model) or CI (use devops-ci). -->
 
 # Mobile Engineering Procedure
 

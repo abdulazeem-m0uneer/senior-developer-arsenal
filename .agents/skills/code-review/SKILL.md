@@ -1,7 +1,8 @@
 ---
 name: code-review
-description: 'Senior code review of a change. Use to review a pull request, inspect a git diff, or audit code changes. Triggers: "review code", "audit PR", "inspect diff", /code-review. Not for an exhaustive multi-pass audit (use deep-review), frontend re-render audits (use frontend-audit) or UI/UX visual audits (use ui-ux-audit).'
+description: 'Senior review of a diff or pull request: correctness, security, performance, tests. Use for any code review; for an exhaustive audit use deep-review.'
 ---
+<!-- routing (read by the skill router, not loaded into the skill listing): Senior code review of a change. Use to review a pull request, inspect a git diff, or audit code changes. Triggers: "review code", "audit PR", "inspect diff", /code-review. Not for an exhaustive multi-pass audit (use deep-review), frontend re-render audits (use frontend-audit) or UI/UX visual audits (use ui-ux-audit). -->
 
 # Senior Code Review Procedure
 

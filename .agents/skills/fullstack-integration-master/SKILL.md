@@ -1,7 +1,8 @@
 ---
 name: fullstack-integration-master
-description: 'Bridge a React or Angular frontend with a .NET or Node.js backend. Use when synchronizing client types with API contracts, building optimistic mutations with rollback, or wiring real-time streams. Triggers: "fullstack integration", "type contracts", "optimistic mutation", "SSE", "WebSockets". Not for backend API design alone (use api-design), a whole feature slice (use e2e-feature) or UI tokens (use ui-ux-architect).'
+description: 'Keep client and API in sync: shared types, optimistic updates with rollback, real-time streams. Use when a change spans frontend and backend.'
 ---
+<!-- routing (read by the skill router, not loaded into the skill listing): Bridge a React or Angular frontend with a .NET or Node.js backend. Use when synchronizing client types with API contracts, building optimistic mutations with rollback, or wiring real-time streams. Triggers: "fullstack integration", "type contracts", "optimistic mutation", "SSE", "WebSockets". Not for backend API design alone (use api-design), a whole feature slice (use e2e-feature) or UI tokens (use ui-ux-architect). -->
 
 # Fullstack Integration Skill
 

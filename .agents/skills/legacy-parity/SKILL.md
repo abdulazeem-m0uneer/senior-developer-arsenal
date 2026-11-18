@@ -1,7 +1,8 @@
 ---
 name: legacy-parity
-description: 'Rebuild a legacy system while keeping its behaviour: answer what the legacy does from source, pin it with tests, audit differences. Use when asked what the legacy does or to check parity. Triggers: "what does the legacy do", "parity check", "same as legacy", "legacy sync", /legacy-parity. Not for changing untested code in place (use refactor-legacy) or moving data (use database-migration).'
+description: 'Rebuild a legacy system with the same behaviour: read it from source, pin it with tests, audit differences. Use for parity questions.'
 ---
+<!-- routing (read by the skill router, not loaded into the skill listing): Rebuild a legacy system while keeping its behaviour: answer what the legacy does from source, pin it with tests, audit differences. Use when asked what the legacy does or to check parity. Triggers: "what does the legacy do", "parity check", "same as legacy", "legacy sync", /legacy-parity. Not for changing untested code in place (use refactor-legacy) or moving data (use database-migration). -->
 
 # Legacy Parity Procedure
 

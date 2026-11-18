@@ -1,7 +1,8 @@
 ---
 name: docs-writer
-description: 'Technical documentation: READMEs, runbooks and API reference entries. Use to write or fix a README, runbook or API reference. Triggers: "write docs", "create a README", "write a runbook", "API reference", /docs-writer. Not for endpoint contract design (use api-design) or decision records (use architecture-design-adr or decision-log).'
+description: 'READMEs, runbooks and API reference entries. Use to write or fix documentation.'
 ---
+<!-- routing (read by the skill router, not loaded into the skill listing): Technical documentation: READMEs, runbooks and API reference entries. Use to write or fix a README, runbook or API reference. Triggers: "write docs", "create a README", "write a runbook", "API reference", /docs-writer. Not for endpoint contract design (use api-design) or decision records (use architecture-design-adr or decision-log). -->
 
 # Technical Documentation Procedure
 

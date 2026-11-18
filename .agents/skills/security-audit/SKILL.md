@@ -1,7 +1,8 @@
 ---
 name: security-audit
-description: 'Application security audit of existing code: OWASP Top 10, injection, authn/authz (IDOR/BOLA), secrets, SSRF. Use for a security audit, vulnerability hunt or pre-release hardening pass. Triggers: "security audit", "find vulnerabilities", "OWASP", "check for IDOR", /security-audit. Not for design-time threats (use threat-model), personal data (use data-privacy) or general PR review (use code-review).'
+description: 'Security audit of existing code: OWASP Top 10, injection, IDOR, secrets, SSRF. Use for a vulnerability hunt or pre-release hardening.'
 ---
+<!-- routing (read by the skill router, not loaded into the skill listing): Application security audit of existing code: OWASP Top 10, injection, authn/authz (IDOR/BOLA), secrets, SSRF. Use for a security audit, vulnerability hunt or pre-release hardening pass. Triggers: "security audit", "find vulnerabilities", "OWASP", "check for IDOR", /security-audit. Not for design-time threats (use threat-model), personal data (use data-privacy) or general PR review (use code-review). -->
 
 # Application Security Audit Procedure
 

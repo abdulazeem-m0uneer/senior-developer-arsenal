@@ -10,8 +10,8 @@ workspace through the run's `tracePath`, rebuilds the untouched fixture with the
 applies the checks listed in `evals/<case>/outcome.json`:
 
   acceptance             hidden tests from the case directory pass against the workspace
-  regression_test        test files the run added pass on the workspace AND fail on the untouched fixture
-  characterization_test  test files the run added pass on the workspace AND on the untouched fixture
+  regression_test        test files the run added or edited pass on the workspace AND fail on the untouched fixture
+  characterization_test  test files the run added or edited pass on the workspace AND on the untouched fixture
   original_tests         the fixture's own copies of the named test files pass against the workspace
   first_new_file_lacks   the first new file matching a glob does not match a pattern (SQL comments ignored);
                          with `require_match: true` a run that wrote no such file fails
@@ -133,9 +133,16 @@ def check_acceptance(check, case_dir, workspace, original, scratch):
     return result("pass" if outcome == "green" else "fail", f"hidden tests: {outcome}")
 
 
+def changed_test_files(workspace, original):
+    """Test files the fixture already had and the run edited: a regression case added to a seeded test file."""
+    return [relative for relative in files_in(workspace)
+            if is_test_file(relative) and (original / relative).is_file()
+            and (workspace / relative).read_bytes() != (original / relative).read_bytes()]
+
+
 def added_tests_on_both(workspace, original, scratch):
-    """How the test files a run added behave on its own workspace and on the untouched fixture."""
-    added = new_files(workspace, original)
+    """How the test files a run added or edited behave on its own workspace and on the untouched fixture."""
+    added = new_files(workspace, original) + changed_test_files(workspace, original)
     tests = [relative for relative in added if is_test_file(relative)]
     if not tests:
         return None, None
@@ -150,7 +157,7 @@ def added_tests_on_both(workspace, original, scratch):
 
 def judge_added_tests(after, before, wanted_before):
     if after is None:
-        return result("fail", "the run added no test file")
+        return result("fail", "the run added or edited no test file")
     detail = f"added tests: {before} on the untouched fixture, {after} on the final code"
     if "unsupported" in (after, before) or wanted_before == "red" and before == "broken":
         return result("inconclusive", detail)

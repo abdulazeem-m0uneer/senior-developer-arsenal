@@ -1,7 +1,8 @@
 ---
 name: autonomous-run
-description: 'Rules for a long unattended run (overnight, away period): scoped authority, a measured token budget, merge only on green CI. Use when the user asks for unattended work or sets a usage budget. Triggers: "work while I am away", "overnight run", "continue without me", "usage budget", /autonomous-run. Not for waiting on one pipeline (use ci-wait) or the task board (use delivery-board-sync).'
+description: 'Rules for unattended work: scoped authority, token budget, merge only on green CI. Use when the user will be away or sets a usage budget.'
 ---
+<!-- routing (read by the skill router, not loaded into the skill listing): Rules for a long unattended run (overnight, away period): scoped authority, a measured token budget, merge only on green CI. Use when the user asks for unattended work or sets a usage budget. Triggers: "work while I am away", "overnight run", "continue without me", "usage budget", /autonomous-run. Not for waiting on one pipeline (use ci-wait) or the task board (use delivery-board-sync). -->
 
 # Autonomous Run Procedure
 

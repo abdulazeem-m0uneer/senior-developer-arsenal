@@ -1,7 +1,8 @@
 ---
 name: python-audit
-description: 'Python lint, static typing and asyncio audit. Use to lint Python, run strict mypy, or audit asyncio code for blocking calls. Triggers: "python audit", "lint python", "mypy check", "asyncio audit", /python-audit. Not for building Python services (use python-backend-expert) or Node.js and .NET code (use code-review).'
+description: 'Python lint, strict mypy and asyncio blocking-call audit. Use to lint or type-check Python.'
 ---
+<!-- routing (read by the skill router, not loaded into the skill listing): Python lint, static typing and asyncio audit. Use to lint Python, run strict mypy, or audit asyncio code for blocking calls. Triggers: "python audit", "lint python", "mypy check", "asyncio audit", /python-audit. Not for building Python services (use python-backend-expert) or Node.js and .NET code (use code-review). -->
 
 # Python Quality & Asyncio Audit Skill
 

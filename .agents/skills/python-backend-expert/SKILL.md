@@ -1,7 +1,8 @@
 ---
 name: python-backend-expert
-description: 'Python backend engineering. Use when designing, building, refactoring or optimizing Python services (FastAPI, Django, Flask), asyncio, SQLAlchemy 2.0 or Pydantic. Triggers: "Python", "FastAPI", "SQLAlchemy", "Pydantic", "asyncio", "TaskGroup". Not for lint and type audits (use python-audit), Node.js (use nodejs-backend-expert) or .NET (use csharp-dotnet-expert).'
+description: 'Python services (FastAPI, Django, Flask), asyncio, SQLAlchemy 2.0, Pydantic. Use for Python backend design or build.'
 ---
+<!-- routing (read by the skill router, not loaded into the skill listing): Python backend engineering. Use when designing, building, refactoring or optimizing Python services (FastAPI, Django, Flask), asyncio, SQLAlchemy 2.0 or Pydantic. Triggers: "Python", "FastAPI", "SQLAlchemy", "Pydantic", "asyncio", "TaskGroup". Not for lint and type audits (use python-audit), Node.js (use nodejs-backend-expert) or .NET (use csharp-dotnet-expert). -->
 
 # Python Backend Engineering Skill
 

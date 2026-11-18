@@ -1,7 +1,8 @@
 ---
 name: ci-wait
-description: 'Wait for pull request checks and tell an outside failure (rate limit, runner, network, CI provider) from a failure of the change. Use to wait for CI or judge whether a red run is flaky. Triggers: "wait for CI", "is CI green", "rerun the failed jobs", "flaky pipeline", "merge when green", /ci-wait. Not for writing the pipeline (use devops-ci) or merge strategy (use git-workflow-master).'
+description: 'Wait for pull request checks and tell a flaky or outside failure from a real one. Use when waiting for CI or judging a red run.'
 ---
+<!-- routing (read by the skill router, not loaded into the skill listing): Wait for pull request checks and tell an outside failure (rate limit, runner, network, CI provider) from a failure of the change. Use to wait for CI or judge whether a red run is flaky. Triggers: "wait for CI", "is CI green", "rerun the failed jobs", "flaky pipeline", "merge when green", /ci-wait. Not for writing the pipeline (use devops-ci) or merge strategy (use git-workflow-master). -->
 
 # CI Wait & Failure Triage Procedure
 

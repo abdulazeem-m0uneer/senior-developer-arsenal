@@ -49,6 +49,9 @@ MAX_CACHE_BYTES = 256 * 1024
 MAX_PHRASE = 200
 CORE = ("investigate", "test-every-change", "refactor-legacy", "code-review", "definition-of-done")
 DESCRIPTION = re.compile(r"^description:\s*(['\"])(.*)\1\s*$", re.M)
+# The listing description stays short (it loads every session); trigger phrases and "Not for" routes live in a
+# body comment that only this router and diagnose read.
+ROUTING = re.compile(r"^<!-- routing[^:]*: (.*) -->\s*$", re.M)
 TRIGGERS = re.compile(r"Triggers?(?: on)?:(.*?)(?:\.\s*Not for\b|$)", re.S)
 NOT_FOR = re.compile(r"\bNot for (.*)$", re.S)
 NOT_FOR_ITEM = re.compile(r"(.+?)\s*\(use ([\w-]+)(?: or [\w-]+)?\)")
@@ -166,8 +169,9 @@ def parse_skill(name, text):
     """{"triggers": [[phrase, score, probe]], "not_for": [[[words], target]]} from one SKILL.md.
 
     probe is the phrase's first word: a plain substring test that skips compiling a pattern that cannot match."""
+    routing = ROUTING.search(text)
     match = DESCRIPTION.search(text)
-    description = match.group(2).replace("''", "'") if match else ""
+    description = routing.group(1) if routing else match.group(2).replace("''", "'") if match else ""
     triggers = []
     found = TRIGGERS.search(description)
     for phrase in QUOTED_PHRASE.findall(found.group(1) if found else ""):
