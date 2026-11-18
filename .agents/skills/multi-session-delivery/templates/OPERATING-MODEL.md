@@ -20,7 +20,7 @@ Session names are fixed. Every session runs in the same permission mode. Remove 
 2. Features those clients wait on.
 3. The current plan week, hardest story first.
 
-`<tracker list or board>` is the queue; the coordinator keeps its order and tags. A lane with a free slot takes the highest open ticket in its own modules and sends `started <ticket>`.
+`<tracker list or board>` is the queue; the coordinator keeps its order and tags. A lane with a free slot takes the highest open ticket in its own modules and sends `START <ticket> <what> - ETA <time>`.
 
 ## How work flows
 
@@ -33,7 +33,7 @@ Session names are fixed. Every session runs in the same permission mode. Remove 
 ## Messages
 
 - **Bus:** `<workspace>/.agents/bus`. Send with `send.sh <to> <from> "<line>"`, then the live message. On every start run `read.sh <me>` first, then `read.sh <me> --ack <line>` once the lines are acted on.
-- **Lane to coordinator:** `started|paused|merged|released|deployed|verified|blocked <ticket> <evidence>`; `Q: <question> | type: business or lead | context | blocks | working rule meanwhile`.
+- **Lane to coordinator:** `START <ticket> <what> - ETA <time>`, `BLOCKER <ticket> <exact cause> - <who acts> - ETA <time>`, `DONE <ticket> <evidence>`, and `paused|merged|released|deployed|verified <ticket> <evidence>` (`send.sh` refuses a `START` or `BLOCKER` without an ETA and a `DONE` without evidence); `Q: <question> | type: business or lead | context | blocks | working rule meanwhile`.
 - **Questions:** only the coordinator creates question tickets. Business questions go to `<business owner>` in `<business status>`; lead questions go to `<lead>` in `<blocked status>`. Questions a lane can settle by best practice are decided there and recorded. Never re-ask a question that has an answer.
 - **Session registry:** on every start each session writes its own session id under its name in `.agents/pm/lanes.json`.
 - **Tracker:** everything a person must see goes there, with its evidence. "In progress" means exactly the live work.

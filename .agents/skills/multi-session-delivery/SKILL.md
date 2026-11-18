@@ -36,7 +36,7 @@ Consult: [Operating Model Template](./templates/OPERATING-MODEL.md)
 
 ### Step 2: One Priority Queue, Pulled Not Pushed
 1. The tracker's queue is ordered by the coordinator: (1) urgent tickets and tickets raised by the client teams that consume the API, (2) features those clients wait on, (3) the current plan week, hardest and riskiest story first.
-2. A lane with a free agent slot takes the highest open ticket in its own modules and sends `started <ticket>`. It does not wait to be assigned.
+2. A lane with a free agent slot takes the highest open ticket in its own modules and sends `START <ticket> <what> - ETA <time>`. It does not wait to be assigned.
 3. "In progress" on the board means exactly the live work. The coordinator reconciles the board with the lanes' events on a timer.
 
 ### Step 3: Build Flow Inside a Lane
@@ -49,16 +49,18 @@ Consult: [Operating Model Template](./templates/OPERATING-MODEL.md)
 Consult: [Session Bus](./templates/bus/README.md)
 1. Every message is written to the receiver's inbox on the file bus first (`send.sh <to> <from> "<line>"`), then sent as a live message. The bus survives restarts; live messages do not.
 2. On every start a session reads its inbox (`read.sh <me>`) before any work, acts on each line, then acknowledges (`read.sh <me> --ack <line>`, printed by the read); unacknowledged lines are shown again. Once a week the coordinator runs `archive.sh`, which moves old lines that were already acknowledged and shifts the read mark under the bus lock; never trim an inbox by hand.
-3. Lane to coordinator, one line per event: `started|paused|merged|released|deployed|verified|blocked <ticket> <evidence>`. `verified` names the release it was checked on.
-4. Questions: `Q: <question> | type: business or lead | context | blocks | working rule meanwhile`. Only the coordinator files question tickets and relays answers. Technical questions a lane can settle by best practice are decided and recorded there, never asked.
-5. Lane to lane (two backend lanes): ask the owner lane for a migration slot and wait; announce any change to a shared file with the reason; one owner per story, handovers one way at a time; on a collision both lanes pause, tell the coordinator, and the owner lane decides (the lead decides if they disagree).
-6. No secrets, tokens or personal data in any line.
+3. Lane to coordinator, one line per event: `START <ticket> <what> - ETA <time>`, `BLOCKER <ticket> <exact cause> - <who acts> - ETA <time>`, `DONE <ticket> <evidence>`, and `paused|merged|released|deployed|verified <ticket> <evidence>`. `verified` names the release it was checked on.
+4. **ETA on everything.** Before taking any item a session sends `START` with the time it will be done; within 15 minutes of anything that stops it (red CI, a refused merge, a conflict, data missing from another session, a broken tool) it sends `BLOCKER` naming the exact cause, who must act and when it will be solved; when finished it sends `DONE` with the merged commit, green run or check that proves it. A new time is a new `START` stating the cause; a later ETA than the one before counts as a re-date. An ETA covers the whole path to done (build, tests, review, CI, merge, release, verification), adds the session's median lateness from `overdue.py --accuracy`, and is promised only after checking the date with `date` and what the item waits on with `overdue.py --all`. `send.sh` refuses a `START` or `BLOCKER` without a valid future ETA and a `DONE` without key and evidence (exit 6), refuses the old words `started` and `blocked` that would skip the ETA, and refuses a weekday that does not match its date (exit 4). Accepted lines are recorded in `open-items.tsv` for `overdue.py`. Every order the coordinator gives carries a `by <time>`.
+5. Questions: `Q: <question> | type: business or lead | context | blocks | working rule meanwhile`. Only the coordinator files question tickets and relays answers. Technical questions a lane can settle by best practice are decided and recorded there, never asked.
+6. Lane to lane (two backend lanes): ask the owner lane for a migration slot and wait; announce any change to a shared file with the reason; one owner per story, handovers one way at a time; on a collision both lanes pause, tell the coordinator, and the owner lane decides (the lead decides if they disagree).
+7. No secrets, tokens or personal data in any line.
 
 ### Step 5: Coordinator Duties
 1. Keep the board true: status changes only with evidence, every page of every listing read, bulk changes through the tracker's API in one script, not one call per task.
 2. File every `Q:` line as a ticket (business owner or lead), watch the answered column, record each answer in the decision log, relay it to the lane.
 3. Watch for gaps (legacy or reference system, plan versus delivered) and for staging alerts; a serious alert becomes an urgent ticket and an urgent line to the owning lane, handled before any other work.
-4. Send the reports the lead asked for (progress, plan, end of day, mistakes) with evidence and the list of decisions waiting on the lead.
+4. **Nothing stays unsolved unseen**: every hour run `python3 .agents/bus/overdue.py --health` first (exit 1 means a line skipped the check or a record is damaged: fix that before trusting the lists), then `python3 .agents/bus/overdue.py` and, for each `OVERDUE` line, order its owner to answer within 15 minutes with a new `START` or `BLOCKER` (a new ETA) or a `DONE` with evidence; raise each `ESCALATE` line (re-dated twice, or overdue and open 4 hours) to the risk lane and the lead. `overdue.py --waiting` lists each `BLOCKER` whose acting session has taken nothing for it: order that session to send a `START` with an ETA. Each day run `overdue.py --accuracy`: tell a session under 80% on its first promised ETA to add its median lateness to its next estimates and to record each miss as a lesson (tag `eta`).
+5. Send the reports the lead asked for (progress, plan, end of day, mistakes) with evidence and the list of decisions waiting on the lead.
 
 ### Step 6: Workday and Routines
 Consult: [Routines & Timers](./references/routines.md)
@@ -76,10 +78,11 @@ Consult: [Routines & Timers](./references/routines.md)
 ## 3. Verification Protocol
 
 ```bash
-bash .agents/bus/send.sh backend pm "started T-1 smoke"      # prints: ok inbox-backend
+bash .agents/bus/send.sh backend pm "START T-1 smoke - ETA 18:00"   # prints: ok inbox-backend; without the ETA: exit 6
 bash .agents/bus/read.sh backend                             # shows the line and the ack command, every time until acknowledged
 bash .agents/bus/read.sh backend --ack 1                     # prints: ok read-mark-backend 1; the next read: "(no unread messages)"
 bash .agents/bus/archive.sh 7                                # archives only old lines already acknowledged
+python3 .agents/bus/overdue.py --all                         # lists T-1 as open with its ETA; none once DONE is sent
 python3 <skill>/scripts/merge_green.py <merged-pr-number>    # dry run, no --yes: refused: ... is MERGED (exit 1); exit 4: gh hung, see --gh-timeout
 systemctl --user list-timers                                 # each routine's next run equals its required time
 ```
@@ -91,6 +94,7 @@ Before declaring the model live, output the readiness table:
 | Lane table accepted by the user | message or rules file commit | Yes / No |
 | Rules file + operating model in the workspace | file paths | Yes / No |
 | Bus round trip for every lane name | `send.sh` / `read.sh` output | Yes / No |
+| A START without ETA is refused, `overdue.py` lists an open item | exit 6, `overdue.py --all` output | Yes / No |
 | Every lane registered in `lanes.json` and listed in `bus/lanes.txt` | file content | Yes / No |
 | Merge guard dry run refuses a merged PR | command output | Yes / No |
 | Routines scheduled at the right times | timer list | Yes / No |
@@ -108,6 +112,7 @@ Before declaring the model live, output the readiness table:
 | Renaming a session in the docs only | The bus refuses the new name | Change scripts and docs in one step, test both names |
 | Reading page 0 of a paginated listing | Stale tickets left "in progress" | Read until the API says there are no more pages |
 | Judging a failed mutating call by its error line | The action may have succeeded before the error | Read the target's state before reporting |
+| Work started or blocked with no time | Nobody sees it is late until someone asks | `START`/`BLOCKER` with an ETA, `overdue.py` every hour |
 
 ---
 
