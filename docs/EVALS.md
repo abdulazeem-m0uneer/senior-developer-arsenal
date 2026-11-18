@@ -148,6 +148,28 @@ Same four smart-* cases on model haiku, 3 runs per arm, same conditions. Both ar
 | `smart-unicode-search` | with plugin | 3 | 1.00 | `any-skill-fired` 3/3 (indicator, not scored)<br>`tests-run` 3/3 | `acceptance` 3/3 | 0.0088 | 224,223 | 3,788 | 13.0 |
 | `smart-unicode-search` | without plugin | 3 | 1.00 | `tests-run` 3/3 | `acceptance` 3/3 | 0.0048 | 107,598 | 3,240 | 9.3 |
 
+### `real-refund-sonnet` (2026-11-18)
+
+Claude Code 2.1.327, arsenal 1.7.0, model `sonnet`, judge `haiku`, 5 run(s) per arm, total cost 1.0404 USD.
+
+Real task rebuilt as a small Python reconstruction of caby-backend #696 (refund the captured transaction, not the hold), 5 runs per arm, no OS sandbox. Both arms passed acceptance 5/5. The red-then-green check reads 0/5 in both arms because it counts only NEW test files: in a sample of 3 runs per arm, every with-plugin run and 2 of 3 without-plugin runs extended the existing tests/test_refunds.py instead, so that row measures nothing.
+
+| Task | Arm | Runs | Mean score | Graders passed | Outcome checks passed | Cost per run (USD) | Input tokens per run | Output tokens per run | Turns per run |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `real-caby-refund-capture` | with plugin | 5 | 0.30 | `any-skill-fired` 5/5 (indicator, not scored)<br>`regression-test` 0/5<br>`tests-run` 3/5 | `acceptance` 5/5<br>`regression-test-red-then-green` 0/5 | 0.1384 | 193,274 | 2,389 | 13.6 |
+| `real-caby-refund-capture` | without plugin | 5 | 0.20 | `regression-test` 0/5<br>`tests-run` 2/5 | `acceptance` 5/5<br>`regression-test-red-then-green` 0/5 | 0.0697 | 102,771 | 1,815 | 9.0 |
+
+### `real-refund-haiku` (2026-11-18)
+
+Claude Code 2.1.327, arsenal 1.7.0, model `haiku`, judge `haiku`, 5 run(s) per arm, total cost 0.0841 USD.
+
+Same case on model haiku, same conditions and the same caveat about the red-then-green row.
+
+| Task | Arm | Runs | Mean score | Graders passed | Outcome checks passed | Cost per run (USD) | Input tokens per run | Output tokens per run | Turns per run |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `real-caby-refund-capture` | with plugin | 5 | 0.20 | `any-skill-fired` 5/5 (indicator, not scored)<br>`regression-test` 0/5<br>`tests-run` 2/5 | `acceptance` 5/5<br>`regression-test-red-then-green` 0/5 | 0.0110 | 291,858 | 4,456 | 17.2 |
+| `real-caby-refund-capture` | without plugin | 5 | 0.40 | `regression-test` 0/5<br>`tests-run` 4/5 | `acceptance` 5/5<br>`regression-test-red-then-green` 0/5 | 0.0058 | 132,154 | 3,630 | 11.8 |
+
 <!-- eval-results:end -->
 
 ## Real tasks, earlier hand run (2 runs per arm, before the outcome checks, no cost recorded)

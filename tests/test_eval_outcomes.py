@@ -216,6 +216,21 @@ class CaseOutcomeTest(WithoutPytest):
                                             "    return repo.get_name(user_id) or \"Guest\"\n"})
         self.assertEqual(self.statuses(case, workspace)["acceptance"], "fail")
 
+    def test_refunding_the_hold_or_sending_without_a_capture_fails_acceptance(self):
+        case = EVALS / "real-caby-refund-capture"
+        for name, old, new in (
+            ("swallow", 'refund["status"] = "gateway_refused"', 'refund["status"] = "sent"'),
+            ("no-wait", 'payment_id=payment["gateway_payment_id"]',
+             'payment_id=(before or {}).get("transaction_payment_id", payment["gateway_payment_id"])'),
+        ):
+            workspace = self.temp / f"refund-{name}"
+            eval_outcomes.build_original(case, workspace)
+            target = workspace / "money" / "refunds.py"
+            text = target.read_text()
+            self.assertIn(old, text)
+            target.write_text(text.replace(old, new))
+            self.assertEqual(self.statuses(case, workspace)["acceptance"], "fail", name)
+
     def test_feature_without_the_migration_fails_acceptance(self):
         case = EVALS / "task-feature-fullstack"
         workspace = self.solved(case)

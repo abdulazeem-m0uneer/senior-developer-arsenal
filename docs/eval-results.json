@@ -5807,6 +5807,646 @@
           ]
         }
       }
+    },
+    {
+      "label": "real-refund-sonnet",
+      "note": "Real task rebuilt as a small Python reconstruction of caby-backend #696 (refund the captured transaction, not the hold), 5 runs per arm, no OS sandbox. Both arms passed acceptance 5/5. The red-then-green check reads 0/5 in both arms because it counts only NEW test files: in a sample of 3 runs per arm, every with-plugin run and 2 of 3 without-plugin runs extended the existing tests/test_refunds.py instead, so that row measures nothing.",
+      "recorded": "2026-11-18",
+      "claude_version": "2.1.327",
+      "arsenal_version": "1.7.0",
+      "model": "sonnet",
+      "judge_model": "haiku",
+      "runs_per_arm": 5,
+      "cost_usd": 1.0404149,
+      "partial": false,
+      "cases": {
+        "real-caby-refund-capture": {
+          "with": [
+            {
+              "score": 0,
+              "cost_usd": 0.14897370000000001,
+              "judge_cost_usd": 0,
+              "turns": 15,
+              "duration_seconds": 28,
+              "error": null,
+              "tokens": {
+                "input_tokens": 13,
+                "cache_creation_input_tokens": 27337,
+                "cache_read_input_tokens": 150497,
+                "output_tokens": 2455
+              },
+              "graders": {
+                "any-skill-fired": {
+                  "passed": true,
+                  "scored": false
+                },
+                "regression-test": {
+                  "passed": false,
+                  "scored": true
+                },
+                "tests-run": {
+                  "passed": false,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass",
+                "regression-test-red-then-green": "fail"
+              }
+            },
+            {
+              "score": 0.5,
+              "cost_usd": 0.1344132,
+              "judge_cost_usd": 0,
+              "turns": 13,
+              "duration_seconds": 27,
+              "error": null,
+              "tokens": {
+                "input_tokens": 16,
+                "cache_creation_input_tokens": 23152,
+                "cache_read_input_tokens": 180632,
+                "output_tokens": 2371
+              },
+              "graders": {
+                "any-skill-fired": {
+                  "passed": true,
+                  "scored": false
+                },
+                "regression-test": {
+                  "passed": false,
+                  "scored": true
+                },
+                "tests-run": {
+                  "passed": true,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass",
+                "regression-test-red-then-green": "fail"
+              }
+            },
+            {
+              "score": 0,
+              "cost_usd": 0.12859,
+              "judge_cost_usd": 0,
+              "turns": 12,
+              "duration_seconds": 26,
+              "error": null,
+              "tokens": {
+                "input_tokens": 14,
+                "cache_creation_input_tokens": 22945,
+                "cache_read_input_tokens": 149320,
+                "output_tokens": 2185
+              },
+              "graders": {
+                "any-skill-fired": {
+                  "passed": true,
+                  "scored": false
+                },
+                "regression-test": {
+                  "passed": false,
+                  "scored": true
+                },
+                "tests-run": {
+                  "passed": false,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass",
+                "regression-test-red-then-green": "fail"
+              }
+            },
+            {
+              "score": 0.5,
+              "cost_usd": 0.127998,
+              "judge_cost_usd": 0,
+              "turns": 13,
+              "duration_seconds": 25,
+              "error": null,
+              "tokens": {
+                "input_tokens": 13,
+                "cache_creation_input_tokens": 22959,
+                "cache_read_input_tokens": 149360,
+                "output_tokens": 2120
+              },
+              "graders": {
+                "any-skill-fired": {
+                  "passed": true,
+                  "scored": false
+                },
+                "regression-test": {
+                  "passed": false,
+                  "scored": true
+                },
+                "tests-run": {
+                  "passed": true,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass",
+                "regression-test-red-then-green": "fail"
+              }
+            },
+            {
+              "score": 0.5,
+              "cost_usd": 0.1519896,
+              "judge_cost_usd": 0,
+              "turns": 15,
+              "duration_seconds": 32,
+              "error": null,
+              "tokens": {
+                "input_tokens": 20,
+                "cache_creation_input_tokens": 25595,
+                "cache_read_input_tokens": 214496,
+                "output_tokens": 2812
+              },
+              "graders": {
+                "any-skill-fired": {
+                  "passed": true,
+                  "scored": false
+                },
+                "regression-test": {
+                  "passed": false,
+                  "scored": true
+                },
+                "tests-run": {
+                  "passed": true,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass",
+                "regression-test-red-then-green": "fail"
+              }
+            }
+          ],
+          "without": [
+            {
+              "score": 0,
+              "cost_usd": 0.0576126,
+              "judge_cost_usd": 0,
+              "turns": 6,
+              "duration_seconds": 17,
+              "error": null,
+              "tokens": {
+                "input_tokens": 8,
+                "cache_creation_input_tokens": 9740,
+                "cache_read_input_tokens": 56566,
+                "output_tokens": 1298
+              },
+              "graders": {
+                "regression-test": {
+                  "passed": false,
+                  "scored": true
+                },
+                "tests-run": {
+                  "passed": false,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass",
+                "regression-test-red-then-green": "fail"
+              }
+            },
+            {
+              "score": 0,
+              "cost_usd": 0.07426390000000001,
+              "judge_cost_usd": 0,
+              "turns": 9,
+              "duration_seconds": 22,
+              "error": null,
+              "tokens": {
+                "input_tokens": 12,
+                "cache_creation_input_tokens": 10837,
+                "cache_read_input_tokens": 92619,
+                "output_tokens": 2163
+              },
+              "graders": {
+                "regression-test": {
+                  "passed": false,
+                  "scored": true
+                },
+                "tests-run": {
+                  "passed": false,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass",
+                "regression-test-red-then-green": "fail"
+              }
+            },
+            {
+              "score": 0.5,
+              "cost_usd": 0.07611670000000001,
+              "judge_cost_usd": 0,
+              "turns": 11,
+              "duration_seconds": 23,
+              "error": null,
+              "tokens": {
+                "input_tokens": 13,
+                "cache_creation_input_tokens": 11203,
+                "cache_read_input_tokens": 110487,
+                "output_tokens": 2023
+              },
+              "graders": {
+                "regression-test": {
+                  "passed": false,
+                  "scored": true
+                },
+                "tests-run": {
+                  "passed": true,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass",
+                "regression-test-red-then-green": "fail"
+              }
+            },
+            {
+              "score": 0,
+              "cost_usd": 0.0748302,
+              "judge_cost_usd": 0,
+              "turns": 10,
+              "duration_seconds": 19,
+              "error": null,
+              "tokens": {
+                "input_tokens": 13,
+                "cache_creation_input_tokens": 10946,
+                "cache_read_input_tokens": 109702,
+                "output_tokens": 2005
+              },
+              "graders": {
+                "regression-test": {
+                  "passed": false,
+                  "scored": true
+                },
+                "tests-run": {
+                  "passed": false,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass",
+                "regression-test-red-then-green": "fail"
+              }
+            },
+            {
+              "score": 0.5,
+              "cost_usd": 0.06562699999999999,
+              "judge_cost_usd": 0,
+              "turns": 9,
+              "duration_seconds": 16,
+              "error": null,
+              "tokens": {
+                "input_tokens": 12,
+                "cache_creation_input_tokens": 10147,
+                "cache_read_input_tokens": 91550,
+                "output_tokens": 1586
+              },
+              "graders": {
+                "regression-test": {
+                  "passed": false,
+                  "scored": true
+                },
+                "tests-run": {
+                  "passed": true,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass",
+                "regression-test-red-then-green": "fail"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "label": "real-refund-haiku",
+      "note": "Same case on model haiku, same conditions and the same caveat about the red-then-green row.",
+      "recorded": "2026-11-18",
+      "claude_version": "2.1.327",
+      "arsenal_version": "1.7.0",
+      "model": "haiku",
+      "judge_model": "haiku",
+      "runs_per_arm": 5,
+      "cost_usd": 0.08411606,
+      "partial": false,
+      "cases": {
+        "real-caby-refund-capture": {
+          "with": [
+            {
+              "score": 0,
+              "cost_usd": 0.011466189999999998,
+              "judge_cost_usd": 0,
+              "turns": 17,
+              "duration_seconds": 35,
+              "error": null,
+              "tokens": {
+                "input_tokens": 18,
+                "cache_creation_input_tokens": 31092,
+                "cache_read_input_tokens": 284999,
+                "output_tokens": 4792
+              },
+              "graders": {
+                "any-skill-fired": {
+                  "passed": true,
+                  "scored": false
+                },
+                "regression-test": {
+                  "passed": false,
+                  "scored": true
+                },
+                "tests-run": {
+                  "passed": false,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass",
+                "regression-test-red-then-green": "fail"
+              }
+            },
+            {
+              "score": 0,
+              "cost_usd": 0.01075025,
+              "judge_cost_usd": 0,
+              "turns": 17,
+              "duration_seconds": 32,
+              "error": null,
+              "tokens": {
+                "input_tokens": 16,
+                "cache_creation_input_tokens": 30336,
+                "cache_read_input_tokens": 245595,
+                "output_tokens": 4451
+              },
+              "graders": {
+                "any-skill-fired": {
+                  "passed": true,
+                  "scored": false
+                },
+                "regression-test": {
+                  "passed": false,
+                  "scored": true
+                },
+                "tests-run": {
+                  "passed": false,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass",
+                "regression-test-red-then-green": "fail"
+              }
+            },
+            {
+              "score": 0.5,
+              "cost_usd": 0.0110839,
+              "judge_cost_usd": 0,
+              "turns": 17,
+              "duration_seconds": 34,
+              "error": null,
+              "tokens": {
+                "input_tokens": 18,
+                "cache_creation_input_tokens": 30664,
+                "cache_read_input_tokens": 281630,
+                "output_tokens": 4266
+              },
+              "graders": {
+                "any-skill-fired": {
+                  "passed": true,
+                  "scored": false
+                },
+                "regression-test": {
+                  "passed": false,
+                  "scored": true
+                },
+                "tests-run": {
+                  "passed": true,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass",
+                "regression-test-red-then-green": "fail"
+              }
+            },
+            {
+              "score": 0,
+              "cost_usd": 0.011542859999999999,
+              "judge_cost_usd": 0,
+              "turns": 19,
+              "duration_seconds": 34,
+              "error": null,
+              "tokens": {
+                "input_tokens": 18,
+                "cache_creation_input_tokens": 31395,
+                "cache_read_input_tokens": 286056,
+                "output_tokens": 4803
+              },
+              "graders": {
+                "any-skill-fired": {
+                  "passed": true,
+                  "scored": false
+                },
+                "regression-test": {
+                  "passed": false,
+                  "scored": true
+                },
+                "tests-run": {
+                  "passed": false,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass",
+                "regression-test-red-then-green": "fail"
+              }
+            },
+            {
+              "score": 0.5,
+              "cost_usd": 0.01010859,
+              "judge_cost_usd": 0,
+              "turns": 16,
+              "duration_seconds": 29,
+              "error": null,
+              "tokens": {
+                "input_tokens": 14,
+                "cache_creation_input_tokens": 30262,
+                "cache_read_input_tokens": 207179,
+                "output_tokens": 3966
+              },
+              "graders": {
+                "any-skill-fired": {
+                  "passed": true,
+                  "scored": false
+                },
+                "regression-test": {
+                  "passed": false,
+                  "scored": true
+                },
+                "tests-run": {
+                  "passed": true,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass",
+                "regression-test-red-then-green": "fail"
+              }
+            }
+          ],
+          "without": [
+            {
+              "score": 0.5,
+              "cost_usd": 0.00570531,
+              "judge_cost_usd": 0,
+              "turns": 12,
+              "duration_seconds": 23,
+              "error": null,
+              "tokens": {
+                "input_tokens": 14,
+                "cache_creation_input_tokens": 14139,
+                "cache_read_input_tokens": 123111,
+                "output_tokens": 3290
+              },
+              "graders": {
+                "regression-test": {
+                  "passed": false,
+                  "scored": true
+                },
+                "tests-run": {
+                  "passed": true,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass",
+                "regression-test-red-then-green": "fail"
+              }
+            },
+            {
+              "score": 0.5,
+              "cost_usd": 0.0056029899999999995,
+              "judge_cost_usd": 0,
+              "turns": 12,
+              "duration_seconds": 24,
+              "error": null,
+              "tokens": {
+                "input_tokens": 14,
+                "cache_creation_input_tokens": 13861,
+                "cache_read_input_tokens": 121789,
+                "output_tokens": 3223
+              },
+              "graders": {
+                "regression-test": {
+                  "passed": false,
+                  "scored": true
+                },
+                "tests-run": {
+                  "passed": true,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass",
+                "regression-test-red-then-green": "fail"
+              }
+            },
+            {
+              "score": 0,
+              "cost_usd": 0.00603858,
+              "judge_cost_usd": 0,
+              "turns": 12,
+              "duration_seconds": 26,
+              "error": null,
+              "tokens": {
+                "input_tokens": 14,
+                "cache_creation_input_tokens": 14628,
+                "cache_read_input_tokens": 120958,
+                "output_tokens": 3804
+              },
+              "graders": {
+                "regression-test": {
+                  "passed": false,
+                  "scored": true
+                },
+                "tests-run": {
+                  "passed": false,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass",
+                "regression-test-red-then-green": "fail"
+              }
+            },
+            {
+              "score": 0.5,
+              "cost_usd": 0.005266850000000001,
+              "judge_cost_usd": 0,
+              "turns": 10,
+              "duration_seconds": 20,
+              "error": null,
+              "tokens": {
+                "input_tokens": 10,
+                "cache_creation_input_tokens": 13244,
+                "cache_read_input_tokens": 80255,
+                "output_tokens": 3629
+              },
+              "graders": {
+                "regression-test": {
+                  "passed": false,
+                  "scored": true
+                },
+                "tests-run": {
+                  "passed": true,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass",
+                "regression-test-red-then-green": "fail"
+              }
+            },
+            {
+              "score": 0.5,
+              "cost_usd": 0.0065505400000000005,
+              "judge_cost_usd": 0,
+              "turns": 13,
+              "duration_seconds": 25,
+              "error": null,
+              "tokens": {
+                "input_tokens": 16,
+                "cache_creation_input_tokens": 15054,
+                "cache_read_input_tokens": 143664,
+                "output_tokens": 4203
+              },
+              "graders": {
+                "regression-test": {
+                  "passed": false,
+                  "scored": true
+                },
+                "tests-run": {
+                  "passed": true,
+                  "scored": true
+                }
+              },
+              "outcomes": {
+                "acceptance": "pass",
+                "regression-test-red-then-green": "fail"
+              }
+            }
+          ]
+        }
+      }
     }
   ]
 }
