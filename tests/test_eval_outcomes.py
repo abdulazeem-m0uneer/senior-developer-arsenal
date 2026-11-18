@@ -182,6 +182,40 @@ class CaseOutcomeTest(WithoutPytest):
         workspace = self.solved(case, {"billing_legacy.py": broken})
         self.assertEqual(self.statuses(case, workspace)["acceptance"], "fail")
 
+    # smart-* cases: the plausible first fix must fail, or the case cannot tell a smarter agent apart.
+    def test_changing_the_shared_formatter_fails_acceptance(self):
+        case = EVALS / "smart-hidden-caller"
+        workspace = self.temp / "shared-formatter"
+        eval_outcomes.build_original(case, workspace)
+        write(workspace, {"app/dates.py": "from datetime import date\n\n\ndef format_date(value: date) -> str:\n"
+                                          "    return f\"{value.day} {value.strftime('%b %Y')}\"\n"})
+        self.assertEqual(self.statuses(case, workspace)["acceptance"], "fail")
+
+    def test_case_only_search_fix_fails_acceptance(self):
+        case = EVALS / "smart-unicode-search"
+        workspace = self.temp / "casefold-only"
+        eval_outcomes.build_original(case, workspace)
+        write(workspace, {"catalog/search.py": "def search(names, query):\n    q = query.casefold()\n"
+                                               "    return [n for n in names if q in n.casefold()]\n"})
+        self.assertEqual(self.statuses(case, workspace)["acceptance"], "fail")
+
+    def test_remainder_on_last_share_fails_acceptance(self):
+        case = EVALS / "smart-allocation"
+        workspace = self.temp / "remainder-last"
+        eval_outcomes.build_original(case, workspace)
+        write(workspace, {"billing/allocate.py": "def allocate(total_cents, weights):\n    s = sum(weights)\n"
+                                                 "    parts = [round(total_cents * w / s) for w in weights]\n"
+                                                 "    parts[-1] += total_cents - sum(parts)\n    return parts\n"})
+        self.assertEqual(self.statuses(case, workspace)["acceptance"], "fail")
+
+    def test_removing_the_cache_fails_acceptance(self):
+        case = EVALS / "smart-stale-cache"
+        workspace = self.temp / "no-cache"
+        eval_outcomes.build_original(case, workspace)
+        write(workspace, {"users/cache.py": "from users import repo\n\n\ndef display_name(user_id):\n"
+                                            "    return repo.get_name(user_id) or \"Guest\"\n"})
+        self.assertEqual(self.statuses(case, workspace)["acceptance"], "fail")
+
     def test_feature_without_the_migration_fails_acceptance(self):
         case = EVALS / "task-feature-fullstack"
         workspace = self.solved(case)

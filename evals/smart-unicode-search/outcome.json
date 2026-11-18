@@ -1,0 +1,5 @@
+{
+  "checks": [
+    {"name": "acceptance", "kind": "acceptance", "tests": "outcome/acceptance"}
+  ]
+}
