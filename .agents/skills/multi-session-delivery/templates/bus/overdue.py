@@ -8,9 +8,11 @@ Reads open-items.tsv next to this script (written by send.sh), or $BUS_OPEN_ITEM
 START or BLOCKER and still open: only a later DONE or CLEARED from the SAME sender closes it (another session
 may reuse the key). A later START or BLOCKER of the same item whose ETA is later than the one before is a
 re-date; repeating the same ETA or bringing it forward is not. Output, one line per item:
-  OVERDUE <key> | owner <sender> | ETA <YYYY-MM-DD HH:MM> | open <hours>h | re-dated <n>x[ | ESCALATE] | <line>
+  OVERDUE <key> | owner <sender> | ETA <YYYY-MM-DD HH:MM> | open <h>h | past first ETA <h>h | re-dated <n>x[ | ESCALATE] | <line>
 --all also lists open items still inside their ETA (as "open ..."). ESCALATE marks an item re-dated at least
-N times (default 2), or overdue and open at least H hours (default 4): the coordinator raises it to the lead. Prints "none"
+N times (default 2), or at least H hours (default 4) past its FIRST promised ETA, whatever it was re-dated to since:
+hours open alone never escalate (a fresh item may run long and still be inside its promise), except for an item
+whose first ETA cannot be read, which counts from when it was opened. Prints "none"
 when nothing is listed. A damaged record line is skipped and counted on stderr.
 --waiting lists instead each open BLOCKER whose acting session (the last " - <session>" in its line, a name from lanes.txt
 next to this script or $BUS_LANES, or pm) is another session with no open item of its own whose key is, or whose
@@ -112,9 +114,13 @@ def listing(items, now, show_all, escalate_hours, escalate_redates):
         if not (late or show_all):
             continue
         hours = (now - item["opened"]).total_seconds() / 3600
-        escalate = item["redates"] >= escalate_redates or (late and hours >= escalate_hours)
+        first = due_at(item["first"])
+        # an unreadable first promise is measured from the opening instead: a damaged record stays loud
+        past_first = max(0.0, (now - first).total_seconds() / 3600) if first else hours
+        escalate = item["redates"] >= escalate_redates or past_first >= escalate_hours
         line = (f"{'OVERDUE' if late else 'open'} {item['key']} | owner {item['sender']} | ETA {item['eta']}"
-                f"{'' if due else ' (unreadable)'} | open {hours:.1f}h | re-dated {item['redates']}x"
+                f"{'' if due else ' (unreadable)'} | open {hours:.1f}h | past first ETA {past_first:.1f}h"
+                f" | re-dated {item['redates']}x"
                 f"{' | ESCALATE' if escalate else ''} | {item['text'][:TEXT_CHARS]}")
         rows.append((due or EARLIEST, line))
     return [line for _, line in sorted(rows, key=lambda row: row[0])]
