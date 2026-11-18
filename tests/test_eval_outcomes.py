@@ -216,6 +216,21 @@ class CaseOutcomeTest(WithoutPytest):
                                             "    return repo.get_name(user_id) or \"Guest\"\n"})
         self.assertEqual(self.statuses(case, workspace)["acceptance"], "fail")
 
+    def test_refunding_the_hold_or_sending_without_a_capture_fails_acceptance(self):
+        case = EVALS / "real-caby-refund-capture"
+        for name, old, new in (
+            ("swallow", 'refund["status"] = "gateway_refused"', 'refund["status"] = "sent"'),
+            ("no-wait", 'payment_id=payment["gateway_payment_id"]',
+             'payment_id=(before or {}).get("transaction_payment_id", payment["gateway_payment_id"])'),
+        ):
+            workspace = self.temp / f"refund-{name}"
+            eval_outcomes.build_original(case, workspace)
+            target = workspace / "money" / "refunds.py"
+            text = target.read_text()
+            self.assertIn(old, text)
+            target.write_text(text.replace(old, new))
+            self.assertEqual(self.statuses(case, workspace)["acceptance"], "fail", name)
+
     def test_feature_without_the_migration_fails_acceptance(self):
         case = EVALS / "task-feature-fullstack"
         workspace = self.solved(case)
@@ -240,6 +255,22 @@ class AddedTestsTest(WithoutPytest):
         workspace = self.solved(self.CASE)
         (workspace / "test_pricing.py").unlink()
         self.assertEqual(self.statuses(self.CASE, workspace)[self.CHECK], "fail")
+
+    def test_regression_case_added_to_the_seeded_test_file_counts(self):
+        case = EVALS / "real-caby-refund-capture"
+        workspace = self.solved(case)
+        (workspace / "tests" / "test_refund_capture.py").unlink()
+        seeded = workspace / "tests" / "test_refunds.py"
+        reference = (case / "outcome" / "reference" / "tests" / "test_refund_capture.py").read_text()
+        body = reference.split("class RefundNamesTheCapture(unittest.TestCase):", 1)[1].split("\n\nif __name__")[0]
+        seeded.write_text(seeded.read_text().replace("\n\nif __name__", body + "\n\nif __name__", 1))
+        self.assertEqual(self.statuses(case, workspace)["regression-test-red-then-green"], "pass")
+
+    def test_unchanged_seeded_test_file_is_not_a_regression_test(self):
+        case = EVALS / "real-caby-refund-capture"
+        workspace = self.solved(case)
+        (workspace / "tests" / "test_refund_capture.py").unlink()
+        self.assertEqual(self.statuses(case, workspace)["regression-test-red-then-green"], "fail")
 
     def test_added_test_that_also_passes_on_the_unfixed_code_fails(self):
         workspace = self.solved(self.CASE, {"test_pricing.py": PASSING_TEST})
