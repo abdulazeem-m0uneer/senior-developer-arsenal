@@ -5,6 +5,8 @@ Every session reads this file when it starts. A newer decision by the lead repla
 ## Rules for every session
 
 - Read this file, `.agents/OPERATING-MODEL.md` and your bus inbox (`bash .agents/bus/read.sh <name>`) before any work; acknowledge the lines once acted on (`--ack <line>`, printed by the read).
+- **ETA on everything:** before taking any item send `START <ticket> <what> - ETA <time>`; within 15 minutes of anything that stops it send `BLOCKER <ticket> <exact cause> - <who acts> - ETA <time>`; when finished send `DONE <ticket> <evidence>` (merged commit, green run, verified check). A new time is a new `START`. When the coordinator chases an overdue item, answer within 15 minutes with a new `START`, `BLOCKER` or `DONE`.
+- **Realistic ETAs, learned from misses:** an ETA covers the whole path to done (build, tests, review, CI, merge, release, verification), not only the coding; add your median lateness from `python3 .agents/bus/overdue.py --accuracy`; a moved ETA states its cause in the new `START` and is recorded as a lesson (tag `eta`) at once; check the date with `date` and what you wait on with `overdue.py --all` before promising.
 - Keep your fixed session name (`pm`, `backend`, `backend-b`, `web`, `mobile`) and the shared permission mode.
 - On every start, write your own session id under your name in `.agents/pm/lanes.json`.
 - **Priority:** urgent tickets and client-team tickets; then the features clients wait on; then the current plan week, hardest story first.
@@ -27,6 +29,7 @@ Every session reads this file when it starts. A newer decision by the lead repla
 - Relays the lead's instructions to the lanes, one instruction per message: bus first, then live.
 - **The board shows the real work:** "in progress" means exactly the live work; a status changes only with evidence; every page of a listing is read; bulk changes go through the API.
 - **Questions:** files every `Q:` line as a ticket (business owner or lead) and relays each answer back; records answers in the decision log.
+- **Nothing stays unsolved unseen:** every hour run `python3 .agents/bus/overdue.py --health`, then `overdue.py` and `--waiting`, every day `--accuracy` (a session under 80% adds its median lateness to its estimates); chase each owner (answer within 15 minutes), raise each `ESCALATE` line to the lead; every order carries a `by <time>`.
 - **Staging alerts:** a serious alert becomes an urgent ticket and an urgent line to the owning lane.
 - **Reports:** `<schedule and recipients>`; each of its own mistakes reported the same turn.
 
@@ -39,7 +42,7 @@ Every session reads this file when it starts. A newer decision by the lead repla
 - **Agents:** at most 4 story agents, one whole story each, different modules; reviewers separate.
 - **Done:** merged with a clean review and green CI, released, verified on staging. Merge only through the guarded merge script.
 - Handle an `URGENT staging alert` line before any other work.
-- Send the coordinator one line per event: `started|paused|merged|released|deployed|verified|blocked <ticket> <evidence>`; questions as `Q:` lines.
+- Send the coordinator one line per event: `START <ticket> <what> - ETA <time>`, `BLOCKER <ticket> <exact cause> - <who acts> - ETA <time>`, `DONE <ticket> <evidence>`, and `paused|merged|released|deployed|verified <ticket> <evidence>`; questions as `Q:` lines.
 
 ## web and mobile
 
@@ -48,4 +51,4 @@ Every session reads this file when it starts. A newer decision by the lead repla
 - `<UI rule, e.g. the approved design is frozen; a visible change needs the lead's written approval, asked through the coordinator>`
 - **Agents:** at most 4 story agents, one whole story each; reviewers separate.
 - **Done:** merged with a clean review and green CI, deployed to staging, end-to-end tests passing against the real API.
-- Send the coordinator one line per event: `started|paused|merged|released|deployed|verified|blocked <ticket> <evidence>`; questions as `Q:` lines.
+- Send the coordinator one line per event: `START <ticket> <what> - ETA <time>`, `BLOCKER <ticket> <exact cause> - <who acts> - ETA <time>`, `DONE <ticket> <evidence>`, and `paused|merged|released|deployed|verified <ticket> <evidence>`; questions as `Q:` lines.

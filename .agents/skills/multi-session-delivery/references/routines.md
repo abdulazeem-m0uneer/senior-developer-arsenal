@@ -21,7 +21,7 @@ Check each timer's next run time against the required time (`systemctl --user li
 | Routine | Schedule | Guard | Model needed |
 | :--- | :--- | :--- | :---: |
 | day-start | every 15 min | runs once per day, after the workday start written by the coordinator | yes |
-| watch | hourly inside the workday | skips outside the workday | yes |
+| watch | hourly inside the workday (runs `overdue.py --health`, `overdue.py` and `overdue.py --waiting`, chases each owner; `--accuracy` once a day) | skips outside the workday | yes |
 | staging-alerts | every 5 min, all day | dedupe by alert fingerprint; "unreachable" only after 3 misses | no (plain script) |
 | reconcile | every 2 h inside the workday | caps moves per run | yes |
 | reports | fixed time daily | once per day | yes |
