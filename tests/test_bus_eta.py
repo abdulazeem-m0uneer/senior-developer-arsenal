@@ -1,4 +1,5 @@
 """Tests for the session bus ETA rules: send_check.py, send.sh records and events, and overdue.py reports."""
+import importlib.util
 import json
 import os
 import shutil
@@ -7,7 +8,8 @@ import sys
 import tempfile
 import time
 import unittest
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
+from unittest import mock
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -403,7 +405,8 @@ class EtaOnEverythingTests(unittest.TestCase):
             "ACCURACY qa | finished 2 | on first ETA 1 of 2 (50%) | median late 90 min | re-dated 1x | "
             "open past first ETA 1",
             "ACCURACY web | finished 1 | on first ETA 1 of 1 (100%) | median late 0 min | re-dated 0x | "
-            "open past first ETA 0"])  # w2's unreadable first ETA is left out
+            "open past first ETA 0",
+            "UNREADABLE first ETA 1 | web 1"])  # w2's unreadable first ETA is left out, and counted
         self.assertEqual(self.overdue("2026-11-18T12:00:00", "--accuracy", items=self.bus / "none.tsv")[0], 2)
         self.items.write_text("", encoding="utf-8")
         self.assertEqual(self.overdue(self.NOW, "--accuracy")[1], "none")
@@ -460,7 +463,8 @@ class EtaOnEverythingTests(unittest.TestCase):
             "ACCURACY mm | finished 2 | on first ETA 2 of 2 (100%) | median late 0 min | re-dated 0x | "
             "open past first ETA 1",
             "ACCURACY zz | finished 3 | on first ETA 1 of 3 (33%) | median late 1 min | re-dated 0x | "
-            "open past first ETA 0"])
+            "open past first ETA 0",
+            "UNREADABLE first ETA 1 | mm 1"])
 
     def test_accuracy_percentage_rounds(self):
         t = "2026-11-18T09:00:00"
@@ -583,6 +587,202 @@ class EtaOnEverythingTests(unittest.TestCase):
         self.assertIn("open 6.0h | past first ETA 6.0h | re-dated 0x | ESCALATE",
                       self.overdue("2026-11-18T16:00:00")[1])
         self.assertNotIn("ESCALATE", self.overdue("2026-11-18T13:00:00")[1])  # 3 h open: not yet
+
+    # short ETA forms written by hand ("MM-DD HH:MM", "HH:MM"), read against each record's send time
+    def write_items(self, *records):
+        self.items.write_text("".join(f"{record}\n" for record in records), encoding="utf-8")
+
+    def test_short_form_etas_are_listed_by_their_resolved_time(self):
+        self.write_items("2026-11-18T09:00:00\tqa\ts1\t11-19 14:30\tSTART s1",
+                         "2026-11-18T09:00:00\tqa\ts2\t10:00\tSTART s2",
+                         "2026-11-18T15:00:00\tqa\ts3\t09:30\tSTART s3 past at send: tomorrow")
+        code, out, err = self.overdue(self.NOW, "--all")
+        self.assertEqual((code, err), (0, ""))
+        self.assertEqual(out.splitlines(), [
+            "OVERDUE s2 | owner qa | ETA 10:00 | open 7.0h | past first ETA 6.0h | re-dated 0x | ESCALATE | START s2",
+            "open s3 | owner qa | ETA 09:30 | open 1.0h | past first ETA 0.0h | re-dated 0x | "
+            "START s3 past at send: tomorrow",
+            "open s1 | owner qa | ETA 11-19 14:30 | open 7.0h | past first ETA 0.0h | re-dated 0x | START s1"])
+        self.assertEqual(self.overdue(self.NOW)[1].split(" | ")[0], "OVERDUE s2")  # only s2 is late
+
+    def test_a_redate_compares_short_and_full_forms_by_their_resolved_time(self):
+        self.write_items(
+            "2026-11-18T09:00:00\tqa\tr1\t11-18 12:00\tSTART r1",
+            "2026-11-18T10:00:00\tqa\tr1\t2026-11-18 12:00\tSTART r1 same time, full form: no re-date",
+            "2026-11-18T11:00:00\tqa\tr1\t13:00\tSTART r1 later: re-date",
+            "2026-11-18T11:30:00\tqa\tr1\t2026-11-18 12:30\tSTART r1 earlier: no re-date",
+            "2026-11-18T14:00:00\tqa\tr1\tDONE\tDONE r1 x",
+            "2026-11-18T09:00:00\tqa\tr2\t2026-11-18 13:00\tSTART r2",
+            "2026-11-18T13:30:00\tqa\tr2\t13:00\tSTART r2 13:00 is past at send, so tomorrow: re-date",
+            "2026-11-18T15:00:00\tqa\tr2\tDONE\tDONE r2 x")
+        self.assertEqual(self.overdue(self.NOW, "--accuracy")[1].splitlines(), [
+            "ACCURACY qa | finished 2 | on first ETA 0 of 2 (0%) | median late 120 min | re-dated 2x | "
+            "open past first ETA 0"])  # both 2 h past their first ETAs (12:00 and 13:00)
+
+    def test_the_previous_eta_keeps_the_send_time_it_was_written_at(self):
+        self.write_items("2026-11-18T09:00:00\tqa\tp1\t13:00\tSTART p1 today 13:00",
+                         "2026-11-18T14:00:00\tqa\tp1\t2026-11-18 15:00\tSTART p1 later than 13:00: re-date")
+        self.assertIn("| re-dated 1x |", self.overdue(self.NOW)[1])  # not 13:00 re-read at 14:00 as tomorrow
+
+    def test_a_readable_eta_after_an_unreadable_one_counts_as_a_redate(self):
+        # an unreadable earlier ETA counts as the earliest, so any readable new ETA is later
+        self.write_items("2026-11-18T09:00:00\tqa\tu1\tsoon\tSTART u1",
+                         "2026-11-18T10:00:00\tqa\tu1\t11-19 14:30\tSTART u1 dated",
+                         "2026-11-18T09:00:00\tqa\tu2\t13-40 10:00\tSTART u2",
+                         "2026-11-18T10:00:00\tqa\tu2\t2026-11-18 12:00\tSTART u2 dated",
+                         "2026-11-18T13:00:00\tqa\tu2\tDONE\tDONE u2 x")
+        self.assertEqual(self.overdue(self.NOW, "--all", "--escalate-hours", "100", "--escalate-redates", "1"), (
+            0, "open u1 | owner qa | ETA 11-19 14:30 | open 7.0h | past first ETA 7.0h | re-dated 1x | ESCALATE | "
+               "START u1 dated", ""))
+        self.assertEqual(self.overdue(self.NOW, "--accuracy")[1].splitlines(), [
+            "ACCURACY qa | finished 0 | on first ETA 0 of 0 (n/a) | median late 0 min | re-dated 1x | "
+            "open past first ETA 0",
+            "UNREADABLE first ETA 2 | qa 2"])
+
+    def test_accuracy_on_a_bus_written_in_short_forms(self):
+        rows = self.accuracy_of(
+            "2026-11-18T09:00:00\tweb\tw1\t11-18 10:00\tSTART w1", "2026-11-18T09:45:00\tweb\tw1\tDONE\tDONE w1 x",
+            "2026-11-18T09:00:00\tweb\tw2\t10:30\tSTART w2", "2026-11-18T11:00:00\tweb\tw2\tDONE\tDONE w2 x",
+            "2026-11-18T09:05:00\tweb\tw3\t09:00\tSTART w3 means tomorrow",
+            "2026-11-18T11:00:00\tweb\tw3\tDONE\tDONE w3 x",
+            "2026-11-18T09:00:00\tweb\tw4\t11:00\tSTART w4 open past",
+            "2026-11-18T09:00:00\tqa\tq1\t13-40 10:00\tSTART q1", "2026-11-18T10:00:00\tqa\tq1\tDONE\tDONE q1 x",
+            "2026-11-18T09:00:00\tqa\tq2\t29:99\tSTART q2 still open",
+            "2026-11-18T09:00:00\tqa\tq3\t12/31 23:00\tSTART q3", "2026-11-18T10:00:00\tqa\tq3\tDONE\tDONE q3 x")
+        self.assertEqual(rows, [
+            "ACCURACY qa | finished 1 | on first ETA 1 of 1 (100%) | median late 0 min | re-dated 0x | "
+            "open past first ETA 0",
+            "ACCURACY web | finished 3 | on first ETA 2 of 3 (67%) | median late 30 min | re-dated 0x | "
+            "open past first ETA 1",
+            "UNREADABLE first ETA 2 | qa 2"])
+
+    def test_health_counts_unreadable_open_etas_and_degrades(self):
+        self.write_items("2026-11-18T09:00:00\tqa\th1\t11-19 10:00\tSTART h1",
+                         "2026-11-18T09:00:00\tqa\th2\t17:00\tSTART h2")
+        self.assertEqual(self.health("2026-11-18T18:00:00"), (
+            0, "HEALTH ok | open 2 | overdue 1 | escalate 0 | sent 0 | refused 0 | unchecked 0 | untracked 0 | "
+               "damaged 0 | since 24h", ""))
+        with open(self.items, "a", encoding="utf-8") as handle:
+            handle.write("2026-11-18T09:00:00\tqa\th3\t02-30 10:00\tSTART h3\n"
+                         "2026-11-18T09:00:00\tqa\th4\t2026-11-19 10:00\tSTART h4\n"
+                         "2026-11-18T09:30:00\tqa\th4\tsoon\tSTART h4 re-dated to nothing\n")
+        self.assertEqual(self.health("2026-11-18T18:00:00"), (
+            1, "HEALTH degraded | open 4 | overdue 3 | escalate 1 | sent 0 | refused 0 | unchecked 0 | untracked 0 | "
+               "damaged 0 | unreadable 2 | since 24h", ""))
+
+
+    def test_a_send_time_at_the_edge_of_the_date_range_never_stops_a_listing(self):
+        # Riyadh is UTC+3: the first send time is past year 9999 locally; the naive one is before year 1 in UTC
+        self.write_items("9999-12-31T23:59:00+00:00\tqa\te1\t10:00\tSTART e1 x - ETA 10:00",
+                         "0001-01-01T00:00:00\tqa\te2\t2026-11-19 10:00\tSTART e2",
+                         "2026-11-19T09:00:00+03:00\tqa\te3\t11-19 10:00\tSTART e3",
+                         "2026-11-19T09:30:00+03:00\tqa\te3\tDONE\tDONE e3 ok")
+        now, skipped = "2026-11-19T13:00:00+03:00", f"overdue.py: 1 damaged line(s) in {self.items} skipped\n"
+        with mock.patch.dict(os.environ, {"TZ": "Asia/Riyadh"}):
+            self.assertEqual(self.overdue(now, "--accuracy"), (0, "\n".join([
+                "ACCURACY qa | finished 1 | on first ETA 1 of 1 (100%) | median late 0 min | re-dated 0x | "
+                "open past first ETA 0",
+                "UNREADABLE first ETA 1 | qa 1"]), skipped))
+            self.assertEqual(self.health(now), (
+                1, "HEALTH degraded | open 1 | overdue 1 | escalate 0 | sent 0 | refused 0 | unchecked 0 | "
+                   "untracked 0 | damaged 1 | unreadable 1 | since 24h", skipped))
+            code, out, err = self.overdue(now)
+            self.assertEqual((code, out.startswith("OVERDUE e1 | owner qa | ETA 10:00 (unreadable) | open -"), err),
+                             (0, True, skipped))
+
+    def test_a_short_eta_that_falls_before_year_one_in_local_time_is_unreadable(self):
+        # in Riyadh 0001-01-01 01:00 local is still year 0 in UTC
+        self.write_items("0001-01-01T03:30:00+03:00\tqa\te1\t01-01 01:00\tSTART e1")
+        with mock.patch.dict(os.environ, {"TZ": "Asia/Riyadh"}):
+            self.assertEqual(self.overdue("2026-11-19T13:00:00+03:00", "--accuracy"), (0, "\n".join([
+                "ACCURACY qa | finished 0 | on first ETA 0 of 0 (n/a) | median late 0 min | re-dated 0x | "
+                "open past first ETA 0",
+                "UNREADABLE first ETA 1 | qa 1"]), ""))
+
+    def test_docs_on_health_exit_1_name_every_degrading_cause(self):
+        # a coordinator clears a degraded health from these lines, so each cause in overdue.health must be named
+        readme = (SKILL / "templates" / "bus" / "README.md").read_text(encoding="utf-8")
+        skill = (SKILL / "SKILL.md").read_text(encoding="utf-8")
+        for name, text, marker in (("README.md", readme, "exits 1 (`degraded`) when"),
+                                   ("SKILL.md", skill, "exit 1 means")):
+            sentence = text.split(marker, 1)[1].split(":", 1)[0].split(", so", 1)[0]
+            for cause in ("unchecked", "untracked", "damaged", "unreadable"):
+                with self.subTest(doc=name, cause=cause):
+                    self.assertIn(cause, sentence)
+
+class ShortEtaFormTests(unittest.TestCase):
+    """overdue.due_at on each ETA form; send times and expected values are local wall-clock times."""
+
+    @classmethod
+    def setUpClass(cls):
+        spec = importlib.util.spec_from_file_location("bus_overdue", SKILL / "templates" / "bus" / "overdue.py")
+        cls.overdue = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(cls.overdue)
+
+    def due(self, eta, sent):
+        return self.overdue.due_at(eta, datetime.fromisoformat(sent).astimezone())
+
+    def assert_due(self, eta, sent, expected):
+        self.assertEqual(self.due(eta, sent), datetime.fromisoformat(expected).astimezone(), (eta, sent))
+
+    def test_each_form(self):
+        self.assert_due("2026-11-19 14:30", "2026-11-18T09:00:00", "2026-11-19T14:30:00")
+        self.assert_due("2026-11-17 14:30", "2026-11-18T09:00:00", "2026-11-17T14:30:00")  # full form: as written
+        self.assert_due("11-19 14:30", "2026-11-18T09:00:00", "2026-11-19T14:30:00")
+        self.assert_due("11/19 7:05", "2026-11-18T09:00:00", "2026-11-19T07:05:00")
+        self.assert_due("14:30", "2026-11-18T09:00:00", "2026-11-18T14:30:00")
+        self.assert_due(" 14:30 ", "2026-11-18T09:00:00", "2026-11-18T14:30:00")
+
+    def test_a_month_day_takes_the_year_nearest_the_send_time(self):
+        self.assert_due("01-02 09:00", "2026-12-30T10:00:00", "2027-01-02T09:00:00")  # year end: next year
+        self.assert_due("12-30 09:00", "2027-01-02T10:00:00", "2026-12-30T09:00:00")  # year start: last year
+        self.assert_due("11-17 09:00", "2026-11-18T10:00:00", "2026-11-17T09:00:00")  # a day before stays this year
+        self.assert_due("05-10 10:00", "2026-11-18T10:00:00", "2027-05-10T10:00:00")  # 192 days before, 173 after
+        self.assert_due("06-01 10:00", "2026-11-18T10:00:00", "2026-06-01T10:00:00")  # 170 days before, 195 after
+
+    def test_a_time_alone_rolls_to_the_next_day_only_once_past_the_send_minute(self):
+        self.assert_due("10:00", "2026-11-18T10:00:59", "2026-11-18T10:00:00")  # the send minute itself: same day
+        self.assert_due("10:00", "2026-11-18T10:01:00", "2026-11-19T10:00:00")
+        self.assert_due("09:59", "2026-11-18T10:00:00", "2026-11-19T09:59:00")
+        self.assert_due("00:00", "2026-12-31T23:30:00", "2027-01-01T00:00:00")  # rolls over the year too
+
+    def test_impossible_or_other_text_is_unreadable(self):
+        for eta in ("13-40 10:00", "02-30 10:00", "00-10 10:00", "11-00 10:00", "29:99", "24:00", "10:60",
+                    "11-19 24:00", "soon", "", "10", "11-19", "10:00 pm", "11-19 10:00:30", "2026-13-01 10:00",
+                    "\u0661\u0660:\u0660\u0660"):
+            self.assertIsNone(self.due(eta, "2026-11-18T09:00:00"), eta)
+
+
+    def test_a_send_time_at_the_edge_of_the_date_range_is_unreadable_not_fatal(self):
+        last = datetime(9999, 12, 31, 23, 59, tzinfo=timezone.utc)  # local time is past it or the next day is
+        first = datetime(1, 1, 1, 0, 30, tzinfo=timezone(timedelta(hours=5)))  # year 0 in UTC
+        for eta, sent in (("10:00", last), ("12-31 23:59", last), ("01-01 00:00", first), ("00:00", first)):
+            due = self.overdue.due_at(eta, sent)
+            self.assertTrue(due is None or due.tzinfo is not None, (eta, sent, due))
+        self.assertIsNone(self.overdue.due_at("10:00", last))
+        self.assertEqual(self.overdue.due_at("2026-11-19 10:00", last), datetime(2026, 11, 19, 10, 0).astimezone())
+
+
+    def test_a_send_time_in_another_offset_is_read_in_local_time(self):
+        local = datetime(2026, 11, 18, 12, 0).astimezone().utcoffset()
+        sent = datetime(2026, 11, 18, 9, 0, tzinfo=timezone(local + timedelta(hours=5)))  # 04:00 local
+        self.assertEqual(self.overdue.due_at("06:00", sent), datetime(2026, 11, 18, 6, 0).astimezone())
+        self.assertEqual(self.overdue.due_at("03:00", sent), datetime(2026, 11, 19, 3, 0).astimezone())
+
+    def test_a_leap_day_needs_a_leap_year_within_a_year_of_the_send_time(self):
+        self.assert_due("02-29 10:00", "2027-11-18T09:00:00", "2028-02-29T10:00:00")
+        self.assertIsNone(self.due("02-29 10:00", "2026-11-18T09:00:00"))  # 2025, 2026, 2027: none is a leap year
+
+    def test_it_matches_send_check_on_lines_send_check_accepts(self):
+        spec = importlib.util.spec_from_file_location("bus_send_check", SKILL / "templates" / "bus" / "send_check.py")
+        send_check = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(send_check)
+        for sent, eta in (("2026-11-18T09:00:00", "11-19 14:30"), ("2026-11-18T10:00:30", "10:00"),
+                          ("2026-11-18T10:01:00", "10:00"), ("2026-12-30T10:00:00", "01-02 09:00"),
+                          ("2026-11-18T09:00:00", "2026-11-20 08:00")):
+            now = datetime.fromisoformat(sent)
+            expected = send_check.eta_of(f"START k x - ETA {eta}", now)
+            self.assertEqual(self.due(eta, sent), expected.astimezone(), (sent, eta))
 
 
 if __name__ == "__main__":
