@@ -112,10 +112,40 @@ def version_problems(hooks, paths):
         return [f"could not check: {last}"], "none"
 
 
-def report(paths, cache=None):
-    """[(label, problems, effect)]: this hook first (it skips bad entries: effect "none"), then each installed version,
-    oldest first."""
+PLUGIN = "arsenal@senior-developer-arsenal"
+
+
+def referenced_versions(home=None):
+    """The versions Claude Code's installed_plugins.json points an install at ($ARSENAL_INSTALLED_PLUGINS, else
+    <home>/.claude/plugins/installed_plugins.json); None when it cannot be read, so every cached version counts."""
+    path = Path(os.environ.get("ARSENAL_INSTALLED_PLUGINS")
+                or Path(home or Path.home()) / ".claude/plugins/installed_plugins.json")
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        entries = data["plugins"].get(PLUGIN) or []
+    except (OSError, ValueError, KeyError, TypeError, AttributeError):
+        return None
+    if not isinstance(entries, list):
+        return None  # malformed: count every version rather than wave them through
+    versions = set()
+    for entry in entries:
+        if isinstance(entry, dict):
+            name = Path(str(entry.get("installPath") or "")).name or str(entry.get("version") or "")
+            if VERSION_DIR.fullmatch(name):
+                versions.add(name)
+    return versions
+
+
+def report(paths, cache=None, referenced=None):
+    """[(label, problems, effect, counts)]: this hook first (it skips bad entries: effect "none"), then each cached
+    version, oldest first. counts is False for a cached version no install references (referenced is the set from
+    referenced_versions; None counts them all): a session started before an update may still run one, so it is
+    reported, but it does not decide."""
     module = current_module()
     mine = [problem for path in paths for problem in module.read_registry(str(path))[1]] if module else []
-    return [("this hook", mine, "none")] + [(f"installed {version}", *version_problems(hooks, paths))
-                                           for version, hooks in installed_versions(cache)]
+    rows = [("this hook", mine, "none", True)]
+    for version, hooks in installed_versions(cache):
+        counts = referenced is None or version in referenced
+        label = f"installed {version}" if counts else f"cached {version} (no install references it)"
+        rows.append((label, *version_problems(hooks, paths), counts))
+    return rows

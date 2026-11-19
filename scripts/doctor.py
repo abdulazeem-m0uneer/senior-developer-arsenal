@@ -237,14 +237,19 @@ def check_registry(report, home, project):
     if not paths:
         report.ok("no lesson-guard registry")
         return
-    found = guard_registry.report(paths, guard_registry.default_cache(home))
-    problems = [f"{label}: {problem}" for label, items, _ in found for problem in items]
-    effects = {effect for _, _, effect in found}
+    found = guard_registry.report(paths, guard_registry.default_cache(home), guard_registry.referenced_versions(home))
+    problems = list(dict.fromkeys(f"{label}: {problem}" for label, items, _, _ in found for problem in items))
+    effects = {effect for _, _, effect, counts in found if counts}  # an unreferenced cache only warns
+    stale = {effect for _, _, effect, counts in found if not counts} & {"refuses", "fails-open"}
     repair = f"python3 {ROOT / '.agents/skills/lessons-learned/scripts/lessons.py'} guards; fix or add min_version"
     if effects & {"refuses", "fails-open"}:
         what = " and ".join(text for effect, text in (("refuses", "refuse every Bash command"),
                                                       ("fails-open", "run no lesson guard")) if effect in effects)
         report.fail(f"lesson-guard registry: an installed version would {what} ({'; '.join(problems)})", repair)
+    elif stale:
+        report.warn("lesson-guard registry: a cached version no install references would refuse every Bash command "
+                    "or run no lesson guard; a session started before the last update may still run it: restart it "
+                    f"({'; '.join(problems)})", repair)
     elif problems:
         report.warn(f"lesson-guard registry: {len(problems)} entr{'y' if len(problems) == 1 else 'ies'} skipped "
                     f"({'; '.join(problems)})", repair)
