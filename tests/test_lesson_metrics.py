@@ -504,13 +504,50 @@ class BusTest(MetricsCase):
         self.assertEqual((eta["status"], eta["damaged"]), ("ok", 1))
         self.assertEqual(eta["sessions"], [
             {"session": "qa", "finished": 2, "on_time": 1, "pct": 50, "median_late_min": 90, "redates": 0,
-             "open_late": 1},
+             "open_late": 1, "unreadable": 0},
             {"session": "web", "finished": 0, "on_time": 0, "pct": None, "median_late_min": 0, "redates": 0,
-             "open_late": 0}])
+             "open_late": 0, "unreadable": 1}])
+        self.assertEqual(eta["unreadable"], 1)
         out = self.run_cli("metrics", "--bus", str(folder))[1]
         self.assertIn("| qa | 2 | 1 of 2 (50%) | 90 | 0 | 1 |", out)
         self.assertIn("| web | 0 | 0 of 0 (n/a) | 0 | 0 | 0 |", out)
         self.assertIn("- 1 damaged bus records skipped", out)
+        self.assertIn("- 1 items left out: first ETA unreadable (web 1)", out)
+
+    def test_short_form_etas_are_measured_and_unreadable_ones_counted(self):
+        folder = self.bus("2026-11-18T09:00:00\tqa\ta1\t11-18 10:00\tSTART a1 x",
+                          "2026-11-18T09:50:00\tqa\ta1\tDONE\tDONE a1 on time",
+                          "2026-11-18T09:00:00\tqa\ta2\t10:00\tSTART a2 x",
+                          "2026-11-18T10:45:00\tqa\ta2\tDONE\tDONE a2 45 min late",
+                          "2026-11-18T09:00:00\tqa\ta3\t13-40 10:00\tSTART a3 no such date",
+                          "2026-11-18T09:00:00\tweb\tw1\t11:00\tSTART w1 open past")
+        eta = self.metrics_json("--bus", str(folder))["eta_accuracy"]
+        self.assertEqual((eta["status"], eta["damaged"], eta["unreadable"]), ("ok", 0, 1))
+        self.assertEqual(eta["sessions"], [
+            {"session": "qa", "finished": 2, "on_time": 1, "pct": 50, "median_late_min": 45, "redates": 0,
+             "open_late": 0, "unreadable": 1},
+            {"session": "web", "finished": 0, "on_time": 0, "pct": None, "median_late_min": 0, "redates": 0,
+             "open_late": 1, "unreadable": 0}])
+        out = self.run_cli("metrics", "--bus", str(folder))[1]
+        self.assertIn("| qa | 2 | 1 of 2 (50%) | 45 | 0 | 0 |", out)
+        self.assertIn("- 1 items left out: first ETA unreadable (qa 1)", out)
+        clean = self.bus("2026-11-18T09:00:00\tqa\ta1\t11-18 10:00\tSTART a1 x")
+        self.assertNotIn("unreadable", self.run_cli("metrics", "--bus", str(clean))[1])
+        self.assertEqual(self.metrics_json("--bus", str(clean))["eta_accuracy"]["unreadable"], 0)
+
+
+    def test_a_send_time_at_the_edge_of_the_date_range_is_counted_unreadable_not_fatal(self):
+        folder = self.bus("9999-12-31T23:59:00+00:00\tqa\te1\t10:00\tSTART e1 x - ETA 10:00",
+                          "2026-11-18T09:00:00\tqa\ta1\t11-18 10:00\tSTART a1 x",
+                          "2026-11-18T09:50:00\tqa\ta1\tDONE\tDONE a1 on time")
+        eta = self.metrics_json("--bus", str(folder))["eta_accuracy"]
+        self.assertEqual((eta["status"], eta["damaged"], eta["unreadable"]), ("ok", 0, 1))
+        self.assertEqual(eta["sessions"], [
+            {"session": "qa", "finished": 1, "on_time": 1, "pct": 100, "median_late_min": 0, "redates": 0,
+             "open_late": 0, "unreadable": 1}])
+        code, out, _ = self.run_cli("metrics", "--bus", str(folder))
+        self.assertEqual(code, 0)
+        self.assertIn("- 1 items left out: first ETA unreadable (qa 1)", out)
 
     def test_a_missing_or_empty_bus_is_one_line_never_an_error(self):
         code, out, err = self.run_cli("metrics", "--bus", str(self.dir / "nowhere"))

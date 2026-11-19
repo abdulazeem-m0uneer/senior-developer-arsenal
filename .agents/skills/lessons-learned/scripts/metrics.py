@@ -31,6 +31,9 @@ Definitions (stated in the report too):
   is the `unguarded` command's list at the promotion threshold.
 - Guard fires: the machine-wide lesson-guard hit log (guard_hits.py), per local day; a hit is not tied to a ledger.
 - ETA accuracy: the bus template's overdue.py accuracy_stats over <bus>/open-items.tsv, at its clock ($BUS_NOW).
+  ETAs are read in the full form ("YYYY-MM-DD HH:MM") and the short ones ("MM-DD HH:MM", "HH:MM") against each
+  record's send time; items whose first ETA is still unreadable are left out of the table and counted per session
+  ("unreadable" in --json, one line in Markdown).
 Skipped and counted, never fatal: event lines that are not JSON or lack date, event or id; unknown event kinds;
 events and ledger dates after today; damaged guard-hit lines; damaged bus records. A missing log, ledger or bus folder
 prints one line, and so does a log that cannot be read (a folder in its place, no permission): an unreadable events log
@@ -165,7 +168,7 @@ def eta_accuracy(bus_dir):
     if bus_dir is None:
         return None
     items_file = Path(bus_dir) / "open-items.tsv"
-    result = {"bus": str(bus_dir), "status": "ok", "note": "", "sessions": [], "damaged": 0}
+    result = {"bus": str(bus_dir), "status": "ok", "note": "", "sessions": [], "damaged": 0, "unreadable": 0}
     if not OVERDUE.is_file():
         return {**result, "status": "unavailable", "note": f"overdue.py not found at {OVERDUE}"}
     if not items_file.is_file():
@@ -181,7 +184,8 @@ def eta_accuracy(bus_dir):
     if not sessions:
         return {**result, "status": "empty", "damaged": damaged,
                 "note": f"no finished or overdue items in {items_file} yet"}
-    return {**result, "sessions": sessions, "damaged": damaged}
+    return {**result, "sessions": sessions, "damaged": damaged,
+            "unreadable": sum(session["unreadable"] for session in sessions)}
 
 
 def collect(sources, guard_state, unguarded_repeats, threshold, days, today, lane_prefix, bus_dir=None):
@@ -281,4 +285,8 @@ def markdown(data):
                       f"{row['redates']} | {row['open_late']} |" for row in eta["sessions"]]
         if eta["damaged"]:
             lines.append(f"- {eta['damaged']} damaged bus records skipped")
+        if eta["unreadable"]:
+            lines.append(f"- {eta['unreadable']} items left out: first ETA unreadable ("
+                         + ", ".join(f"{row['session']} {row['unreadable']}" for row in eta["sessions"]
+                                     if row["unreadable"]) + ")")
     return "\n".join(lines)
