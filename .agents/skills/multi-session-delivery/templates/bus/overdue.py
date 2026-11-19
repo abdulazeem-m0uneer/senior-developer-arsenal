@@ -156,11 +156,16 @@ def waiting(items, lanes):
     return rows
 
 
-def accuracy(items, finished, now):
-    """ACCURACY lines, one per sender, measured against each item's first promised ETA."""
+def accuracy_stats(items, finished, now):
+    """{sender: {"finished", "on_time", "pct" (int or None), "median_late_min", "redates", "open_late"}}, by sender;
+    measured against each item's first promised ETA. Also read by lessons.py metrics (--bus)."""
     lanes = {}
+
+    def lane_of(sender):
+        return lanes.setdefault(sender, {"finished": 0, "on_time": 0, "lates": [], "redates": 0, "open_late": 0})
+
     for item in finished:
-        lane = lanes.setdefault(item["sender"], {"finished": 0, "on_time": 0, "lates": [], "redates": 0, "open_late": 0})
+        lane = lane_of(item["sender"])
         lane["redates"] += item["redates"]
         due = due_at(item["first"])
         if due is None:
@@ -173,18 +178,20 @@ def accuracy(items, finished, now):
     for item in items.values():
         due = due_at(item["first"])
         if due is not None and due < now:
-            lane = lanes.setdefault(item["sender"], {"finished": 0, "on_time": 0, "lates": [], "redates": 0,
-                                                     "open_late": 0})
-            lane["open_late"] += 1
-    rows = []
-    for sender in sorted(lanes):
-        lane = lanes[sender]
-        share = f"{round(100 * lane['on_time'] / lane['finished'])}%" if lane["finished"] else "n/a"
-        median = statistics.median_low(lane["lates"]) if lane["lates"] else 0
-        rows.append(f"ACCURACY {sender} | finished {lane['finished']} | on first ETA {lane['on_time']} of "
-                    f"{lane['finished']} ({share}) | median late {median} min | re-dated {lane['redates']}x | "
-                    f"open past first ETA {lane['open_late']}")
-    return rows
+            lane_of(item["sender"])["open_late"] += 1
+    return {sender: {"finished": lane["finished"], "on_time": lane["on_time"],
+                     "pct": round(100 * lane["on_time"] / lane["finished"]) if lane["finished"] else None,
+                     "median_late_min": statistics.median_low(lane["lates"]) if lane["lates"] else 0,
+                     "redates": lane["redates"], "open_late": lane["open_late"]}
+            for sender, lane in sorted(lanes.items())}
+
+
+def accuracy(items, finished, now):
+    """ACCURACY lines, one per sender, measured against each item's first promised ETA."""
+    return [f"ACCURACY {sender} | finished {lane['finished']} | on first ETA {lane['on_time']} of "
+            f"{lane['finished']} ({'n/a' if lane['pct'] is None else str(lane['pct']) + '%'}) | median late "
+            f"{lane['median_late_min']} min | re-dated {lane['redates']}x | open past first ETA {lane['open_late']}"
+            for sender, lane in accuracy_stats(items, finished, now).items()]
 
 
 def window_seconds(text):

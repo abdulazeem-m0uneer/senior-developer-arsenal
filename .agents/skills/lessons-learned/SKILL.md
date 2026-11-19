@@ -76,6 +76,10 @@ Consult: [Lesson Format, Triggers & Promotion](./references/lesson-format-and-pr
 1. Once a week (or at the end of a milestone), run `python scripts/lessons.py retro [--days 7] [--project]` in the repository. It reads the commits of the window (feat, fix, revert, files fixed more than once), the ledgers (new lessons, repeats, guards), the failure-evidence file and the guard hit log, and prints "What went well", "What repeated" and the top 3 actions. Each action names a lesson id or a commit.
 2. Act on action 1 the same day, usually a guard for the most repeated unguarded lesson. Paste the retro into the team channel or the handoff; never edit its numbers by hand.
 
+### Step 4e: Metrics Per Project and Lane
+1. `python scripts/lessons.py metrics [--days 7] [--lane-tag session:] [--bus DIR] [--json] [--ledger FILE ...]` prints, per ledger and per lane (the tag `session:<name>`; untagged lessons are "(no lane)"), lessons added and repeated per day, total repeats, guarded, unguarded and exempt counts, guard fires per day and, with `--bus`, the ETA accuracy per session from that bus folder's `open-items.tsv`.
+2. Per-day counts come from `<ledger stem>.events.jsonl`, which `add`, `bump` and `globalize` append to; days before it started are marked "from ledger dates: last change only". Details, and how to commit the log, in the reference.
+
 ### Step 4a: Learn From Every Red CI Run
 A red run costs pipeline minutes and a review cycle. Every one is a lesson, the first time:
 1. **The change failed a check that runs locally** (lint, type check, unit test, format, coverage, migration order): record the lesson with the exact local command as its `--check`, and add that command to the pre-push gate (`quality-gate`) in the same change, so the next push is stopped on the machine, not in CI.
