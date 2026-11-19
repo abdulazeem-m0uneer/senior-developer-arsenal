@@ -238,7 +238,7 @@ class RegistryTest(DoctorCase):
     def setUp(self):
         super().setUp()
         patch = mock.patch.dict(os.environ, {"LESSONS_GUARDS_GLOBAL_FILE": "", "ARSENAL_CACHE": "",
-                                             "CLAUDE_PROJECT_DIR": str(self.project)})
+                                             "ARSENAL_INSTALLED_PLUGINS": "", "CLAUDE_PROJECT_DIR": str(self.project)})
         patch.start()
         self.addCleanup(patch.stop)
 
@@ -303,6 +303,18 @@ class RegistryTest(DoctorCase):
         with mock.patch.dict(os.environ, {"CLAUDE_PROJECT_DIR": str(elsewhere)}):
             report, _ = self.rows(self.project)
         self.assertTrue(self.find(report, "warn", "lesson-guard registry"), report.render())
+
+    def test_an_unreferenced_cache_only_warns(self):
+        self.old_version("1.6.1")
+        self.write_json(".claude/plugins/installed_plugins.json", {"version": 2, "plugins": {doctor.PLUGIN: [
+            {"scope": "user", "installPath": str(self.home / CACHE / "1.12.0"), "version": "1.12.0"}]}})
+        self.registry([{"rule": "rerun-after-red", "lesson": "L083"}])
+        report, _ = self.rows(self.project)
+        self.assertFalse(self.find(report, "fail", "lesson-guard registry"), report.render())
+        [(text, _)] = self.find(report, "warn", "lesson-guard registry")
+        self.assertIn("cached 1.6.1 (no install references it)", text)
+        self.assertIn("restart it", text)
+        self.assertEqual(text.count("entry 1:"), 1)
 
     def test_the_registry_is_found_from_a_subfolder_as_the_hook_finds_it(self):
         path = self.project / ".agents" / "lesson-guards.json"

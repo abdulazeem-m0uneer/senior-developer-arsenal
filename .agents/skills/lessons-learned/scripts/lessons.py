@@ -17,7 +17,8 @@ Usage:
   lessons.py unguarded [--min N] [LEDGER...]  # lessons seen N+ times with no guard, archive included, most hits first
   lessons.py hits [--since 24h]      # lesson-guard refusals in the window, from the hit log (guard_hits.py)
   lessons.py retro [--days 7] [--project]  # Markdown retrospective: git log, ledger, evidence, guard hits (retro.py)
-  lessons.py guards                  # check the lesson-guard registries with this hook and every installed version
+  lessons.py guards [--registry FILE] [--strict]  # registries vs this hook and every cached version (exit 1:
+                                     # a referenced version would refuse; --registry: dry run of a file not yet in place)
   lessons.py exempt ID --reason R    # no mechanical guard fits: record why, so the repeat is no longer flagged
 Options: --file PATH (default: $LESSONS_FILE or .agents/lessons.md); --global on add, bump, archive, promote, exempt
   and check targets the global ledger ($LESSONS_GLOBAL_FILE or ~/.agents/lessons.md), as does an id starting with G.
@@ -535,21 +536,36 @@ def cmd_retro(ledger, args):
     return 0
 
 
-def cmd_guards(_ledger, _args):
-    """Every registry problem, as this hook and as each installed hook version sees it; exit 1 when any."""
-    paths = guard_registry.registry_paths(relevance.session_cwd())
+def cmd_guards(_ledger, args):
+    """Every registry problem, as this hook and as each cached hook version sees it. Exit 1 when this hook or a
+    version an install references has one; a cached version no install references only warns (--strict: counts).
+    --registry judges the given files instead of the ones in place: a dry run before writing a change."""
+    if args.registry:
+        missing = [path for path in args.registry if not Path(path).is_file()]
+        if missing:
+            raise Refused(f"no registry file at {', '.join(missing)}")
+        paths = [Path(path) for path in dict.fromkeys(args.registry)]
+    else:
+        paths = guard_registry.registry_paths(relevance.session_cwd())
     if not paths:
         print("no lesson-guard registry applies here (.agents/lesson-guards.json, ~/.agents/lesson-guards.json)")
         return 0
-    print("registries: " + ", ".join(map(str, paths)))
-    found = guard_registry.report(paths)
+    print(("candidate registries: " if args.registry else "registries: ") + ", ".join(map(str, paths)))
+    referenced = guard_registry.referenced_versions()
+    if referenced is None:
+        print("note: installed_plugins.json not readable: every cached version counts")
+    found = guard_registry.report(paths, referenced=referenced)
     effects = {"refuses": ", REFUSES every Bash command", "fails-open": ", runs NO lesson guard (fails open)"}
-    for label, problems, effect in found:
+    for label, problems, effect, _ in found:
         state = "ok" if not problems else f"{len(problems)} problem(s)" + effects.get(effect, "")
         print(f"{label}: {state}")
         for problem in problems:
             print(f"  - {problem}")
-    if any(problems for _, problems, _ in found):
+    blocking = any(problems for _, problems, _, counts in found if counts or args.strict)
+    if not blocking and any(problems for _, problems, _, _ in found):
+        print("warning: only cached versions no install references have problems; a session started before the last "
+              "update may still run one: restart those sessions first, or use --strict")
+    if blocking:
         print('fix the entries, or give a new rule "min_version" so older hooks skip it')
         return 1
     return 0
@@ -577,7 +593,9 @@ def build_parser():
     unguarded.add_argument("ledgers", nargs="*")
     sub.add_parser("cause").add_argument("note", nargs="*")
     sub.add_parser("hits").add_argument("--since", default="24h")
-    sub.add_parser("guards")
+    guards = sub.add_parser("guards")
+    guards.add_argument("--registry", action="append", help="judge this file instead of the registries in place")
+    guards.add_argument("--strict", action="store_true", help="cached versions no install references count too")
     exempt = sub.add_parser("exempt")
     exempt.add_argument("--reason")
     retrospective = sub.add_parser("retro")

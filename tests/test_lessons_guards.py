@@ -198,8 +198,10 @@ class RegistryCheckTests(GuardLedgerCase):
         self.registry = self.dir / "home" / "lesson-guards.json"
         self.registry.parent.mkdir(parents=True, exist_ok=True)
         self.cache = self.dir / "cache"
+        self.installed = self.dir / "installed_plugins.json"  # missing until a test writes it: every version counts
         patch = mock.patch.dict(os.environ, {"LESSONS_GUARDS_GLOBAL_FILE": str(self.registry),
                                              "ARSENAL_CACHE": str(self.cache),
+                                             "ARSENAL_INSTALLED_PLUGINS": str(self.installed),
                                              "CLAUDE_PROJECT_DIR": str(self.project)})
         patch.start()
         self.addCleanup(patch.stop)
@@ -308,6 +310,70 @@ class RegistryCheckTests(GuardLedgerCase):
         self.assertEqual(code, 1)
         self.assertIn(str(self.project / ".agents" / "lesson-guards.json"), out)
 
+    def reference(self, *versions):
+        entries = [{"scope": "user", "installPath": str(self.cache / version), "version": version} for version in versions]
+        self.installed.write_text(json.dumps({"version": 2, "plugins": {"arsenal@senior-developer-arsenal": entries}}),
+                                  encoding="utf-8")
+
+    def test_only_referenced_versions_decide_and_the_rest_warn(self):
+        self.install("1.6.1")
+        self.install("1.10.0", "class RegistryError(ValueError):\n    pass\ndef read_registry(path):\n    return [], []\n")
+        self.reference("1.10.0")
+        self.write_registry([{"rule": "rerun-after-red", "lesson": "L083"}])
+        code, out, _ = self.run_cli("guards")
+        self.assertEqual(code, 0)
+        self.assertIn("cached 1.6.1 (no install references it): 1 problem(s), REFUSES every Bash command", out)
+        self.assertIn("installed 1.10.0: ok", out)
+        self.assertIn("warning: only cached versions no install references have problems", out)
+        self.assertEqual(self.run_cli("guards", "--strict")[0], 1)
+        self.reference("1.6.1", "1.10.0")
+        code, out, _ = self.run_cli("guards")
+        self.assertEqual(code, 1)
+        self.assertNotIn("warning: only cached", out)  # a referenced version fails: no misleading warning
+        self.write_registry([{"rule": "hook-bypass"}])
+        self.assertNotIn("warning", self.run_cli("guards")[1])  # nothing wrong: no warning at all
+
+    def test_an_unreadable_install_list_counts_every_version(self):
+        self.install("1.6.1")
+        self.write_registry([{"rule": "rerun-after-red"}])
+        for text in ("{broken", '{"plugins": []}', '{"plugins": {"arsenal@senior-developer-arsenal": "x"}}'):
+            self.installed.write_text(text, encoding="utf-8")
+            code, out, _ = self.run_cli("guards")
+            self.assertEqual(code, 1, text)
+            self.assertIn("installed 1.6.1", out, text)
+        self.installed.unlink()
+        code, out, _ = self.run_cli("guards")
+        self.assertIn("note: installed_plugins.json not readable", out)
+
+    def test_a_candidate_file_is_judged_before_it_is_in_place(self):
+        self.install("1.6.1")
+        self.reference("1.6.1")
+        self.write_registry([{"rule": "hook-bypass"}])
+        candidate = self.dir / "candidate.json"
+        candidate.write_text(json.dumps({"guards": [{"rule": "hook-bypass"}, {"rule": "pipe-exit", "lesson": "G004",
+                                                                              "min_version": "1.11.0"}]}))
+        code, out, _ = self.run_cli("guards", "--registry", str(candidate))
+        self.assertEqual(code, 1)
+        self.assertTrue(out.startswith(f"candidate registries: {candidate}"), out)
+        self.assertIn("installed 1.6.1: 1 problem(s), REFUSES", out)
+        self.assertEqual(self.run_cli("guards")[0], 0)  # the file in place is untouched and still fine
+        code, _, err = self.run_cli("guards", "--registry", str(self.dir / "nope.json"))
+        self.assertEqual((code, "no registry file" in err), (2, True))
+        code, out, _ = self.run_cli("guards", "--registry", str(candidate), "--registry", str(candidate))
+        self.assertEqual(out.count("entry 2:"), 1)  # the same file named twice is read once
+        second = self.dir / "second.json"
+        second.write_text(json.dumps({"guards": [{"rule": "hook-bypass"}]}))
+        code, out, _ = self.run_cli("guards", "--registry", str(second), "--registry", str(candidate))
+        self.assertEqual(code, 1)
+        self.assertIn(str(second), out.splitlines()[0])
+
+    def test_a_version_before_the_lesson_guards_is_not_asked(self):
+        (self.cache / "1.1.0" / "hooks").mkdir(parents=True)  # no guard_lessons.py: it never reads the registry
+        self.reference("1.1.0")
+        self.write_registry([{"rule": "pipe-exit", "min_version": "1.11.0"}])
+        code, out, _ = self.run_cli("guards")
+        self.assertEqual(code, 0)
+        self.assertNotIn("1.1.0", out)
 
 class EscalationTests(GuardLedgerCase):
     """Repeats with no guard are named at every session start and in the retro until guarded or exempted."""

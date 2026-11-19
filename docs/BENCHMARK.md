@@ -40,8 +40,8 @@ Not part of the totals above. Sizes in characters.
 
 | Content | Files | Min | Median | Max | Total | Total tokens (est.) |
 | :--- | ---: | ---: | ---: | ---: | ---: | ---: |
-| SKILL.md (one per skill, loaded when the skill is invoked) | 61 | 2,527 | 5,848 | 17,284 | 341,780 | 85,445 |
-| Skill reference files (a skill reads the one it needs) | 128 | 844 | 4,815 | 20,533 | 612,119 | 153,030 |
+| SKILL.md (one per skill, loaded when the skill is invoked) | 61 | 2,527 | 5,848 | 17,512 | 342,008 | 85,502 |
+| Skill reference files (a skill reads the one it needs) | 128 | 844 | 4,815 | 21,783 | 613,369 | 153,342 |
 | Subagent prompts (loaded in the subagent's own context) | 18 | 919 | 1,748 | 3,937 | 32,878 | 8,220 |
 | Path-scoped rules (loaded when a matching file is read) | 8 | 2,727 | 3,464 | 7,749 | 31,639 | 7,910 |
 
