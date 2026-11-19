@@ -523,6 +523,10 @@ def pre():
         refusal = scope_refusal(data.get("tool_name"), tool_input, cwd, report_write)
         if refusal:
             return decide("deny", refusal)
+    if data.get("tool_name") != "Bash" and guard_lessons and not switched_off("ARSENAL_LESSON_GUARDS"):
+        refusal = outbound_refusal(data.get("tool_name"), tool_input, cwd)
+        if refusal:
+            return decide("deny", refusal)
     command = tool_input.get("command") if isinstance(tool_input, dict) else None
     if data.get("tool_name") != "Bash" or not isinstance(command, str):
         return
@@ -563,6 +567,15 @@ def scope_refusal(tool_name, tool_input, cwd, report_write=False):
     return guard_scope.refusal(tool_name, tool_input, cwd, report_write)
 
 
+def outbound_refusal(tool_name, tool_input, cwd):
+    """Why a non-Bash tool call is refused under the calendar rule (the hit is logged), or ''."""
+    try:
+        hit = guard_lessons.judge_outbound(tool_name, tool_input, cwd)
+    except Exception:  # this check must never stop a tool it cannot judge
+        return ""
+    return refusal_text(hit, cwd) if hit else ""
+
+
 def lesson_refusal(command, cwd, data=None):
     """Why the command is refused under a lesson guard (the hit is logged), or ''."""
     def session():
@@ -572,11 +585,14 @@ def lesson_refusal(command, cwd, data=None):
         hit = guard_lessons.judge(command, cwd, session, is_check_command)
     except ImportError as error:  # the secret rule's helper is missing: a broken install must not pass the command
         return f"arsenal lesson guards cannot judge this command ({error}); reinstall the plugin."
-    if not hit:
-        return ""
+    return refusal_text(hit, cwd) if hit else ""
+
+
+def refusal_text(hit, cwd):
+    """The refusal line for a lesson-guard hit; the hit is logged (never the command or the text)."""
     note = ""
     try:
-        import guard_hits  # imported here: only a refused command needs it
+        import guard_hits  # imported here: only a refused call needs it
         guard_hits.append(hit.lesson, hit.rule, cwd)
     except Exception as error:  # the log is a report (no home directory, unwritable file); the refusal stands
         note = f" (hit not logged: {error})"
