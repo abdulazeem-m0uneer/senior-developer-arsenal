@@ -45,7 +45,8 @@ Consult: [Board Config, Task Template & Evidence Table](./references/board-confi
 1. Move the task at the moment it happens (branch started, pull request opened, merged, blocked), in the session that did the work.
 2. Attach the evidence to every move: branch name, pull request link, CI run, merge commit. A claim is not evidence.
 3. Never mark done on a claim. Done needs the merge on the default branch and the plan's own done check. Merged but check not met: the task stays in progress with a comment naming what is missing.
-4. A blocked task says who must answer what, with the recommendation and the open-question entry. Then take the next unblocked item; the run does not stop.
+4. **Close check.** Completing a task needs, as its newest comment, a `CLOSE CHECK:` comment with one line per closing criterion (the task's done line and every item the requester listed) and the evidence for each: `- <criterion or its id>: <merged commit, #PR, link, test count, tag or run id>`. Write the criteria to a file and get the skeleton with `python3 scripts/close_check.py template --criteria <file>`; before setting the task done, `python3 scripts/close_check.py check --criteria <file> --comment <file>` must exit 0. A criterion that is not done is not closed: the task stays open, or the open part becomes its own task. Where a script makes the tracker calls, it reads the task's newest comment and refuses the completion unless `check` passes, so one session's verified line cannot close a task whose other parts are still open.
+5. A blocked task says who must answer what, with the recommendation and the open-question entry. Then take the next unblocked item; the run does not stop.
 
 ### Step 5: Spend the Call Budget Deliberately
 1. Know the tracker's rate or daily limit and set a budget per session. Spend it on status moves first, comments second, reads last.
@@ -65,6 +66,7 @@ Consult: [Board Config, Task Template & Evidence Table](./references/board-confi
 python3 -m json.tool .delivery-board.json >/dev/null && echo "config parses"   # the config file, wherever the project keeps it
 git fetch origin && git log --oneline -1 origin/HEAD -- docs/plan.md          # the plan revision the board must match
 gh pr view <number> --json state,mergeCommit,url                              # evidence for a move to done
+python3 scripts/close_check.py check --criteria done.txt --comment close.txt    # exit 0 before the task is set done
 git branch -r --contains <merge-commit> | grep -c 'origin/HEAD\|origin/main'  # must print 1 or more: it is on the default branch
 gh run list --commit <merge-commit> --json conclusion,url --limit 3           # the CI run quoted in the comment
 ```
