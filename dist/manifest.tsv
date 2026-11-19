@@ -93,6 +93,7 @@ antigravity	global	file	token-conservation.md	.agents/rules/token-conservation.m
 antigravity	global	file	ui-ux-standards.md	.agents/rules/ui-ux-standards.md	.gemini/config/rules/ui-ux-standards.md	-
 antigravity	global	file	agent_hook.py	hooks/agent_hook.py	.gemini/config/arsenal-hooks/agent_hook.py	-
 antigravity	global	file	guard.py	hooks/guard.py	.gemini/config/arsenal-hooks/guard.py	-
+antigravity	global	file	guard_calendar.py	hooks/guard_calendar.py	.gemini/config/arsenal-hooks/guard_calendar.py	-
 antigravity	global	file	guard_destructive.py	hooks/guard_destructive.py	.gemini/config/arsenal-hooks/guard_destructive.py	-
 antigravity	global	file	guard_lessons.py	hooks/guard_lessons.py	.gemini/config/arsenal-hooks/guard_lessons.py	-
 antigravity	global	file	guard_limits.py	hooks/guard_limits.py	.gemini/config/arsenal-hooks/guard_limits.py	-
@@ -203,6 +204,7 @@ antigravity	project	file	ui-ux-standards.md	.agents/rules/ui-ux-standards.md	.ag
 antigravity	project	block	AGENTS.md	AGENTS.md	AGENTS.md	-
 antigravity	project	file	agent_hook.py	hooks/agent_hook.py	.agents/arsenal-hooks/agent_hook.py	-
 antigravity	project	file	guard.py	hooks/guard.py	.agents/arsenal-hooks/guard.py	-
+antigravity	project	file	guard_calendar.py	hooks/guard_calendar.py	.agents/arsenal-hooks/guard_calendar.py	-
 antigravity	project	file	guard_destructive.py	hooks/guard_destructive.py	.agents/arsenal-hooks/guard_destructive.py	-
 antigravity	project	file	guard_lessons.py	hooks/guard_lessons.py	.agents/arsenal-hooks/guard_lessons.py	-
 antigravity	project	file	guard_limits.py	hooks/guard_limits.py	.agents/arsenal-hooks/guard_limits.py	-
@@ -297,6 +299,7 @@ gemini	global	file	legacy-analyst.md	dist/gemini/agents/legacy-analyst.md	.gemin
 gemini	global	file	risk-manager.md	dist/gemini/agents/risk-manager.md	.gemini/agents/risk-manager.md	-
 gemini	global	file	agent_hook.py	hooks/agent_hook.py	.agents/arsenal-hooks/agent_hook.py	-
 gemini	global	file	guard.py	hooks/guard.py	.agents/arsenal-hooks/guard.py	-
+gemini	global	file	guard_calendar.py	hooks/guard_calendar.py	.agents/arsenal-hooks/guard_calendar.py	-
 gemini	global	file	guard_destructive.py	hooks/guard_destructive.py	.agents/arsenal-hooks/guard_destructive.py	-
 gemini	global	file	guard_lessons.py	hooks/guard_lessons.py	.agents/arsenal-hooks/guard_lessons.py	-
 gemini	global	file	guard_limits.py	hooks/guard_limits.py	.agents/arsenal-hooks/guard_limits.py	-
@@ -393,6 +396,7 @@ gemini	project	block	AGENTS.md	AGENTS.md	AGENTS.md	-
 gemini	project	block	GEMINI.md	dist/gemini/GEMINI.block.md	GEMINI.md	-
 gemini	project	file	agent_hook.py	hooks/agent_hook.py	.agents/arsenal-hooks/agent_hook.py	-
 gemini	project	file	guard.py	hooks/guard.py	.agents/arsenal-hooks/guard.py	-
+gemini	project	file	guard_calendar.py	hooks/guard_calendar.py	.agents/arsenal-hooks/guard_calendar.py	-
 gemini	project	file	guard_destructive.py	hooks/guard_destructive.py	.agents/arsenal-hooks/guard_destructive.py	-
 gemini	project	file	guard_lessons.py	hooks/guard_lessons.py	.agents/arsenal-hooks/guard_lessons.py	-
 gemini	project	file	guard_limits.py	hooks/guard_limits.py	.agents/arsenal-hooks/guard_limits.py	-
@@ -535,6 +539,7 @@ codex	global	file	ui-ux-standards.md	.agents/rules/ui-ux-standards.md	.agents/ru
 codex	global	block	AGENTS.md	AGENTS.md	.codex/AGENTS.md	-
 codex	global	file	agent_hook.py	hooks/agent_hook.py	.agents/arsenal-hooks/agent_hook.py	-
 codex	global	file	guard.py	hooks/guard.py	.agents/arsenal-hooks/guard.py	-
+codex	global	file	guard_calendar.py	hooks/guard_calendar.py	.agents/arsenal-hooks/guard_calendar.py	-
 codex	global	file	guard_destructive.py	hooks/guard_destructive.py	.agents/arsenal-hooks/guard_destructive.py	-
 codex	global	file	guard_lessons.py	hooks/guard_lessons.py	.agents/arsenal-hooks/guard_lessons.py	-
 codex	global	file	guard_limits.py	hooks/guard_limits.py	.agents/arsenal-hooks/guard_limits.py	-
@@ -643,6 +648,7 @@ codex	project	file	ui-ux-standards.md	.agents/rules/ui-ux-standards.md	.agents/r
 codex	project	block	AGENTS.md	AGENTS.md	AGENTS.md	-
 codex	project	file	agent_hook.py	hooks/agent_hook.py	.agents/arsenal-hooks/agent_hook.py	-
 codex	project	file	guard.py	hooks/guard.py	.agents/arsenal-hooks/guard.py	-
+codex	project	file	guard_calendar.py	hooks/guard_calendar.py	.agents/arsenal-hooks/guard_calendar.py	-
 codex	project	file	guard_destructive.py	hooks/guard_destructive.py	.agents/arsenal-hooks/guard_destructive.py	-
 codex	project	file	guard_lessons.py	hooks/guard_lessons.py	.agents/arsenal-hooks/guard_lessons.py	-
 codex	project	file	guard_limits.py	hooks/guard_limits.py	.agents/arsenal-hooks/guard_limits.py	-
@@ -927,6 +933,7 @@ cursor	global	file	legacy-analyst.md	dist/cursor/agents/legacy-analyst.md	.curso
 cursor	global	file	risk-manager.md	dist/cursor/agents/risk-manager.md	.cursor/agents/risk-manager.md	-
 cursor	global	file	agent_hook.py	hooks/agent_hook.py	.agents/arsenal-hooks/agent_hook.py	-
 cursor	global	file	guard.py	hooks/guard.py	.agents/arsenal-hooks/guard.py	-
+cursor	global	file	guard_calendar.py	hooks/guard_calendar.py	.agents/arsenal-hooks/guard_calendar.py	-
 cursor	global	file	guard_destructive.py	hooks/guard_destructive.py	.agents/arsenal-hooks/guard_destructive.py	-
 cursor	global	file	guard_lessons.py	hooks/guard_lessons.py	.agents/arsenal-hooks/guard_lessons.py	-
 cursor	global	file	guard_limits.py	hooks/guard_limits.py	.agents/arsenal-hooks/guard_limits.py	-
@@ -1035,6 +1042,7 @@ cursor	project	file	ui-ux-standards.mdc	dist/cursor/rules/ui-ux-standards.mdc	.c
 cursor	project	block	AGENTS.md	AGENTS.md	AGENTS.md	-
 cursor	project	file	agent_hook.py	hooks/agent_hook.py	.agents/arsenal-hooks/agent_hook.py	-
 cursor	project	file	guard.py	hooks/guard.py	.agents/arsenal-hooks/guard.py	-
+cursor	project	file	guard_calendar.py	hooks/guard_calendar.py	.agents/arsenal-hooks/guard_calendar.py	-
 cursor	project	file	guard_destructive.py	hooks/guard_destructive.py	.agents/arsenal-hooks/guard_destructive.py	-
 cursor	project	file	guard_lessons.py	hooks/guard_lessons.py	.agents/arsenal-hooks/guard_lessons.py	-
 cursor	project	file	guard_limits.py	hooks/guard_limits.py	.agents/arsenal-hooks/guard_limits.py	-
@@ -1269,6 +1277,7 @@ copilot	global	file	legacy-analyst.agent.md	dist/copilot/agents/legacy-analyst.a
 copilot	global	file	risk-manager.agent.md	dist/copilot/agents/risk-manager.agent.md	.copilot/agents/risk-manager.agent.md	-
 copilot	global	file	agent_hook.py	hooks/agent_hook.py	.agents/arsenal-hooks/agent_hook.py	-
 copilot	global	file	guard.py	hooks/guard.py	.agents/arsenal-hooks/guard.py	-
+copilot	global	file	guard_calendar.py	hooks/guard_calendar.py	.agents/arsenal-hooks/guard_calendar.py	-
 copilot	global	file	guard_destructive.py	hooks/guard_destructive.py	.agents/arsenal-hooks/guard_destructive.py	-
 copilot	global	file	guard_lessons.py	hooks/guard_lessons.py	.agents/arsenal-hooks/guard_lessons.py	-
 copilot	global	file	guard_limits.py	hooks/guard_limits.py	.agents/arsenal-hooks/guard_limits.py	-
@@ -1377,6 +1386,7 @@ copilot	project	file	ui-ux-standards.instructions.md	dist/copilot/instructions/u
 copilot	project	block	AGENTS.md	AGENTS.md	AGENTS.md	-
 copilot	project	file	agent_hook.py	hooks/agent_hook.py	.agents/arsenal-hooks/agent_hook.py	-
 copilot	project	file	guard.py	hooks/guard.py	.agents/arsenal-hooks/guard.py	-
+copilot	project	file	guard_calendar.py	hooks/guard_calendar.py	.agents/arsenal-hooks/guard_calendar.py	-
 copilot	project	file	guard_destructive.py	hooks/guard_destructive.py	.agents/arsenal-hooks/guard_destructive.py	-
 copilot	project	file	guard_lessons.py	hooks/guard_lessons.py	.agents/arsenal-hooks/guard_lessons.py	-
 copilot	project	file	guard_limits.py	hooks/guard_limits.py	.agents/arsenal-hooks/guard_limits.py	-

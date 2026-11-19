@@ -33,6 +33,10 @@ Built-in rules:
                      command named in `programs`) run with --help, or with -h as its only argument: it may not parse
                      the flag and run for real.
   secret-in-message  a secret-looking value in the arguments of a command named in `programs` (none by default).
+  calendar           in text a call sends (gh comments, PRs and issues, git commit messages, the registry's
+                     `programs`, outbound MCP tools): a weekday that does not match its date, a date that does
+                     not exist, a guessed time (16:4x), and with "workweek" (Sun-Thu) a promise on another day.
+                     See guard_calendar.py.
   pipe-exit          a check (the Stop gate's test, build, lint or CI classifier) or a local script piped into a
                      later command, whose exit status is then acted on (&&, ||, if/while/until/!, or $? read by
                      the next command) without set -o pipefail or ${PIPESTATUS[...]}: the status is the last
@@ -46,12 +50,14 @@ Also not seen: a pgrep inside a quoted "$(...)" in a loop condition or in the lo
 (`bash <<EOF`), whose body is dropped as data.
 Time budget: string work and at most a few stat calls and two small file reads per Bash call.
 """
+import datetime as dt
 import json
 import os
 import re
 from collections import namedtuple
 from pathlib import Path
 
+import guard_calendar
 import guard_destructive as shell
 
 Hit = namedtuple("Hit", "lesson rule reason")
@@ -79,6 +85,8 @@ BUILT_IN_REASONS = {
     "help-probe": "Do not probe a local script with --help or -h: it may not parse the flag and run for real. Read "
                   "its usage header or source first.",
     "secret-in-message": "A message must not carry a secret value. Name the file that holds the secret instead.",
+    "calendar": "A date or time in this message is wrong: {problems}. Check dates with `date -d YYYY-MM-DD +%a` and the "
+                "time with `date +%H:%M` before sending.",
     "pipe-exit": "A pipeline's exit status is its last command's, so `check | tail && next` goes on even when the "
                  "check failed. Use `set -o pipefail;` first, read ${PIPESTATUS[0]}, or run `check > out.log 2>&1; "
                  "echo rc=$?` and read the file.",
@@ -86,8 +94,8 @@ BUILT_IN_REASONS = {
                        'with `python3 {lessons} cause "<failing assertion or check>: <cause or unknown>"`, then rerun.',
 }
 OPT_IN = frozenset(("rerun-after-red",))  # off until a registry entry names it
-ENTRY_KEYS = {"rule", "lesson", "reason", "enabled", "programs", "min_version"}
-TAKES_PROGRAMS = ("help-probe", "secret-in-message")
+ENTRY_KEYS = {"rule", "lesson", "reason", "enabled", "programs", "min_version", "workweek"}
+TAKES_PROGRAMS = ("help-probe", "secret-in-message", "calendar")
 CUSTOM_KEYS = {"lesson", "reason", "program", "subcommand", "args_any", "assignments_any", "in_loop", "min_version"}
 VERSION_SHAPE = re.compile(r"\d{1,6}\.\d{1,6}\.\d{1,6}", re.ASCII)
 REGISTRY_MAX_BYTES = 1_000_000
@@ -274,8 +282,9 @@ def secret_in_message(cmd, entry):
 
 BUILT_IN = {"pgrep-wait-loop": pgrep_wait_loop, "hook-bypass": hook_bypass, "help-probe": help_probe,
             "secret-in-message": secret_in_message, "rerun-after-red": rerun_after_red,
-            "pipe-exit": lambda cmd, entry: False}  # judged on the whole command: see pipe_exit
-WHOLE_COMMAND = frozenset(("pipe-exit",))
+            "pipe-exit": lambda cmd, entry: False,  # judged on the whole command: see pipe_exit
+            "calendar": lambda cmd, entry: False}  # judged on the text a call sends: see calendar_hit
+WHOLE_COMMAND = frozenset(("pipe-exit", "calendar"))
 
 
 def custom_match(cmd, entry):
@@ -337,7 +346,14 @@ def validate(entry, where):
     if "enabled" in entry and not isinstance(entry["enabled"], bool):
         raise RegistryError(f"{where}: enabled must be true or false")
     if "programs" in entry and (entry["rule"] not in TAKES_PROGRAMS or not text_list(entry["programs"])):
-        raise RegistryError(f"{where}: programs is a list of names, for {' and '.join(TAKES_PROGRAMS)} only")
+        raise RegistryError(f"{where}: programs is a list of names, for {', '.join(TAKES_PROGRAMS)} only")
+    if "workweek" in entry:
+        if entry["rule"] != "calendar":
+            raise RegistryError(f"{where}: workweek is for the calendar rule only")
+        try:
+            guard_calendar.parse_workweek(entry["workweek"])
+        except ValueError as error:
+            raise RegistryError(f"{where}: {error}") from None
 
 
 def valid_min_version(value):
@@ -539,6 +555,37 @@ def pipe_exit(command, is_check, depth=0):
     return False
 
 
+def today():
+    """Today's date; $ARSENAL_NOW (an ISO date or time) replaces the clock for tests."""
+    value = os.environ.get("ARSENAL_NOW")
+    try:
+        return dt.datetime.fromisoformat(value).date() if value else dt.date.today()
+    except ValueError:
+        return dt.date.today()
+
+
+def calendar_hit(entry, texts):
+    """Hit for the calendar rule when the outbound texts hold a calendar mistake; None otherwise."""
+    if not texts:
+        return None
+    workweek = guard_calendar.parse_workweek(entry["workweek"]) if "workweek" in entry else None
+    found = [problem for text in texts for problem in guard_calendar.problems(text, today(), workweek)]
+    if not found:
+        return None
+    reason = entry.get("reason") or BUILT_IN_REASONS["calendar"].replace("{problems}", "; ".join(dict.fromkeys(found)))
+    return Hit(entry.get("lesson"), "calendar", reason)
+
+
+def judge_outbound(tool_name, tool_input, cwd):
+    """The calendar rule for a tool other than Bash that sends text to people (an MCP send, reply, comment, post,
+    draft, create or update); None for every other tool or when it is clean or switched off."""
+    entry = next((entry for name, entry, _ in rules(cwd) if name == "calendar"), None)
+    if entry is None:
+        return None
+    return calendar_hit(entry, guard_calendar.outbound_texts(tool_name, tool_input, entry.get("programs") or [],
+                                                            shell))
+
+
 def judge(command, cwd, session=None, is_check=None):
     """The first rule the command breaks, as Hit(lesson id or None, rule name, reason); None when it breaks none.
     session: a function returning {"red": failed check and push keys, "keys": the command's check keys}, called only
@@ -549,8 +596,13 @@ def judge(command, cwd, session=None, is_check=None):
         return None
     active = rules(cwd)
     for name, entry, _ in active:
-        if name in WHOLE_COMMAND and pipe_exit(command, is_check):
+        if name == "pipe-exit" and pipe_exit(command, is_check):
             return Hit(entry.get("lesson"), name, entry.get("reason") or BUILT_IN_REASONS[name])
+        if name == "calendar":
+            hit = calendar_hit(entry, guard_calendar.outbound_texts("Bash", {"command": command},
+                                                                    entry.get("programs") or [], shell))
+            if hit:
+                return hit
     active = [rule for rule in active if rule[0] not in WHOLE_COMMAND]
     state = []
     for cmd in commands(command):
