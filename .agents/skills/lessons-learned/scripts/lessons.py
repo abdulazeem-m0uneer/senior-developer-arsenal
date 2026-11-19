@@ -18,8 +18,9 @@ Usage:
   lessons.py hits [--since 24h]      # lesson-guard refusals in the window, from the hit log (guard_hits.py)
   lessons.py retro [--days 7] [--project]  # Markdown retrospective: git log, ledger, evidence, guard hits (retro.py)
   lessons.py guards                  # check the lesson-guard registries with this hook and every installed version
-Options: --file PATH (default: $LESSONS_FILE or .agents/lessons.md); --global on add, bump, archive, promote and
-  check targets the global ledger ($LESSONS_GLOBAL_FILE or ~/.agents/lessons.md), as does an id starting with G.
+  lessons.py exempt ID --reason R    # no mechanical guard fits: record why, so the repeat is no longer flagged
+Options: --file PATH (default: $LESSONS_FILE or .agents/lessons.md); --global on add, bump, archive, promote, exempt
+  and check targets the global ledger ($LESSONS_GLOBAL_FILE or ~/.agents/lessons.md), as does an id starting with G.
   The promotion threshold N defaults to $LESSONS_PROMOTE_AT, else 3.
 Exit codes: 0 ok, 1 check found problems, 2 usage, refused content, unreadable file or busy lock.
 Time budget: `active --hook` runs two short git reads (1.5 s timeout each) and never fails the session.
@@ -48,7 +49,7 @@ TAGS_MAX = 60
 SEARCH_MAX = 10
 HOOK_MAX = 2000   # characters of additionalContext (host cap 10,000); brief lines fit about ten lessons
 SCRIPT_PATH_BUDGET = 160  # the header's script path, counted at this length whatever its real one (plugin: ~120)
-MUTATING = ("add", "bump", "archive", "promote", "globalize")
+MUTATING = ("add", "bump", "archive", "promote", "globalize", "exempt")
 LINE_RE = re.compile(
     r"^- ([LG]\d{3,}) \[([^\]]*)\] hits:(\d+) \| (\d{4}-\d{2}-\d{2}) \| Mistake: (.*?) \| Cause: (.*?) "
     r"\| Rule: (.*?) \| Check: (.*?)(?: \| Promoted: (.*))?$")
@@ -194,7 +195,31 @@ def promote_at(given=None):
     return number
 
 
+EXEMPT_MARK = re.compile(r"^exempt@(\d+): ")  # "exempt@<hits when granted>: <reason>"; never a path promote stores
+ESCALATE_SHOWN = 5  # unguarded repeats named in the session-start header; the rest are counted
+
+
+def exempted_at(lesson):
+    """The hit count a written exemption was granted at, or None when the lesson has none."""
+    found = EXEMPT_MARK.match(lesson["promoted"])
+    return int(found.group(1)) if found else None
+
+
+def is_exempt(lesson):
+    """True while an exemption holds: the lesson has not recurred since it was granted."""
+    at = exempted_at(lesson)
+    return at is not None and lesson["hits"] <= at
+
+
+def unguarded(lesson):
+    """No guard, or an exemption the lesson has since outgrown by recurring."""
+    return not lesson["promoted"] or (exempted_at(lesson) is not None and not is_exempt(lesson))
+
+
 def promote_hint(lesson):
+    if exempted_at(lesson) is not None:
+        return (f"\nEXEMPT {lesson['id']} recurred ({lesson['promoted']}): reconsider a mechanical guard, then "
+                f"`promote {lesson['id']} --guard PATH`.")
     if lesson["promoted"]:
         return f"\nGUARD FAILED {lesson['id']}: promoted to {lesson['promoted']} and it happened again. Strengthen it."
     if lesson["hits"] < promote_at():
@@ -250,18 +275,19 @@ def cmd_add(ledger, args):
     return 0
 
 
-def hook_text(project, shared):
-    """Header, then the lessons that matter most for the files in play, within HOOK_MAX characters."""
+def hook_text(project, shared, reserve=0, cwd=None):
+    """Header, then the lessons that matter most for the files in play, within HOOK_MAX characters (less reserve,
+    the room another header line needs). cwd: the session's folder (read from the hook input when not given)."""
     header = HOOK_HEADER.format(script=Path(__file__).resolve())
     if not project and not shared:
         return header + "\n(no lessons yet)"
-    tokens = relevance.path_tokens(relevance.changed_paths(relevance.session_cwd()))
+    tokens = relevance.path_tokens(relevance.changed_paths(cwd or relevance.session_cwd()))
     # Ranked apart, then alternated: high-hit global lessons must not crowd out every project lesson.
     ranked = relevance.alternate(relevance.rank(project, tokens), relevance.rank(shared, tokens))
     lines = [Ledger.brief(lesson) for lesson in ranked]
     # The script path is budgeted at a fixed length, so where arsenal is installed never changes which lessons show.
     fixed_header = len(HOOK_HEADER.format(script="")) + SCRIPT_PATH_BUDGET
-    budget = HOOK_MAX - fixed_header - len(GLOBAL_LABEL) - len(MORE_LINE.format(count=len(lines))) - 3
+    budget = HOOK_MAX - fixed_header - len(GLOBAL_LABEL) - len(MORE_LINE.format(count=len(lines))) - 3 - reserve
     kept = relevance.fit(lines, budget)
     is_shared = [any(ranked[index] is lesson for lesson in shared) for index in kept]
     out = [header] + [lines[index] for index, flag in zip(kept, is_shared) if not flag]
@@ -272,10 +298,10 @@ def hook_text(project, shared):
     return "\n".join(out)
 
 
-def registry_note():
+def registry_note(cwd=None):
     """One header line when the lesson-guard registry has entries this hook skips; '' otherwise or on any failure."""
     try:
-        count = len(guard_registry.current_problems(relevance.session_cwd()))
+        count = len(guard_registry.current_problems(cwd or relevance.session_cwd()))
     except Exception:  # the session-start hook never fails over a report line
         return ""
     if not count:
@@ -284,13 +310,35 @@ def registry_note():
             f"run `python3 {Path(__file__).resolve()} guards` and fix them.")
 
 
+def escalation_note(ledger, shared_ledger):
+    """One header line naming the repeats that still have no guard and no exemption that holds; a global lesson that
+    repeats a project one is counted once, as in the loaded list. '' when there are none or on any failure (the
+    session-start hook never fails over a report line)."""
+    try:
+        found = unguarded_lessons([ledger] + ([shared_ledger] if shared_ledger else []), promote_at())
+    except Exception:
+        return ""
+    project = [lesson for source, lesson in found if source is ledger]
+    found = [(source, lesson) for source, lesson in found
+             if source is ledger or all(similarity(lesson, mine) < SIMILAR_AT for mine in project)]
+    if not found:
+        return ""
+    named = ", ".join(f"{lesson['id']} x{lesson['hits']}" for _, lesson in found[:ESCALATE_SHOWN])
+    more = f" and {len(found) - ESCALATE_SHOWN} more (`unguarded`)" if len(found) > ESCALATE_SHOWN else ""
+    return (f"Repeats without a guard ({len(found)}): {named}{more}. Give each a guard (`promote ID --guard PATH`) or "
+            "record why none fits (`exempt ID --reason ...`).")
+
+
 def cmd_active(ledger, args):
     project = ledger.section("active")
     other = open_global(ledger.path)
     shared = [lesson for lesson in (other.section("active") if other else [])
               if all(similarity(lesson, mine) < SIMILAR_AT for mine in project)]
     if args.hook:
-        context = "\n".join(filter(None, (hook_text(project, shared), registry_note())))
+        cwd = relevance.session_cwd()  # the hook input is read once: stdin cannot be read twice
+        notes = [note for note in (escalation_note(ledger, other), registry_note(cwd)) if note]
+        reserve = sum(len(note) + 1 for note in notes)
+        context = "\n".join([hook_text(project, shared, reserve, cwd), *notes])
         print(json.dumps({"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": context}}))
         return 0
     for line in [Ledger.render(x) for x in project] + ([GLOBAL_LABEL] if shared else []) + \
@@ -324,6 +372,23 @@ def cmd_bump(ledger, args):
     return 0
 
 
+def cmd_exempt(ledger, args):
+    lesson = ledger.find(args.id)
+    reason = clean(args.reason or "")
+    if not reason:
+        raise Refused("--reason is required: why no test, lint, hook or CI check can enforce this lesson")
+    secret = find_secret(reason)
+    if secret:
+        raise Refused(f"looks like a secret ({secret}); lessons never store those")
+    if lesson["promoted"] and exempted_at(lesson) is None:
+        raise Refused(f"{lesson['id']} already has a guard ({lesson['promoted']}); an exemption would hide it")
+    lesson["promoted"] = clean(f"exempt@{lesson['hits']}: {reason}")
+    ledger.save()
+    print(f"exempted {lesson['id']} at {lesson['hits']} hits: {reason}. It stays in its section and is no longer "
+          "flagged as a repeat without a guard, unless it recurs")
+    return 0
+
+
 def cmd_archive(ledger, args):
     lesson = ledger.find(args.id)
     lesson["section"] = "archive"
@@ -339,6 +404,8 @@ def cmd_promote(ledger, args):
     if args.guard:
         if not Path(args.guard).exists():
             raise Refused(f"guard {args.guard} does not exist; write it first")
+        if EXEMPT_MARK.match(promotion.shown(args.guard)):
+            raise Refused(f"guard path {args.guard} reads as an exemption mark; rename it")
         lesson["promoted"] = promotion.shown(args.guard)
         if args.keep_rule:  # a partial guard: the rest of the rule stays in force as an always-loaded rule
             path, appended = promotion.write_rule_stub(lesson, args.rules_dir or ledger.path.parent / "rules")
@@ -388,6 +455,12 @@ def cmd_check(ledger, args):
     if len(ledger.section("active")) > ACTIVE_CAP:
         problems.append(f"Active has {len(ledger.section('active'))} lessons (cap {ACTIVE_CAP})")
     for lesson in ledger.section("active"):
+        if lesson["hits"] >= threshold and is_exempt(lesson):
+            continue  # an exemption that holds: no candidate
+        if lesson["hits"] >= threshold and exempted_at(lesson) is not None:
+            print(f"candidate {lesson['id']} hits:{lesson['hits']}: recurred after its exemption ({lesson['promoted']}); "
+                  "reconsider a guard, or exempt it again with the reason it still holds")
+            continue
         if lesson["hits"] >= threshold and lesson["promoted"]:
             print(f"candidate {lesson['id']} hits:{lesson['hits']}: recurred after promotion to {lesson['promoted']}; "
                   "strengthen that guard")
@@ -415,7 +488,7 @@ def ledger_sources(ledger, extra=(), shared=True):
 def unguarded_lessons(sources, threshold):
     """(source, lesson) seen threshold+ times with no guard, archive included, most hits first."""
     found = [(source, lesson) for source in sources for lesson in source.lessons
-             if lesson["hits"] >= threshold and not lesson["promoted"]]
+             if lesson["hits"] >= threshold and unguarded(lesson)]
     return sorted(found, key=lambda item: -item[1]["hits"])
 
 
@@ -505,14 +578,16 @@ def build_parser():
     sub.add_parser("cause").add_argument("note", nargs="*")
     sub.add_parser("hits").add_argument("--since", default="24h")
     sub.add_parser("guards")
+    exempt = sub.add_parser("exempt")
+    exempt.add_argument("--reason")
     retrospective = sub.add_parser("retro")
     retrospective.add_argument("--days", type=int, default=7)
     retrospective.add_argument("--project", action="store_true")
-    by_id = [sub.add_parser(name) for name in ("bump", "archive", "globalize")] + [promote]
+    by_id = [sub.add_parser(name) for name in ("bump", "archive", "globalize")] + [promote, exempt]
     for command in by_id:
         command.add_argument("id")
     check = sub.add_parser("check")
-    for command in [add, check, *by_id[:2], promote]:
+    for command in [add, check, *by_id[:2], promote, exempt]:
         command.add_argument("--global", dest="shared", action="store_true")
     for command in (check, unguarded):
         command.add_argument("--min", type=int)
@@ -522,7 +597,7 @@ def build_parser():
 COMMANDS = {"add": cmd_add, "active": cmd_active, "search": cmd_search, "bump": cmd_bump, "archive": cmd_archive,
             "promote": cmd_promote, "globalize": cmd_globalize, "check": cmd_check, "show": cmd_show,
             "unguarded": cmd_unguarded, "cause": cmd_cause, "hits": cmd_hits, "retro": cmd_retro,
-            "guards": cmd_guards}
+            "guards": cmd_guards, "exempt": cmd_exempt}
 
 
 def refuse_stray(ledger):

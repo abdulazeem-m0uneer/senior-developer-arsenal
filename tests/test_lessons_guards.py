@@ -307,3 +307,140 @@ class RegistryCheckTests(GuardLedgerCase):
             code, out, _ = self.run_cli("guards")
         self.assertEqual(code, 1)
         self.assertIn(str(self.project / ".agents" / "lesson-guards.json"), out)
+
+
+class EscalationTests(GuardLedgerCase):
+    """Repeats with no guard are named at every session start and in the retro until guarded or exempted."""
+
+    def header(self):
+        return self.hook_context(stdin=json.dumps({"cwd": str(self.dir)}))
+
+    def note(self):
+        lines = [line for line in self.header().splitlines() if line.startswith("Repeats without a guard")]
+        return lines[0] if lines else ""
+
+    def test_no_note_without_repeats(self):
+        self.lesson("Alpha happened once", "alpha rule unique")
+        self.lesson("Bravo happened twice", "bravo rule unique", hits=2)
+        self.assertEqual(self.note(), "")
+
+    def test_the_note_names_repeats_most_hits_first_archive_and_global_included(self):
+        four = self.lesson("Pushed a branch over a teammate", "fetch before any push", hits=4)
+        three = self.lesson("Dropped a column on staging", "dry run each migration", hits=3)
+        self.run_cli("archive", three)
+        self.lesson("Quoted the heredoc wrong", "quote heredoc markers", hits=5, extra=("--global",))
+        note = self.note()
+        self.assertTrue(note.startswith("Repeats without a guard (3): G001 x5, " + four + " x4, " + three + " x3."),
+                        note)
+        self.assertIn("promote ID --guard PATH", note)
+        self.assertIn("exempt ID --reason", note)
+
+    def test_a_lesson_in_both_ledgers_is_counted_once(self):
+        self.lesson("Pushed a branch over a teammate", "fetch before any push", hits=3)
+        self.lesson("Pushed a branch over a teammate", "fetch before any push", hits=4, extra=("--global",))
+        self.assertTrue(self.note().startswith("Repeats without a guard (1): L001 x3."), self.note())
+
+    def test_the_note_room_is_taken_from_the_lessons_budget(self):
+        for n in range(lessons.ACTIVE_CAP):  # long rules fill the header to its cap
+            self.lesson(f"Mistake{n} unique{n} words{n}", f"rule{n} " + "padding text " * 12 + f"end{n}", hits=3)
+        header = self.header()
+        self.assertIn("Repeats without a guard (15):", header)
+        self.assertLessEqual(len(header), lessons.HOOK_MAX)
+
+    def test_notes_come_after_the_lessons_escalation_first(self):
+        self.lesson("Pushed a branch over a teammate", "fetch before any push", hits=3)
+        with mock.patch.object(lessons, "registry_note", return_value="Lesson-guard registry: 1 entry skipped."):
+            lines = self.header().splitlines()
+        self.assertEqual([line.split(" ")[0] for line in lines[-2:]], ["Repeats", "Lesson-guard"])
+
+    def test_an_exemption_lapses_when_the_lesson_recurs(self):
+        lesson_id = self.lesson("Dropped a column on staging", "dry run each migration", hits=3)
+        self.run_cli("exempt", lesson_id, "--reason", "judgement call")
+        self.assertEqual(self.note(), "")
+        self.run_cli("bump", lesson_id)
+        self.assertIn(f"{lesson_id} x4", self.note())
+        self.assertIn(f"{lesson_id} hits:4", self.run_cli("unguarded")[1])
+        self.assertIn(f"candidate {lesson_id} hits:4: recurred after its exemption", self.run_cli("check")[1])
+        self.run_cli("exempt", lesson_id, "--reason", "still a judgement call")  # granted again at 4
+        self.assertEqual(self.note(), "")
+        self.assertIn("exempt@4: still a judgement call", Path(self.file).read_text())
+
+    def test_exempt_takes_global_and_a_guard_path_cannot_look_like_an_exemption(self):
+        self.lesson("Quoted the heredoc wrong", "quote heredoc markers", hits=3, extra=("--global",))
+        self.assertEqual(self.run_cli("exempt", "G001", "--global", "--reason", "habit")[0], 0)
+        lesson_id = self.lesson("Dropped a column on staging", "dry run each migration", hits=3)
+        odd = self.dir / "exempt@3: trick"
+        odd.write_text("", encoding="utf-8")
+        cwd = os.getcwd()
+        os.chdir(self.dir)
+        self.addCleanup(os.chdir, cwd)
+        code, _, err = self.run_cli("promote", lesson_id, "--guard", odd.name)
+        self.assertEqual((code, "reads as an exemption mark" in err), (2, True))
+
+    def test_many_repeats_are_counted_beyond_five(self):
+        for n in range(7):
+            self.lesson(f"Mistake{n} unique{n} words{n}", f"rule{n} distinct{n} text{n}", hits=3 + n)
+        note = self.note()
+        self.assertIn("Repeats without a guard (7):", note)
+        self.assertIn("and 2 more (`unguarded`)", note)
+        self.assertLessEqual(len(self.header()), lessons.HOOK_MAX)  # the note's room is taken from the lessons
+
+    def test_the_threshold_follows_the_setting(self):
+        self.lesson("Bravo happened twice", "bravo rule unique", hits=2)
+        with mock.patch.dict(os.environ, {"LESSONS_PROMOTE_AT": "2"}):
+            self.assertIn("Repeats without a guard (1)", self.note())
+        with mock.patch.dict(os.environ, {"LESSONS_PROMOTE_AT": "nonsense"}):
+            self.assertEqual(self.note(), "")  # never breaks the session start
+
+    def test_a_guard_or_an_exemption_ends_the_flag(self):
+        guarded = self.lesson("Pushed a branch over a teammate", "fetch before any push", hits=4)
+        exempted = self.lesson("Dropped a column on staging", "dry run each migration", hits=3)
+        guard = self.dir / "guard.py"
+        guard.write_text("", encoding="utf-8")
+        self.run_cli("promote", guarded, "--guard", str(guard))
+        code, out, _ = self.run_cli("exempt", exempted, "--reason", "judgement call: no command shows it")
+        self.assertEqual(code, 0)
+        self.assertIn(f"exempted {exempted}", out)
+        self.assertEqual(self.note(), "")
+        self.assertIn(f"- {exempted}", self.run_cli("active")[1])  # still in Active: the rule applies
+        self.assertIn("| Promoted: exempt@3: judgement call: no command shows it", Path(self.file).read_text())
+        self.assertNotIn(f"candidate {exempted}", self.run_cli("check")[1])
+
+    def test_exempt_needs_a_reason_and_never_hides_a_guard_or_a_secret(self):
+        lesson_id = self.lesson("Dropped a column on staging", "dry run each migration", hits=3)
+        for argv, fault in ((("exempt", lesson_id), "--reason is required"),
+                            (("exempt", lesson_id, "--reason", "  "), "--reason is required"),
+                            (("exempt", lesson_id, "--reason", "token=" + "a1B2c3D4" * 3), "looks like a secret"),
+                            (("exempt", "L999", "--reason", "x"), "no lesson")):
+            code, _, err = self.run_cli(*argv)
+            self.assertEqual(code, 2, argv)
+            self.assertIn(fault, err, argv)
+        guard = self.dir / "guard.py"
+        guard.write_text("", encoding="utf-8")
+        self.run_cli("promote", lesson_id, "--guard", str(guard))
+        code, _, err = self.run_cli("exempt", lesson_id, "--reason", "x")
+        self.assertEqual((code, "already has a guard" in err), (2, True))
+
+    def test_an_exemption_can_be_reworded_and_a_recurrence_is_reported(self):
+        lesson_id = self.lesson("Dropped a column on staging", "dry run each migration", hits=3)
+        self.run_cli("exempt", lesson_id, "--reason", "first reason")
+        self.assertEqual(self.run_cli("exempt", lesson_id, "--reason", "better reason")[0], 0)
+        self.assertIn("exempt@3: better reason", Path(self.file).read_text())
+        _, out, _ = self.run_cli("bump", lesson_id)
+        self.assertIn(f"EXEMPT {lesson_id} recurred (exempt@3: better reason)", out)
+
+    def test_global_lessons_are_exempted_in_the_global_ledger(self):
+        self.lesson("Quoted the heredoc wrong", "quote heredoc markers", hits=3, extra=("--global",))
+        self.assertEqual(self.run_cli("exempt", "G001", "--reason", "habit with no command")[0], 0)
+        self.assertIn("exempt@3: habit with no command", self.shared.read_text())
+
+    def test_the_retro_lists_every_repeat_without_a_guard(self):
+        self.lesson("Pushed a branch over a teammate", "fetch before any push", hits=4)
+        exempted = self.lesson("Dropped a column on staging", "dry run each migration", hits=3)
+        self.run_cli("exempt", exempted, "--reason", "judgement call")
+        _, out, _ = self.run_cli("retro", "--days", "7")
+        section = out.split("### Repeats without a guard")[1].split("### Top 3 actions")[0]
+        self.assertIn("fetch before any push", section)
+        self.assertNotIn("dry run each migration", section.split("exempted on purpose")[0])
+        self.assertIn(f"1 exempted on purpose: {exempted}", section)
+        self.assertNotIn("is enforced by exempt", out)

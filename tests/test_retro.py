@@ -110,7 +110,8 @@ class WeekTest(RetroCase):
         self.assertIn("- G001 x2: never pgrep -f", out)
         self.assertIn("pay.py fixed 2 times", out)
         self.assertIn('revert ', out)
-        self.assertNotIn("L003", out.split("### Top 3 actions")[0])  # dated outside the window
+        self.assertNotIn("L003", out.split("### Repeats without a guard")[0])  # dated outside the window
+        self.assertIn("- L003 x5", out.split("### Repeats without a guard")[1].split("### Top 3 actions")[0])
         actions = out.split("### Top 3 actions")[1].strip().splitlines()
         self.assertEqual(len(actions), 3)
         self.assertTrue(actions[0].startswith("1. Guard L003 (x5)"))  # most hits among unguarded, whatever its date
@@ -137,6 +138,38 @@ class WeekTest(RetroCase):
         code, out, _ = self.retro()
         self.assertEqual(code, 0)
         self.assertIn("2 failed commands before it", out)
+
+
+class RepeatsWithoutAGuardTest(RetroCase):
+    def section(self, out):
+        return out.split("### Repeats without a guard")[1].split("### Top 3 actions")[0]
+
+    def test_ten_are_listed_with_their_last_date_and_the_rest_counted(self):
+        self.ledger(*[lesson(f"L{n:03d}", 20 - n, 40 + n, rule=f"rule number {n}") for n in range(1, 13)])
+        code, out, _ = self.retro()
+        self.assertEqual(code, 0)
+        section = self.section(out)
+        listed = [line for line in section.splitlines() if line.startswith("- L")]
+        self.assertEqual([line.split(" ")[1] for line in listed], [f"L{n:03d}" for n in range(1, 11)])
+        when = (date.today() - timedelta(days=41)).isoformat()
+        self.assertIn(f"- L001 x19 (last {when}): rule number 1", section)
+        self.assertIn("- and 2 more: `lessons.py unguarded`", section)
+        self.ledger(*[lesson(f"L{n:03d}", 20 - n, 40 + n) for n in range(1, 12)])  # eleven: one more than shown
+        self.assertIn("- and 1 more: `lessons.py unguarded`", self.section(self.retro()[1]))
+
+    def test_none_left_with_and_without_exemptions(self):
+        self.ledger(lesson("L001", 4, 1, promoted="tests/test_x.py"))
+        self.assertIn("- none: every repeat has a guard\n", self.section(self.retro()[1]))
+        self.ledger(lesson("L001", 4, 1, promoted="tests/test_x.py"), lesson("L002", 3, 1, promoted="exempt@3: why"))
+        section = self.section(self.retro()[1])
+        self.assertIn("- none: every repeat has a guard or an exemption (1)", section)
+        self.assertNotIn("exempted on purpose", section)
+
+    def test_a_lapsed_exemption_is_listed_again(self):
+        self.ledger(lesson("L001", 5, 1, promoted="exempt@3: why"), lesson("L002", 3, 1, promoted="exempt@3: holds"))
+        section = self.section(self.retro()[1])
+        self.assertIn("- L001 x5", section)
+        self.assertIn("- 1 exempted on purpose: L002", section)
 
 
 class UnguardedStillWorksTest(RetroCase):
