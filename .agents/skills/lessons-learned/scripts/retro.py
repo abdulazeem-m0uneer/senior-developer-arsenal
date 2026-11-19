@@ -21,6 +21,7 @@ import guard_hits
 GIT_TIMEOUT = 5
 MAX_COMMITS = 2000
 TOP_FILES = 3
+EXEMPT = re.compile(r"^exempt@\d+: ")  # a written exemption (lessons.py exempt)
 CONVENTIONAL = re.compile(r"^(\w+)(?:\([^)]*\))?!?:")
 FIELD, RECORD = "\x1f", "\x1e"
 
@@ -111,7 +112,8 @@ def report(sources, unguarded, days, today, cwd):
     if hits:
         stopped = ", ".join(f"{lesson} x{count}" for (lesson, _), count in hits.most_common(5))
         lines.append(f"- lesson guards stopped {sum(hits.values())} repeats on this machine: {stopped}")
-    promoted = [lesson for lesson in lessons if lesson["promoted"] and in_window(lesson["date"], today, days)]
+    promoted = [lesson for lesson in lessons if lesson["promoted"] and not EXEMPT.match(lesson["promoted"])
+                and in_window(lesson["date"], today, days)]
     for lesson in promoted:
         lines.append(f"- {lesson['id']} is enforced by {lesson['promoted']}")
     if new:
@@ -132,6 +134,16 @@ def report(sources, unguarded, days, today, cwd):
         lines.append(f"- revert {sha}: {subject}")
     if not (repeated or hot or reverts):
         lines.append("- nothing repeated in the window")
+    lines += ["", "### Repeats without a guard"]
+    for _, lesson in unguarded[:10]:
+        lines.append(f"- {lesson['id']} x{lesson['hits']} (last {lesson['date']}): {lesson['rule']}")
+    if len(unguarded) > 10:
+        lines.append(f"- and {len(unguarded) - 10} more: `lessons.py unguarded`")
+    exempt = [lesson for lesson in lessons if EXEMPT.match(lesson["promoted"]) and lesson["id"] not in unguarded_ids]
+    if not unguarded:
+        lines.append("- none: every repeat has a guard" + (f" or an exemption ({len(exempt)})" if exempt else ""))
+    elif exempt:
+        lines.append(f"- {len(exempt)} exempted on purpose: {', '.join(lesson['id'] for lesson in exempt)}")
     lines += ["", "### Top 3 actions"] + [f"{index}. {action}" for index, action in
                                           enumerate(actions(unguarded, hot, reverts, new)[:3], 1)]
     return "\n".join(lines)
