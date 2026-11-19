@@ -37,6 +37,7 @@ flowchart TD
 | Look up | Rules only by default; the full lesson on demand. | `lessons.py search WORDS [--full]`, `lessons.py show ID` |
 | Promote | At three hits the lesson becomes a guard and stops being injected. If it recurs, the script prints `GUARD FAILED`. | `lessons.py promote ID [--as test \| --guard PATH]` |
 | Share | A lesson about a tool or habit moves to the global ledger, which every project reads. | `lessons.py globalize ID` |
+| Metrics | Per ledger and lane (`session:<name>` tag): lessons added and repeated per day, total repeats, guarded, unguarded and exempt counts, guard fires per day and, with `--bus`, the ETA accuracy per session. | `lessons.py metrics [--days 7] [--bus DIR] [--json]` |
 | Retro | A weekly Markdown retro (commits by kind, files fixed more than once, reverts, new and repeated lessons, guard hits, failure evidence) ending in three actions, each tied to a lesson id or a commit. | `lessons.py retro [--days 7] [--project]` |
 
 ## Two ledgers
@@ -45,6 +46,8 @@ flowchart TD
 | :--- | :--- | :--- | :--- |
 | Project | `.agents/lessons.md` (`$LESSONS_FILE` overrides); commit it so the team shares it | Mistakes tied to this project's files, schema, services or conventions | `L001`... |
 | Global | `~/.agents/lessons.md` (`$LESSONS_GLOBAL_FILE` overrides); never inside a repository | Tool and habit lessons that hold in any repository (a git flag, a shell trap, "read before editing") | `G001`... |
+
+Each ledger has an append-only events log beside it, `<ledger stem>.events.jsonl` (`.agents/lessons.events.jsonl` for the project), which `metrics` counts per day. Commit the project's log with the ledger and add `*.events.jsonl merge=union` to `.gitattributes`; without it, other clones count each day from ledger dates only.
 
 Each ledger keeps at most 15 Active lessons; when the cap is reached, the least repeated one moves to Archive, where `search` still finds it.
 

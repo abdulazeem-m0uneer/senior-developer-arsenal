@@ -20,9 +20,15 @@ Usage:
   lessons.py guards [--registry FILE] [--strict]  # registries vs this hook and every cached version (exit 1:
                                      # a referenced version would refuse; --registry: dry run of a file not yet in place)
   lessons.py exempt ID --reason R    # no mechanical guard fits: record why, so the repeat is no longer flagged
+  lessons.py metrics [--days 7] [--lane-tag session:] [--bus DIR] [--json] [--ledger FILE ...]
+                                     # per ledger and lane: added/repeated per day, repeats, guarded/unguarded/exempt,
+                                     # guard fires per day, and with --bus the ETA accuracy per session (metrics.py)
 Options: --file PATH (default: $LESSONS_FILE or .agents/lessons.md); --global on add, bump, archive, promote, exempt
   and check targets the global ledger ($LESSONS_GLOBAL_FILE or ~/.agents/lessons.md), as does an id starting with G.
   The promotion threshold N defaults to $LESSONS_PROMOTE_AT, else 3.
+  add and bump also append one line to <ledger stem>.events.jsonl beside the ledger (lesson_events.py), for metrics,
+  and globalize appends a move line to both ledgers' logs; a failed log write warns on stderr and never fails
+  the command.
 Exit codes: 0 ok, 1 check found problems, 2 usage, refused content, unreadable file or busy lock.
 Time budget: `active --hook` runs two short git reads (1.5 s timeout each) and never fails the session.
 """
@@ -37,6 +43,8 @@ from pathlib import Path
 
 import guard_hits
 import guard_registry
+import lesson_events
+import metrics
 import promotion
 import relevance
 import retro
@@ -196,6 +204,7 @@ def promote_at(given=None):
     return number
 
 
+MOVED_MARK = "global "  # `globalize` leaves "Promoted: global <id>" on the project's stub
 EXEMPT_MARK = re.compile(r"^exempt@(\d+): ")  # "exempt@<hits when granted>: <reason>"; never a path promote stores
 ESCALATE_SHOWN = 5  # unguarded repeats named in the session-start header; the rest are counted
 
@@ -260,6 +269,15 @@ def record(ledger, new):
     return new, f"added {new['id']}"
 
 
+def log_event(ledger, kind, lesson):
+    """Append the change to the events log; the ledger is already saved, so a failed write only warns."""
+    try:
+        lesson_events.append(ledger.path, kind, lesson, today())
+    except (OSError, ValueError) as error:
+        print(f"warning: events log {lesson_events.path(ledger.path)} not written ({error}); the lesson is saved, "
+              "metrics will miss this change", file=sys.stderr)
+
+
 def cmd_add(ledger, args):
     fields = {k: clean(getattr(args, k) or "") for k in ("mistake", "cause", "rule", "check")}
     if not (fields["mistake"] and fields["cause"] and fields["rule"]):
@@ -270,8 +288,9 @@ def cmd_add(ledger, args):
         raise Refused(f"looks like a secret ({secret}); lessons never store those")
     fields["check"] = fields["check"] or "none yet"
     new = {"tags": tags, "hits": 1, "date": today(), "section": "active", "promoted": "", **fields}
-    _, message = record(ledger, new)
+    stored, message = record(ledger, new)
     ledger.save()
+    log_event(ledger, "add" if stored is new else "repeat", stored)
     print(message)
     return 0
 
@@ -369,6 +388,7 @@ def cmd_bump(ledger, args):
     lesson = ledger.find(args.id)
     note = recur(ledger, lesson)
     ledger.save()
+    log_event(ledger, "repeat", lesson)
     print(f"{lesson['id']} hits:{lesson['hits']}{note}")
     return 0
 
@@ -438,8 +458,10 @@ def cmd_globalize(ledger, args):
         refuse_stray(shared)
         stored, message = record(shared, {**lesson, "section": "active", "promoted": ""})
         shared.save()
-    lesson["promoted"], lesson["section"] = f"global {stored['id']}", "archive"
+        log_event(shared, "move", stored)
+    lesson["promoted"], lesson["section"] = f"{MOVED_MARK}{stored['id']}", "archive"
     ledger.save()
+    log_event(ledger, "move", lesson)
     print(f"global ledger: {message}\nmoved {lesson['id']} to {path} as {stored['id']}")
     return 0
 
@@ -536,6 +558,31 @@ def cmd_retro(ledger, args):
     return 0
 
 
+def guard_state(lesson):
+    """"moved" (a stub `globalize` left; the global ledger holds the lesson), else "exempt", "unguarded" or "guarded",
+    by the same rules as `unguarded` and `exempt`."""
+    if lesson["promoted"].startswith(MOVED_MARK):
+        return "moved"
+    if is_exempt(lesson):
+        return "exempt"
+    return "unguarded" if unguarded(lesson) else "guarded"
+
+
+def cmd_metrics(ledger, args):
+    if not 1 <= args.days <= metrics.MAX_DAYS:
+        raise Refused(f"--days must be 1 to {metrics.MAX_DAYS}")
+    prefix = args.lane_tag.strip().lower()
+    if not prefix:
+        raise Refused("--lane-tag must not be empty (default session:)")
+    prefix += "" if prefix.endswith(":") else ":"  # `session` must not match `sessions:x` or keep the colon
+    sources = ledger_sources(ledger, args.ledgers)
+    threshold = promote_at()
+    data = metrics.collect(sources, guard_state, unguarded_lessons(sources, threshold), threshold, args.days,
+                           date.fromisoformat(today()), prefix, args.bus)
+    print(json.dumps(data, indent=2) if args.json else metrics.markdown(data))
+    return 0
+
+
 def cmd_guards(_ledger, args):
     """Every registry problem, as this hook and as each cached hook version sees it. Exit 1 when this hook or a
     version an install references has one; a cached version no install references only warns (--strict: counts).
@@ -601,6 +648,13 @@ def build_parser():
     retrospective = sub.add_parser("retro")
     retrospective.add_argument("--days", type=int, default=7)
     retrospective.add_argument("--project", action="store_true")
+    report = sub.add_parser("metrics")
+    report.add_argument("--days", type=int, default=7)
+    report.add_argument("--lane-tag", default="session:",
+                        help="tag prefix naming a lane (default session:; a missing : is added)")
+    report.add_argument("--bus", help="bus folder holding open-items.tsv: adds the ETA accuracy per session")
+    report.add_argument("--json", action="store_true")
+    report.add_argument("--ledger", dest="ledgers", action="extend", nargs="+", default=[], metavar="FILE")
     by_id = [sub.add_parser(name) for name in ("bump", "archive", "globalize")] + [promote, exempt]
     for command in by_id:
         command.add_argument("id")
@@ -615,7 +669,7 @@ def build_parser():
 COMMANDS = {"add": cmd_add, "active": cmd_active, "search": cmd_search, "bump": cmd_bump, "archive": cmd_archive,
             "promote": cmd_promote, "globalize": cmd_globalize, "check": cmd_check, "show": cmd_show,
             "unguarded": cmd_unguarded, "cause": cmd_cause, "hits": cmd_hits, "retro": cmd_retro,
-            "guards": cmd_guards, "exempt": cmd_exempt}
+            "guards": cmd_guards, "exempt": cmd_exempt, "metrics": cmd_metrics}
 
 
 def refuse_stray(ledger):

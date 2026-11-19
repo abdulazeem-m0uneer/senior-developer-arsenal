@@ -201,7 +201,10 @@ class ConcurrencyTests(LedgerCase):
         self.assertEqual(code, 2)
         self.assertIn("disk full", err)
         self.assertEqual(Path(self.file).read_text(encoding="utf-8"), before)
-        self.assertEqual(sorted(p.name for p in Path(self.file).parent.iterdir()), [".lessons.md.lock", "lessons.md"])
+        self.assertEqual(sorted(p.name for p in Path(self.file).parent.iterdir()),
+                         [".lessons.md.lock", "lessons.events.jsonl", "lessons.md"])
+        events = (Path(self.file).parent / "lessons.events.jsonl").read_text(encoding="utf-8").splitlines()
+        self.assertEqual([json.loads(line)["event"] for line in events], ["add"])  # the failed bump logs nothing
 
     @unittest.skipIf(os.name == "nt", "POSIX file modes")
     def test_rewrite_keeps_the_file_mode(self):

@@ -1,6 +1,6 @@
 """The lesson-guard hit log: one JSON line per command a lesson guard refused (time, lesson, rule, cwd).
 
-Imported by lessons.py (`hits`) and by the plugin's PreToolUse hook; not a command. Standard library only.
+Imported by lessons.py (`hits`, `metrics`) and by the plugin's PreToolUse hook; not a command. Standard library only.
 The command itself is never logged: it may hold the very secret a guard refused.
 Path: $LESSONS_GUARD_HITS_FILE or ~/.agents/lesson-guard-hits.jsonl.
 """
@@ -40,10 +40,9 @@ def window_seconds(text):
     return int(match.group(1)) * UNIT_SECONDS[match.group(2)]
 
 
-def counts(since_seconds, now=None):
-    """(Counter of (lesson, rule) -> hits within the window, damaged lines skipped). No log reads as no hits."""
-    now = time.time() if now is None else now
-    found, damaged = Counter(), 0
+def entries():
+    """([(time, lesson, rule)] for every readable line, damaged lines skipped). No log reads as no entries."""
+    found, damaged = [], 0
     try:
         lines = path().read_text(encoding="utf-8", errors="replace").splitlines()
     except FileNotFoundError:
@@ -55,6 +54,12 @@ def counts(since_seconds, now=None):
         except (ValueError, KeyError, TypeError):
             damaged += 1
             continue
-        if now - since_seconds <= when <= now:
-            found[(hit.get("lesson") or "-", rule)] += 1
+        found.append((when, hit.get("lesson") or "-", rule))
     return found, damaged
+
+
+def counts(since_seconds, now=None):
+    """(Counter of (lesson, rule) -> hits within the window, damaged lines skipped). No log reads as no hits."""
+    now = time.time() if now is None else now
+    found, damaged = entries()
+    return Counter((lesson, rule) for when, lesson, rule in found if now - since_seconds <= when <= now), damaged
