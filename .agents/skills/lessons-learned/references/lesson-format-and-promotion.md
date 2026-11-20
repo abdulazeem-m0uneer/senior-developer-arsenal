@@ -103,7 +103,7 @@ The plugin's `PreToolUse` hook (`hooks/guard_lessons.py`) applies the built-in r
 
 Changing a shared registry safely:
 
-1. Write the change to a candidate file and run `python3 scripts/lessons.py guards --registry <candidate>`. It reads the candidate with this hook and with every cached plugin version, each with its own loader, and writes nothing.
+1. Write the change to a candidate file and run `python3 scripts/lessons.py guards --registry <candidate>`. Add `--target <live registry path>` when the candidate names a relative path (such as `"exceptions"`): it is then judged from the live registry's folder, through a temporary copy that is removed afterwards. It reads the candidate with this hook and with every cached plugin version, each with its own loader, and writes nothing.
 2. Exit 1 means a version that an install references (Claude Code's `installed_plugins.json`, user or project scope) would refuse every Bash command or run no lesson guard. Do not put the change in place yet.
 3. A cached version that no install references is only a warning: a session started before the last update can still run it. Restart such sessions, or pass `--strict` to count those versions as well.
 4. Exit 0: copy the candidate into place, then run `lessons.py guards` again.

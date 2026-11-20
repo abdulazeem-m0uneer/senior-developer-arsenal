@@ -17,8 +17,9 @@ Usage:
   lessons.py unguarded [--min N] [LEDGER...]  # lessons seen N+ times with no guard, archive included, most hits first
   lessons.py hits [--since 24h]      # lesson-guard refusals in the window, from the hit log (guard_hits.py)
   lessons.py retro [--days 7] [--project]  # Markdown retrospective: git log, ledger, evidence, guard hits (retro.py)
-  lessons.py guards [--registry FILE] [--strict]  # registries vs this hook and every cached version (exit 1:
-                                     # a referenced version would refuse; --registry: dry run of a file not yet in place)
+  lessons.py guards [--registry FILE [--target LIVE]] [--strict]  # registries vs this hook and every cached version
+                                     # (exit 1: a referenced version would refuse; --registry: dry run of a file not
+                                     # yet in place; --target: judge it as if it sat at LIVE, so relative paths resolve)
   lessons.py exempt ID --reason R    # no mechanical guard fits: record why, so the repeat is no longer flagged
   lessons.py metrics [--days 7] [--lane-tag session:] [--bus DIR] [--json] [--ledger FILE ...]
                                      # per ledger and lane: added/repeated per day, repeats, guarded/unguarded/exempt,
@@ -38,6 +39,7 @@ import json
 import os
 import re
 import sys
+import tempfile
 from datetime import date
 from pathlib import Path
 
@@ -586,7 +588,27 @@ def cmd_metrics(ledger, args):
 def cmd_guards(_ledger, args):
     """Every registry problem, as this hook and as each cached hook version sees it. Exit 1 when this hook or a
     version an install references has one; a cached version no install references only warns (--strict: counts).
-    --registry judges the given files instead of the ones in place: a dry run before writing a change."""
+    --registry judges the given files instead of the ones in place: a dry run before writing a change. --target
+    LIVE judges the one candidate as if it sat at LIVE (relative paths such as "exceptions" resolve there): it is
+    copied to a temporary file beside LIVE, judged, and removed; running hooks read only lesson-guards.json."""
+    if args.target:
+        if len(dict.fromkeys(args.registry or [])) != 1:
+            raise Refused("--target needs exactly one --registry candidate")
+        target = Path(args.target)
+        if not target.parent.is_dir():
+            raise Refused(f"no folder for --target at {target.parent}")
+        candidate = Path(args.registry[0])
+        if not candidate.is_file():
+            raise Refused(f"no registry file at {candidate}")
+        handle = tempfile.NamedTemporaryFile("wb", dir=target.parent, prefix=".lesson-guards.candidate-",
+                                             suffix=".json", delete=False)
+        try:
+            with handle:
+                handle.write(candidate.read_bytes())
+            print(f"candidate {candidate} judged as {target} (temporary copy {handle.name})")
+            return judge_registries([Path(handle.name)], args, "candidate registries: ")
+        finally:
+            os.unlink(handle.name)
     if args.registry:
         missing = [path for path in args.registry if not Path(path).is_file()]
         if missing:
@@ -597,7 +619,12 @@ def cmd_guards(_ledger, args):
     if not paths:
         print("no lesson-guard registry applies here (.agents/lesson-guards.json, ~/.agents/lesson-guards.json)")
         return 0
-    print(("candidate registries: " if args.registry else "registries: ") + ", ".join(map(str, paths)))
+    return judge_registries(paths, args, "candidate registries: " if args.registry else "registries: ")
+
+
+def judge_registries(paths, args, header):
+    """Print each registry problem as this hook and every cached version sees it; 1 when one blocks."""
+    print(header + ", ".join(map(str, paths)))
     referenced = guard_registry.referenced_versions()
     if referenced is None:
         print("note: installed_plugins.json not readable: every cached version counts")
@@ -642,6 +669,7 @@ def build_parser():
     sub.add_parser("hits").add_argument("--since", default="24h")
     guards = sub.add_parser("guards")
     guards.add_argument("--registry", action="append", help="judge this file instead of the registries in place")
+    guards.add_argument("--target", help="with one --registry: judge it as if it were this registry file")
     guards.add_argument("--strict", action="store_true", help="cached versions no install references count too")
     exempt = sub.add_parser("exempt")
     exempt.add_argument("--reason")
