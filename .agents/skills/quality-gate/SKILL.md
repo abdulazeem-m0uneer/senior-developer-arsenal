@@ -58,6 +58,14 @@ Consult: [Checks That Bite: Planted Inputs & Changed-Lines Coverage](./reference
 2. Run the whole gate once with every cache disabled, so no replayed result stands in for a real run.
 3. Report the command, the exit status, and the decisive line of each stage.
 
+### Step 7: One Gate at a Time
+Several sessions on one machine pushing at once each run the heavy gate. Serialize it with `scripts/gate_lock.py`, never with a plain lock file: a killed run (closed terminal, OOM kill, crash) leaves a plain file behind and every later push waits for nobody.
+1. Wrap the pre-push gate: `python3 scripts/gate_lock.py run --wait-minutes 30 -- npm run gate`. The only truth is an OS lock the kernel drops when every process holding it is gone; the holder record (pid, start, host, command, `--max-minutes`, default 45) is information. The command's exit code is passed through (128 + N when it died of signal N). Lock held: it waits up to `--wait-minutes`, then exits 5 `busy: held by pid N since T (cmd)` plus how to stop it (`kill N`) and, past the limit, a "running 73 min, over its 45 min limit" hint. Held with no record: it prints how to find the holder (`fuser <lock>` or `lsof <lock>`).
+2. Stale means the lock is free while a record is left behind (killed run, reused pid): the next `run` takes the lock, prints one `cleared stale gate lock: pid N (dead|reused) ...` line and goes on. Age never clears anything and there is no override: a live hung gate is stopped by killing the printed pid.
+3. The gate runs in its own process group and keeps the lock file open. When it ends, leftovers in the group are stopped (SIGTERM, SIGKILL after `--grace-seconds`, default 10; one line `stopped N leftover gate processes`), so a stray background process cannot keep the lock. SIGTERM, SIGINT and SIGHUP sent to `run` reach the whole group and escalate to SIGKILL after the grace. A lock file that cannot be opened or locked is exit 2. The tool never deletes the lock file; if someone removes it during a run, the record's lock inode tells a new run so and it stays busy ("lock file was replaced while pid N runs") instead of clearing a live gate (limit: a reused pid then stays busy until it ends or the record is deleted). A failed lock is retried 3 times, 50 ms apart, so a racing `status` is not mistaken for a gate. `gate_lock.py status [--json]` reports free, held or held with no record.
+4. A crashed git or hook leaves `.git/index.lock` and every git command then fails "Another git process seems to be running". `gate_lock.py git-lock [--repo DIR] [--older-than-minutes 10]` lists such locks (also `refs/**/*.lock` and worktrees) with the exact `rm` command, exit 1 when found. It never deletes: confirm no git process runs, then remove it yourself.
+5. Hook configs, one line each: lefthook `pre-push: commands: gate: run: python3 scripts/gate_lock.py run --wait-minutes 30 -- npm run gate`; husky `.husky/pre-push`: `python3 scripts/gate_lock.py run --wait-minutes 30 -- npm run gate`; pre-commit `- id: gate`, `entry: python3 scripts/gate_lock.py run --wait-minutes 30 --`, `language: system`, `stages: [pre-push]`, `pass_filenames: false`. Lock path: `--lock` or `$ARSENAL_GATE_LOCK`, default `~/.cache/arsenal/gate.lock`.
+
 ---
 
 ## 3. Verification Protocol
@@ -68,6 +76,8 @@ TURBO_FORCE=true npm run gate                                    # Node.js: task
 dotnet build --no-incremental && dotnet test --no-build --collect:"XPlat Code Coverage"   # .NET: full rebuild, then test that build
 pytest -p no:cacheprovider --cov --cov-report=xml && diff-cover coverage.xml --compare-branch=origin/main --fail-under=90
 git status --porcelain                                           # must be empty: the gate rewrote nothing
+python3 scripts/gate_lock.py status                              # "free", "held (pid N, age, cmd)" or "held, no record (...)"
+python3 scripts/gate_lock.py git-lock                            # exit 0: no leftover .git/*.lock; 1 lists them with the rm command
 ```
 
 | Area | Finding | Risk | Severity | Fix |
