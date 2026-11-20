@@ -164,6 +164,28 @@ class BuiltInRuleTests(RegistryCase):
             'echo "./run.sh --help"', "../tools/x --help", "./gradlew --help", "./db.sh -h localhost", "bash deploy.sh -h host", "./target/release/app --help",
         ])
 
+    def test_help_probe_reads_variables_set_earlier_in_the_line(self):
+        self.assert_rule("help-probe", [
+            "O=~/tools/overdue.py; python3 $O --help", 'S="./run.sh"; bash "$S" -h', "export S=a.sh && bash ${S} -h",
+            "D=/opt/x; S=$D/r.py; /usr/bin/python3 $S --help",  # the value itself is not expanded: still a .py word
+            'node "$X" --help', "python3 $SCRIPT -h", "bash ${S} --help", 'S=./run.sh; "$S" --help',
+            "S=a.sh; S=b.sh; ./$S -h", 'bash -c "S=x.py; python3 \\$S --help"',
+            "X=a.py python3 $X --help",  # a prefix assignment is set after $X expands: X is unknown, still a script
+            "S=./run.sh bash -c '$S --help'",  # the inner shell gets S in its environment
+        ], [
+            "python3 $VENV/bin/pytest --help",  # only partly unknown, and no script suffix
+            "X=a.sh $X --help",  # unknown, and run directly: it may be an installed program
+            "O=~/tools/overdue.py; $PAGER --help",
+            "python3 -m $MODULE --help", 'python3 -c "$CODE" --help', 'node -e "$JS" --help',
+            "S=./node_modules/.bin/vitest; $S --help", "S=a.sh; bash $S -h host", "S=a.sh; echo $S --help",
+            "S=a.txt; python3 x.py $S --help-me",
+        ])
+
+    def test_a_prefix_assignment_does_not_set_a_variable_but_a_bare_one_does(self):
+        cmds = guard_lessons.commands("A=1 true; B=2; export C=3; run $A $B $C")
+        self.assertEqual([cmd.variables for cmd in cmds], [(), (), ("B=2",), ("B=2", "C=3")])
+        self.assertEqual(guard_lessons.expand("$A-${B}/$C$", ["B=2", "C=3", "B=4"]), "$A-4/3$")
+
     def test_help_probe_programs_name_extensionless_scripts(self):
         self.registry([{"rule": "help-probe", "programs": ["release-tool"]}])
         self.assertEqual(self.rule("release-tool --help"), "help-probe")
