@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # usage: send.sh <to> <from> <one-line message>   (both names must be in lanes.txt next to this script, or pm)
-# exit 0 sent; 2 usage or unknown name; 3 bus locked; 4 wrong weekday for a date; 6 missing ETA or evidence; 7 a START with a later ETA for an open item, without a cause.
+# exit 0 sent; 2 usage or unknown name; 3 bus locked; 4 wrong weekday for a date; 6 missing ETA or evidence; 7 a START with a later ETA for an open item, without a cause; any other send_check refusal code 4..19 is passed on as is.
 # START/BLOCKER/DONE lines are also recorded in open-items.tsv for overdue.py. When the check cannot run (no python3,
 # a crash) or the record cannot be written, the line is still sent, with a warning: the bus must never stop.
 set -euo pipefail
@@ -41,14 +41,22 @@ bus_event() {
 # A check that cannot run (no python3) warns and lets the line through untracked: the bus must never stop.
 rc=0; record=$(python3 -I "$dir/send_check.py" "$msg" "$from") || rc=$?
 outcome=sent
-case $rc in
-  0) ;;
-  4) bus_event refused-weekday; exit 4 ;;
-  6) bus_event refused-eta; exit 6 ;;
-  7) bus_event refused-redate; exit 7 ;;
-  *) echo "send.sh: warning: send_check.py failed (exit $rc); line sent unchecked and not tracked" >&2
-     record=""; outcome=unchecked ;;
-esac
+# send_check.py exits REFUSAL_LOW..REFUSAL_HIGH only to refuse a line: every code in that range is a refusal, named or
+# not, so a rule added to send_check.py can never slip through as "unchecked". Any other non-zero exit is a check
+# that could not run (a crash exits 1, a missing python3 127): the line goes out unchecked.
+REFUSAL_LOW=4; REFUSAL_HIGH=19
+if [ "$rc" -ge "$REFUSAL_LOW" ] && [ "$rc" -le "$REFUSAL_HIGH" ]; then
+  case $rc in
+    4) bus_event refused-weekday ;;
+    6) bus_event refused-eta ;;
+    7) bus_event refused-redate ;;
+    *) bus_event "refused-$rc" ;;
+  esac
+  exit "$rc"
+elif [ "$rc" -ne 0 ]; then
+  echo "send.sh: warning: send_check.py failed (exit $rc); line sent unchecked and not tracked" >&2
+  record=""; outcome=unchecked
+fi
 . "$dir/lock.sh"
 printf '%s | from %s | %s\n' "$(now_stamp)" "$from" "$msg" >> "$dir/inbox-$to.md"
 # The line is delivered: a failed record must not make the sender retry it (a second copy in the inbox).

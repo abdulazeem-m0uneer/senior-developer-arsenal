@@ -151,7 +151,7 @@ def open_eta(items_path, sender, key):
         except FileNotFoundError:
             return None  # no item recorded yet
         items, _, _ = overdue.read_items(lines)
-    except Exception as error:  # noqa: BLE001 - any failure of the bookkeeping must let the line through
+    except (Exception, SystemExit) as error:  # noqa: BLE001 - a broken overdue.py (even sys.exit) never refuses
         print(f"send_check.py: note: re-date check skipped ({error.__class__.__name__}: {error})", file=sys.stderr)
         return None
     item = items.get((sender, key))
