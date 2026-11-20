@@ -166,7 +166,7 @@ class EtaOnEverythingTests(unittest.TestCase):
     # overdue.py
     def test_overdue_lists_late_items_with_redates_and_escalation(self):
         self.assert_sent("BLOCKER #740 payouts need a rebase - backend - ETA 11-18 18:00")
-        self.assert_sent("BLOCKER: #740: rebase conflict again ETA: 11-19 9:00")  # a re-date
+        self.assert_sent("BLOCKER: #740: rebase conflict again ETA: 11-19 9:00 because the plan changed")  # a re-date
         self.assert_sent("START PG-05 page ETA 11/22 12:00")
         self.assert_sent("START PG-02 x ETA 11-19 08:00")
         self.assert_sent("DONE PG-02 merged 8043a3e9")
@@ -181,7 +181,7 @@ class EtaOnEverythingTests(unittest.TestCase):
 
     def test_escalation_thresholds(self):
         for eta in ("11-18 17:00", "11-18 18:00", "11-18 19:00"):
-            self.assert_sent(f"START R-1 x ETA {eta}")
+            self.assert_sent(f"START R-1 x ETA {eta} because the plan changed")
         _, out, _ = self.overdue("2026-11-18T17:30:00", "--all")
         self.assertIn("re-dated 2x | ESCALATE", out)  # two re-dates escalate even inside the ETA
         self.assert_sent("START R-2 x ETA 11-18 17:00")
@@ -257,8 +257,8 @@ class EtaOnEverythingTests(unittest.TestCase):
         self.assert_sent("START K-2 same time again - ETA 11-19 10:00")  # repeats the ETA: not a re-date
         self.assert_sent("START K-2 sooner - ETA 11-19 09:00")  # earlier: not a re-date
         self.assertIn("| re-dated 0x | START K-2 sooner", self.overdue(self.NOW, "--all")[1])
-        self.assert_sent("START K-2 later - ETA 11-19 11:00")
-        self.assert_sent("START K-2 later again - ETA 11-19 12:00")
+        self.assert_sent("START K-2 later - ETA 11-19 11:00 because the plan changed")
+        self.assert_sent("START K-2 later again - ETA 11-19 12:00 because the plan changed")
         self.assertIn("re-dated 2x | ESCALATE", self.overdue(self.NOW, "--all")[1])  # the escalation uses this count
 
     # review findings, each pinned
@@ -351,7 +351,7 @@ class EtaOnEverythingTests(unittest.TestCase):
 
     def test_hours_open_count_from_the_first_line_and_boundaries(self):
         self.assert_sent("START H-1 x ETA 11-19 10:00")
-        self.assert_sent("START H-1 later ETA 11-19 11:00", now="2026-11-18T20:00:00")
+        self.assert_sent("START H-1 later ETA 11-19 11:00 because the plan changed", now="2026-11-18T20:00:00")
         self.assertIn("open 19.0h", self.overdue("2026-11-19T11:00:00", "--all")[1])
         self.assertEqual(self.overdue("2026-11-19T11:00:00")[1], "none")  # at the ETA minute: not yet late
         self.assertIn("OVERDUE h-1", self.overdue("2026-11-19T11:01:00")[1])
@@ -572,7 +572,7 @@ class EtaOnEverythingTests(unittest.TestCase):
     def test_escalation_counts_hours_past_the_first_eta(self):
         # P-1: one re-date into the future, but its first promise (11:00) is now 5 h past
         self.assert_sent("START P-1 x ETA 11-18 11:00", now="2026-11-18T10:00:00")
-        self.assert_sent("START P-1 moved ETA 11-18 20:00", now="2026-11-18T12:00:00")  # re-dated 1x, into the future
+        self.assert_sent("START P-1 moved ETA 11-18 20:00 because the plan changed", now="2026-11-18T12:00:00")  # re-dated 1x, into the future
         self.assert_sent("START P-2 fresh ETA 11-18 22:00", now="2026-11-18T10:00:00")  # open long, promise still ahead
         self.assert_sent("START P-3 x ETA 11-18 15:50", now="2026-11-18T10:00:00")  # late, but only 10 min past
         rows = {row.split(" | ")[0]: row for row in self.overdue("2026-11-18T16:00:00", "--all")[1].splitlines()}

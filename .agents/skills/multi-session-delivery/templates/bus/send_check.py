@@ -6,6 +6,12 @@ exit 0  ok; stdout holds the open-items record to append (nothing for a line tha
 exit 4  a weekday next to a date is wrong ("Wed 11-26" when 11-26 is a Thursday), or that date does not exist
 exit 6  START or BLOCKER without a key or without a valid ETA; DONE or CLEARED without a key and evidence; a
         keyword not in upper case ("Done X"); the old words "started" or "blocked"; an unusable $BUS_NOW
+exit 7  a START that re-dates: the sender already has this key open in open-items.tsv (next to this
+        script, where send.sh writes it) and the new ETA is later than the open item's, without a cause. A BLOCKER
+        is never refused for this: its text is the cause. A cause is
+        the word "because" or "cause:" followed by at least 3 words (not counting the ETA); an earlier or equal ETA,
+        a first START, another sender's key or a reopened (closed) item is no re-date. When open-items.tsv or
+        overdue.py cannot be read this rule does not refuse (a note goes to stderr): the bus never stops for it
 exit 2  wrong number of arguments
 Reasons go to stderr. $BUS_NOW (ISO, local time when it has no offset) replaces the clock for tests.
 
@@ -22,9 +28,11 @@ dates ("Fri 11-6") are not read, since they look like hour ranges ("Mon 9-5"). A
 hours as times ("Mon 10:00-12:00"). Standard library only.
 """
 import datetime as dt
+import importlib.util
 import os
 import re
 import sys
+from pathlib import Path
 
 DAY = (r"(Mon(?:day)?|Tue(?:s|sday)?|Wed(?:s|nesday)?|Thu(?:r|rs|rsday)?|Fri(?:day)?|Sat(?:urday)?|Sun(?:day)?)"
        r"(?![\w-])")
@@ -36,6 +44,8 @@ OLD_WORDS = re.compile(r"^(?:started|blocked)\b", re.I)
 ETA = re.compile(r"\bETA:?\s+(?:(?:(\d{4})-)?(\d{1,2})[-/](\d{1,2})\s+)?(\d{1,2}):(\d{2})(?![:\d])"
                  r"(?!\s*\d{1,2}[-/]\d{1,2})(?!\s*[ap]\.?m\b)", re.I)  # 24-hour times only: no am/pm
 ETA_WORD = re.compile(r"\bETA\b", re.I)
+CAUSE = re.compile(r"\b(?:because|cause:)(.*)", re.I)  # the marker; the words after it are counted
+MIN_CAUSE_WORDS = 3
 KEY_SHAPE = re.compile(r"[\w#]")
 SPAN_DAYS = 200  # a weekday's date without a year is the one within this many days of today
 MAX_DAYS = 90
@@ -129,6 +139,30 @@ def eta_of(message, now):
     return at
 
 
+def open_eta(items_path, sender, key):
+    """The open item's ETA (aware local datetime) for (sender, key), or None when there is none, it cannot be read, or
+    the bookkeeping cannot be loaded: this rule fails open, with a note, because the bus must never stop for it."""
+    try:
+        spec = importlib.util.spec_from_file_location("bus_overdue", Path(__file__).resolve().with_name("overdue.py"))
+        overdue = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(overdue)  # overdue.py does nothing at import; it is not imported by name: -I
+        try:
+            lines = Path(items_path).read_text(encoding="utf-8", errors="replace").splitlines()
+        except FileNotFoundError:
+            return None  # no item recorded yet
+        items, _, _ = overdue.read_items(lines)
+    except Exception as error:  # noqa: BLE001 - any failure of the bookkeeping must let the line through
+        print(f"send_check.py: note: re-date check skipped ({error.__class__.__name__}: {error})", file=sys.stderr)
+        return None
+    item = items.get((sender, key))
+    return item["due"] if item else None
+
+
+def has_cause(message):
+    found = CAUSE.search(ETA.sub(" ", message))  # the ETA's own words are not a cause
+    return found is not None and sum(bool(re.search(r"\w", word)) for word in found.group(1).split()) >= MIN_CAUSE_WORDS
+
+
 def key_of(word, keyword):
     key = word.rstrip(":,;.)")
     if not KEY_SHAPE.match(key) or key.upper() == "ETA":
@@ -136,7 +170,7 @@ def key_of(word, keyword):
     return key.lower()
 
 
-def check(message, sender, now):
+def check(message, sender, now, items_path=None):
     """The open-items record for the line ('' when it opens or closes nothing); raises Refused."""
     message = message.strip()
     bad = weekday_errors(message, now.date())
@@ -159,7 +193,13 @@ def check(message, sender, now):
         if not words:
             raise Refused(6, f"'{keyword} <key> <what> - ETA HH:MM': no key")
         key = key_of(words[0], keyword)
-        return "\t".join([sent, sender, key, f"{eta_of(message, now):%Y-%m-%d %H:%M}", text])
+        eta = eta_of(message, now)
+        open_at = open_eta(items_path, sender, key) if items_path and keyword == "START" else None  # BLOCKER: never refused
+        if keyword == "START" and open_at and eta.astimezone() > open_at and not has_cause(message):
+            raise Refused(7, f"{key} is already open with ETA {open_at:%Y-%m-%d %H:%M}; a later ETA is a re-date and "
+                             "needs its cause: add 'because <what changed>' or 'cause: <what changed>' "
+                             "(at least 3 words)")
+        return "\t".join([sent, sender, key, f"{eta:%Y-%m-%d %H:%M}", text])
     if not words or not any(re.search(r"\w", word) for word in words[1:]):
         raise Refused(6, f"'{keyword} <key> <evidence>': the merged commit, green run or check that proves it")
     return "\t".join([sent, sender, key_of(words[0], keyword), "DONE", text])
@@ -181,7 +221,7 @@ def main(argv):
         print("usage: send_check.py <message> <sender>", file=sys.stderr)
         return 2
     try:
-        record = check(argv[1], argv[2], clock())
+        record = check(argv[1], argv[2], clock(), Path(__file__).resolve().with_name("open-items.tsv"))
     except Refused as refusal:
         print(f"refused: {refusal}", file=sys.stderr)
         return refusal.code
