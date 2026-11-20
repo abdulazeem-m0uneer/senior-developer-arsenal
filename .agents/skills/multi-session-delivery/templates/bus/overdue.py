@@ -3,6 +3,7 @@
 usage: python3 -I overdue.py [--all] [--escalate-hours H] [--escalate-redates N]
        python3 -I overdue.py --waiting
        python3 -I overdue.py --accuracy
+       python3 -I overdue.py --suggest SENDER --estimate DURATION [--min-history N] [--json]
        python3 -I overdue.py --health [--since 24h]
 Reads open-items.tsv next to this script (written by send.sh), or $BUS_OPEN_ITEMS. An item is a key opened by
 START or BLOCKER and still open: only a later DONE or CLEARED from the SAME sender closes it (another session
@@ -37,6 +38,15 @@ The coordinator tells a session under 80% to add its median lateness to its next
 each miss as a lesson:
   ACCURACY <sender> | finished <m> | on first ETA <n> of <m> (<pct>% or n/a) | median late <min> min | re-dated <r>x
   | open past first ETA <k>
+--suggest prints the ETA SENDER should promise for work estimated at DURATION (30m, 2h, 1d): now + the estimate + the
+sender's median lateness over ALL its finished items (minutes late against the first ETA, early or on time counts 0,
+lower median: a session on time 10 times of 11 gets nothing added), rounded UP to the next quarter hour, as a line send.sh accepts, then one line saying how it
+was derived:
+  ETA <MM-DD HH:MM>
+  estimate 2h + median lateness 53 min over 11 finished items (7 late)
+With fewer than --min-history finished items (default 3) or an unknown sender it suggests the estimate alone and says
+why. --json prints one object instead (eta, eta_text, estimate_min, median_late_min, finished, late, min_history, basis
+"history" or "estimate-only", derivation). A DURATION that is bad or longer than the longest ETA send_check.py accepts (90 days, or $BUS_ETA_MAX_DAYS) is exit 2.
 --health reads the send events (events.jsonl next to this script, or $BUS_EVENTS; one line per send.sh attempt,
 written without the message text) for the window and prints one line:
   HEALTH ok|degraded | open <n> | overdue <n> | escalate <n> | sent <n> | refused <n> | unchecked <n> | untracked <n>
@@ -59,6 +69,7 @@ import sys
 from pathlib import Path
 
 TEXT_CHARS = 200
+DEFAULT_ETA_DAYS = 90  # the horizon send_check.py accepts (BUS_ETA_MAX_DAYS); repeated here: no import, see due_at
 WINDOW_UNITS = {"m": 60, "h": 3600, "d": 86400}
 # "MM-DD HH:MM", "MM/DD HH:MM" or "HH:MM"; ASCII digits only
 SHORT_ETA = re.compile(r"(?:(\d{1,2})[-/](\d{1,2})\s+)?(\d{1,2}):(\d{2})", re.ASCII)
@@ -255,6 +266,56 @@ def window_seconds(text):
     return int(found.group(1)) * WINDOW_UNITS[found.group(2)]
 
 
+def lateness_minutes(finished, sender):
+    """Minutes each of the sender's finished items was late against its first ETA (early or on time is 0, rounded up
+    to whole minutes as --accuracy does); an item whose first ETA is unreadable is left out."""
+    return [max(0, math.ceil((item["closed"] - item["first_due"]).total_seconds() / 60))
+            for item in finished if item["sender"] == sender and item["first_due"] is not None]
+
+
+def quarter_up(at):
+    """`at` (naive) rounded up to the next quarter hour; a time already on a quarter keeps it."""
+    base = at.replace(minute=at.minute - at.minute % 15, second=0, microsecond=0)
+    return base if base == at else base + dt.timedelta(minutes=15)
+
+
+def eta_horizon_days():
+    """send_check.py's longest ETA, in days: $BUS_ETA_MAX_DAYS when it is a whole number from 1 to 36500, else 90."""
+    try:
+        days = int(os.environ.get("BUS_ETA_MAX_DAYS") or DEFAULT_ETA_DAYS)
+    except ValueError:
+        return DEFAULT_ETA_DAYS
+    return days if 1 <= days <= 36500 else DEFAULT_ETA_DAYS
+
+
+def suggest(finished_items, sender, estimate_text, min_history, now):
+    """The ETA `sender` should promise for an estimate: a dict (see the module docstring); ValueError on a bad estimate."""
+    seconds = window_seconds(estimate_text)
+    horizon = eta_horizon_days()
+    if seconds > horizon * 86400:
+        raise ValueError(f"estimate {estimate_text!r} is more than {horizon} days: split the item or estimate less")
+    estimate_min = seconds // 60
+    lates = lateness_minutes(finished_items, sender)
+    finished = len(lates)
+    history = finished >= min_history and finished > 0
+    late = statistics.median_low(lates) if history else 0
+    missed = sum(1 for minutes in lates if minutes)
+    start = now.astimezone().replace(tzinfo=None)
+    eta = quarter_up(start + dt.timedelta(minutes=estimate_min + late))
+    if (eta - start).total_seconds() > horizon * 86400:  # send_check refuses an ETA past its horizon
+        raise ValueError(f"suggested ETA {eta:%Y-%m-%d %H:%M} (estimate + median lateness {late} min) is more than "
+                         f"{horizon} days ahead: split the item or estimate less")
+    if history:
+        why = f"estimate {estimate_text} + median lateness {late} min over {finished} finished items ({missed} late)"
+    elif finished:
+        why = f"estimate {estimate_text} only: {finished} finished items, {min_history} needed (--min-history)"
+    else:
+        why = f"estimate {estimate_text} only: no finished items from {sender}"
+    return {"sender": sender, "eta": f"{eta:%Y-%m-%d %H:%M}", "eta_text": f"ETA {eta:%m-%d %H:%M}",
+            "estimate_min": estimate_min, "median_late_min": late, "finished": finished, "late": missed, "min_history": min_history,
+            "basis": "history" if history else "estimate-only", "derivation": why}
+
+
 def send_counts(lines, now, seconds):
     """({outcome: count} for events inside the window, damaged event lines)."""
     counts, damaged = {}, 0
@@ -301,6 +362,10 @@ def main(argv=None):
     mode.add_argument("--waiting", action="store_true", help="BLOCKERs whose acting session has taken nothing")
     mode.add_argument("--accuracy", action="store_true", help="per session: finished by the first promised ETA")
     mode.add_argument("--health", action="store_true", help="one line: open, overdue, sends, refusals, bypasses")
+    mode.add_argument("--suggest", metavar="SENDER", help="the ETA SENDER should promise for --estimate")
+    parser.add_argument("--estimate", help="work estimate for --suggest (30m, 2h, 1d)")
+    parser.add_argument("--min-history", type=int, default=3, help="finished items --suggest needs (default 3)")
+    parser.add_argument("--json", action="store_true", help="--suggest as one JSON object")
     parser.add_argument("--since", default="24h", help="window of --health (30m, 24h, 7d)")
     args = parser.parse_args(argv)
     if not math.isfinite(args.escalate_hours) or args.escalate_hours <= 0 or args.escalate_redates < 1:
@@ -310,6 +375,9 @@ def main(argv=None):
         now = clock()
     except ValueError:
         print(f"overdue.py: BUS_NOW is not an ISO time: {os.environ.get('BUS_NOW')}", file=sys.stderr)
+        return 2
+    if args.suggest and not args.estimate:
+        print("overdue.py: --suggest needs --estimate (30m, 2h, 1d)", file=sys.stderr)
         return 2
     named = os.environ.get("BUS_OPEN_ITEMS")
     path = Path(named or Path(__file__).resolve().parent / "open-items.tsv")
@@ -336,6 +404,14 @@ def main(argv=None):
         rows = waiting(items, lanes)
     elif args.accuracy:
         rows = accuracy(items, finished, now)
+    elif args.suggest:
+        try:
+            found = suggest(finished, args.suggest.lower(), args.estimate,
+                            args.min_history, now)
+        except (ValueError, OverflowError) as error:
+            print(f"overdue.py: --estimate: {error}", file=sys.stderr)
+            return 2
+        rows = [json.dumps(found)] if args.json else [found["eta_text"], found["derivation"]]
     elif args.health:
         events_path = Path(os.environ.get("BUS_EVENTS") or Path(__file__).resolve().parent / "events.jsonl")
         try:
