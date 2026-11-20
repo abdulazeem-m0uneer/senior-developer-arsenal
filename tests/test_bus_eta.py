@@ -150,10 +150,33 @@ class EtaOnEverythingTests(unittest.TestCase):
         self.assertEqual(len(self.items.read_text().splitlines()), 2)
 
     def test_a_check_that_cannot_run_lets_the_line_through_untracked(self):
-        (self.bus / "send_check.py").write_text("raise SystemExit(9)\n")
+        (self.bus / "send_check.py").write_text("raise RuntimeError('broken check')\n")  # a crash: exit 1
         self.assertIn("line sent unchecked", self.assert_sent("START T-1 build the page"))
         self.assertEqual(len(self.inbox_lines()), 1)
         self.assertFalse(self.items.exists())
+
+    def test_any_refusal_code_from_the_check_refuses_the_line(self):
+        # a code in send_check's refusal range that send.sh has no name for is still a refusal, never "unchecked"
+        (self.bus / "send_check.py").write_text("import sys\nprint('refused: a new rule', file=sys.stderr)\nsys.exit(9)\n")
+        done = subprocess.run(["bash", str(self.bus / "send.sh"), "pm", "backend", "START T-1 x ETA 11-19 10:00"],
+                              capture_output=True, text=True, env=self.base_env())
+        self.assertEqual(done.returncode, 9, done.stderr)
+        self.assertNotIn("sent unchecked", done.stderr)
+        self.assertEqual(self.inbox_lines(), [])
+        self.assertEqual([e["outcome"] for e in self.events()], ["refused-9"])
+
+    def test_refusal_codes_are_one_list(self):
+        import re
+        bus = SKILL / "templates" / "bus"
+        check = (bus / "send_check.py").read_text(encoding="utf-8")
+        send = (bus / "send.sh").read_text(encoding="utf-8")
+        raised = {int(code) for code in re.findall(r"Refused\((\d+)", check)}
+        documented = {int(code) for code in re.findall(r"^exit (\d+) ", check, re.M)} - {0, 2}
+        self.assertEqual(raised, documented)  # every code raised is in the header, and only those
+        low, high = (int(n) for n in re.search(r"REFUSAL_LOW=(\d+); REFUSAL_HIGH=(\d+)", send).groups())
+        self.assertTrue(all(low <= code <= high for code in raised), (raised, low, high))
+        header = re.search(r"^# exit 0 sent;(.*)$", send, re.M).group(1)
+        self.assertTrue(all(re.search(rf"\b{code}\b", header) for code in raised), header)
 
     def test_send_check_usage_and_bad_clock(self):
         script = str(self.bus / "send_check.py")
@@ -495,7 +518,7 @@ class EtaOnEverythingTests(unittest.TestCase):
         self.assertNotIn("secretword", (self.bus / "events.jsonl").read_text())
 
     def test_bypasses_are_events(self):
-        (self.bus / "send_check.py").write_text("raise SystemExit(9)\n")
+        (self.bus / "send_check.py").write_text("raise RuntimeError('broken check')\n")  # a crash: exit 1
         self.assert_sent("START T-1 x")
         shutil.copy(SKILL / "templates" / "bus" / "send_check.py", self.bus / "send_check.py")
         self.items.mkdir()
@@ -520,7 +543,7 @@ class EtaOnEverythingTests(unittest.TestCase):
         self.assert_sent("START H-3 x", 6)
         self.assertEqual(self.health(), (0, "HEALTH ok | open 2 | overdue 1 | escalate 0 | sent 2 | refused 1 | "
                                             "unchecked 0 | untracked 0 | damaged 0 | since 24h", ""))
-        (self.bus / "send_check.py").write_text("raise SystemExit(9)\n")
+        (self.bus / "send_check.py").write_text("raise RuntimeError('broken check')\n")  # a crash: exit 1
         self.assert_sent("START H-4 x")
         code, out, _ = self.health()
         self.assertEqual(code, 1)
