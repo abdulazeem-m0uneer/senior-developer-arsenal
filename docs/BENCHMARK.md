@@ -15,7 +15,7 @@ What the arsenal adds to the context of every Claude Code session before any wor
 | SessionStart hook: `snapshot.py show` (hooks/hooks.json, run in an empty project) | 0 | 0 |
 | SessionStart hook: `guard.py baseline` (hooks/hooks.json, run in an empty project) | 0 | 0 |
 | Rules without a path scope (5) (dist/claude/rules/) | 17,797 | 4,449 |
-| `AGENTS.md` block (installer, project scope) | 11,385 | 2,846 |
+| `AGENTS.md` block (installer, project scope) | 11,453 | 2,863 |
 | `CLAUDE.md` block (installer, project scope) | 11 | 3 |
 
 Worst case for the hooks (the only always-on part that grows with project state):
@@ -30,7 +30,7 @@ Worst case for the hooks (the only always-on part that grows with project state)
 | :--- | ---: | ---: | ---: | ---: |
 | Plugin only | 14,340 | 3,585 | 15,704 | 3,926 |
 | Plugin + `install --global --target claude` | 32,137 | 8,034 | 33,501 | 8,375 |
-| Plugin + `install --target claude` in a project | 43,533 | 10,883 | 44,897 | 11,224 |
+| Plugin + `install --target claude` in a project | 43,601 | 10,900 | 44,965 | 11,241 |
 
 Rules that load in every Claude Code session after the installer runs: `defensive-epistemology`, `minimal-change`, `senior-engineer-core`, `testing-standards`, `token-conservation`. A generated Claude rule file loads unconditionally unless it carries `paths:` frontmatter, so a rule without globs is always loaded on this target, whatever its trigger. Path-scoped: `csharp-dotnet-standards`, `database-standards`, `frontend-standards`, `fullstack-standards`, `git-standards`, `nodejs-standards`, `python-standards`, `ui-ux-standards`.
 
