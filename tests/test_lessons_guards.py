@@ -379,6 +379,42 @@ class RegistryCheckTests(GuardLedgerCase):
         self.assertEqual(code, 1)
         self.assertIn(str(second), out.splitlines()[0])
 
+    def test_target_judges_a_candidate_as_if_it_were_in_the_targets_folder(self):
+        live_dir = self.dir / "live"
+        live_dir.mkdir()
+        (live_dir / "workdays.txt").write_text("2026-11-20 approved-by lead: approved Friday\n")
+        live = live_dir / "lesson-guards.json"
+        live.write_text(json.dumps({"guards": []}))
+        elsewhere = self.dir / "drafts"
+        elsewhere.mkdir()
+        candidate = elsewhere / "candidate.json"
+        candidate.write_text(json.dumps({"guards": [{"rule": "calendar", "workweek": "Sun-Thu",
+                                                     "exceptions": "workdays.txt", "min_version": "1.19.0"},
+                                                    {"rule": "hook-bypass", "enabeld": False}]}))
+        code, out, _ = self.run_cli("guards", "--registry", str(candidate))
+        self.assertIn("not found", out)  # without --target it resolves against the candidate's own folder
+        before = sorted(p.name for p in live_dir.iterdir())
+        code, out, _ = self.run_cli("guards", "--registry", str(candidate), "--target", str(live))
+        self.assertNotIn("not found", out)
+        self.assertIn("unknown keys", out)  # the candidate's own entries were judged, not the live file's
+        self.assertIn(f"candidate {candidate} judged as {live}", out)
+        self.assertEqual(sorted(p.name for p in live_dir.iterdir()), before)  # the temporary copy is gone
+        self.assertEqual(json.loads(live.read_text()), {"guards": []})  # the live registry is untouched
+
+    def test_target_needs_one_registry_and_an_existing_folder(self):
+        candidate, other = self.dir / "c.json", self.dir / "d.json"
+        for path in (candidate, other):
+            path.write_text(json.dumps({"guards": []}))
+        self.assertEqual(self.run_cli("guards", "--target", str(self.dir / "x.json"))[0], 2)  # no --registry
+        self.assertEqual(self.run_cli("guards", "--registry", str(candidate), "--registry", str(other),
+                                      "--target", str(self.dir / "x.json"))[0], 2)  # two candidates
+        code, _, err = self.run_cli("guards", "--registry", str(self.dir / "missing.json"),
+                                    "--target", str(self.dir / "x.json"))
+        self.assertEqual((code, "no registry file at" in err), (2, True))
+        code, _, err = self.run_cli("guards", "--registry", str(candidate),
+                                    "--target", str(self.dir / "nofolder" / "x.json"))
+        self.assertEqual((code, "no folder for --target" in err), (2, True))
+
     def test_a_version_before_the_lesson_guards_is_not_asked(self):
         (self.cache / "1.1.0" / "hooks").mkdir(parents=True)  # no guard_lessons.py: it never reads the registry
         self.reference("1.1.0")
