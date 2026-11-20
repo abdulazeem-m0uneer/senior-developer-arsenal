@@ -4,6 +4,7 @@
 usage: reading.py get FILE [--key K] [--max-age 30m|2h|1d] [--time-key T] [--json]
        reading.py write FILE --key K --value V
        reading.py check-report REPORT [--max-age 30m] [--words w1,w2,...]
+                                  [--claim-words w1,w2,...] [--no-claims]
 
 get: prints the value and where its time came from, e.g.
   98% (as of 2026-11-20 14:05 +03:00, 12 min old)          time read from the file's own field
@@ -52,6 +53,47 @@ Opt-out for a line that was read live in this very turn: (live: <command>) namin
 (no ")" inside). A bare (live) or an empty command does not opt out. The opt-out only silences NO-MARKER; markers
 on the same line are still checked. Prints one line per finding, then "<n> finding(s)", or "ok: ..." when clean.
 
+Claims (on unless --no-claims): another session's word is not a source, so a status claim must cite what this run read.
+  A CLAIM is, by default, an inflected form of merge, deploy, release, ship, verify, pass, fix or close, with an
+  optional re- or un- prefix: merges merged merging, deploys deployed deploying, releases released releasing, ships
+  shipped shipping, verifies verified verifying, passes passed passing, fixes fixed fixing, closes closed closing
+  (whole words, any case). The base form ("we will fix") is a plan, not a claim; a hyphen right after the word
+  ("fixed-width") is not a claim. Known false positives, the price of the rule: "closed questions", "passed away".
+  done, live and green are left to the reading words above. --claim-words w1,w2,... replaces the default with exact
+  words (no inflection, no prefix; the hyphen rule is not applied). A negated claim ("not merged") is still a claim
+  about state and is flagged like any other. Claim words inside a `code span`, a closed ``` fenced block or a valid
+  (source: ...) or (live: ...) marker (`gh pr view 741 -> MERGED`) are not claims; a claim word in the free text of an
+  "as of" marker ("(as of 14:05, backend: #741 merged)") is a claim. (Markdown table separator rows hold no words, so
+  they need no rule; other rows are checked.) Before matching, format characters (Unicode category Cf: zero-width
+  space and joiners, BOM, soft hyphen) are removed and the line is NFKC-normalised, so "Mer<ZWSP>ged" and fullwidth
+  letters are caught; homoglyphs beyond NFKC (Cyrillic "e" in "merged") are out of scope.
+  A fence line starts with ``` and holds no other ```, so an inline ```x``` is not one. A fence never closed is
+  "UNCLOSED-FENCE line N" (N = its opening line, exit 1) and fails closed: the lines after it are checked anyway.
+  The ONLY accepted sources are two explicit markers, one example each:
+    (source: gh pr view 741 -> MERGED abc1234)    what you read: a URL or a command, with what it showed
+    (live: gh pr view 741 --json state)           the command you ran this turn
+  Its content must be a URL (http or https) or a command: two or more tokens, the first a word of 2+ letters, digits
+  or - . _ / ; placeholders ("-", x, n/a, tbd, todo, ?, none, see above) are not: "NO-SOURCE line N (<word>): source
+  is not a command or link". One level of balanced parentheses inside a marker is allowed. A marker covers the claim
+  words in its own clause: before it, back to the previous marker (any kind, "as of" included), the line start, or
+  any of . ; , ! ? followed by a space or the end of the text before the marker, or any of the fullwidth marks
+  U+3002 U+FF1B U+FF0C U+FF01 U+FF1F (these break even without a space). So "merged, verified (source: X)"
+  flags merged, and a later unrelated marker never covers an earlier sentence. A bare SHA, URL, run id, date or
+  "#741" is never a source: it is the claim's subject or copied text, so the writer puts it inside the marker. An
+  "as of" marker does not vouch for a claim. An empty "(source: )" or a bare "(live)" is no marker.
+  NO-SOURCE line N (<claim word>): a claim not covered by a valid (source: ...) or (live: ...) marker. This also
+  catches forwarded lines in any form ("backend: #741 merged", "> qa: fixed", "per the bus: closed").
+  BUS-CLAIM line N (<claim word>): the text of a (source: ...) or (live: ...) marker cites the bus, another session
+  or the writer's own say-so instead of a read: it contains ask, session, lane, agent, channel, message, inbox, bus,
+  said, says, reported, told, confirmed, confirms, trust, "verified by", "checked by", me, we, they, "per " or
+  "according to" (any case; a hyphen counts as a word edge). Rewrite the marker with what you read yourself.
+  EVERY marker is validated wherever it sits, with or without a claim on the line; one with no claim word inside is
+  named "(marker)". An invalid marker also fails the claims before it in its clause.
+  Threat model: this catches honest mistakes (forgetting a source, forwarding a bus line as a fact), not deliberate
+  evasion. The marker must hold the actual command or link that was run; a made-up command passes the check.
+  One finding per line (the first failing claim), reported next to STALE and NO-MARKER findings of the same line.
+  Lines over the length limit are not claim-checked.
+
 READING_NOW (ISO 8601; no offset means local time) fixes the clock for tests. Standard library only.
 Exit: 0 fresh or clean, 1 STALE or FUTURE (get) or findings (check-report), 2 unreadable or missing file, key or
 time, bad --max-age, unreadable clock, unwritable target, or a usage error.
@@ -65,6 +107,7 @@ import re
 import sys
 import tempfile
 import time
+import unicodedata
 from pathlib import Path
 
 try:
@@ -81,6 +124,10 @@ RESERVED_KEY = "as_of"
 LOCK_WAIT = 10.0
 LOCK_POLL = 0.02
 DEFAULT_MAX_AGE = "30m"
+CLAIM_FORMS = (  # inflected forms only: the base form ("we will fix") is a plan, not a claim
+    "merges|merged|merging|deploys|deployed|deploying|releases|released|releasing|ships|shipped|shipping|"
+    "verifies|verified|verifying|passes|passed|passing|fixes|fixed|fixing|closes|closed|closing"
+)
 DEFAULT_WORDS = ("quota", "usage", "release", "deployed", "CI", "green", "red", "passing")
 UNITS = {"s": 1, "m": 60, "h": 3600, "d": 86400}
 SNIPPET = 100
@@ -89,7 +136,20 @@ MAX_LINE = 4000  # longer lines are not scanned; every pattern is bounded, so a 
 AGE_RE = re.compile(r"(\d+)([smhd])")
 MARKER_RE = re.compile(r"\((as of|file modified)\s{1,5}([^(),]{0,40}?)\s{0,5}(?:,[^()]{0,200})?\)", re.IGNORECASE)
 MARKER_TIME_RE = re.compile(r"(?:(\d{4})-(\d{2})-(\d{2})[ T])?(\d{2}):(\d{2})(?:\s*(Z|[+-]\d{2}:?\d{2}))?", re.IGNORECASE)
-LIVE_RE = re.compile(r"\(live:\s{0,5}[^)\s][^)]{0,300}\)")
+LIVE_RE = re.compile(r"\(live:\s{0,5}(?=[^)\s])(?:[^()]|\([^()]{0,100}\)){1,300}\)")
+SOURCE_MARK_RE = re.compile(r"\(source:\s{0,5}(?=[^)\s])(?:[^()]|\([^()]{0,100}\)){1,300}\)", re.IGNORECASE)
+CODE_SPAN_RE = re.compile(r"`[^`]{0,300}`")
+BUS_CUE_RE = re.compile(
+    r"(?<!\w)(?:ask|session|lane|agent|channel|message|inbox|bus|said|says|reported|told|confirmed|confirms|trust|"
+    r"verified by|checked by|me|we|they|according to)(?!\w)|(?<!\w)per\s",
+    re.IGNORECASE,
+)
+CLAIM_RE = re.compile(r"(?<!\w)(?:re|un)?(?:" + CLAIM_FORMS + r")(?!\w|-\w)", re.IGNORECASE)
+COMMAND_WORD_RE = re.compile(r"(?=[^A-Za-z0-9]*[A-Za-z0-9])[A-Za-z0-9._/-]{2,}")
+URL_TOKEN_RE = re.compile(r"https?://\S+", re.IGNORECASE)
+PLACEHOLDERS = frozenset({"-", "x", "n/a", "tbd", "todo", "?", "none", "see", "above"})
+CLAUSE_BREAK_RE = re.compile(r"[.;,!?](?:\s|$)|\u3002")
+FENCE = "```"
 PERCENT_RE = re.compile(r"\d{1,6}(?:\.\d{1,6})?\s{0,3}%")
 
 
@@ -384,15 +444,103 @@ def uncovered_text(line, markers):
     return "".join(kept)
 
 
+def compile_word_re(raw, option):
+    words = [w.strip() for w in raw.split(",") if w.strip()]
+    if not words:
+        raise ReadingError(f"{option} needs at least one word")
+    return re.compile(r"(?<!\w)(?:" + "|".join(map(re.escape, words)) + r")(?!\w)", re.IGNORECASE)
+
+
+def is_command_or_link(content):
+    """A URL, or a command: two or more tokens, the first a word of 2+ characters. Placeholders are neither."""
+    tokens = content.split()
+    if not tokens or all(token.lower() in PLACEHOLDERS for token in tokens):
+        return False
+    return bool(URL_TOKEN_RE.fullmatch(tokens[0])) or (len(tokens) >= 2 and bool(COMMAND_WORD_RE.fullmatch(tokens[0])))
+
+
+FULLWIDTH_CLAUSE_ENDS = {0xFF1B: "; ", 0xFF0C: ", ", 0xFF01: "! ", 0xFF1F: "? "}  # NFKC folds them to ASCII, losing the break
+
+
+def normalized(line):
+    """The line without format characters (zero-width, soft hyphen, BOM: category Cf), NFKC-normalised."""
+    kept = "".join(c for c in line if unicodedata.category(c) != "Cf").translate(FULLWIDTH_CLAUSE_ENDS)
+    return unicodedata.normalize("NFKC", kept)
+
+
+def marker_verdict(text):
+    """(kind, note) when a (source: ...) or (live: ...) marker is not a read of this run, else None."""
+    content = text.partition(":")[2][:-1].strip()
+    if BUS_CUE_RE.search(content):
+        return "BUS-CLAIM", ""
+    if not is_command_or_link(content):
+        return "NO-SOURCE", "source is not a command or link: "
+    return None
+
+
+def claim_finding(line, claim_re):
+    """(kind, claim word, note) of the first failing claim or marker on the line, else None."""
+    line = normalized(line)
+    spans = [m.span() for m in CODE_SPAN_RE.finditer(line)]
+    blanked = CODE_SPAN_RE.sub(lambda m: " " * len(m.group(0)), line)
+    markers = sorted(
+        (m.start(), m.end(), kind, m.group(0))
+        for kind, regex in (("asof", MARKER_RE), ("source", SOURCE_MARK_RE), ("live", LIVE_RE))
+        for m in regex.finditer(line)
+        if not any(lo <= m.start() < hi for lo, hi in spans)
+    )
+    verdicts = [marker_verdict(mk[3]) if mk[2] != "asof" else None for mk in markers]
+    found = []  # (position, kind, word, note)
+    for (start, end, _, _), verdict in zip(markers, verdicts):
+        if verdict:
+            inner = claim_re.search(blanked, start, end)
+            found.append((start, verdict[0], inner.group(0) if inner else "marker", verdict[1]))
+    for claim in claim_re.finditer(blanked):
+        inside = next((mk for mk in markers if mk[0] <= claim.start() < mk[1]), None)
+        if inside:
+            if inside[2] == "asof":
+                found.append((claim.start(), "NO-SOURCE", claim.group(0), ""))
+            continue
+        index = next((i for i, mk in enumerate(markers) if mk[0] >= claim.end()), None)
+        if index is None or CLAUSE_BREAK_RE.search(blanked, claim.end(), markers[index][0]) or markers[index][2] == "asof":
+            found.append((claim.start(), "NO-SOURCE", claim.group(0), ""))
+        elif verdicts[index]:
+            found.append((claim.start(), verdicts[index][0], claim.group(0), verdicts[index][1]))
+    if not found:
+        return None
+    _, kind, word, note = min(found)
+    return kind, word, note
+
+
+def fenced_line_numbers(lines):
+    """(line numbers inside closed ``` blocks, fence fences included; line of an unclosed opening fence or 0).
+
+    A fence line starts with ``` and holds no other ```, so an inline ```x``` is not a fence. An unclosed fence hides nothing.
+    """
+    inside, open_at, opened = set(), 0, 0
+    for number, line in enumerate(lines, 1):
+        stripped = line.strip()
+        if stripped.startswith(FENCE) and FENCE not in stripped[3:]:
+            if opened:
+                inside.update(range(opened, number + 1))
+                opened = 0
+            else:
+                opened = number
+        open_at = opened
+    return inside, open_at
+
+
 def cmd_check_report(args, out, now):
     limit = parse_age(args.max_age)
-    words = [w.strip() for w in args.words.split(",") if w.strip()]
-    if not words:
-        raise ReadingError("--words needs at least one word")
-    word_re = re.compile(r"(?<!\w)(?:" + "|".join(map(re.escape, words)) + r")(?!\w)", re.IGNORECASE)
+    word_re = compile_word_re(args.words, "--words")
+    claim_re = None
+    if not args.no_claims:
+        claim_re = CLAIM_RE if args.claim_words is None else compile_word_re(args.claim_words, "--claim-words")
     text, _ = read_bounded(args.report, MAX_REPORT)
     findings = []
-    for number, line in enumerate(text.splitlines(), 1):
+    lines = text.splitlines()
+    fenced_lines, unclosed = fenced_line_numbers(lines)
+    for number, line in enumerate(lines, 1):
         if not line.strip():
             continue
         snippet = line.strip()[:SNIPPET]
@@ -417,6 +565,11 @@ def cmd_check_report(args, out, now):
             trigger = first_trigger(uncovered_text(line, markers), word_re)
             if trigger:
                 findings.append(f"NO-MARKER line {number} ({trigger}): {snippet}")
+        found = claim_re and number not in fenced_lines and claim_finding(line, claim_re)
+        if found:
+            findings.append(f"{found[0]} line {number} ({found[1]}): {found[2]}{snippet}")
+    if claim_re and unclosed:
+        findings.append(f"UNCLOSED-FENCE line {unclosed}: no closing ``` ; the lines after it were checked anyway")
     for finding in findings:
         out(finding)
     out(f"{len(findings)} finding(s)" if findings else "ok: no unmarked or stale readings")
@@ -440,6 +593,8 @@ def build_parser():
     check.add_argument("report")
     check.add_argument("--max-age", default=DEFAULT_MAX_AGE)
     check.add_argument("--words", default=",".join(DEFAULT_WORDS))
+    check.add_argument("--claim-words")
+    check.add_argument("--no-claims", action="store_true")
     return parser
 
 

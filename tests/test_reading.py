@@ -710,7 +710,7 @@ class CheckReportTests(ReadingTestCase):
         self.assertIn("NO-MARKER line 1 (release)", out)
 
     def test_reading_before_its_marker_across_several_words_is_covered(self):
-        self.assertEqual(self.check("the CI run is green and passing at 100% (as of 14:10)\n")[0], 0)
+        self.assertEqual(self.check("the CI run is green and red at 100% (as of 14:10)\n")[0], 0)
 
     def test_reading_placed_after_its_marker_is_not_covered(self):
         self.assertEqual(self.check("(as of 14:10) quota 98%\n")[0], 1)
