@@ -22,8 +22,9 @@ not parse is skipped whole, but every other entry and every built-in rule still 
 for it. registry_problems(cwd) lists what was skipped; `lessons.py guards` checks the registries against every
 installed hook version, and the session-start lessons header reports skipped entries.
 Words are judged after quotes are removed, so `grep "while pgrep -f"`, commit messages and echo text pass;
-here-document bodies are dropped; the script of `sh -c` and `eval` is judged too. Not seen: commands built
-from variables, run through xargs, ssh or a script file.
+here-document bodies are dropped; the script of `sh -c` and `eval` is judged too. A $NAME or ${NAME} in the
+program or script word is read from an assignment earlier in the same command line (`S=x.py; python3 $S -h`).
+Not seen: names set outside the command line, commands run through xargs, ssh or a script file.
 Built-in rules:
   pgrep-wait-loop    while/until pgrep -f: the pattern matches the waiting shell's own command line, so the loop
                      never ends. Wait on a recorded pid ($!), a lock file or a completion notice.
@@ -31,7 +32,8 @@ Built-in rules:
                      command or exported earlier in the same command line).
   help-probe         a script (a known suffix such as .sh or .py, run directly or through an interpreter, or a
                      command named in `programs`) run with --help, or with -h as its only argument: it may not parse
-                     the flag and run for real.
+                     the flag and run for real. An interpreter run on a variable whose value is not known here
+                     (`python3 "$SCRIPT" --help`) counts too: what follows an interpreter is a script.
   secret-in-message  a secret-looking value in the arguments of a command named in `programs` (none by default).
   calendar           in text a call sends (gh comments, PRs and issues, git commit messages, the registry's
                      `programs`, outbound MCP tools): a weekday that does not match its date, a date that does
@@ -99,6 +101,8 @@ TAKES_PROGRAMS = ("help-probe", "secret-in-message", "calendar")
 CUSTOM_KEYS = {"lesson", "reason", "program", "subcommand", "args_any", "assignments_any", "in_loop", "min_version"}
 VERSION_SHAPE = re.compile(r"\d{1,6}\.\d{1,6}\.\d{1,6}", re.ASCII)
 REGISTRY_MAX_BYTES = 1_000_000
+VARIABLE = re.compile(r"\$(?:\{(\w+)\}|(\w+))")
+CODE_OR_MODULE = frozenset(("-c", "-e", "-m", "-p", "--eval", "--print"))  # the next word is code or a module
 
 
 def version_tuple(text):
@@ -126,14 +130,17 @@ class RegistryError(ValueError):
     """A registry file that cannot be used; the message names the file and the fault."""
 
 
-Command = namedtuple("Command", "word name args assignments in_loop")
+Command = namedtuple("Command", "word name args assignments in_loop variables", defaults=((),))
 
 
 def commands(command, depth=0, inherited=()):
     """Each simple command as (program word, program name, args, its assignments, in a while/until condition);
     assignments include those exported earlier in the line; the script of sh -c and eval is expanded in place.
-    Every command between `while`/`until` and `do` is in the condition (`while kill -0 $p && pgrep -f x; do`)."""
+    Every command between `while`/`until` and `do` is in the condition (`while kill -0 $p && pgrep -f x; do`).
+    variables: the NAME=value words a command's own words expand from, set earlier by a bare assignment or export
+    (a prefix assignment, `X=a cmd $X`, is not: the shell expands $X before it assigns)."""
     found, exported, condition = [], list(inherited), False
+    variables = list(inherited)
     for argv, _piped, _heredoc in shell.simple_commands(shell.split_heredocs(command)[0]):
         name, args = shell.program(argv)
         prefix = argv[:len(argv) - len(args) - 1] if name else argv
@@ -142,10 +149,15 @@ def commands(command, depth=0, inherited=()):
             condition = False
         if any(w in LOOP_WORDS for w in prefix):
             condition = True
+        expands_from = tuple(variables)
+        own = [w for w in prefix if shell.ASSIGNMENT.match(w)]
         if name == "export":
             exported += [arg for arg in args if shell.ASSIGNMENT.match(arg)]
-        assignments = exported + [w for w in prefix if shell.ASSIGNMENT.match(w)]
-        found.append(Command(word, name, args, assignments, condition))
+            variables += [arg for arg in args if shell.ASSIGNMENT.match(arg)]
+        elif not name:
+            variables += own  # `S=x.py; ...`: a bare assignment sets a shell variable
+        assignments = exported + own
+        found.append(Command(word, name, args, assignments, condition, expands_from))
         script = ""
         if name in shell.SHELLS and depth < MAX_DEPTH:
             flag = next((i for i, arg in enumerate(args) if re.match(r"^-[a-z]*c$", arg)), None)
@@ -265,10 +277,22 @@ def script_and_args(cmd):
     return cmd.word, cmd.args
 
 
+def expand(word, variables):
+    """The word with each $NAME and ${NAME} replaced by its latest value in `variables`; unknown names stay."""
+    values = dict(variable.split("=", 1) for variable in variables)
+    return VARIABLE.sub(lambda match: values.get(match.group(1) or match.group(2), match.group(0)), word)
+
+
 def help_probe(cmd, entry):
     script, args = script_and_args(cmd)
     probed = "--help" in args or args == ["-h"]  # `-h host` is an option with a value, not a probe
-    return probed and bool(script) and is_local_script(script, entry.get("programs") or [])
+    if not (probed and script):
+        return False
+    resolved = expand(script, cmd.variables)
+    if cmd.name in INTERPRETERS and VARIABLE.fullmatch(resolved):
+        before = cmd.args[cmd.args.index(script) - 1] if cmd.args.index(script) else ""
+        return before not in CODE_OR_MODULE  # an unknown script, unless it is `-c "$CODE"` or `-m "$MODULE"`
+    return is_local_script(resolved, entry.get("programs") or [])
 
 
 def secret_in_message(cmd, entry):
