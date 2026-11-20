@@ -4,7 +4,7 @@
 Usage (also `arsenal doctor` / `arsenal.ps1 doctor`):
   doctor.py [--project PATH] [--fix]
 Checks: the Python version; the Claude Code plugin (installed, enabled, its cached version against this checkout's
-VERSION, older cached versions no install uses); the plugin's and this checkout's hooks.json (parses, each script
+VERSION, older cached versions no install uses (a link to the version in use, made by `arsenal repoint`, is fine)); the plugin's and this checkout's hooks.json (parses, each script
 it runs exists and compiles); every installer target whose files are partly present globally, or in --project, read
 from dist/manifest.tsv; the global and project lessons ledgers; the lesson-guard registries, read by this hook and by
 every installed plugin version (a version that would refuse every Bash command over an entry is a failure); whether the CodeGraph and Hindsight MCP servers are
@@ -105,6 +105,11 @@ def check_hooks(report, root, label):
         report.ok(f"{label} hooks.json parses; {len(scripts)} hook scripts compile")
 
 
+def points_to_install(path, cache, in_use):
+    """True for a symlink in the cache to a version an install uses (`arsenal repoint` makes these)."""
+    return path.is_symlink() and path.resolve().parent == cache.resolve() and path.resolve().name in in_use
+
+
 def check_plugin(report, home, expected):
     plugins_dir = home / ".claude" / "plugins"
     try:
@@ -130,11 +135,13 @@ def check_plugin(report, home, expected):
     else:
         report.ok(f"Claude Code plugin {newest or '?'} installed ({len(installs)} scopes)")
     cache = plugins_dir / "cache" / "senior-developer-arsenal" / "arsenal"
-    stale = sorted((path.name for path in cache.iterdir() if path.is_dir() and path.name not in in_use),
+    stale = sorted((path.name for path in cache.iterdir() if path.is_dir() and not path.name.startswith(".")
+                    and path.name not in in_use and not points_to_install(path, cache, in_use)),
                    key=version_key) if cache.is_dir() else []
     if stale:
         report.warn(f"older plugin versions no install uses: {', '.join(stale)} (not deleted)",
-                    f"after closing Claude Code: rm -r {' '.join(shlex.quote(str(cache / name)) for name in stale)}")
+                    f"after closing Claude Code: rm -r {' '.join(shlex.quote(str(cache / name)) for name in stale)}"
+                    "; to move running sessions to the newest version without closing them: arsenal repoint")
     if newest:
         check_hooks(report, cache / newest, f"plugin {newest}")
 

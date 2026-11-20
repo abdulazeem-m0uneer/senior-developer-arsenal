@@ -83,13 +83,19 @@ def default_cache(home=None):
                 or Path(home or Path.home()) / ".claude/plugins/cache/senior-developer-arsenal/arsenal")
 
 
+def links_to_sibling(path, cache):
+    """True for a version folder that `arsenal repoint` made a symlink to another version: it runs that version's code."""
+    return path.is_symlink() and path.resolve().parent == cache.resolve()
+
+
 def installed_versions(cache=None):
     """[(version, hooks folder)] of the cached plugin versions that have guard_lessons.py, oldest first."""
     cache = Path(cache) if cache else default_cache()
     if not cache.is_dir():
         return []
     found = [(path.name, path / "hooks") for path in cache.iterdir()
-             if VERSION_DIR.fullmatch(path.name) and (path / "hooks" / "guard_lessons.py").is_file()]
+             if VERSION_DIR.fullmatch(path.name) and (path / "hooks" / "guard_lessons.py").is_file()
+             and not links_to_sibling(path, cache)]
     return sorted(found, key=lambda item: tuple(int(part) for part in item[0].split(".")))
 
 

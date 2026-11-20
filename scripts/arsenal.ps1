@@ -26,6 +26,7 @@ Commands:
   status                 Show what is installed
   update                 Pull the latest arsenal and re-sync globally
   doctor [--project P] [--fix]  Check the installation and print repairs
+  repoint [--undo] [--dry-run]  Point running sessions' older plugin versions at the newest
   help                   Show this help
 "@
 }
@@ -76,6 +77,11 @@ switch ($CommandName) {
     "doctor" {
         $python = if (Get-Command python3 -ErrorAction SilentlyContinue) { "python3" } else { "python" }
         & $python (Join-Path $PSScriptRoot "doctor.py") @Rest
+        exit $LASTEXITCODE
+    }
+    "repoint" {
+        $python = if (Get-Command python3 -ErrorAction SilentlyContinue) { "python3" } else { "python" }
+        & $python (Join-Path $PSScriptRoot "repoint.py") @Rest
         exit $LASTEXITCODE
     }
     { $_ -in "help", "--help", "-h" } { Show-Help }

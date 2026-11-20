@@ -108,7 +108,7 @@ Skills: `.agents/skills/<name>/SKILL.md`. Subagents: `.agents/subagents/`.
 | Session handoff (context nearly full) | `handoff` | — |
 | Learn from mistakes (corrected, confirmed root cause), weekly retro | `lessons-learned` (load `active` at session start; `retro` weekly) | — |
 | How useful the arsenal is (own sessions, local numbers), session self-diagnosis | `usage-stats` (`report`, `diagnose --last`) | — |
-| Install health, repairs | `arsenal doctor` (`scripts/doctor.py`) | — |
+| Install health, repairs | `arsenal doctor` (`scripts/doctor.py`); `arsenal repoint` moves open sessions to the newest plugin version | — |
 | Accessibility audit (WCAG 2.2 AA) | `accessibility-audit` | `ui-ux-architect` |
 | Change untested legacy code in place | `refactor-legacy` | — |
 | Design-time threats, new trust boundary | `threat-model` | `security-auditor` |

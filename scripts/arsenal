@@ -26,6 +26,7 @@ Commands:
   status                 Show what is installed
   update                 Pull the latest arsenal and re-sync globally
   doctor [--project P] [--fix]  Check the installation and print repairs
+  repoint [--undo] [--dry-run]  Point running sessions' older plugin versions at the newest
   help                   Show this help
 
 Any install.sh option may follow, for example:
@@ -71,6 +72,8 @@ case "$command_name" in
     exec "$INSTALL" --global "$@" ;;
   doctor)
     exec python3 "$ARSENAL_DIR/scripts/doctor.py" "$@" ;;
+  repoint)
+    exec python3 "$ARSENAL_DIR/scripts/repoint.py" "$@" ;;
   help|--help|-h)
     show_help ;;
   *)
