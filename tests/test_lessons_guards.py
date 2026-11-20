@@ -256,6 +256,18 @@ class RegistryCheckTests(GuardLedgerCase):
         self.assertIn("installed 1.5.0: 1 problem(s)", out)
         self.assertIn("could not load this version's guard: NameError", out)  # valid syntax, nothing defined
 
+    def test_a_bad_workday_exceptions_file_is_reported_not_refused(self):
+        (self.project / ".agents" / "workdays.txt").write_text("2026-11-20 approved-by A: ok\nnonsense\n",
+                                                               encoding="utf-8")
+        (self.project / ".agents" / "lesson-guards.json").write_text(json.dumps({"guards": [
+            {"rule": "calendar", "workweek": "Sun-Thu", "exceptions": "workdays.txt"}]}), encoding="utf-8")
+        code, out, _ = self.run_cli("guards")
+        self.assertEqual(code, 1)
+        self.assertIn("this hook: 1 problem(s)", out)
+        self.assertIn("workdays.txt line 2: expected `YYYY-MM-DD approved-by <who>: <reason>`", out)
+        context = self.hook_context(json.dumps({"cwd": str(self.project)}))
+        self.assertIn("Lesson-guard registry: 1 entry skipped (not applied)", context)
+
     def test_all_clear(self):
         self.install("1.6.1")
         self.write_registry([{"rule": "hook-bypass", "lesson": "G027"}])

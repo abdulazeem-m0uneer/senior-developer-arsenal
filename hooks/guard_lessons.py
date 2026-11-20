@@ -38,6 +38,16 @@ Built-in rules:
   calendar           in text a call sends (gh comments, PRs and issues, git commit messages, the registry's
                      `programs`, outbound MCP tools): a weekday that does not match its date, a date that does
                      not exist, a guessed time (16:4x), and with "workweek" (Sun-Thu) a promise on another day.
+                     "exceptions": "workdays.txt" names a file of approved extra workdays, one line per date,
+                     `YYYY-MM-DD approved-by <who>: <reason>` (# comments allowed); a promise on a listed date
+                     passes, and the refusal names the file. A relative path is read from the folder of the
+                     registry file that holds the entry. A missing, unreadable or malformed file never refuses a
+                     command: its good lines apply, the rest is a problem line (registry_problems, the session-start
+                     header, `lessons.py guards`). "approvers": ["A. Lead"] accepts only lines approved by a listed
+                     name (exact, case-sensitive); without it the record is advisory, no stronger than the word,
+                     because anyone who can write the file can add a line: keep it outside the repository, owned by
+                     the person who approves. Hooks before the release that added "exceptions" skip the whole
+                     entry for the unknown key, so give such an entry "min_version": that release.
                      See guard_calendar.py.
   pipe-exit          a check (the Stop gate's test, build, lint or CI classifier) or a local script piped into a
                      later command, whose exit status is then acted on (&&, ||, if/while/until/!, or $? read by
@@ -96,11 +106,12 @@ BUILT_IN_REASONS = {
                        'with `python3 {lessons} cause "<failing assertion or check>: <cause or unknown>"`, then rerun.',
 }
 OPT_IN = frozenset(("rerun-after-red",))  # off until a registry entry names it
-ENTRY_KEYS = {"rule", "lesson", "reason", "enabled", "programs", "min_version", "workweek"}
+ENTRY_KEYS = {"rule", "lesson", "reason", "enabled", "programs", "min_version", "workweek", "exceptions", "approvers"}
 TAKES_PROGRAMS = ("help-probe", "secret-in-message", "calendar")
 CUSTOM_KEYS = {"lesson", "reason", "program", "subcommand", "args_any", "assignments_any", "in_loop", "min_version"}
 VERSION_SHAPE = re.compile(r"\d{1,6}\.\d{1,6}\.\d{1,6}", re.ASCII)
 REGISTRY_MAX_BYTES = 1_000_000
+APPROVED_KEY, EXCEPTIONS_FILE_KEY = "_approved_workdays", "_exceptions_file"  # set by read_registry, never in a file
 VARIABLE = re.compile(r"\$(?:\{(\w+)\}|(\w+))")
 CODE_OR_MODULE = frozenset(("-c", "-e", "-m", "-p", "--eval", "--print"))  # the next word is code or a module
 
@@ -378,6 +389,16 @@ def validate(entry, where):
             guard_calendar.parse_workweek(entry["workweek"])
         except ValueError as error:
             raise RegistryError(f"{where}: {error}") from None
+    if "exceptions" in entry:
+        if entry["rule"] != "calendar":
+            raise RegistryError(f"{where}: exceptions is for the calendar rule only")
+        if not (isinstance(entry["exceptions"], str) and entry["exceptions"].strip()):
+            raise RegistryError(f"{where}: exceptions must be the path of a workday exceptions file")
+    if "approvers" in entry:
+        if entry["rule"] != "calendar":
+            raise RegistryError(f"{where}: approvers is for the calendar rule only")
+        if not (text_list(entry["approvers"]) and all(item.strip() for item in entry["approvers"])):
+            raise RegistryError(f"{where}: approvers must be a list of names")
 
 
 def valid_min_version(value):
@@ -388,6 +409,86 @@ def needs_newer_hook(entry):
     """An entry for a newer hook: skipped quietly, before the rest of it is judged (its rule may not exist here)."""
     value = entry.get("min_version") if isinstance(entry, dict) else None
     return HOOK_VERSION is not None and valid_min_version(value) and version_tuple(value) > HOOK_VERSION
+
+
+class PathTooLong(ValueError):
+    """An exceptions path too long to resolve; its message is safe to show."""
+
+
+class ExceptionSources:
+    """The workday exception files read during one read_registry call. Work and output are bounded whatever the
+    registry holds: only the first SOURCE_LIMIT distinct raw (exceptions text, approvers) pairs get any path work
+    (the others get no exceptions and are counted), and at most PROBLEM_LINE_LIMIT problem lines come from them."""
+    SOURCE_LIMIT, PROBLEM_LINE_LIMIT = 20, 50
+
+    def __init__(self):
+        self.raw, self.pairs, self.files, self.ignored, self.shown, self.more = {}, {}, {}, set(), 0, 0
+
+    def emit(self, lines, problems):
+        """Add problem lines within the limit; count the rest."""
+        room = max(self.PROBLEM_LINE_LIMIT - self.shown, 0)
+        problems.extend(lines[:room])
+        self.shown += min(len(lines), room)
+        self.more += max(len(lines) - room, 0)
+
+    @staticmethod
+    def path(raw, registry):
+        """The file a registry entry names: relative to the registry file's folder; only a leading ~ or ~/ is
+        expanded (from $HOME), and ~user is refused rather than looked up."""
+        if raw.startswith("~") and raw != "~" and not raw.startswith("~/"):
+            raise ValueError("~user paths are not supported")
+        return os.path.join(os.path.dirname(os.path.abspath(registry)), os.path.expanduser(raw))
+
+    def approved(self, raw, approvers, registry, problems):
+        """(approved dates, file) for one entry; the file's problem lines go to problems, within the limit."""
+        key = (raw, approvers)
+        if key in self.raw:
+            return self.raw[key]
+        if len(self.raw) >= self.SOURCE_LIMIT:
+            self.ignored.add(key)
+            return frozenset(), ""
+        try:
+            if len(raw) > guard_calendar.MAX_PATH_CHARS:  # realpath is quadratic in a long path: refuse it unread
+                raise PathTooLong(f"exceptions path longer than {guard_calendar.MAX_PATH_CHARS} characters")
+            if raw.count("/") >= guard_calendar.MAX_PATH_PARTS:
+                raise PathTooLong(f"exceptions path has more than {guard_calendar.MAX_PATH_PARTS} components")
+            file = self.path(raw, registry)
+            real = os.path.realpath(file)
+            if (real, approvers) not in self.pairs:  # another spelling of the same file reports it once
+                if real not in self.files:
+                    self.files[real] = guard_calendar.load_exceptions(file)
+                dates, found = guard_calendar.apply_approvers(*self.files[real], approvers, file)
+                self.pairs[(real, approvers)] = frozenset(dates)
+                self.emit(found, problems)
+            result = (self.pairs[(real, approvers)], file)
+        except PathTooLong as error:
+            self.emit([f"{registry}: {error} (no exceptions apply)"], problems)
+            result = (frozenset(), "")
+        except Exception as error:  # never lets a bad path fail the registry read; the class name only
+            self.emit([f"{registry}: exceptions {repr(guard_calendar.clip(raw))}: {type(error).__name__}"], problems)
+            result = (frozenset(), "")
+        self.raw[key] = result
+        return result
+
+    def summary(self):
+        """The lines that say what was left out."""
+        lines = []
+        if self.ignored:
+            lines.append(f"{len(self.ignored)} more calendar exception sources ignored (limit {self.SOURCE_LIMIT})")
+        if self.more:
+            lines.append(f"{self.more} more calendar exception problem lines (limit {self.PROBLEM_LINE_LIMIT})")
+        return lines
+
+
+def with_exceptions(entry, registry, problems, sources):
+    """The calendar entry with its approved workdays read from the exceptions file (a relative path is read from the
+    registry file's folder); a bad file adds problem lines and never raises. sources is the call's ExceptionSources:
+    entries that share a file and approvers read and report it once."""
+    if "exceptions" not in entry or entry.get("enabled") is False:  # a switched-off rule reads nothing
+        return entry
+    approvers = frozenset(item.strip() for item in entry["approvers"]) if "approvers" in entry else None
+    dates, file = sources.approved(entry["exceptions"], approvers, registry, problems)
+    return {**entry, APPROVED_KEY: dates, EXCEPTIONS_FILE_KEY: file}
 
 
 def read_registry(path):
@@ -402,7 +503,7 @@ def read_registry(path):
         return [], [f"{path}: skipped, {type(error).__name__}: {error}"]
     if not isinstance(data, dict) or not isinstance(data.get("guards"), list) or set(data) - {"guards"}:
         return [], [f'{path}: skipped, expected {{"guards": [...]}}']
-    entries, problems = [], []
+    entries, problems, sources = [], [], ExceptionSources()
     for index, entry in enumerate(data["guards"]):
         where = f"{path} entry {index + 1}"
         try:
@@ -415,8 +516,8 @@ def read_registry(path):
         except Exception as error:  # any fault in one entry skips that entry only, never the hook
             problems.append(f"{where}: {type(error).__name__}: {error} (entry skipped)")
             continue
-        entries.append(entry)
-    return entries, problems
+        entries.append(with_exceptions(entry, path, problems, sources))
+    return entries, problems + sources.summary()
 
 
 def registry_problems(cwd):
@@ -593,7 +694,8 @@ def calendar_hit(entry, texts):
     if not texts:
         return None
     workweek = guard_calendar.parse_workweek(entry["workweek"]) if "workweek" in entry else None
-    found = [problem for text in texts for problem in guard_calendar.problems(text, today(), workweek)]
+    found = [problem for text in texts for problem in guard_calendar.problems(text, today(), workweek, entry.get(APPROVED_KEY, ()),
+                                                                  entry.get(EXCEPTIONS_FILE_KEY))]
     if not found:
         return None
     reason = entry.get("reason") or BUILT_IN_REASONS["calendar"].replace("{problems}", "; ".join(dict.fromkeys(found)))
