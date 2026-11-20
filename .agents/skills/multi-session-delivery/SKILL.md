@@ -73,6 +73,7 @@ Consult: [Routines & Timers](./references/routines.md)
    On a protected branch that must be up to date, serialize freshness with [merge_slot.py](./scripts/merge_slot.py) (a FIFO slot in `<bus dir>/merge-slot.json`, under a lock). A lane runs `refused <pr> --lane L` when a merge is refused for being behind its base (at 2 refusals the PR queues) and `may-update <pr> [--lane L]` before updating a branch: exit 0 means you hold the slot (a free slot with an empty queue is taken by that call, so two lanes asking at once cannot both go) so update, wait for CI, merge with `merge_green.py`, then `release <pr>` (it exits 0 even when the merge already dropped the slot, so `merge_green.py N --yes && merge_slot.py release N` is safe); exit 1 means wait, because updating now only invites another round. A grant from the queue is a 10-minute claim window: the head's first `may-update` claims it and starts the 40-minute lease, and an unclaimed grant passes to the next PR. Merged or closed pull requests drop out on their own, and `release` of a PR that was already dropped or whose lease expired still exits 0 (it never touches the current holder); the coordinator reads `status`. A damaged state file exits 2 and is never reset silently (`reset --yes`).
 2. Each lane loads its lessons ledger before every task and records a mistake the same turn; a mistake seen twice becomes a test, lint rule, hook or script guard (`lessons-learned`). Every red CI run counts: a check that could have run locally joins the pre-push gate, and a flaky test is fixed at its cause, so no failure costs pipeline minutes twice.
 3. No sentence says done, merged, fixed or recovered without the command output, pull request or commit hash that proves it.
+4. A reading without its age is a claim, not a fact. Every status quoted from a file (a quota written by a watcher, release or CI state) goes through [reading.py](./scripts/reading.py) `get FILE --key K --max-age 30m` and is quoted with its "as of" time, as `get` prints it. A `STALE` or `FUTURE` result (exit 1) is refreshed at its source or reported as stale with its age, never quoted as current; exit 2 means no reading at all. Watcher jobs record the time with the value (`reading.py write FILE --key K --value V`: each key keeps its own time, so writing one key never makes another look fresh). Before sending any report or email run `reading.py check-report DRAFT`: it lists every quoted "as of" older than the limit and every percentage or status word (quota, release, CI, green, ...) with no "as of" (a line read live this turn may carry `(live: <command>)` instead). Send only when it exits 0.
 
 ---
 
@@ -86,6 +87,8 @@ bash .agents/bus/archive.sh 7                                # archives only old
 python3 .agents/bus/overdue.py --all                         # lists T-1 as open with its ETA; none once DONE is sent
 python3 <skill>/scripts/merge_green.py <merged-pr-number>    # dry run, no --yes: refused: ... is MERGED (exit 1); exit 4: gh hung, see --gh-timeout
 python3 <skill>/scripts/merge_slot.py status                   # holder with minutes left, then the queue; may-update <pr>: exit 0 you hold it, 1 hold
+python3 <skill>/scripts/reading.py get <file> --key <k> --max-age 30m   # "98% (as of <time>, 12 min old)"; STALE: ... exit 1; unreadable exit 2
+python3 <skill>/scripts/reading.py check-report <draft>      # "ok: ..." exit 0; each stale or unmarked reading listed, exit 1
 systemctl --user list-timers                                 # each routine's next run equals its required time
 ```
 
@@ -99,6 +102,7 @@ Before declaring the model live, output the readiness table:
 | A START without ETA is refused, `overdue.py` lists an open item | exit 6, `overdue.py --all` output | Yes / No |
 | Every lane registered in `lanes.json` and listed in `bus/lanes.txt` | file content | Yes / No |
 | Merge guard dry run refuses a merged PR | command output | Yes / No |
+| A reading older than its limit is refused, a draft with an unmarked percentage is flagged | `reading.py get` exit 1, `check-report` exit 1 | Yes / No |
 | Routines scheduled at the right times | timer list | Yes / No |
 
 ---
@@ -115,6 +119,7 @@ Before declaring the model live, output the readiness table:
 | Reading page 0 of a paginated listing | Stale tickets left "in progress" | Read until the API says there are no more pages |
 | Judging a failed mutating call by its error line | The action may have succeeded before the error | Read the target's state before reporting |
 | Work started or blocked with no time | Nobody sees it is late until someone asks | `START`/`BLOCKER` with an ETA, `overdue.py` every hour |
+| Quoting a status from a file with no age | A watcher stopped hours ago and the file still says 80% while the truth is 98% | `reading.py get --max-age`, quote the "as of", `check-report` before sending |
 
 ---
 
