@@ -56,6 +56,7 @@ Consult: [Session Bus](./templates/bus/README.md)
 7. No secrets, tokens or personal data in any line.
 
 ### Step 5: Coordinator Duties
+Consult: [Long-Run Guide](./references/long-run-guide.md) (about ten sessions for a week, with measured numbers)
 1. Keep the board true: status changes only with evidence, every page of every listing read, bulk changes through the tracker's API in one script, not one call per task.
 2. File every `Q:` line as a ticket (business owner or lead), watch the answered column, record each answer in the decision log, relay it to the lane.
 3. Watch for gaps (legacy or reference system, plan versus delivered) and for staging alerts; a serious alert becomes an urgent ticket and an urgent line to the owning lane, handled before any other work.
