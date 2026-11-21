@@ -454,7 +454,20 @@ def cmd_launchd(args, out, err):
     return 0
 
 
+def protected_groups():
+    """Our own process group and our parent's: signalling either would kill the caller's session."""
+    groups = {os.getpgrp()}
+    try:
+        groups.add(os.getpgid(os.getppid()))
+    except OSError:
+        pass
+    return groups
+
+
 def kill_group(pgid, sig):
+    """killpg that never reaches beyond the child's group: killpg(1) is kill(-1), every process we may signal."""
+    if isinstance(pgid, bool) or not isinstance(pgid, int) or pgid <= 1 or pgid in protected_groups():
+        raise ValueError(f"refusing to signal process group {pgid!r}")
     try:
         os.killpg(pgid, sig)
     except ProcessLookupError:

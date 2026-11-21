@@ -19,6 +19,13 @@ sys.path.insert(0, str(SCRIPTS))
 
 import timer  # noqa: E402
 
+
+def is_zombie(pid):
+    try:
+        return Path("/proc/%d/stat" % pid).read_text().rsplit(")", 1)[1].split()[0] == "Z"
+    except (OSError, IndexError):
+        return False
+
 NOW = "2030-01-01T10:00:00+00:00"
 STUB = """#!/bin/sh
 d="$(dirname "$0")"
@@ -445,6 +452,8 @@ class RunTests(TimerCase):
             try:
                 os.kill(pid, 0)
             except ProcessLookupError:
+                return
+            if is_zombie(pid):  # dead, waiting for a reaper (in a PID namespace the runner is init)
                 return
             time.sleep(0.05)
         self.fail(f"child {pid} still alive")
