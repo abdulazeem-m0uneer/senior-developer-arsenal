@@ -65,7 +65,7 @@ Consult: [Session Bus](./templates/bus/README.md)
 ### Step 6: Workday and Routines
 Consult: [Routines & Timers](./references/routines.md)
 1. The workday is N hours from the moment the sessions start; the coordinator announces start and end on the bus. In the last hour no lane starts a new build chain; 15 minutes before the end each lane sends its state and stops.
-2. Fixed-time work runs from system timers, not from sleeps inside a session: a session that closes kills its own alarms silently.
+2. Fixed-time work runs from system timers, not from sleeps inside a session: a session that closes kills its own alarms silently. Create them with [timer.py](./scripts/timer.py) `make` (a validated `OnCalendar`, a bounded oneshot, a deadline margin), read the next run back with `check` before promising a time, and pause with `pause`, never by stopping the timer.
 3. Routines that read untrusted text (tickets, comments, emails) run with read-only shims for git, the forge CLI and the merge script first on `PATH`, and end with one status word: `ok`, `partial` or `failed`.
 
 ### Step 7: Guards Against Repeated Mistakes
@@ -89,7 +89,7 @@ python3 <skill>/scripts/merge_green.py <merged-pr-number>    # dry run, no --yes
 python3 <skill>/scripts/merge_slot.py status                   # holder with minutes left, then the queue; may-update <pr>: exit 0 you hold it, 1 hold
 python3 <skill>/scripts/reading.py get <file> --key <k> --max-age 30m   # "98% (as of <time>, 12 min old)"; STALE: ... exit 1; unreadable exit 2
 python3 <skill>/scripts/reading.py check-report <draft>      # "ok: ..." exit 0; each stale or unmarked reading, NO-SOURCE or BUS-CLAIM claim listed, exit 1
-systemctl --user list-timers                                 # each routine's next run equals its required time
+python3 <skill>/scripts/timer.py check <name> [--deadline ISO]   # "<name> next <time> (in 2h 5m)"; exit 1: not active, no next run or inside the margin
 ```
 
 Before declaring the model live, output the readiness table:

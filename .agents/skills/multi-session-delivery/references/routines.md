@@ -12,7 +12,25 @@ How the coordinator's timed work runs so that reports and watches happen on time
 | In-session cron of the agent tool | Jitter moves the run time; jobs expire and die with the session | Short reminders only |
 | System timer (systemd user timer, launchd, Task Scheduler) | Survives restarts; `Persistent=true` catches up after boot | Every fixed-time routine |
 
-Check each timer's next run time against the required time (`systemctl --user list-timers`) before saying a routine is set.
+### Durable timer rules
+
+1. A system timer, never a `sleep` or an in-session alarm.
+2. A oneshot unit is bounded by `TimeoutStartSec`; `RuntimeMaxSec` is ignored by a oneshot, so the job could hang forever.
+3. `OnCalendar` is validated with `systemd-analyze calendar` before the unit is written.
+4. Schedule the job at least 30 minutes before the deadline it feeds.
+5. Read back the scheduler's own next run with `timer.py check` before promising a time to anyone.
+6. Pause with the pause file, never by stopping and starting the timer: restarting a `Persistent` timer fires a missed run at once.
+
+The margin check (rule 4) judges the first run only. In the command, `%` and `$` are escaped for systemd, and a leading `-`, `@`, `+`, `!` or `:` keeps its systemd meaning. The state dir is made absolute; `launchd` bakes in the absolute interpreter and state dir.
+
+```bash
+T=<skill>/scripts/timer.py
+python3 $T make report --on-calendar "Mon..Fri 09:00" --command /usr/local/bin/report.sh --timeout 20m --deadline 2030-01-04T10:00 --persistent
+systemctl --user daemon-reload && systemctl --user enable --now report.timer   # make writes files only, it never runs systemctl
+python3 $T check report --deadline 2030-01-04T10:00   # "report next <time> (in 2h 5m)"; exit 1: inactive, no next run, or inside the 30m margin
+python3 $T pause report; python3 $T resume report     # the service skips while NAME.paused exists
+python3 $T launchd report --at 09:00 --weekdays 1-5 --command /usr/local/bin/report.sh --timeout 20m   # macOS: fixed times only; `run` times the command out (exit 124)
+```
 
 ---
 
