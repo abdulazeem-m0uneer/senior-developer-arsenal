@@ -298,6 +298,23 @@ def release(path, handle, err):
         handle.close()
 
 
+def protected_groups():
+    """Our own process group and our parent's: signalling either would kill the caller's session."""
+    groups = {os.getpgrp()}
+    try:
+        groups.add(os.getpgid(os.getppid()))
+    except OSError:
+        pass
+    return groups
+
+
+def killpg(pgid, sig):
+    """os.killpg that never reaches beyond the gate's group: killpg(1) is kill(-1), every process we may signal."""
+    if isinstance(pgid, bool) or not isinstance(pgid, int) or pgid <= 1 or pgid in protected_groups():
+        raise ValueError(f"refusing to signal process group {pgid!r}")
+    os.killpg(pgid, sig)
+
+
 def group_count(pgid):
     """Live (not zombie) processes in the group. Without a usable ps (busybox, failure) probe the group: 1 or 0."""
     try:
@@ -309,7 +326,7 @@ def group_count(pgid):
     except (OSError, subprocess.SubprocessError):
         pass
     try:
-        os.killpg(pgid, 0)
+        os.killpg(pgid, 0)  # signal 0 only probes; it sends nothing
         return 1
     except OSError:
         return 0
@@ -322,7 +339,7 @@ def end_group(pgid, grace, err):
         return
     for sig, wait in ((signal.SIGTERM, grace), (signal.SIGKILL, 5)):
         with contextlib.suppress(ProcessLookupError, PermissionError):
-            os.killpg(pgid, sig)
+            killpg(pgid, sig)
         deadline = time.monotonic() + wait
         while group_count(pgid) and time.monotonic() < deadline:
             time.sleep(0.1)
@@ -347,7 +364,7 @@ def run_command(cmd, handle, grace, err):
             child.terminate()
             return
         with contextlib.suppress(ProcessLookupError, PermissionError):
-            os.killpg(child.pid, signum)
+            killpg(child.pid, signum)
         kill_at[:] = kill_at or [time.monotonic() + grace]
 
     previous = {sig: signal.signal(sig, forward) for sig in FORWARDED}
@@ -360,7 +377,7 @@ def run_command(cmd, handle, grace, err):
             except subprocess.TimeoutExpired:
                 if kill_at and time.monotonic() >= kill_at[0]:
                     with contextlib.suppress(ProcessLookupError, PermissionError):
-                        os.killpg(child.pid, signal.SIGKILL)
+                        killpg(child.pid, signal.SIGKILL)
         return 128 - code if code < 0 else code
     finally:
         try:

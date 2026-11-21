@@ -81,6 +81,14 @@ Mentally mutate the production code; at least one test must fail for each:
 
 A mutation nothing catches marks the behaviour unprotected, or the test tautological.
 
+Run tests and mutation runs over code that sends signals (`os.kill`, `os.killpg`, `kill`) or reads unbounded output only in a fresh PID and user namespace with a memory cap:
+
+```bash
+systemd-run --user --scope -q -p MemoryMax=4G -- unshare --user --map-root-user --pid --fork --mount-proc -- python3 -m unittest ...
+```
+
+A mutated pid can become `killpg(1)`, which is `kill(-1)`: every process the user owns (a mock's `pid` reads as 1). Inside the namespace it reaches only the namespace. Every kill helper refuses pgid <= 1, non-integers, its own group and its parent's, and a test that mocks `Popen` makes it raise instead of returning a fake process.
+
 ---
 
 ## 6. Warning Signs
