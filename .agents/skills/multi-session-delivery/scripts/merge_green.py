@@ -15,7 +15,7 @@ All must hold on the CURRENT head (full 40-character SHA, pinned at merge time):
 The REVIEW-RESULT line is a convention between honest agents, not an identity check: protect the branch too.
 Without --yes it is a dry run. Never --auto, never --admin.
 Exit: 0 would merge / merged, 1 refused or not merged (also a merge-queue entry: check it later),
-2 usage or gh error, 3 merged state unreadable after the merge call (check the pull request by hand),
+2 usage or gh error (an answer over 1 MB on one stream, 16 MB for the judging pull request view, counts: gh is killed), 3 merged state unreadable after the merge call (check the pull request by hand),
 4 a gh call did not answer within --gh-timeout seconds and the pull request is not known to be merged.
 """
 import argparse
@@ -24,10 +24,16 @@ import json
 import re
 import subprocess
 import sys
+import threading
+import time
 
 GREEN = ("SUCCESS", "SKIPPED", "NEUTRAL")
 GH_TIMEOUT = 120  # seconds for one gh call
 GH_TIMED_OUT = 124  # runner exit code for a gh call that hung, as timeout(1) reports it
+GH_TOO_LONG = 125  # runner exit code for a gh answer over the call's limit on one stream; gh was killed
+GH_MAX_OUTPUT = 1_000_000  # bytes; the default for small answers (a state, a merge, a repository)
+PR_VIEW_MAX_OUTPUT = 16_000_000  # bytes; the judging view lists every comment and review, so a busy PR can pass 1 MB
+WAIT_STEP = 0.05  # seconds between checks for an answer that ran over its limit
 EXIT_GH_TIMEOUT = 4
 SHA_RE = re.compile(r"[0-9a-f]{40}")
 REVIEW_RE = re.compile(
@@ -35,14 +41,60 @@ REVIEW_RE = re.compile(
     re.M)
 
 
-def run_gh(args, timeout=GH_TIMEOUT):
+def wait_for(child, timeout, too_long):
+    """Exit code of `child`; kills it once `too_long` is set. TimeoutExpired after `timeout` seconds.
+
+    Only this thread waits on and signals the child: a kill from another thread can race the reap
+    (CPython bpo-38630) and reach a reused pid."""
+    deadline = time.monotonic() + timeout
+    while True:
+        remaining = deadline - time.monotonic()
+        try:
+            return child.wait(timeout=max(min(WAIT_STEP, remaining), 0))
+        except subprocess.TimeoutExpired:
+            if too_long.is_set():
+                child.kill()
+                return child.wait()
+            if remaining <= WAIT_STEP:
+                raise
+
+
+def run_gh(args, timeout=GH_TIMEOUT, limit=GH_MAX_OUTPUT):
+    """(exit code, stdout on 0 else stderr). At most `limit` bytes of each stream are held: more kills gh."""
     try:
-        done = subprocess.run(["gh", *args], capture_output=True, text=True, check=False, timeout=timeout)
-    except subprocess.TimeoutExpired:
-        return GH_TIMED_OUT, f"gh did not answer in {timeout} s"
+        child = subprocess.Popen(["gh", *args], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     except OSError as error:
         return 127, str(error)
-    return done.returncode, (done.stdout if done.returncode == 0 else done.stderr)
+    answers, too_long = {}, threading.Event()
+
+    def read(name, stream):
+        answers[name] = stream.read(limit + 1)  # blocks until limit + 1 bytes or end of stream
+        if len(answers[name]) > limit:
+            too_long.set()  # the waiting thread kills gh
+
+    readers = [threading.Thread(target=read, args=item, daemon=True)
+               for item in (("out", child.stdout), ("err", child.stderr))]
+    for reader in readers:
+        reader.start()
+    try:
+        code = wait_for(child, timeout, too_long)
+    except subprocess.TimeoutExpired:
+        child.kill()
+        child.wait()
+        return GH_TIMED_OUT, f"gh did not answer in {timeout} s"
+    except BaseException:
+        child.kill()  # Ctrl-C or any other error must not leave gh running, as subprocess.run guarantees
+        child.wait()
+        raise
+    finally:
+        for reader in readers:
+            reader.join(timeout=5)  # gh is gone; a leftover grandchild holding a pipe does not stall the caller
+        if not any(reader.is_alive() for reader in readers):
+            child.stdout.close()
+            child.stderr.close()
+    if too_long.is_set():
+        return GH_TOO_LONG, f"gh answered with over {limit} bytes"
+    return code, answers.get("out" if code == 0 else "err", b"").decode("utf-8", "replace")
 
 
 def check_state(check):
@@ -77,6 +129,19 @@ def find_review(pr, head):
     return passed, objections
 
 
+def checks_refusal(rollup, head):
+    """(checks, None) when every check is green and one succeeded, else (checks, refusal); pending is not green."""
+    checks = [check_state(c) for c in rollup or []]
+    if not checks:
+        return checks, f"has no checks on {head[:8]}"
+    red = [name for name, state in checks if state not in GREEN]
+    if red:
+        return checks, f"head {head[:8]} has checks not green: {', '.join(red)}"
+    if not any(state == "SUCCESS" for _, state in checks):
+        return checks, f"head {head[:8]} has no successful check (all skipped or neutral)"
+    return checks, None
+
+
 def judge(pr, expect=()):
     """Return (head, reason) when mergeable, or (None, refusal)."""
     if pr.get("state") != "OPEN":
@@ -88,14 +153,9 @@ def judge(pr, expect=()):
     head = pr.get("headRefOid") or ""
     if not SHA_RE.fullmatch(head):
         return None, f"head is not a full SHA: {head!r}"
-    checks = [check_state(c) for c in pr.get("statusCheckRollup") or []]
-    if not checks:
-        return None, f"has no checks on {head[:8]}"
-    red = [name for name, state in checks if state not in GREEN]
-    if red:
-        return None, f"head {head[:8]} has checks not green: {', '.join(red)}"
-    if not any(state == "SUCCESS" for _, state in checks):
-        return None, f"head {head[:8]} has no successful check (all skipped or neutral)"
+    checks, refusal = checks_refusal(pr.get("statusCheckRollup"), head)
+    if refusal:
+        return None, refusal
     missing = sorted(set(expect) - {name for name, state in checks if state == "SUCCESS"})
     if missing:
         return None, f"head {head[:8]} has expected checks missing or not successful: {', '.join(missing)}"
@@ -111,7 +171,8 @@ def merge_green(number, yes=False, repo=None, runner=run_gh, out=print, err=None
     err = err or (lambda line: print(line, file=sys.stderr))
     target = ["-R", repo] if repo else []
     code, text = runner(["pr", "view", str(number), *target,
-                         "--json", "state,isDraft,autoMergeRequest,headRefOid,statusCheckRollup,comments,reviews"])
+                         "--json", "state,isDraft,autoMergeRequest,headRefOid,statusCheckRollup,comments,reviews"],
+                        limit=PR_VIEW_MAX_OUTPUT)
     if code == GH_TIMED_OUT:
         err(f"timeout: gh pr view #{number}: {text.strip()}; nothing was merged")
         return EXIT_GH_TIMEOUT
