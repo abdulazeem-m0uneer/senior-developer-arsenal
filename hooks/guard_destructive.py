@@ -38,6 +38,7 @@ PIPED_MAX = 4000
 REDIRECTION = frozenset("<>&")
 VARIABLE_ROOT = re.compile(r"^\$(?:\{\w+\}|\w+)/$")  # "$UNSET"/* expands to /* when the variable is empty
 WORKING_DIRECTORY = ("$PWD", "${PWD}", "$(pwd)")
+VARIABLE = re.compile(r"\$(?:\{(\w+)\}|(\w+))")
 
 
 HEREDOC_RE = re.compile(r"<<(?!<)-?\s*(?:'([^'\n]+)'|\"([^\"\n]+)\"|\\?(\w+))")
@@ -107,6 +108,13 @@ def program(argv):
         else:
             return word.rpartition("/")[2], argv[index + 1:]
     return "", []
+
+
+def expand(word, variables):
+    """The word with each $NAME and ${NAME} replaced by its latest value in `variables` (NAME=value words); unknown
+    names stay."""
+    values = dict(variable.split("=", 1) for variable in variables)
+    return VARIABLE.sub(lambda match: values.get(match.group(1) or match.group(2), match.group(0)), word)
 
 
 class Arguments:

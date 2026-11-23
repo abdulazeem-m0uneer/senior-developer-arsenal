@@ -99,6 +99,8 @@ antigravity	global	file	guard_lessons.py	hooks/guard_lessons.py	.gemini/config/a
 antigravity	global	file	guard_limits.py	hooks/guard_limits.py	.gemini/config/arsenal-hooks/guard_limits.py	-
 antigravity	global	file	guard_models.py	hooks/guard_models.py	.gemini/config/arsenal-hooks/guard_models.py	-
 antigravity	global	file	guard_scope.py	hooks/guard_scope.py	.gemini/config/arsenal-hooks/guard_scope.py	-
+antigravity	global	file	guard_syntax.py	hooks/guard_syntax.py	.gemini/config/arsenal-hooks/guard_syntax.py	-
+antigravity	global	file	guard_unseen_hash.py	hooks/guard_unseen_hash.py	.gemini/config/arsenal-hooks/guard_unseen_hash.py	-
 antigravity	global	file	session_core.py	hooks/session_core.py	.gemini/config/arsenal-hooks/session_core.py	-
 antigravity	global	file	skill_router.py	hooks/skill_router.py	.gemini/config/arsenal-hooks/skill_router.py	-
 antigravity	global	file	core.md	hooks/core.md	.gemini/config/arsenal-hooks/core.md	-
@@ -210,6 +212,8 @@ antigravity	project	file	guard_lessons.py	hooks/guard_lessons.py	.agents/arsenal
 antigravity	project	file	guard_limits.py	hooks/guard_limits.py	.agents/arsenal-hooks/guard_limits.py	-
 antigravity	project	file	guard_models.py	hooks/guard_models.py	.agents/arsenal-hooks/guard_models.py	-
 antigravity	project	file	guard_scope.py	hooks/guard_scope.py	.agents/arsenal-hooks/guard_scope.py	-
+antigravity	project	file	guard_syntax.py	hooks/guard_syntax.py	.agents/arsenal-hooks/guard_syntax.py	-
+antigravity	project	file	guard_unseen_hash.py	hooks/guard_unseen_hash.py	.agents/arsenal-hooks/guard_unseen_hash.py	-
 antigravity	project	file	session_core.py	hooks/session_core.py	.agents/arsenal-hooks/session_core.py	-
 antigravity	project	file	skill_router.py	hooks/skill_router.py	.agents/arsenal-hooks/skill_router.py	-
 antigravity	project	file	core.md	hooks/core.md	.agents/arsenal-hooks/core.md	-
@@ -305,6 +309,8 @@ gemini	global	file	guard_lessons.py	hooks/guard_lessons.py	.agents/arsenal-hooks
 gemini	global	file	guard_limits.py	hooks/guard_limits.py	.agents/arsenal-hooks/guard_limits.py	-
 gemini	global	file	guard_models.py	hooks/guard_models.py	.agents/arsenal-hooks/guard_models.py	-
 gemini	global	file	guard_scope.py	hooks/guard_scope.py	.agents/arsenal-hooks/guard_scope.py	-
+gemini	global	file	guard_syntax.py	hooks/guard_syntax.py	.agents/arsenal-hooks/guard_syntax.py	-
+gemini	global	file	guard_unseen_hash.py	hooks/guard_unseen_hash.py	.agents/arsenal-hooks/guard_unseen_hash.py	-
 gemini	global	file	session_core.py	hooks/session_core.py	.agents/arsenal-hooks/session_core.py	-
 gemini	global	file	skill_router.py	hooks/skill_router.py	.agents/arsenal-hooks/skill_router.py	-
 gemini	global	file	core.md	hooks/core.md	.agents/arsenal-hooks/core.md	-
@@ -402,6 +408,8 @@ gemini	project	file	guard_lessons.py	hooks/guard_lessons.py	.agents/arsenal-hook
 gemini	project	file	guard_limits.py	hooks/guard_limits.py	.agents/arsenal-hooks/guard_limits.py	-
 gemini	project	file	guard_models.py	hooks/guard_models.py	.agents/arsenal-hooks/guard_models.py	-
 gemini	project	file	guard_scope.py	hooks/guard_scope.py	.agents/arsenal-hooks/guard_scope.py	-
+gemini	project	file	guard_syntax.py	hooks/guard_syntax.py	.agents/arsenal-hooks/guard_syntax.py	-
+gemini	project	file	guard_unseen_hash.py	hooks/guard_unseen_hash.py	.agents/arsenal-hooks/guard_unseen_hash.py	-
 gemini	project	file	session_core.py	hooks/session_core.py	.agents/arsenal-hooks/session_core.py	-
 gemini	project	file	skill_router.py	hooks/skill_router.py	.agents/arsenal-hooks/skill_router.py	-
 gemini	project	file	core.md	hooks/core.md	.agents/arsenal-hooks/core.md	-
@@ -545,6 +553,8 @@ codex	global	file	guard_lessons.py	hooks/guard_lessons.py	.agents/arsenal-hooks/
 codex	global	file	guard_limits.py	hooks/guard_limits.py	.agents/arsenal-hooks/guard_limits.py	-
 codex	global	file	guard_models.py	hooks/guard_models.py	.agents/arsenal-hooks/guard_models.py	-
 codex	global	file	guard_scope.py	hooks/guard_scope.py	.agents/arsenal-hooks/guard_scope.py	-
+codex	global	file	guard_syntax.py	hooks/guard_syntax.py	.agents/arsenal-hooks/guard_syntax.py	-
+codex	global	file	guard_unseen_hash.py	hooks/guard_unseen_hash.py	.agents/arsenal-hooks/guard_unseen_hash.py	-
 codex	global	file	session_core.py	hooks/session_core.py	.agents/arsenal-hooks/session_core.py	-
 codex	global	file	skill_router.py	hooks/skill_router.py	.agents/arsenal-hooks/skill_router.py	-
 codex	global	file	core.md	hooks/core.md	.agents/arsenal-hooks/core.md	-
@@ -654,6 +664,8 @@ codex	project	file	guard_lessons.py	hooks/guard_lessons.py	.agents/arsenal-hooks
 codex	project	file	guard_limits.py	hooks/guard_limits.py	.agents/arsenal-hooks/guard_limits.py	-
 codex	project	file	guard_models.py	hooks/guard_models.py	.agents/arsenal-hooks/guard_models.py	-
 codex	project	file	guard_scope.py	hooks/guard_scope.py	.agents/arsenal-hooks/guard_scope.py	-
+codex	project	file	guard_syntax.py	hooks/guard_syntax.py	.agents/arsenal-hooks/guard_syntax.py	-
+codex	project	file	guard_unseen_hash.py	hooks/guard_unseen_hash.py	.agents/arsenal-hooks/guard_unseen_hash.py	-
 codex	project	file	session_core.py	hooks/session_core.py	.agents/arsenal-hooks/session_core.py	-
 codex	project	file	skill_router.py	hooks/skill_router.py	.agents/arsenal-hooks/skill_router.py	-
 codex	project	file	core.md	hooks/core.md	.agents/arsenal-hooks/core.md	-
@@ -939,6 +951,8 @@ cursor	global	file	guard_lessons.py	hooks/guard_lessons.py	.agents/arsenal-hooks
 cursor	global	file	guard_limits.py	hooks/guard_limits.py	.agents/arsenal-hooks/guard_limits.py	-
 cursor	global	file	guard_models.py	hooks/guard_models.py	.agents/arsenal-hooks/guard_models.py	-
 cursor	global	file	guard_scope.py	hooks/guard_scope.py	.agents/arsenal-hooks/guard_scope.py	-
+cursor	global	file	guard_syntax.py	hooks/guard_syntax.py	.agents/arsenal-hooks/guard_syntax.py	-
+cursor	global	file	guard_unseen_hash.py	hooks/guard_unseen_hash.py	.agents/arsenal-hooks/guard_unseen_hash.py	-
 cursor	global	file	session_core.py	hooks/session_core.py	.agents/arsenal-hooks/session_core.py	-
 cursor	global	file	skill_router.py	hooks/skill_router.py	.agents/arsenal-hooks/skill_router.py	-
 cursor	global	file	core.md	hooks/core.md	.agents/arsenal-hooks/core.md	-
@@ -1048,6 +1062,8 @@ cursor	project	file	guard_lessons.py	hooks/guard_lessons.py	.agents/arsenal-hook
 cursor	project	file	guard_limits.py	hooks/guard_limits.py	.agents/arsenal-hooks/guard_limits.py	-
 cursor	project	file	guard_models.py	hooks/guard_models.py	.agents/arsenal-hooks/guard_models.py	-
 cursor	project	file	guard_scope.py	hooks/guard_scope.py	.agents/arsenal-hooks/guard_scope.py	-
+cursor	project	file	guard_syntax.py	hooks/guard_syntax.py	.agents/arsenal-hooks/guard_syntax.py	-
+cursor	project	file	guard_unseen_hash.py	hooks/guard_unseen_hash.py	.agents/arsenal-hooks/guard_unseen_hash.py	-
 cursor	project	file	session_core.py	hooks/session_core.py	.agents/arsenal-hooks/session_core.py	-
 cursor	project	file	skill_router.py	hooks/skill_router.py	.agents/arsenal-hooks/skill_router.py	-
 cursor	project	file	core.md	hooks/core.md	.agents/arsenal-hooks/core.md	-
@@ -1283,6 +1299,8 @@ copilot	global	file	guard_lessons.py	hooks/guard_lessons.py	.agents/arsenal-hook
 copilot	global	file	guard_limits.py	hooks/guard_limits.py	.agents/arsenal-hooks/guard_limits.py	-
 copilot	global	file	guard_models.py	hooks/guard_models.py	.agents/arsenal-hooks/guard_models.py	-
 copilot	global	file	guard_scope.py	hooks/guard_scope.py	.agents/arsenal-hooks/guard_scope.py	-
+copilot	global	file	guard_syntax.py	hooks/guard_syntax.py	.agents/arsenal-hooks/guard_syntax.py	-
+copilot	global	file	guard_unseen_hash.py	hooks/guard_unseen_hash.py	.agents/arsenal-hooks/guard_unseen_hash.py	-
 copilot	global	file	session_core.py	hooks/session_core.py	.agents/arsenal-hooks/session_core.py	-
 copilot	global	file	skill_router.py	hooks/skill_router.py	.agents/arsenal-hooks/skill_router.py	-
 copilot	global	file	core.md	hooks/core.md	.agents/arsenal-hooks/core.md	-
@@ -1392,6 +1410,8 @@ copilot	project	file	guard_lessons.py	hooks/guard_lessons.py	.agents/arsenal-hoo
 copilot	project	file	guard_limits.py	hooks/guard_limits.py	.agents/arsenal-hooks/guard_limits.py	-
 copilot	project	file	guard_models.py	hooks/guard_models.py	.agents/arsenal-hooks/guard_models.py	-
 copilot	project	file	guard_scope.py	hooks/guard_scope.py	.agents/arsenal-hooks/guard_scope.py	-
+copilot	project	file	guard_syntax.py	hooks/guard_syntax.py	.agents/arsenal-hooks/guard_syntax.py	-
+copilot	project	file	guard_unseen_hash.py	hooks/guard_unseen_hash.py	.agents/arsenal-hooks/guard_unseen_hash.py	-
 copilot	project	file	session_core.py	hooks/session_core.py	.agents/arsenal-hooks/session_core.py	-
 copilot	project	file	skill_router.py	hooks/skill_router.py	.agents/arsenal-hooks/skill_router.py	-
 copilot	project	file	core.md	hooks/core.md	.agents/arsenal-hooks/core.md	-

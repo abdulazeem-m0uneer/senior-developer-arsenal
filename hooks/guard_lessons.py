@@ -2,6 +2,9 @@
 """Refuse a Bash command that repeats a recorded lesson, for guard.py's PreToolUse hook (Claude Code plugin).
 
 Usage: hit = guard_lessons.judge(command, cwd)  # None, or Hit(lesson, rule, reason)
+       hit = guard_lessons.judge_outbound(tool_name, tool_input, cwd)  # a tool other than Bash that sends text
+       Both take transcript=<the hook input's transcript_path> and agent_id=<its agent_id> for the unseen-hash rule
+       (default None: without a transcript it passes).
 Rules: the built-in rules below, adjusted and extended by registry files. The global registry is
 $LESSONS_GUARDS_GLOBAL_FILE or ~/.agents/lesson-guards.json; the project registry is .agents/lesson-guards.json,
 searched from $CLAUDE_PROJECT_DIR (else the hook's cwd) upward. Format:
@@ -12,18 +15,30 @@ searched from $CLAUDE_PROJECT_DIR (else the hook's cwd) upward. Format:
     {"lesson": "L031", "program": "git", "subcommand": "push", "args_any": ["--force", "-f"],
      "reason": "Force-pushed a shared branch. Push a new branch instead."}]}  # a rule of your own
 A rule of your own matches a simple command by its program (a name or a list of names, never a path),
-optionally its first operand (subcommand; for git, after the values of -C, -c, --git-dir and the like), any of `args_any` (exact words; a single letter such as -f also
-matches inside a cluster such as -fq), any of `assignments_any` (VAR=value words before the program), and
-`in_loop` (the command is the condition of while/until). A built-in rule named in both registries takes the
-project entry. Any entry may carry "min_version": "X.Y.Z", the oldest hook that should apply it; an older hook
-skips it, so a registry shared by sessions on different versions stays usable everywhere. The registry fails
+optionally its first operand (subcommand; for git, after the values of -C, -c, --git-dir and the like; a list such
+as ["pr", "merge"] names the leading operands in order, option words and gh's -R/--repo value skipped), any of
+`args_any` (exact words; a
+single letter such as -f also matches inside a cluster such as -fq), all of `args_all`, none of `args_none` (words
+anywhere among the arguments, option values included; a long option also counts when written as --opt=value, but
+not with an empty value), any of `assignments_any` (VAR=value words before the program), and `in_loop` (the
+command is the condition of while/until). args_all, args_none and a subcommand list need a hook from 1.29.0: give
+such an entry "min_version": "1.29.0". Example, merge only a pinned head:
+    {"lesson": "G026", "program": "gh", "subcommand": ["pr", "merge"],
+     "args_none": ["--match-head-commit", "--disable-auto", "--help", "-h"], "min_version": "1.29.0",
+     "reason": "Merge only the head that was reviewed: gh pr merge N --match-head-commit <sha>."}
+The shorter form "subcommand": "pr", "args_all": ["merge"] also refuses gh pr list --label merge and
+gh pr create --title merge, since args_all reads option values too.
+A built-in rule named in both registries takes the project entry. Any entry may carry "min_version": "X.Y.Z", the
+oldest hook that should apply it; an older hook skips it, so a registry shared by sessions on different versions
+stays usable everywhere. The registry fails
 safe per entry: an entry this hook cannot use (unknown rule or key, wrong type) is skipped, and a file that does
 not parse is skipped whole, but every other entry and every built-in rule still apply and no command is refused
 for it. registry_problems(cwd) lists what was skipped; `lessons.py guards` checks the registries against every
 installed hook version, and the session-start lessons header reports skipped entries.
 Words are judged after quotes are removed, so `grep "while pgrep -f"`, commit messages and echo text pass;
 here-document bodies are dropped; the script of `sh -c` and `eval` is judged too. A $NAME or ${NAME} in the
-program or script word is read from an assignment earlier in the same command line (`S=x.py; python3 $S -h`).
+program or script word is read from an assignment earlier in the same command line (`S=x.py; python3 $S -h`,
+`S=./notify.sh; $S team "text"`); a script run by a shell (`bash path/notify.sh`) matches `programs` by its name.
 Not seen: names set outside the command line, commands run through xargs, ssh or a script file.
 Built-in rules:
   pgrep-wait-loop    while/until pgrep -f: the pattern matches the waiting shell's own command line, so the loop
@@ -38,6 +53,9 @@ Built-in rules:
   calendar           in text a call sends (gh comments, PRs and issues, git commit messages, the registry's
                      `programs`, outbound MCP tools): a weekday that does not match its date, a date that does
                      not exist, a guessed time (16:4x), and with "workweek" (Sun-Thu) a promise on another day.
+                     "guessed_times": false (hooks from 1.29.0, so give that entry "min_version": "1.29.0")
+                     turns the guessed-time check off, for teams whose messages carry informal times
+                     ("checked 14:5x"); weekdays, dates and the workweek are still judged.
                      "exceptions": "workdays.txt" names a file of approved extra workdays, one line per date,
                      `YYYY-MM-DD approved-by <who>: <reason>` (# comments allowed); a promise on a listed date
                      passes, and the refusal names the file. A relative path is read from the folder of the
@@ -57,10 +75,30 @@ Built-in rules:
                      Stop gate counts: tool and subcommand, flags and wrappers ignored) or a `git push` (same
                      operands) that failed last in this session and has no later pass, run again before a cause note
                      (`lessons.py cause "<assertion or check>: <cause or unknown>"`) was recorded after the failure.
+  shell-syntax       off until a registry entry names it. A command the shell cannot parse (`<shell> -n`, "shell":
+                     "bash" by default; bash, sh, dash, zsh, ksh or mksh), refused before any part runs: an
+                     apostrophe inside a single-quoted argument ends the quote, and the lines before the error would
+                     run. Set "shell" to the shell the agent runs commands in (zsh where that is the login shell):
+                     a bash parse refuses valid zsh syntax. Judged first. Passes when the shell is missing or slow.
+                     Entries need "min_version": "1.29.0".
+                     See guard_syntax.py.
+  unseen-hash        off until a registry entry names it (give it "min_version": "1.29.0"). In the same outbound text
+                     as calendar (for git commit and tag, the message only), a commit-like hash (7 to 40 lowercase
+                     hex characters with a digit and a letter, not a UUID segment, not part of a longer hex run, not
+                     after #; a # after it and URLs included) that is not a prefix of a hex run in an entry of this
+                     session's transcript, or the subagent's own, that the assistant did not write (user text such
+                     as prompts, briefs and peer messages, tool results, queued messages and attachments; never the
+                     assistant's text, thinking or tool inputs, request copies of them or compaction summaries; the
+                     last "window_mb" MB, default and maximum 16). "allow": words that are not hashes (ed25519 and
+                     binary literals are built in). MCP id fields (id, message_id, threadId; not sha) are not
+                     judged. Fails open when the transcript is missing, unreadable or slow (on a timeout, only
+                     hashes already judged unseen refuse). See guard_unseen_hash.py.
 Also not seen: a pgrep inside a quoted "$(...)" in a loop condition or in the loop body (`while true; do pgrep -f x
 || break; done`), and a here-document fed to a shell
 (`bash <<EOF`), whose body is dropped as data.
-Time budget: string work and at most a few stat calls and two small file reads per Bash call.
+Time budget: string work and at most a few stat calls and two small file reads per Bash call, plus one `<shell> -n`
+run (at most 1 s) when shell-syntax is on; unseen-hash adds one bounded transcript read (0.2 s at most), only when an
+outbound text holds a hash.
 """
 import datetime as dt
 import json
@@ -71,6 +109,8 @@ from pathlib import Path
 
 import guard_calendar
 import guard_destructive as shell
+import guard_syntax
+import guard_unseen_hash
 
 Hit = namedtuple("Hit", "lesson rule reason")
 
@@ -81,6 +121,7 @@ LOOP_WORDS = frozenset(("while", "until"))
 INTERPRETERS = frozenset("node python python3 bash sh zsh dash ksh ruby perl deno bun".split())
 SCRIPT_SUFFIXES = (".sh", ".bash", ".py", ".js", ".mjs", ".cjs", ".ts", ".rb", ".pl")
 INSTALLED_DIRS = ("node_modules/", ".venv/", "venv/", "site-packages/")
+GH_REPO_OPTIONS = frozenset(("-R", "--repo"))  # gh options whose value comes before a subcommand
 GIT_VALUE_OPTIONS = "mFcCtuS"  # a commit option letter that takes the rest of its cluster as its value (-uno)
 GIT_OPTIONS_WITH_VALUE = frozenset(("-m", "-F", "-c", "-C", "-t", "--message", "--file", "--author", "--date",
                                     "--template", "--cleanup", "--fixup", "--squash", "--reuse-message",
@@ -104,15 +145,23 @@ BUILT_IN_REASONS = {
                  "echo rc=$?` and read the file.",
     "rerun-after-red": "This check or push failed and was not read. Read the failing lines, state the cause, record it "
                        'with `python3 {lessons} cause "<failing assertion or check>: <cause or unknown>"`, then rerun.',
+    "shell-syntax": "The shell cannot parse this command, so none of it was run: {error}. Put free text in a file with "
+                    "the Write tool or in a quoted heredoc (<<'EOF'), never inline in single quotes, then run the "
+                    "fixed command.",
+    "unseen-hash": "Commit hash {hashes} appears in no tool output of this session. Copy each hash from a git/gh "
+                   "output of this turn (run `git log -1 --format=%H <ref>` or `gh pr view N --json mergeCommit`), "
+                   'never from memory. A word that is not a commit hash: reword it, or add it to the entry\'s "allow" '
+                   "list.",
 }
-OPT_IN = frozenset(("rerun-after-red",))  # off until a registry entry names it
-ENTRY_KEYS = {"rule", "lesson", "reason", "enabled", "programs", "min_version", "workweek", "exceptions", "approvers"}
-TAKES_PROGRAMS = ("help-probe", "secret-in-message", "calendar")
-CUSTOM_KEYS = {"lesson", "reason", "program", "subcommand", "args_any", "assignments_any", "in_loop", "min_version"}
+OPT_IN = frozenset(("rerun-after-red", "shell-syntax", "unseen-hash"))  # off until a registry entry names it
+ENTRY_KEYS = {"rule", "lesson", "reason", "enabled", "programs", "min_version", "workweek", "exceptions", "approvers",
+              "shell", "window_mb", "allow", "guessed_times"}
+TAKES_PROGRAMS = ("help-probe", "secret-in-message", "calendar", "unseen-hash")
+CUSTOM_KEYS = {"lesson", "reason", "program", "subcommand", "args_any", "args_all", "args_none", "assignments_any",
+               "in_loop", "min_version"}
 VERSION_SHAPE = re.compile(r"\d{1,6}\.\d{1,6}\.\d{1,6}", re.ASCII)
 REGISTRY_MAX_BYTES = 1_000_000
 APPROVED_KEY, EXCEPTIONS_FILE_KEY = "_approved_workdays", "_exceptions_file"  # set by read_registry, never in a file
-VARIABLE = re.compile(r"\$(?:\{(\w+)\}|(\w+))")
 CODE_OR_MODULE = frozenset(("-c", "-e", "-m", "-p", "--eval", "--print"))  # the next word is code or a module
 
 
@@ -281,17 +330,14 @@ def is_local_script(word, programs):
 
 
 def script_and_args(cmd):
-    """(script word, its arguments) for `./x.sh a` and `python3 x.py a`; ('', []) otherwise."""
-    if cmd.name in INTERPRETERS:
-        index = next((i for i, arg in enumerate(cmd.args) if not arg.startswith("-")), None)
-        return (cmd.args[index], cmd.args[index + 1:]) if index is not None else ("", [])
-    return cmd.word, cmd.args
-
-
-def expand(word, variables):
-    """The word with each $NAME and ${NAME} replaced by its latest value in `variables`; unknown names stay."""
-    values = dict(variable.split("=", 1) for variable in variables)
-    return VARIABLE.sub(lambda match: values.get(match.group(1) or match.group(2), match.group(0)), word)
+    """(script word, its arguments) for `./x.sh a`, `python3 x.py a` and `bash -o pipefail x.sh a` (a shell's -o, -O,
+    --rcfile value is not the script); ('', []) otherwise."""
+    if cmd.name not in INTERPRETERS:
+        return cmd.word, cmd.args
+    is_shell, index = cmd.name in shell.SHELLS, 0
+    while index < len(cmd.args) and (cmd.args[index][:1] in ("-", "+") if is_shell else cmd.args[index][:1] == "-"):
+        index += 2 if is_shell and cmd.args[index] in guard_calendar.SHELL_OPTIONS_WITH_VALUE else 1
+    return (cmd.args[index], cmd.args[index + 1:]) if index < len(cmd.args) else ("", [])
 
 
 def help_probe(cmd, entry):
@@ -299,8 +345,8 @@ def help_probe(cmd, entry):
     probed = "--help" in args or args == ["-h"]  # `-h host` is an option with a value, not a probe
     if not (probed and script):
         return False
-    resolved = expand(script, cmd.variables)
-    if cmd.name in INTERPRETERS and VARIABLE.fullmatch(resolved):
+    resolved = shell.expand(script, cmd.variables)
+    if cmd.name in INTERPRETERS and shell.VARIABLE.fullmatch(resolved):
         before = cmd.args[cmd.args.index(script) - 1] if cmd.args.index(script) else ""
         return before not in CODE_OR_MODULE  # an unknown script, unless it is `-c "$CODE"` or `-m "$MODULE"`
     return is_local_script(resolved, entry.get("programs") or [])
@@ -309,6 +355,7 @@ def help_probe(cmd, entry):
 def secret_in_message(cmd, entry):
     programs = entry.get("programs") or []
     script, args = script_and_args(cmd)
+    script = shell.expand(script, cmd.variables)  # `S=./notify.sh; $S team "text"`
     if not any(p in (script, script.rpartition("/")[2], cmd.name) for p in programs if p):
         return False
     from ledger_store import find_secret  # imported here: most commands never reach it
@@ -318,8 +365,29 @@ def secret_in_message(cmd, entry):
 BUILT_IN = {"pgrep-wait-loop": pgrep_wait_loop, "hook-bypass": hook_bypass, "help-probe": help_probe,
             "secret-in-message": secret_in_message, "rerun-after-red": rerun_after_red,
             "pipe-exit": lambda cmd, entry: False,  # judged on the whole command: see pipe_exit
-            "calendar": lambda cmd, entry: False}  # judged on the text a call sends: see calendar_hit
-WHOLE_COMMAND = frozenset(("pipe-exit", "calendar"))
+            "calendar": lambda cmd, entry: False,  # judged on the text a call sends: see outbound_hit
+            "unseen-hash": lambda cmd, entry: False,
+            "shell-syntax": lambda cmd, entry: False}  # judged on the whole command first: see judge
+OUTBOUND = ("calendar", "unseen-hash")
+WHOLE_COMMAND = frozenset(("pipe-exit", "shell-syntax") + OUTBOUND)
+
+
+def has_word(args, word, long_value=False):
+    """The exact word, a single letter such as -f inside a cluster (-fq), and with long_value a long option written
+    as --opt=value. With long_value, a long option given an empty value (--opt= or --opt "") does not count."""
+    if long_value and word.startswith("--"):
+        return any((arg == word and args[index + 1:index + 2] != [""])
+                   or (arg.startswith(word + "=") and arg != word + "=") for index, arg in enumerate(args))
+    return word in args or bool(re.match(r"^-[A-Za-z]$", word) and has_option(args, word[1]))
+
+
+def leading_operands(cmd):
+    """The words that are not options, in order; for git, from the subcommand on (after -C dir and the like); for
+    gh, without the value of -R/--repo (gh pr -R o/r merge)."""
+    args = cmd.args[git_subcommand(cmd.args)[0]:] if cmd.name == "git" else cmd.args
+    takes_value = GH_REPO_OPTIONS if cmd.name == "gh" else ()
+    return [arg for index, arg in enumerate(args)
+            if not arg.startswith("-") and not (index and args[index - 1] in takes_value)]
 
 
 def custom_match(cmd, entry):
@@ -327,15 +395,17 @@ def custom_match(cmd, entry):
     if cmd.name not in programs:
         return False
     if "subcommand" in entry:
-        found = git_subcommand(cmd.args)[1] if cmd.name == "git" else next(
-            (a for a in cmd.args if not a.startswith("-")), None)
-        if found != entry["subcommand"]:
+        wanted = entry["subcommand"] if isinstance(entry["subcommand"], list) else [entry["subcommand"]]
+        if leading_operands(cmd)[:len(wanted)] != wanted:
             return False
     if entry.get("in_loop") and not cmd.in_loop:
         return False
     wanted = entry.get("args_any")
-    if wanted and not any(arg in cmd.args or (re.match(r"^-[A-Za-z]$", arg) and has_option(cmd.args, arg[1]))
-                          for arg in wanted):
+    if wanted and not any(has_word(cmd.args, word) for word in wanted):
+        return False
+    if not all(has_word(cmd.args, word, True) for word in entry.get("args_all", ())):
+        return False
+    if any(has_word(cmd.args, word, True) for word in entry.get("args_none", ())):
         return False
     assignments = entry.get("assignments_any")
     return not assignments or any(a in cmd.assignments for a in assignments)
@@ -366,11 +436,12 @@ def validate(entry, where):
         names = [program] if isinstance(program, str) else program
         if not text_list(names) or any("/" in name for name in names):
             raise RegistryError(f"{where}: program must be a name or a list of names, without a directory")
-        for key in ("args_any", "assignments_any"):
+        for key in ("args_any", "args_all", "args_none", "assignments_any"):
             if key in entry and not text_list(entry[key]):
                 raise RegistryError(f"{where}: {key} must be a list of words")
-        if "subcommand" in entry and not (isinstance(entry["subcommand"], str) and entry["subcommand"]):
-            raise RegistryError(f"{where}: subcommand must be a word")
+        subcommand = entry.get("subcommand")
+        if "subcommand" in entry and not ((isinstance(subcommand, str) and subcommand) or text_list(subcommand)):
+            raise RegistryError(f"{where}: subcommand must be a word or a list of words")
         if "in_loop" in entry and not isinstance(entry["in_loop"], bool):
             raise RegistryError(f"{where}: in_loop must be true or false")
         return
@@ -399,6 +470,24 @@ def validate(entry, where):
             raise RegistryError(f"{where}: approvers is for the calendar rule only")
         if not (text_list(entry["approvers"]) and all(item.strip() for item in entry["approvers"])):
             raise RegistryError(f"{where}: approvers must be a list of names")
+    if "guessed_times" in entry and (entry["rule"] != "calendar" or not isinstance(entry["guessed_times"], bool)):
+        raise RegistryError(f"{where}: guessed_times is true or false, for the calendar rule only")
+    if "shell" in entry and (entry["rule"] != "shell-syntax" or not isinstance(entry["shell"], str)
+                             or entry["shell"] not in guard_syntax.SHELLS):
+        raise RegistryError(f"{where}: shell is for the shell-syntax rule only, one of {sorted(guard_syntax.SHELLS)}")
+    if "window_mb" in entry:
+        if entry["rule"] != "unseen-hash":
+            raise RegistryError(f"{where}: window_mb is for the unseen-hash rule only")
+        value = entry["window_mb"]
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not \
+                0 < value <= guard_unseen_hash.MAX_WINDOW_MB:
+            raise RegistryError(f"{where}: window_mb must be a number of megabytes above 0, at most "
+                                f"{guard_unseen_hash.MAX_WINDOW_MB}")
+    if "allow" in entry:
+        if entry["rule"] != "unseen-hash":
+            raise RegistryError(f"{where}: allow is for the unseen-hash rule only")
+        if not (text_list(entry["allow"]) and all(item.strip() for item in entry["allow"])):
+            raise RegistryError(f"{where}: allow must be a list of words that are not commit hashes")
 
 
 def valid_min_version(value):
@@ -646,10 +735,13 @@ def pipe_exit(command, is_check, depth=0):
         return bool(is_check and is_check(text)) or (bool(script) and is_local_script(script, []))
 
     items = list_items(command)
+    status_read_after = [False] * len(items)  # a ${PIPESTATUS[...]} read in any later item, found in one pass
+    for index in range(len(items) - 2, -1, -1):
+        status_read_after[index] = status_read_after[index + 1] or any(
+            PIPESTATUS_READ.search(word) for stage in items[index + 1]["stages"] for word in stage)
     pipefail, pending = False, None
     for index, item in enumerate(items):
         stages = item["stages"]
-        later = [word for rest in items[index + 1:] for stage in rest["stages"] for word in stage]
         if pending is not None:  # the pipeline before this item, ended by ; or a newline or &
             if (stages and any(STATUS_READ.search(word) for word in stages[0])) or \
                     (not stages and item["op"] in CHAIN_OPERATORS):
@@ -658,7 +750,7 @@ def pipe_exit(command, is_check, depth=0):
                 pending = None
         if len(stages) == 1:
             pipefail = set_pipefail(stages[0], pipefail)
-        if len(stages) < 2 or pipefail or any(PIPESTATUS_READ.search(word) for word in later):
+        if len(stages) < 2 or pipefail or status_read_after[index]:
             continue
         if not (any(runs_check(stage) for stage in stages[:-1]) and not runs_check(stages[-1])):
             continue
@@ -695,38 +787,59 @@ def calendar_hit(entry, texts):
         return None
     workweek = guard_calendar.parse_workweek(entry["workweek"]) if "workweek" in entry else None
     found = [problem for text in texts for problem in guard_calendar.problems(text, today(), workweek, entry.get(APPROVED_KEY, ()),
-                                                                  entry.get(EXCEPTIONS_FILE_KEY))]
+                                                                  entry.get(EXCEPTIONS_FILE_KEY),
+                                                                  entry.get("guessed_times", True))]
     if not found:
         return None
     reason = entry.get("reason") or BUILT_IN_REASONS["calendar"].replace("{problems}", "; ".join(dict.fromkeys(found)))
     return Hit(entry.get("lesson"), "calendar", reason)
 
 
-def judge_outbound(tool_name, tool_input, cwd):
-    """The calendar rule for a tool other than Bash that sends text to people (an MCP send, reply, comment, post,
-    draft, create or update); None for every other tool or when it is clean or switched off."""
-    entry = next((entry for name, entry, _ in rules(cwd) if name == "calendar"), None)
-    if entry is None:
+def outbound_hit(name, entry, tool_name, tool_input, transcript, agent_id=None):
+    """Hit for an outbound rule (calendar, unseen-hash) on the text this call sends; None when it is clean."""
+    texts = guard_calendar.outbound_texts(tool_name, tool_input, entry.get("programs") or [], shell,
+                                          messages_only=name == "unseen-hash")
+    if name == "calendar":
+        return calendar_hit(entry, texts)
+    found = guard_unseen_hash.unseen(texts, transcript, entry.get("window_mb"), agent_id=agent_id,
+                                     allow=entry.get("allow"))
+    if not found:
         return None
-    return calendar_hit(entry, guard_calendar.outbound_texts(tool_name, tool_input, entry.get("programs") or [],
-                                                            shell))
+    reason = entry.get("reason") or BUILT_IN_REASONS[name].replace("{hashes}", guard_unseen_hash.named(found))
+    return Hit(entry.get("lesson"), name, reason)
 
 
-def judge(command, cwd, session=None, is_check=None):
+def judge_outbound(tool_name, tool_input, cwd, transcript=None, agent_id=None):
+    """The outbound rules for a tool other than Bash that sends text to people (SendMessage, or an MCP send, reply,
+    comment, post, draft, create or update); None for every other tool or when it is clean or switched off. transcript, agent_id:
+    the session transcript path and the subagent id, read by unseen-hash."""
+    for name, entry, _ in rules(cwd):
+        hit = outbound_hit(name, entry, tool_name, tool_input, transcript, agent_id) if name in OUTBOUND else None
+        if hit:
+            return hit
+    return None
+
+
+def judge(command, cwd, session=None, is_check=None, transcript=None, agent_id=None):
     """The first rule the command breaks, as Hit(lesson id or None, rule name, reason); None when it breaks none.
     session: a function returning {"red": failed check and push keys, "keys": the command's check keys}, called only
     by a rule that needs it. is_check: a function telling whether a command text runs a test, build, lint or CI
-    check (guard.py passes its own); without it only local scripts count as checks for pipe-exit. A registry problem
-    never raises: the entry is skipped (registry_problems lists it)."""
+    check (guard.py passes its own); without it only local scripts count as checks for pipe-exit. transcript,
+    agent_id: the session transcript path and the subagent id, read by unseen-hash (without a transcript it passes).
+    A registry problem never raises: the entry is skipped (registry_problems lists it)."""
     if not isinstance(command, str) or not command.strip():
         return None
     active = rules(cwd)
+    syntax = next((entry for name, entry, _ in active if name == "shell-syntax"), None)
+    error = guard_syntax.parse_error(command, syntax.get("shell", "bash")) if syntax else None
+    if error:  # first: the other rules read the words of a command the shell would split another way
+        return Hit(syntax.get("lesson"), "shell-syntax",
+                   syntax.get("reason") or BUILT_IN_REASONS["shell-syntax"].replace("{error}", error))
     for name, entry, _ in active:
         if name == "pipe-exit" and pipe_exit(command, is_check):
             return Hit(entry.get("lesson"), name, entry.get("reason") or BUILT_IN_REASONS[name])
-        if name == "calendar":
-            hit = calendar_hit(entry, guard_calendar.outbound_texts("Bash", {"command": command},
-                                                                    entry.get("programs") or [], shell))
+        if name in OUTBOUND:
+            hit = outbound_hit(name, entry, "Bash", {"command": command}, transcript, agent_id)
             if hit:
                 return hit
     active = [rule for rule in active if rule[0] not in WHOLE_COMMAND]
