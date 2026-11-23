@@ -44,12 +44,14 @@ Consult: [Plan, Apply & Rollback Reference](./references/plan-apply-and-rollback
 2. Write the plan to a file and read it by machine: refuse any action that is not a create, any resource kind outside the allow-list, and any name the live system already holds for someone else.
 3. Write the rollback step and its trigger before anyone approves: the exact command that removes only what this change adds.
 4. Show a human owner the table of what is added, changed, and removed, and wait for their written go-ahead. Every time, with no standing approval.
+5. Cluster namespaces: no `kubectl apply` into a shared namespace until `scripts/kube_apply_check.py check` (explicit `--context`, server-side dry run) finds no existing object that would be changed (any existing object is refused, as it is looked up with `get`, not field-diffed), except our own objects that carry our owner label and only with `--allow-update`. It writes the reviewed plan file.
 
 ### Step 4: Apply Exactly the Reviewed Plan
 1. Apply the saved plan file, never a fresh plan. Refuse a plan older than 30 minutes or one made against a different state.
 2. One writer at a time: state locking on, and no console or direct API write outside the reviewed path.
 3. Read credentials from the environment or a secret store. Never put them in arguments, logs, state, or the conversation; show a length at most.
 4. A change or removal of our own items needs an explicit flag on both plan and apply, and its own go-ahead.
+5. Cluster namespaces: apply the saved plan only through `scripts/kube_apply_check.py apply --plan` (manifest hash, plan age, live resourceVersions re-checked; client-side apply, never prune, force or overwrite). Never run a bare `kubectl apply`. Exit codes: 0 ok, 1 refused, 2 usage or kubectl error, 4 timeout (nothing written), 3 the write may have happened (inspect the namespace before retrying). Threat model: the plan file is not signed. The gate catches honest mistakes and drift, not someone who can edit both the plan and the manifest.
 
 ### Step 5: Prove Nothing Else Moved
 1. Plan again: it must report no changes. Anything else is drift; stop and investigate before a second apply.
@@ -70,6 +72,9 @@ tofu show -json change.tfplan | jq -e \
 tofu apply change.tfplan                               # only after the written go-ahead
 tofu plan -detailed-exitcode                           # 0 = no changes; 2 = drift, stop
 dig +short app-staging.example.com                     # the outside check for a DNS addition
+python3 <skill>/scripts/kube_apply_check.py check -f out.yaml --namespace NS --context CTX \
+  --owner-label owner=us --plan change.plan.json       # exit 1: an existing object not ours would change
+python3 <skill>/scripts/kube_apply_check.py apply --plan change.plan.json -f out.yaml          # dry run; add --yes only after the go-ahead
 ```
 
 | Area | Finding | Risk | Severity | Fix |
