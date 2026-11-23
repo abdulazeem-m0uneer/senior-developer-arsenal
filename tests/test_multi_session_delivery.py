@@ -5,6 +5,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import unittest
 import unittest.mock
@@ -36,7 +37,7 @@ class FakeGh:
         self.view, self.merge, self.after = view, merge, after or {"state": "MERGED", "mergeCommit": {"oid": "d" * 40}}
         self.calls = []
 
-    def __call__(self, args):
+    def __call__(self, args, **_limits):
         self.calls.append(args)
         if args[:2] == ["pr", "merge"]:
             return self.merge
@@ -48,11 +49,11 @@ class FakeGh:
         return [call for call in self.calls if call[:2] == ["pr", "merge"]]
 
 
-def fake_slow_gh():
-    """A directory holding a `gh` that never answers, joined with the current PATH."""
+def fake_slow_gh(prints=""):
+    """A directory holding a `gh` that runs `prints` and then never answers, joined with the current PATH."""
     directory = tempfile.TemporaryDirectory()
     gh = Path(directory.name) / "gh"
-    gh.write_text("#!/bin/sh\nexec sleep 60\n")
+    gh.write_text(f"#!/bin/sh\n{prints}\nexec sleep 60\n")
     gh.chmod(0o755)
 
     class Slow:
@@ -140,7 +141,7 @@ class MergeGreenTests(unittest.TestCase):
 
     def test_unreadable_state_after_merge_exits_3(self):
         original = FakeGh(pull(comments=[review_line()]), merge=(1, "HTTP 502"))
-        gh_calls = lambda args: (1, "HTTP 502") if any("mergeCommit" in a for a in args) else original(args)
+        gh_calls = lambda args, **_limits: (1, "HTTP 502") if any("mergeCommit" in a for a in args) else original(args)
         self.assertEqual(self.run_merge(gh_calls, yes=True), 3)
         self.assertIn("check it by hand", self.err[0])
 
@@ -192,6 +193,83 @@ class MergeGreenTests(unittest.TestCase):
             code, text = merge_green.run_gh(["pr", "view", "7"], timeout=0.5)
         self.assertEqual((code, text), (merge_green.GH_TIMED_OUT, "gh did not answer in 0.5 s"))
         self.assertLess(time.monotonic() - started, 10)
+
+    def test_interrupted_wait_kills_gh_before_raising(self):
+        started = []
+
+        class InterruptedPopen(subprocess.Popen):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                started.append(self)
+
+            def wait(self, timeout=None):
+                if timeout is not None and self.returncode is None:
+                    raise KeyboardInterrupt  # Ctrl-C while gh is still running
+                return super().wait(timeout)
+
+        with fake_slow_gh() as path, unittest.mock.patch.dict(os.environ, {"PATH": path}), \
+                unittest.mock.patch.object(merge_green.subprocess, "Popen", InterruptedPopen), \
+                self.assertRaises(KeyboardInterrupt):
+            merge_green.run_gh(["pr", "view", "7"], timeout=30)
+        self.assertEqual(len(started), 1)
+        self.assertIsNotNone(started[0].poll(), "gh was left running after the interrupt")
+
+    def run_printing_gh(self, prints, limit):
+        with fake_slow_gh(prints) as path, unittest.mock.patch.dict(os.environ, {"PATH": path}):
+            started = time.monotonic()
+            answer = merge_green.run_gh(["pr", "view", "7"], timeout=30, limit=limit)
+        return answer, time.monotonic() - started
+
+    def run_merge_with_gh_printing(self, size):
+        """merge_green's own view against a real `gh` process whose answer is a PR with one comment of `size` bytes."""
+        script = ("printf '{\"state\":\"OPEN\",\"isDraft\":false,\"headRefOid\":\"%s\",\"statusCheckRollup\":[],"
+                  "\"comments\":[{\"body\":\"' " + "x" * 0 + HEAD + "; "
+                  f"head -c {size} /dev/zero | tr '\\0' x; printf '\"}}]}}'")
+        out, err = [], []
+        with tempfile.TemporaryDirectory() as directory:
+            gh = Path(directory) / "gh"
+            gh.write_text(f"#!/bin/sh\n{script}\n")
+            gh.chmod(0o755)
+            with unittest.mock.patch.dict(os.environ, {"PATH": f"{directory}:{os.environ['PATH']}"}):
+                code = merge_green.merge_green(7, runner=merge_green.run_gh, out=out.append, err=err.append)
+        return code, err
+
+    def test_pr_view_between_1_mb_and_its_own_limit_is_judged_not_refused_as_too_long(self):
+        code, err = self.run_merge_with_gh_printing(1_500_000)
+        self.assertEqual(code, 1)  # judged: no checks, so refused by judge()
+        self.assertTrue(err[0].startswith("refused: #7"), err)
+
+    def test_pr_view_over_its_own_limit_is_an_error(self):
+        with unittest.mock.patch.object(merge_green, "PR_VIEW_MAX_OUTPUT", 2_000_000):
+            code, err = self.run_merge_with_gh_printing(2_500_000)
+        self.assertEqual(code, 2)
+        self.assertIn("over 2000000 bytes", err[0])
+
+    def test_oversized_answer_is_cut_off_and_gh_killed_at_once(self):
+        for stream in ("", " >&2"):
+            with self.subTest(stream=stream or "stdout"):
+                (code, text), took = self.run_printing_gh(f"head -c 1001 /dev/zero | tr '\\0' x{stream}", 1000)
+                self.assertEqual((code, text), (merge_green.GH_TOO_LONG, "gh answered with over 1000 bytes"))
+                self.assertLess(took, 10)
+
+    def test_oversized_answer_kills_gh_from_the_waiting_thread_only(self):
+        signalled_from = []
+
+        class RecordingPopen(subprocess.Popen):
+            def send_signal(self, sig):
+                signalled_from.append(threading.current_thread())  # a reader thread could race the reap
+                super().send_signal(sig)
+
+        with unittest.mock.patch.object(merge_green.subprocess, "Popen", RecordingPopen):
+            (code, _), took = self.run_printing_gh("head -c 1001 /dev/zero | tr '\\0' x", 1000)  # gh then hangs
+        self.assertEqual(code, merge_green.GH_TOO_LONG)
+        self.assertLess(took, 10)
+        self.assertTrue(signalled_from, "gh was never killed")
+        self.assertEqual(set(signalled_from), {threading.current_thread()})
+
+    def test_answer_of_exactly_the_limit_is_read_whole(self):
+        (code, text), _ = self.run_printing_gh("head -c 1000 /dev/zero | tr '\\0' x; exit 0", 1000)
+        self.assertEqual((code, text), (0, "x" * 1000))
 
     def test_approved_review_on_the_head_is_enough(self):
         gh = FakeGh(pull(reviews=[{"state": "APPROVED", "commit": {"oid": HEAD}, "author": {"login": "lead"}}]))
