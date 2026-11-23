@@ -20,6 +20,7 @@ How the coordinator's timed work runs so that reports and watches happen on time
 4. Schedule the job at least 30 minutes before the deadline it feeds.
 5. Read back the scheduler's own next run with `timer.py check` before promising a time to anyone.
 6. Pause with the pause file, never by stopping and starting the timer: restarting a `Persistent` timer fires a missed run at once.
+7. Never switch a watcher off (a timer, a cron watcher, a resource watcher) to change it: the watched thing runs unwatched meanwhile. Change it in place (`timer.py make --force`, then `daemon-reload`), or start the new one before stopping the old, then confirm it is active with `timer.py check`. launchd has no in-place reload: run the `reload:` line that `timer.py launchd --force` prints as one command, so the job is off only between its two calls, then confirm it with `launchctl list NAME`.
 
 The margin check (rule 4) judges the first run only. In the command, `%` and `$` are escaped for systemd, and a leading `-`, `@`, `+`, `!` or `:` keeps its systemd meaning. The state dir is made absolute; `launchd` bakes in the absolute interpreter and state dir.
 
@@ -53,7 +54,7 @@ The workday start is a small state file the coordinator writes when the sessions
 ## 3. Runner Contract
 
 One runner script starts every routine with the routine's prompt file:
-1. Takes a lock per routine; a second start while one runs exits `skipped`.
+1. Takes a lock per routine; a second start while one runs exits `skipped`. Children never get the lock fd (close-on-exec, or `flock -o` in shell): a long-lived child would keep the lock and every later start would skip.
 2. Puts the read-only shims first on `PATH` and runs the agent headless with a deny list for write tools outside the routine's own state folder.
 3. Applies a time limit and a daily quota check; over quota exits `skipped-quota`.
 4. Writes the log to `<log dir>/<routine>-<date>.log`. The last line is exactly one status word: `ok`, `partial` or `failed`.

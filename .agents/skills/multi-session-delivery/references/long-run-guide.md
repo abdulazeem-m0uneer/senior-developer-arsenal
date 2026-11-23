@@ -98,7 +98,7 @@ Evidence:
 
 Rules:
 1. The workday is N hours from when the sessions start (8 here). The coordinator writes the start into a small state file; watches skip outside it. In the last hour no lane starts a new build chain; 15 minutes before the end each lane sends its state and stops.
-2. Fixed-time work runs from system timers made with [timer.py](../scripts/timer.py): a validated `OnCalendar`, a oneshot bounded by `TimeoutStartSec`, a deadline margin. Read the next run with `timer.py check` before promising a time. Pause with `pause`, never by stopping the timer. Details in [routines.md](./routines.md).
+2. Fixed-time work runs from system timers made with [timer.py](../scripts/timer.py): a validated `OnCalendar`, a oneshot bounded by `TimeoutStartSec`, a deadline margin. Read the next run with `timer.py check` before promising a time. Pause with `pause`, never by stopping the timer. Change a timer or watcher in place, or start the new one before stopping the old, then `check` it: one switched off for a change left its target unwatched. Details in [routines.md](./routines.md).
 3. Extra workdays are approved, not assumed: one line per date in a workdays file outside the repository, `YYYY-MM-DD approved-by <who>: <reason>`. The arsenal's calendar hook guard (`hooks/guard_lessons.py`, its `exceptions` key) lets a promise on a listed date pass and refuses one on any other non-workday.
 
 Evidence:

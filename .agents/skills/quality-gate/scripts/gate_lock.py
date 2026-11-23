@@ -7,25 +7,31 @@ usage: gate_lock.py run [--lock PATH] [--max-minutes 45] [--wait-minutes 0] [--g
 
 Why: several sessions push from one machine and each push runs a full test and lint gate. A lock keeps them
 one at a time, but a run that was killed (terminal closed, OOM kill, crash) leaves a plain lock file behind
-and every later push waits for nobody. Here the only truth is a real OS lock (flock, msvcrt on Windows) that
-the kernel drops when every process holding it is gone. The holder record beside it is information only.
+and every later push waits for nobody. Here a real OS lock (flock, msvcrt on Windows), which the kernel drops
+when every process holding it is gone, decides while run lives. After run dies, the holder record beside it
+decides only while the gate group it names (this host) still has live processes, or while a live gate of this
+host recorded another lock file inode. Nothing else (age, an override) makes a lock stale.
 
 Rules:
-  * Kernel lock free: take it. A leftover record is replaced with one line "cleared stale gate lock: pid N
-    (dead|reused) started T: CMD". Nothing else makes a lock stale: there is no age limit and no override.
+  * Kernel lock free and no live recorded gate group: take it. A leftover record is replaced with one line
+    "cleared stale gate lock: pid N (dead|reused) started T: CMD". There is no age limit and no override.
   * Kernel lock held: busy, exit 5, with the holder from the record ("busy: held by pid N since T (cmd)", plus
     "running 73 min, over its 45 min limit" as a hint, and how to stop it: kill N), or, with no record,
     "held by a process that left no record ... find it with fuser <lock> or lsof <lock>".
-  * CMD runs in its own process group and inherits the lock file. When CMD exits, the rest of its group is
-    ended (SIGTERM, then SIGKILL after --grace-seconds, one line "stopped N leftover gate processes"), so a
-    leaked background process cannot keep the lock. SIGTERM, SIGINT and SIGHUP sent to run are forwarded to
-    the group and escalate to SIGKILL after the same grace. A hung gate is stopped by killing the pid the busy
-    message prints. (POSIX; on Windows only the direct child is stopped and the lock is not inherited.)
+  * CMD runs in its own process group and never inherits the lock fd: only run holds it, so a long-lived
+    descendant (a server, a watcher, one that calls setsid) cannot keep the lock after run ends. The record
+    names CMD's group; when run is gone (kill -9) but that group still has live processes, a new run is busy
+    ("pid N is gone but its gate (process group G) still runs") and status says held. When CMD exits, the rest
+    of its group is ended (SIGTERM, then SIGKILL after --grace-seconds, one line "stopped N leftover gate
+    processes"). SIGTERM, SIGINT and SIGHUP sent to run are forwarded to the group and escalate to SIGKILL after
+    the same grace. A hung gate is stopped by killing the pid the busy message prints. (POSIX; on Windows only
+    the direct child is stopped.)
 
 Commands:
   run -- CMD...   run CMD holding the lock; CMD's exit code is passed through (128 + N when it died of signal
                   N, 127 not found, 126 cannot be run). The record (JSON: pid, started, host, cwd, command,
-                  max_minutes) is written when the lock is taken and removed when CMD ends, whatever its exit.
+                  lock_inode, max_minutes, and gate_group plus gate_leader_start once CMD has started) is
+                  written when the lock is taken and removed when CMD ends, whatever its exit.
                   Busy: wait up to --wait-minutes (default 0, polling 1 s doubling to 10 s), then exit 5.
                   A failure while ending CMD's group or removing the record is reported on stderr and never
                   replaces CMD's exit code.
@@ -39,8 +45,10 @@ The lock file is never deleted by this tool. If someone else removes it during a
 new file; so every record carries the lock file's inode, and a run that finds a live gate (this host, another
 pid) recorded under a different inode stays busy ("lock file was replaced while pid N runs") instead of
 clearing it. Limit: a pid reused by an unrelated process after its lock file was also removed stays busy until
-that pid ends or the holder record is deleted. A failed lock is retried 3 times, 50 ms apart, before it counts
-as held, so a racing `status` probe is not mistaken for a gate.
+that pid ends or the holder record is deleted. A recorded gate group counts only when it is not run's own or
+its parent's group and its leader (if alive) has the recorded start time, so a reused group id is not the gate.
+A run killed between starting CMD and recording its group leaves CMD unguarded. A failed lock is retried 3 times,
+50 ms apart, before it counts as held, so a racing `status` probe is not mistaken for a gate.
 
 Lock path: --lock, else $ARSENAL_GATE_LOCK, else <cache dir>/arsenal/gate.lock (per user; the cache dir is
 $XDG_CACHE_HOME or ~/.cache). The record is PATH.json. GATE_LOCK_NOW (ISO 8601 with offset) fixes the clock
@@ -207,7 +215,8 @@ def busy_message(path, rec):
         text += f", {over}"
     if pid_alive(rec["pid"]):
         return text + f"; to stop it: kill {rec['pid']}"
-    return text + f"; pid {rec['pid']} is gone, its leftover processes hold the lock: find them with `fuser {path}`"
+    return text + (f"; pid {rec['pid']} is gone and another process holds the lock (gated commands never get it): "
+                   f"find it with `fuser {path}`")
 
 
 def replaced_message(rec, path):
@@ -222,11 +231,13 @@ def stale_message(rec):
     return f"cleared stale gate lock: pid {rec['pid']} ({why}) started {rec['started']}: {rec['command']}"
 
 
-def _write_record(path, args, handle):
+def _write_record(path, args, handle, group=None):
     st = os.fstat(handle.fileno())
     rec = {"pid": os.getpid(), "started": clock().isoformat(), "host": socket.gethostname(), "cwd": os.getcwd(),
            "command": shlex.join(args.cmd), "lock_inode": [st.st_dev, st.st_ino],
            "max_minutes": int(args.max_minutes) if float(args.max_minutes).is_integer() else args.max_minutes}
+    if group:
+        rec["gate_group"], rec["gate_leader_start"] = group, process_start(group)
     tmp = Path(f"{path}.json.{os.getpid()}.tmp")
     tmp.write_text(json.dumps(rec), encoding="utf-8")
     os.replace(tmp, f"{path}.json")
@@ -242,6 +253,38 @@ def open_locked(path):
             return handle, True
         handle.close()  # removed or replaced between open and lock: lock the current file instead
     raise GateError(f"{path} keeps being replaced; nothing was locked")
+
+
+def process_start(pid):
+    """The process's start time as an opaque token; None when it is gone or unreadable. Tells a reused id apart."""
+    try:
+        return "proc:" + Path(f"/proc/{pid}/stat").read_text(encoding="ascii").rsplit(")", 1)[1].split()[19]
+    except (OSError, ValueError, IndexError):
+        pass
+    try:
+        done = subprocess.run(["ps", "-o", "lstart=", "-p", str(pid)], capture_output=True, text=True, timeout=10)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    started = done.stdout[:200].strip()
+    return "ps:" + started if done.returncode == 0 and started else None
+
+
+def gate_still_runs(rec):
+    """The recorded gate's process group (this host) still has live processes, though nobody holds the lock."""
+    group = rec.get("gate_group") if isinstance(rec, dict) else None
+    if not (os.name != "nt" and isinstance(group, int) and not isinstance(group, bool) and group > 1
+            and group not in protected_groups() and same_host(rec)):
+        return False
+    leader = process_start(group)  # the kernel never reuses an id while its group has members
+    if leader is not None and rec.get("gate_leader_start") not in (None, leader):
+        return False
+    return group_count(group) > 0
+
+
+def orphan_message(rec, path):
+    return (f"busy: pid {rec['pid']} is gone but its gate (process group {rec['gate_group']}) still runs "
+            f"(since {rec['started']}: {rec['command']}); stop it with `kill -- -{rec['gate_group']}`, "
+            f"or if that group is not the gate, delete the holder record {path}.json")
 
 
 def holder_outlived_its_lock_file(rec, handle):
@@ -266,6 +309,9 @@ def try_acquire(path, args, err):
         if isinstance(rec, dict) and holder_outlived_its_lock_file(rec, handle):
             handle.close()
             return None, replaced_message(rec, path)
+        if gate_still_runs(rec):
+            handle.close()
+            return None, orphan_message(rec, path)
         if rec is not None:
             err(stale_message(rec))
         _write_record(path, args, handle)
@@ -351,10 +397,9 @@ def end_group(pgid, grace, err):
 FORWARDED = tuple(getattr(signal, name) for name in ("SIGTERM", "SIGINT", "SIGHUP") if hasattr(signal, name))
 
 
-def run_command(cmd, handle, grace, err):
-    """Run cmd in its own process group holding the lock file; returns its exit code (128 + N for signal N)."""
-    kwargs = {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP} if os.name == "nt" \
-        else {"start_new_session": True, "pass_fds": (handle.fileno(),)}
+def run_command(cmd, record_group, grace, err):
+    """Run cmd in its own process group, without the lock fd; returns its exit code (128 + N for signal N)."""
+    kwargs = {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP} if os.name == "nt" else {"start_new_session": True}
     child, kill_at = None, []
 
     def forward(signum, frame):
@@ -370,6 +415,11 @@ def run_command(cmd, handle, grace, err):
     previous = {sig: signal.signal(sig, forward) for sig in FORWARDED}
     try:
         child = subprocess.Popen(cmd, **kwargs)
+        if os.name != "nt":
+            try:
+                record_group(child.pid)
+            except OSError as exc:  # the gate still runs; only the kill -9 guard is lost
+                err(f"gate_lock.py: could not record the gate's process group: {exc}")
         while True:
             try:
                 code = child.wait(timeout=0.2)
@@ -405,7 +455,7 @@ def cmd_run(args, out, err):
         time.sleep(backoff(attempt))
         attempt += 1
     try:
-        return run_command(args.cmd, handle, args.grace_seconds, err)
+        return run_command(args.cmd, lambda group: _write_record(path, args, handle, group), args.grace_seconds, err)
     except FileNotFoundError:
         err(f"gate_lock.py: command not found: {args.cmd[0]}")
         return 127
@@ -421,7 +471,7 @@ def cmd_run(args, out, err):
 
 def cmd_status(args, out, err):
     path = lock_path(args.lock)
-    if lock_is_free(path):
+    if lock_is_free(path) and not gate_still_runs(read_record(path)):
         out(json.dumps({"state": "free"}) if args.json else "free")
         return 0
     rec = read_record(path)

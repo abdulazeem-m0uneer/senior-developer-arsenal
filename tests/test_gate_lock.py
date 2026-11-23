@@ -1,5 +1,6 @@
 """gate_lock.py: the kernel lock decides busy, leftover processes ended, git lock report. Temp dirs only."""
 import json
+import shlex
 import errno
 import os
 import signal
@@ -84,6 +85,17 @@ class RunTests(Base):
         out = subprocess.run([PY, str(SCRIPT), "run", "--lock", self.lock, "--max-minutes", "9", "--", PY, "-c", probe],
                              capture_output=True, text=True, check=True).stdout
         self.assertEqual(out.split()[:2], ["True", "9"])
+
+    def test_docstring_names_every_record_field(self):
+        args = unittest.mock.Mock(cmd=["make", "gate"], max_minutes=9)
+        # fixed group: os.getpgrp() is 0 inside a pid namespace, which would skip the group fields
+        with open(self.lock, "a+b") as handle, \
+                unittest.mock.patch.object(gate_lock, "process_start", return_value="proc:1"):
+            gate_lock._write_record(self.lock, args, handle, group=4242)
+        fields = json.loads(self.rec.read_text(encoding="utf-8"))
+        self.assertEqual((fields["gate_group"], fields["gate_leader_start"]), (4242, "proc:1"))
+        missing = [name for name in fields if name not in gate_lock.__doc__]
+        self.assertEqual(missing, [])
 
     def test_record_removed_when_runner_raises(self):
         with unittest.mock.patch.object(gate_lock.subprocess, "Popen", side_effect=RuntimeError("boom")):
@@ -187,7 +199,7 @@ class BusyTests(Base):
         self.put(record(self.dead, cmd="make gate"), held=True)
         rc, _, err = self.run_gate()
         self.assertEqual(rc, 5)
-        self.assertIn(f"pid {self.dead} is gone, its leftover processes hold the lock", err)
+        self.assertIn(f"pid {self.dead} is gone and another process holds the lock (gated commands never get it)", err)
         self.assertIn(f"fuser {self.lock}", err)
         self.assertTrue(self.rec.exists())
 
@@ -220,6 +232,89 @@ class StaleTests(Base):
         rc, _, err = self.run_gate()
         self.assertEqual(rc, 0)
         self.assertIn(f"cleared stale gate lock: pid {self.dead} (dead) started {T0}: make gate", err)
+
+    def test_dead_gate_whose_group_still_runs_is_busy(self):
+        self.put({**record(self.dead), "gate_group": 4242})
+        with unittest.mock.patch.object(gate_lock, "group_count", return_value=2) as count:
+            rc, _, err = self.run_gate()
+        count.assert_called_with(4242)
+        self.assertEqual(rc, 5)
+        self.assertIn(f"pid {self.dead} is gone but its gate (process group 4242) still runs", err)
+        self.assertTrue(self.rec.exists())
+
+    def test_dead_gate_whose_group_ended_is_cleared(self):
+        self.put({**record(self.dead), "gate_group": 4242})
+        with unittest.mock.patch.object(gate_lock, "group_count", return_value=0):
+            rc, _, err = self.run_gate()
+        self.assertEqual(rc, 0)
+        self.assertIn(f"cleared stale gate lock: pid {self.dead} (dead)", err)
+
+    def test_unusable_or_foreign_gate_group_is_never_probed(self):
+        cases = [{"gate_group": value} for value in ("4242", True, 1, 0, -5, None)]
+        cases.append({"gate_group": 4242, "host": "elsewhere"})
+        for extra in cases:
+            with self.subTest(extra=extra):
+                with unittest.mock.patch.object(gate_lock, "group_count", return_value=2) as count:
+                    self.assertFalse(gate_lock.gate_still_runs({**record(self.dead), **extra}))
+                count.assert_not_called()
+        self.assertFalse(gate_lock.gate_still_runs(None))
+        self.assertFalse(gate_lock.gate_still_runs("corrupt"))
+
+    def test_own_or_parent_group_is_never_a_running_gate(self):
+        groups = [4242] + [g for g in (os.getpgrp(), os.getpgid(os.getppid())) if g > 1]
+        for group in groups:
+            with self.subTest(group=group):
+                self.put({**record(self.dead), "gate_group": group})
+                with unittest.mock.patch.object(gate_lock, "protected_groups", return_value={4242, *groups}), \
+                        unittest.mock.patch.object(gate_lock, "group_count",
+                                                   side_effect=lambda g: 2 if g in groups else 0) as count:
+                    rc, _, err = self.run_gate()
+                self.assertNotIn(unittest.mock.call(group), count.call_args_list)
+                self.assertEqual(rc, 0, err)
+                self.assertIn(f"cleared stale gate lock: pid {self.dead} (dead)", err)
+                self.assertNotIn("kill --", err)
+
+    def test_reused_group_id_is_told_apart_by_its_leader_start(self):
+        cases = (("proc:999", 0), ("proc:100", 5), (None, 5))  # new leader, same leader, leader gone but group lives
+        for now, expected in cases:
+            with self.subTest(leader_now=now):
+                self.put({**record(self.dead), "gate_group": 4242, "gate_leader_start": "proc:100"})
+                with unittest.mock.patch.object(gate_lock, "process_start", return_value=now) as start, \
+                        unittest.mock.patch.object(gate_lock, "group_count",
+                                                   side_effect=lambda g: 2 if g == 4242 else 0):
+                    rc, _, err = self.run_gate()
+                start.assert_any_call(4242)
+                self.assertEqual(rc, expected, err)
+
+    def test_orphan_message_says_how_to_clear_a_record_that_is_not_the_gate(self):
+        self.put({**record(self.dead), "gate_group": 4242})
+        with unittest.mock.patch.object(gate_lock, "process_start", return_value=None), \
+                unittest.mock.patch.object(gate_lock, "group_count", return_value=2):
+            rc, _, err = self.run_gate()
+        self.assertEqual(rc, 5)
+        self.assertIn(f"if that group is not the gate, delete the holder record {self.lock}.json", err)
+
+    def test_failing_to_record_the_group_keeps_the_gate_running(self):
+        real, calls = gate_lock._write_record, []
+
+        def write(*args, **kwargs):
+            calls.append(args)
+            if len(calls) == 2:
+                raise OSError(28, "No space left on device")
+            return real(*args, **kwargs)
+
+        with unittest.mock.patch.object(gate_lock, "_write_record", write):
+            rc, _, err = self.run_gate(cmd=[PY, "-c", "raise SystemExit(7)"])
+        self.assertEqual(len(calls), 2)
+        self.assertEqual(rc, 7, err)
+        self.assertIn("could not record the gate's process group: [Errno 28] No space left on device", err)
+        self.assertNotIn("cannot run", err)
+
+    def test_process_start_is_stable_and_none_for_a_dead_pid(self):
+        mine = gate_lock.process_start(os.getpid())
+        self.assertIsNotNone(mine)
+        self.assertEqual(gate_lock.process_start(os.getpid()), mine)
+        self.assertIsNone(gate_lock.process_start(self.dead))
 
     def test_live_pid_with_free_lock_is_a_reused_pid(self):
         self.put(record(os.getpid(), cmd="make gate"))
@@ -721,17 +816,24 @@ class GroupTests(unittest.TestCase):
         self.assertTrue(self.gone(grandchild))
         self.assertEqual(self.again().returncode, 0)
 
-    def test_sigkill_of_the_wrapper_keeps_the_lock_while_a_descendant_lives(self):
+    def test_sigkill_of_the_wrapper_keeps_the_gate_busy_while_its_group_lives(self):
         wrapper = self.wrapper(f"sleep 30 & echo $! > {self.gc}; wait")
         grandchild = self.started()
+        rec = json.loads(Path(self.lock + ".json").read_text())
+        group = rec["gate_group"]
+        self.assertEqual(group, os.getpgid(grandchild))
+        self.assertEqual(rec["gate_leader_start"], gate_lock.process_start(group))
         wrapper.kill()
         wrapper.wait(timeout=20)
         wrapper.stderr.close()
         busy = self.again()
         self.assertEqual(busy.returncode, 5, busy.stderr)
-        self.assertIn(f"held by pid {wrapper.pid}", busy.stderr)
-        self.assertIn("is gone, its leftover processes hold the lock", busy.stderr)
+        self.assertIn(f"pid {wrapper.pid} is gone but its gate (process group {group}) still runs", busy.stderr)
+        self.assertIn(f"kill -- -{group}", busy.stderr)
         self.assertNotIn("cleared", busy.stderr)
+        status = subprocess.run([PY, str(SCRIPT), "status", "--lock", self.lock], env=self.env,
+                                capture_output=True, text=True, timeout=30)
+        self.assertTrue(status.stdout.startswith(f"held (pid {wrapper.pid}"), status.stdout)
         os.kill(grandchild, signal.SIGKILL)
         self.assertTrue(self.gone(grandchild))
         deadline, freed = time.time() + 10, None
@@ -742,6 +844,30 @@ class GroupTests(unittest.TestCase):
             time.sleep(0.1)
         self.assertEqual(freed.returncode, 0, freed.stderr)
         self.assertIn(f"cleared stale gate lock: pid {wrapper.pid} (dead)", freed.stderr)
+
+    def test_command_does_not_inherit_the_lock_fd(self):
+        # Portable (no /proc): compare every open fd's inode with the lock file's; exit 3 means a leak.
+        probe = ("import os,sys; st=os.stat(sys.argv[1]); lock=(st.st_dev, st.st_ino)\n"
+                 "def same(fd):\n"
+                 "    try: f=os.fstat(fd)\n"
+                 "    except OSError: return False\n"
+                 "    return (f.st_dev, f.st_ino) == lock\n"
+                 "sys.exit(3 if any(same(fd) for fd in range(3, 1024)) else 0)")
+        done = subprocess.run([PY, str(SCRIPT), "run", "--lock", self.lock, "--", PY, "-c", probe, self.lock],
+                              env=self.env, capture_output=True, text=True, timeout=30)
+        self.assertNotEqual(done.returncode, 3, "the gated command holds the lock fd")
+        self.assertEqual(done.returncode, 0, done.stderr)
+
+    def test_descendant_that_leaves_the_group_does_not_keep_the_lock(self):
+        escape = f"import os,time; os.setsid(); open({self.gc!r},'w').write(str(os.getpid())); time.sleep(30)"
+        done = self.wrapper(f"{shlex.quote(PY)} -c {shlex.quote(escape)} </dev/null >/dev/null 2>&1 & "
+                            f"while [ ! -s {self.gc} ]; do sleep 0.05; done")
+        _, err = done.communicate(timeout=30)
+        self.assertEqual(done.returncode, 0, err)
+        escaped = self.started()
+        self.assertFalse(self.gone(escaped, seconds=0.2), "the escaped process should still run")
+        freed = self.again()
+        self.assertEqual(freed.returncode, 0, freed.stderr)
 
     def test_signal_killed_command_returns_128_plus_signal(self):
         done = subprocess.run([PY, str(SCRIPT), "run", "--lock", self.lock, "--", "sh", "-c", "kill -9 $$"],
