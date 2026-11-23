@@ -461,7 +461,7 @@ The arsenal includes 61 specialized skills conforming to the Agent Skills standa
 
 ### 41. payments-integrity (/payments-integrity)
 - **When to use**: Anything that moves money: charges, refunds, payouts, wallet balances, gateway webhooks.
-- **Includes**: [money-traps.md](.agents/skills/payments-integrity/references/money-traps.md), [ledger-postings.md](.agents/skills/payments-integrity/references/ledger-postings.md).
+- **Includes**: [money-traps.md](.agents/skills/payments-integrity/references/money-traps.md), [ledger-postings.md](.agents/skills/payments-integrity/references/ledger-postings.md), bundled `scripts/confirm_status.py`.
 
 ### 42. data-privacy (/data-privacy)
 - **When to use**: Reviewing a change for personal-data leaks into logs, traces, stored copies, responses, outside services, exports, and backups.

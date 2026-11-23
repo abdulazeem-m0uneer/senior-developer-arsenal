@@ -18,11 +18,14 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / ".agents" / "skills" / "multi-session-delivery" / "scripts"))
 sys.path.insert(0, str(ROOT / ".agents" / "skills" / "quality-gate" / "scripts"))
+sys.path.insert(0, str(ROOT / ".agents" / "skills" / "payments-integrity" / "scripts"))
 
+import confirm_status  # noqa: E402
 import gate_lock  # noqa: E402
 import timer  # noqa: E402
 
-HELPERS = (("timer.kill_group", timer, timer.kill_group), ("gate_lock.killpg", gate_lock, gate_lock.killpg))
+HELPERS = (("timer.kill_group", timer, timer.kill_group), ("gate_lock.killpg", gate_lock, gate_lock.killpg),
+           ("confirm_status.kill_group", confirm_status, confirm_status.kill_group))
 
 
 @unittest.skipIf(os.name == "nt", "POSIX process groups")
@@ -50,12 +53,26 @@ class RefusalTests(unittest.TestCase):
                 helper(424242, signal.SIGTERM)
                 killpg.assert_called_once_with(424242, signal.SIGTERM)
 
+    def test_own_and_parent_groups_are_refused_even_above_1(self):
+        # In a PID namespace our real groups read as 0, which pgid <= 1 already refuses; fixed values do not.
+        for label, module, helper in HELPERS:
+            with self.subTest(helper=label), unittest.mock.patch.object(module.os, "killpg") as killpg, \
+                    unittest.mock.patch.object(module.os, "getpgrp", return_value=5000), \
+                    unittest.mock.patch.object(module.os, "getpgid", return_value=6000):
+                for pgid in (5000, 6000):
+                    with self.assertRaisesRegex(ValueError, "refusing to signal process group"):
+                        helper(pgid, signal.SIGKILL)
+                killpg.assert_not_called()
+                helper(7000, signal.SIGKILL)
+                killpg.assert_called_once_with(7000, signal.SIGKILL)
+
     def test_parent_lookup_failure_still_protects_our_own_group(self):
         for label, module, helper in HELPERS:
             with self.subTest(helper=label), unittest.mock.patch.object(module.os, "killpg") as killpg, \
+                    unittest.mock.patch.object(module.os, "getpgrp", return_value=5000), \
                     unittest.mock.patch.object(module.os, "getpgid", side_effect=ProcessLookupError):
-                with self.assertRaises(ValueError):
-                    helper(os.getpgrp(), signal.SIGKILL)
+                with self.assertRaisesRegex(ValueError, "refusing to signal process group"):
+                    helper(5000, signal.SIGKILL)
                 killpg.assert_not_called()
 
 

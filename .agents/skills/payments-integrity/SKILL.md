@@ -50,6 +50,8 @@ Consult: [Ledger Postings & State Machine](./references/ledger-postings.md)
 3. Deduplicate by event id under a unique constraint, acknowledge fast, and process asynchronously.
 4. Tolerate repeats and out-of-order delivery: apply an event only if the state machine allows the transition; otherwise re-read the gateway's current state.
 5. An unknown event type with a valid signature is stored and alerted on, never posted to the ledger.
+6. Confirm by the gateway's status API, repeating with backoff until the status is final, then act. Use `scripts/confirm_status.py` or the same loop in the project's language. Never mark a payment paid or failed from a redirect, a callback, or a status that is still intermediate (pending, initiated, in progress); if it is not final at the deadline, leave it pending and hand it to reconciliation.
+7. Send our unique payment reference as the gateway's customer-reference field on every create. Every status read and every reconciliation matches on that reference: a status read with another reference is refused; a final success with another amount or currency is refused.
 
 ### Step 5: Refunds, Concurrency, and Reconciliation
 Consult: [Money Traps](./references/money-traps.md)
@@ -68,6 +70,7 @@ npm test -- payments ledger webhooks                   # or: dotnet test --filte
 psql "$DATABASE_URL" -c "SELECT transaction_id, currency FROM ledger_entries GROUP BY 1, 2 HAVING SUM(amount_minor) <> 0;"   # 0 rows
 psql "$DATABASE_URL" -c "SELECT p.id FROM payments p JOIN refunds r ON r.payment_id = p.id AND r.status <> 'failed' GROUP BY p.id, p.captured_minor HAVING SUM(r.amount_minor) > p.captured_minor;"   # 0 rows
 rg -n "float|double|parseFloat|toFixed|Math\.round" src/payments src/ledger   # each hit is a candidate rounding bug
+python3 .agents/skills/payments-integrity/scripts/confirm_status.py --fetch-cmd 'status-cmd {ref}' --reference ORDER_REF --amount-minor 5000 --currency EUR --success paid --failure failed --deadline 10m   # exit 0 paid, 1 failed, 3 pending-reconcile, 4 mismatch, 2 usage, 5 internal error, 143 SIGTERM: act only on 0 or 1
 ```
 
 | Area | Finding | Risk | Severity | Fix |
