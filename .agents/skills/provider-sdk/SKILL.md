@@ -53,6 +53,7 @@ Consult: [Live Mode Hardening](./references/live-mode-hardening.md)
 2. Retries belong to the caller and only for calls that are idempotent or carry an idempotency key.
 3. Webhooks are verified by signature over the raw body, checked for freshness, and deduplicated by event id.
 4. Credentials come from validated configuration and are never logged, echoed in errors, or stored in recorded requests.
+5. For a payment provider, the SDK's create method requires our reference, mapped to the gateway's customer-reference field, and the SDK exposes a get-status-by-reference method.
 
 ### Step 6: Wire It Into the Application
 1. Port (the application's words), adapter (maps answers; "unavailable" becomes a 503-class domain error), and a selector that picks the mode from configuration.

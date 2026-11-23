@@ -56,6 +56,7 @@ The live transport never retries by itself: it cannot know whether a call is saf
 | Write with no idempotency mechanism | Registration that triggers a side effect per call | Never retry automatically. Record "outcome unknown", reconcile by a later read |
 
 - [ ] The idempotency key is derived from the business operation (order id plus attempt purpose), persisted, and reused; a fresh random key per attempt defeats it.
+- [ ] A payment create requires our reference, mapped to the gateway's customer-reference field, and the SDK exposes get-status-by-reference.
 - [ ] Honour `Retry-After` on 429 and 503; stop on any other 4xx.
 - [ ] After a timeout on a write, query the provider for the operation by its reference before deciding to repeat.
 - [ ] A circuit breaker or a bounded queue keeps a provider outage from exhausting workers.

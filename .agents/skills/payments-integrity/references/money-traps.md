@@ -26,6 +26,8 @@ The traps that recur in every payment system: what goes wrong, the rule that pre
 | Blind retry on time-out | The first call succeeded; the retry is a second charge | Outcome unknown means read the payment by your reference, then decide | Stub a time-out after success: exactly one charge |
 | Automatic retries in the HTTP client | Hidden duplicate charges | Retries off for money calls unless the gateway honours an idempotency key you send | Assert the client's retry count for the money client is 0 |
 | Trusting the client's result | A forged "success" redirect grants the goods | Confirm with the gateway: amount, currency, status, your reference | Forged success with no gateway payment changes nothing |
+| Acting on an intermediate status | Paid or failed is decided from the redirect or the first status read while the gateway still says pending; it settles differently later | Poll the status API with backoff until the status is final; at the deadline leave it pending for reconciliation, never guess | Script pending, pending, paid: nothing is posted until paid; pending at the deadline stays pending |
+| No customer reference sent | The gateway cannot find the payment by our reference, so a time-out or reconciliation cannot match it | Every create sends our unique reference in the gateway's customer-reference field; status reads and reconciliation match on it | Create call carries the reference; a status read with another reference is refused; a final success with another amount or currency is refused |
 | Amount taken from the client | Customer pays 1 for an order of 100 | Amount computed server-side from the order; compared again on confirmation | Tampered amount is refused |
 
 ---
