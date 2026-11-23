@@ -268,6 +268,58 @@ class RegistryCheckTests(GuardLedgerCase):
         context = self.hook_context(json.dumps({"cwd": str(self.project)}))
         self.assertIn("Lesson-guard registry: 1 entry skipped (not applied)", context)
 
+    BEFORE_1_29 = (('"args_all", "args_none", ', ""), (" or text_list(subcommand))", ")"),
+                   ("must be a word or a list of words", "must be a word"))
+
+    def install_hook_copy(self, version, before_1_29=False):
+        """A copy of this hook (and the modules it imports) installed as `version`, with VERSION beside it; with
+        before_1_29 it reads entries as a release before 1.29.0 did: no args_all or args_none, subcommand a word."""
+        source_dir = Path(__file__).resolve().parent.parent / "hooks"
+        hooks = self.cache / version / "hooks"
+        hooks.mkdir(parents=True)
+        for name in sorted(path.name for path in source_dir.glob("guard_*.py")):  # every module the hook imports
+            text = (source_dir / name).read_text(encoding="utf-8")
+            if before_1_29 and name == "guard_lessons.py":
+                for new, old in self.BEFORE_1_29:
+                    self.assertIn(new, text)  # the copy must really read entries the old way
+                    text = text.replace(new, old)
+            (hooks / name).write_text(text, encoding="utf-8")
+        (self.cache / version / "VERSION").write_text(version + "\n", encoding="utf-8")
+
+    def test_args_all_and_args_none_entries_are_safe_on_a_hook_that_predates_them(self):
+        merge_pin = {"lesson": "G026", "program": "gh", "subcommand": ["pr", "merge"],
+                     "args_none": ["--match-head-commit", "--disable-auto", "--help"], "min_version": "1.29.0", "reason": "Pin the head."}
+        self.install_hook_copy("1.28.1", before_1_29=True)
+        self.install_hook_copy("1.29.0")
+        self.write_registry([merge_pin])
+        code, out, _ = self.run_cli("guards")
+        self.assertEqual(code, 0, out)
+        self.assertIn("installed 1.28.1: ok", out)  # min_version: skipped quietly
+        self.assertIn("installed 1.29.0: ok", out)
+        self.write_registry([{key: value for key, value in merge_pin.items() if key != "min_version"}])
+        code, out, _ = self.run_cli("guards")
+        self.assertEqual(code, 1, out)
+        self.assertIn("installed 1.28.1: 1 problem(s)", out)  # without it the old hook skips the entry, unapplied
+        self.assertIn("unknown keys ['args_none']", out)
+        self.assertNotIn("REFUSES", out)
+        self.assertIn("installed 1.29.0: ok", out)
+
+    def test_a_subcommand_list_entry_is_skipped_by_a_hook_that_predates_it(self):
+        entry = {"lesson": "G026", "program": "gh", "subcommand": ["pr", "merge"], "reason": "Pin the head."}
+        self.install_hook_copy("1.28.1", before_1_29=True)
+        self.install_hook_copy("1.29.0")
+        self.write_registry([entry])
+        code, out, _ = self.run_cli("guards")
+        self.assertEqual(code, 1, out)
+        self.assertIn("installed 1.28.1: 1 problem(s)", out)
+        self.assertIn("subcommand must be a word", out)
+        self.assertNotIn("REFUSES", out)
+        self.assertIn("installed 1.29.0: ok", out)
+        self.write_registry([dict(entry, min_version="1.29.0")])
+        code, out, _ = self.run_cli("guards")
+        self.assertEqual(code, 0, out)
+        self.assertIn("installed 1.28.1: ok", out)
+
     def test_all_clear(self):
         self.install("1.6.1")
         self.write_registry([{"rule": "hook-bypass", "lesson": "G027"}])

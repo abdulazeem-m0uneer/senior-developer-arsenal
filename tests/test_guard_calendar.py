@@ -77,6 +77,15 @@ class ProblemTests(unittest.TestCase):
         for text in ("latency down by 11-21%", "p95 until 11-21 ms", "scaled by 11-21x"):  # units, not dates
             self.assertEqual(problems(text, SUN_THU), [], text)
 
+    def test_the_guessed_time_check_can_be_turned_off(self):
+        for text in ("DONE x (checked 14:5x)", "ETA 16:xx", "my 01:0x line"):
+            self.assertEqual(guard_calendar.problems(text, TODAY, SUN_THU, guessed_times=False), [], text)
+            self.assertTrue(problems(text, SUN_THU), text)  # on by default
+        [weekday] = guard_calendar.problems("ships Wed 11-26 at 14:5x", TODAY, guessed_times=False)
+        self.assertIn("is a Thursday", weekday)
+        [promise] = guard_calendar.problems("ETA 11-20 1x:30", TODAY, SUN_THU, guessed_times=False)
+        self.assertIn("outside the workweek", promise)
+
     def test_one_line_per_mistake(self):
         found = problems("Wed 11-26 and Wed 11-26 at 16:4x, ETA 11-21", SUN_THU)
         self.assertEqual(len(found), 3)  # the wrong weekday, the guess, and the non-workday promise
@@ -234,6 +243,26 @@ class OutboundTests(unittest.TestCase):
         self.assertEqual(self.texts("./notify.sh team 'hello'", ["notify.sh"]), ["team hello"])
         self.assertTrue(self.texts("bus/notify.sh team x", ["notify.sh"]))
 
+    def test_message_programs_run_by_a_shell_or_through_a_variable_are_read(self):
+        for command in ('bash .agents/bus/send.sh pm dev "ships Wed 11-26"', 'sh /srv/repo/send.sh pm dev "ships Wed 11-26"',
+                        'dash -e send.sh pm dev "ships Wed 11-26"', 'ksh -o errexit send.sh pm dev "ships Wed 11-26"',
+                        'S=./send.sh; $S pm dev "ships Wed 11-26"', 'S=/srv/repo/send.sh && "$S" pm dev "ships Wed 11-26"',
+                        'export S=/srv/repo/send.sh; ${S} pm dev "ships Wed 11-26"', 'S=send.sh; bash $S pm dev "ships Wed 11-26"',
+                        '/bin/bash .agents/bus/send.sh pm dev "ships Wed 11-26"', 'bash +x send.sh pm dev "ships Wed 11-26"'):
+            self.assertEqual(self.texts(command, ["send.sh"]), ["pm dev ships Wed 11-26"], command)
+        # -ec runs the code "send.sh" with no arguments; the words after it are $0 and $1, not the program's
+        for command in ("bash -c './send.sh pm dev \"ships Wed 11-26\"'", "bash -ec send.sh pm dev 'ships Wed 11-26'",
+                        'bash other.sh pm "ships Wed 11-26"', 'S=./other.sh; $S pm "Wed 11-26"',
+                        'S=./send.sh; echo "$S" pm "Wed 11-26"', 'X=./send.sh other.sh pm "Wed 11-26"', "bash"):
+            self.assertEqual(self.texts(command, ["send.sh"]), [], command)
+
+    def test_git_reads_stdin_only_for_a_dash_operand(self):
+        for args in (["commit", "--file", "-"], ["commit", "--file=-"], ["commit", "-F-"], ["commit", "-aF", "-"]):
+            self.assertTrue(guard_calendar.git_reads_stdin(args), args)
+        for args in (["commit", "--file", "msg.txt"], ["commit", "--file"], ["commit", "--file=msg"],
+                     ["commit", "-F", "msg.txt"], ["commit", "-m", "-"]):
+            self.assertFalse(guard_calendar.git_reads_stdin(args), args)
+
     def test_heredoc_bodies_of_message_commands_are_read(self):
         for command in ("git commit -F - <<'EOF'\nfix: ships Wed 11-26\nEOF",
                         "git commit -m \"$(cat <<'EOF'\nfix: ships Wed 11-26\nEOF\n)\"",
@@ -302,8 +331,24 @@ class CalendarRuleTests(unittest.TestCase):
         self.registry([{"rule": "calendar", "enabled": False}])
         self.assertIsNone(guard_lessons.judge('git commit -m "Wed 11-26"', str(self.dir)))
 
+    def test_guessed_times_switch_added_beside_an_older_entry(self):
+        older = {"rule": "calendar", "lesson": "L187", "workweek": "Sun-Thu", "programs": ["send.sh"]}
+        self.registry([older, {"rule": "calendar", "guessed_times": False, "min_version": "1.29.0"}])
+        self.assertEqual(guard_lessons.registry_problems(str(self.dir)), [])
+        self.assertIsNone(guard_lessons.judge('bash send.sh pm dev "DONE x (checked 14:5x)"', str(self.dir)))
+        for command, problem in (('bash send.sh pm dev "START x ETA 11-20 10:00"', "outside the workweek"),
+                                 ('S=./send.sh; $S pm dev "ships Wed 11-26"', "is a Thursday")):
+            hit = guard_lessons.judge(command, str(self.dir))
+            self.assertEqual(hit.lesson, "L187", command)
+            self.assertIn(problem, hit.reason, command)
+        self.registry([older])
+        self.assertIn("14:5x is a guessed time",
+                      guard_lessons.judge('bash send.sh pm dev "DONE x (checked 14:5x)"', str(self.dir)).reason)
+
     def test_registry_validation(self):
-        for entry, fault in (({"rule": "calendar", "workweek": "Sunday-Thursday"}, "workweek"),
+        for entry, fault in (({"rule": "calendar", "guessed_times": "no"}, "guessed_times"),
+                             ({"rule": "help-probe", "guessed_times": False}, "guessed_times"),
+                             ({"rule": "calendar", "workweek": "Sunday-Thursday"}, "workweek"),
                              ({"rule": "help-probe", "workweek": "Sun-Thu"}, "calendar rule only"),
                              ({"rule": "calendar", "programs": "notify.sh"}, "programs")):
             self.registry([entry])

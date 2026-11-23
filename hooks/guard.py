@@ -10,7 +10,8 @@ Usage (hook input is JSON on stdin):
                      # the edit-scope lock (guard_scope.py); ask or deny an arsenal subagent call asking for a
                      # model above its tier (guard_models.py); deny a Bash command that
                      # repeats a recorded lesson (guard_lessons.py, hit logged by guard_hits.py; the opt-in rerun-after-red also reads
-                     # this session's failed checks and pushes and the `lessons.py cause` notes); ask or deny a
+                     # this session's failed checks and pushes and the `lessons.py cause` notes, the opt-in
+                     # unseen-hash reads the session or subagent transcript: transcript_path, agent_id); ask or deny a
                      # destructive Bash command (guard_destructive.py)
   guard.py stop      # Stop: block once when source changed without a test, or a check failed, never passed
                      # again and no lesson followed, or this session's changes leave dead code (dead_code.py);
@@ -524,7 +525,8 @@ def pre():
         if refusal:
             return decide("deny", refusal)
     if data.get("tool_name") != "Bash" and guard_lessons and not switched_off("ARSENAL_LESSON_GUARDS"):
-        refusal = outbound_refusal(data.get("tool_name"), tool_input, cwd)
+        refusal = outbound_refusal(data.get("tool_name"), tool_input, cwd, data.get("transcript_path"),
+                                   data.get("agent_id"))
         if refusal:
             return decide("deny", refusal)
     command = tool_input.get("command") if isinstance(tool_input, dict) else None
@@ -567,10 +569,10 @@ def scope_refusal(tool_name, tool_input, cwd, report_write=False):
     return guard_scope.refusal(tool_name, tool_input, cwd, report_write)
 
 
-def outbound_refusal(tool_name, tool_input, cwd):
-    """Why a non-Bash tool call is refused under the calendar rule (the hit is logged), or ''."""
+def outbound_refusal(tool_name, tool_input, cwd, transcript=None, agent_id=None):
+    """Why a non-Bash tool call is refused under an outbound rule (calendar, unseen-hash; the hit is logged), or ''."""
     try:
-        hit = guard_lessons.judge_outbound(tool_name, tool_input, cwd)
+        hit = guard_lessons.judge_outbound(tool_name, tool_input, cwd, transcript, agent_id)
     except Exception:  # this check must never stop a tool it cannot judge
         return ""
     return refusal_text(hit, cwd) if hit else ""
@@ -582,7 +584,9 @@ def lesson_refusal(command, cwd, data=None):
         path = state_path(data) if data else None
         return {"red": red_checks(load(path)) if path else set(), "keys": set(check_keys(command))}
     try:
-        hit = guard_lessons.judge(command, cwd, session, is_check_command)
+        hook_data = data or {}
+        hit = guard_lessons.judge(command, cwd, session, is_check_command, hook_data.get("transcript_path"),
+                                  hook_data.get("agent_id"))
     except ImportError as error:  # the secret rule's helper is missing: a broken install must not pass the command
         return f"arsenal lesson guards cannot judge this command ({error}); reinstall the plugin."
     return refusal_text(hit, cwd) if hit else ""

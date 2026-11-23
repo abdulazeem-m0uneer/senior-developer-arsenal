@@ -184,7 +184,7 @@ class BuiltInRuleTests(RegistryCase):
     def test_a_prefix_assignment_does_not_set_a_variable_but_a_bare_one_does(self):
         cmds = guard_lessons.commands("A=1 true; B=2; export C=3; run $A $B $C")
         self.assertEqual([cmd.variables for cmd in cmds], [(), (), ("B=2",), ("B=2", "C=3")])
-        self.assertEqual(guard_lessons.expand("$A-${B}/$C$", ["B=2", "C=3", "B=4"]), "$A-4/3$")
+        self.assertEqual(guard_lessons.shell.expand("$A-${B}/$C$", ["B=2", "C=3", "B=4"]), "$A-4/3$")
 
     def test_help_probe_programs_name_extensionless_scripts(self):
         self.registry([{"rule": "help-probe", "programs": ["release-tool"]}])
@@ -202,9 +202,14 @@ class BuiltInRuleTests(RegistryCase):
         self.registry([{"rule": "secret-in-message", "lesson": "G021", "programs": ["notify.sh"]}])
         self.assert_rule("secret-in-message", [
             command, f'./tools/notify.sh team "db {FAKE_DB_URL}"', f'bash notify.sh team "jwt {FAKE_JWT}"',
+            f'sh /srv/repo/notify.sh team "jwt {FAKE_JWT}"', f'S=./notify.sh; $S team "jwt {FAKE_JWT}"',
+            f'S=/srv/repo/notify.sh && "$S" team "db {FAKE_DB_URL}"', f'export S=notify.sh; bash ${{S}} t "{FAKE_JWT}"',
+            f'bash -o pipefail notify.sh team "{FAKE_JWT}"', f'bash -e +O extglob ./notify.sh t "{FAKE_JWT}"',
+            f'sh --rcfile /srv/repo/rc -x notify.sh team "{FAKE_JWT}"',
         ], [
             'notify.sh team "credentials are in ~/.config/app/staging.env"', 'notify.sh team "token rotated at 14:24"',
-            f'echo "{FAKE_PASSWORD}"', f'other.sh team "{FAKE_PASSWORD}"',
+            f'echo "{FAKE_PASSWORD}"', f'other.sh team "{FAKE_PASSWORD}"', f'S=./other.sh; $S team "{FAKE_JWT}"',
+            f"bash -c 'echo {FAKE_JWT}'", f'S=./notify.sh; echo $S "{FAKE_JWT}"',
         ])
 
     def test_empty_and_non_text_commands_pass(self):
@@ -255,6 +260,119 @@ class RegistryTests(RegistryCase):
                         "SKIP_TESTS=0 make", "curl -sf localhost:8080"):
             self.assertIsNone(self.rule(command), command)
 
+    MERGE_PIN = {"lesson": "G026", "program": "gh", "subcommand": ["pr", "merge"],
+                 "args_none": ["--match-head-commit", "--disable-auto", "--help", "-h"],
+                 "min_version": "1.29.0", "reason": "Merge only the head the fixer reported pushed and the reviewers saw: gh pr merge N "
+                           "--match-head-commit <40-char sha> (or merge_green.py)."}
+
+    def test_args_all_and_args_none_pin_the_merged_head(self):
+        self.registry([self.MERGE_PIN])
+        with mock.patch.object(guard_lessons, "HOOK_VERSION", (1, 29, 0)):
+            hit = guard_lessons.judge("gh pr merge 5 --squash", str(self.project))
+            self.assertEqual(hit, guard_lessons.Hit("G026", "G026", self.MERGE_PIN["reason"]))
+            for command in ("gh pr merge 5", "gh pr merge --auto --squash 5", "sh -c 'gh pr merge 5 --squash'",
+                            "cd x && gh pr merge 5 --admin", "bash -lc \"gh pr merge 7\""):
+                self.assertEqual(self.rule(command), "G026", command)
+            for command in ("gh pr merge 5 --squash --match-head-commit 0123abc",
+                            "gh pr merge 5 --match-head-commit=0123abc", "sh -c 'gh pr merge 5 --match-head-commit X'",
+                            "gh pr view 5", "gh pr checks 5 --watch", "gh issue merge 5", "git merge main",
+                            'gh pr comment 5 --body "gh pr merge 5"', "echo gh pr merge 5",
+                            "gh pr merge 5 --match-head-commit-x=1 --match-head-commit=y"):
+                self.assertIsNone(self.rule(command), command)
+            self.assertEqual(self.rule("gh pr merge 5 --match-head-commit-x=1"), "G026")  # a longer option is not it
+            self.assertEqual(guard_lessons.registry_problems(str(self.project)), [])
+
+    def test_merge_pin_judges_the_second_operand_not_option_values(self):
+        self.registry([self.MERGE_PIN])
+        with mock.patch.object(guard_lessons, "HOOK_VERSION", (1, 29, 0)):
+            for command in ("gh pr edit 5 --add-label merge", "gh pr list --label merge", "gh pr list --search merge",
+                            "gh pr create --title merge --body x", "gh pr comment 5 -b merge",
+                            "gh pr comment 5 --body merge", "gh pr checkout merge", "gh pr view merge",
+                            "gh pr merge 5 --disable-auto", "gh pr merge --help", "gh pr merge 5 -h", "gh merge pr 5"):
+                self.assertIsNone(self.rule(command), command)
+            for command in ("gh pr merge 5 --repo o/r --squash", "gh pr merge --squash 5 --subject merge"):
+                self.assertEqual(self.rule(command), "G026", command)
+
+    def test_merge_pin_skips_the_repo_option_value_before_the_subcommand(self):
+        self.registry([self.MERGE_PIN])
+        with mock.patch.object(guard_lessons, "HOOK_VERSION", (1, 29, 0)):
+            for command in ("gh pr --repo o/r merge 5", "gh pr -R o/r merge 5 --squash", "gh -R o/r pr merge 5",
+                            "gh pr --repo=o/r merge 5"):
+                self.assertEqual(self.rule(command), "G026", command)
+            for command in ("gh pr -R o/r merge 5 --match-head-commit abc", "gh pr -R merge view 5",
+                            "gh pr --repo o/r view 5"):
+                self.assertIsNone(self.rule(command), command)
+
+    SPEC_MERGE_PIN = {"lesson": "G026", "program": "gh", "subcommand": "pr", "args_all": ["merge"],
+                      "args_none": ["--match-head-commit"], "min_version": "1.29.0",
+                      "reason": "Merge only the head the fixer reported pushed and the reviewers saw: gh pr merge N "
+                                "--match-head-commit <40-char sha> (or merge_green.py)."}
+
+    def test_the_args_all_merge_form_pins_the_head_but_also_matches_merge_as_an_option_value(self):
+        self.registry([self.SPEC_MERGE_PIN])
+        with mock.patch.object(guard_lessons, "HOOK_VERSION", (1, 29, 0)):
+            for command in ("gh pr merge 5 --squash", "sh -c 'gh pr merge 5'"):
+                self.assertEqual(self.rule(command), "G026", command)
+            for command in ("gh pr merge 5 --match-head-commit X", "gh pr merge 5 --match-head-commit=X",
+                            "gh pr view 5", "gh issue merge 5"):
+                self.assertIsNone(self.rule(command), command)
+            for command in ("gh pr list --label merge", "gh pr create --title merge"):  # known false positives
+                self.assertEqual(self.rule(command), "G026", command)
+            self.assertEqual(guard_lessons.registry_problems(str(self.project)), [])
+
+    def test_an_empty_long_option_value_does_not_count(self):
+        self.registry([self.MERGE_PIN])
+        with mock.patch.object(guard_lessons, "HOOK_VERSION", (1, 29, 0)):
+            for command in ("gh pr merge 5 --auto --match-head-commit=", "gh pr merge 5 --match-head-commit ''",
+                            'gh pr merge 5 --match-head-commit "" --squash'):
+                self.assertEqual(self.rule(command), "G026", command)
+            self.assertIsNone(self.rule("gh pr merge 5 --match-head-commit=a"))
+
+    def test_subcommand_list_matches_the_leading_operands_in_order(self):
+        self.registry([{"lesson": "L062", "program": "git", "subcommand": ["stash", "drop"], "reason": "x"},
+                       {"lesson": "L063", "program": "kubectl", "subcommand": ["delete", "namespace"], "reason": "y"}])
+        for command, lesson in (("git stash drop", "L062"), ("git -C d stash drop stash@{1}", "L062"),
+                                ("git -c a=b stash -q drop", "L062"), ("kubectl delete namespace x", "L063"),
+                                ("kubectl delete -w namespace x", "L063")):
+            self.assertEqual(self.rule(command), lesson, command)
+        for command in ("git stash", "git stash list drop", "git drop stash", "git -C stash drop",
+                        "kubectl delete pod namespace", "kubectl get namespace"):
+            self.assertIsNone(self.rule(command), command)
+
+    def test_args_all_needs_every_word_and_args_none_any_one(self):
+        self.registry([{"lesson": "L060", "program": "kubectl", "args_all": ["delete", "-n", "prod"],
+                        "args_none": ["--dry-run", "-i"], "reason": "Dry-run first."}])
+        self.assertEqual(self.rule("kubectl delete pod x -n prod"), "L060")
+        self.assertEqual(self.rule("kubectl -n prod delete pod x"), "L060")  # order does not matter
+        for command in ("kubectl delete pod x", "kubectl get pod -n prod", "kubectl delete pod x -n staging",
+                        "kubectl delete pod x -n prod --dry-run", "kubectl delete pod x -n prod --dry-run=client",
+                        "kubectl delete pod x -n prod -i", "kubectl delete pod x -n prod -qi"):
+            self.assertIsNone(self.rule(command), command)
+
+    def test_args_all_and_args_none_combine_with_args_any(self):
+        self.registry([{"lesson": "L061", "program": "git", "subcommand": "push", "args_any": ["--force", "-f"],
+                        "args_all": ["origin"], "args_none": ["--force-with-lease"], "reason": "x"}])
+        self.assertEqual(self.rule("git push -f origin main"), "L061")
+        for command in ("git push origin main", "git push -f upstream main",
+                        "git push -f --force-with-lease=main origin main"):
+            self.assertIsNone(self.rule(command), command)
+
+    def test_args_all_and_args_none_entries_are_skipped_quietly_by_an_older_hook(self):
+        self.registry([self.MERGE_PIN])
+        with mock.patch.object(guard_lessons, "HOOK_VERSION", (1, 28, 1)):
+            self.assertIsNone(self.rule("gh pr merge 5 --squash"))
+            self.assertEqual(guard_lessons.registry_problems(str(self.project)), [])
+        with mock.patch.object(guard_lessons, "CUSTOM_KEYS", guard_lessons.CUSTOM_KEYS - {"args_all", "args_none"}), \
+                mock.patch.object(guard_lessons, "HOOK_VERSION", (1, 28, 1)):
+            entry = {key: value for key, value in self.MERGE_PIN.items() if key != "min_version"}
+            self.registry([entry])  # a hook that predates the keys, without min_version: a problem, never a refusal
+            self.assertIsNone(self.rule("gh pr merge 5 --squash"))
+            [problem] = guard_lessons.registry_problems(str(self.project))
+            self.assertIn("unknown keys ['args_none']", problem)
+        with mock.patch.object(guard_lessons, "HOOK_VERSION", None):
+            self.registry([self.MERGE_PIN])
+            self.assertEqual(self.rule("gh pr merge 5"), "G026")
+
     def test_unusable_entries_are_skipped_with_the_file_and_the_fault(self):
         cases = [
             ("{not json", "lesson-guards.json"),
@@ -274,6 +392,16 @@ class RegistryTests(RegistryCase):
             (json.dumps({"guards": [{"lesson": "L001", "program": "git", "reason": "x", "argz": []}]}), "unknown keys"),
             (json.dumps({"guards": [{"lesson": "L001", "program": [], "reason": "x"}]}), "program must be"),
             (json.dumps({"guards": [{"lesson": "L001", "program": "git", "reason": "x", "args_any": "-f"}]}), "args_any"),
+            (json.dumps({"guards": [{"lesson": "L001", "program": "git", "reason": "x", "args_all": "merge"}]}), "args_all"),
+            (json.dumps({"guards": [{"lesson": "L001", "program": "git", "reason": "x", "args_all": []}]}), "args_all"),
+            (json.dumps({"guards": [{"lesson": "L001", "program": "git", "reason": "x", "args_none": [1]}]}), "args_none"),
+            (json.dumps({"guards": [{"lesson": "L001", "program": "git", "reason": "x", "args_none": [""]}]}), "args_none"),
+            (json.dumps({"guards": [{"lesson": "L001", "program": "git", "reason": "x", "args_none": None}]}), "args_none"),
+            (json.dumps({"guards": [{"lesson": "L001", "program": "git", "reason": "x", "subcommand": []}]}), "subcommand"),
+            (json.dumps({"guards": [{"lesson": "L001", "program": "git", "reason": "x", "subcommand": ["a", ""]}]}),
+             "subcommand"),
+            (json.dumps({"guards": [{"lesson": "L001", "program": "git", "reason": "x", "subcommand": ["a", 1]}]}),
+             "subcommand"),
             (json.dumps({"guards": [{"lesson": "L001", "program": "git", "reason": "x", "subcommand": ""}]}), "subcommand"),
             (json.dumps({"guards": [{"lesson": "L001", "program": "git", "reason": "x", "in_loop": 1}]}), "in_loop"),
         ]

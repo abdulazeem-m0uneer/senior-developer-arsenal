@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 """Calendar mistakes in outbound text, for guard_lessons' built-in `calendar` rule (Claude Code plugin).
 
-Usage: reasons = guard_calendar.problems(text, today, workweek=None, approved=(), exceptions_file=None)
+Usage: reasons = guard_calendar.problems(text, today, workweek=None, approved=(), exceptions_file=None,
+                                        guessed_times=True)
                                                                          # [] when the text is clean
        dates, problems = guard_calendar.read_exceptions(path)            # the approved workdays of an exceptions file
        texts = guard_calendar.outbound_texts(tool_name, tool_input, programs, shell)  # what a tool call sends
 Three checks:
   - a weekday next to a date must be that date's weekday ("Wed 11-26" is refused when 2026-11-26 is a Thursday;
     "Thurs", "Weds", MM/DD and YYYY-MM-DD are read), and the date must exist;
-  - a clock time with a placeholder digit ("16:4x", "1x:30", "16:xx") is a guess: read the time with `date`;
+  - a clock time with a placeholder digit ("16:4x", "1x:30", "16:xx") is a guess: read the time with `date`
+    (off with guessed_times=False, the registry entry's "guessed_times": false);
   - with a workweek (for example "Sun-Thu"), a promised date (after ETA, by, due, until, deadline, on, or next to a
     weekday) that falls on another day is refused unless the date is an approved workday (below) or the text says
     "non-workday".
@@ -29,9 +31,12 @@ approves. Without the file, one agreed word per message
 ("non-workday") was the only way through, so agents wrote false next-workday ETAs; a recorded approval replaces it.
 A month-day without a year is the one nearest today (within 200 days). Single-digit dates ("Fri 11-6") are not
 read: they look like hour ranges ("Mon 9-5"); write hours as times ("Mon 10:00-12:00").
-What is outbound: a Bash call to a message program the registry names, `gh [-R repo] issue|pr comment|create|
+What is outbound: a Bash call to a message program the registry names (by name or path, run by a shell such as
+`bash path/send.sh`, or through a variable set earlier in the command line: `S=./send.sh; $S`, `export S=...`;
+`bash -c '...'` is code, not a script), `gh [-R repo] issue|pr comment|create|
 edit|review`, `gh release create|edit`, `git commit` or `git tag` (their arguments, and the here-document bodies of
-the call, which is where `-m "$(cat <<'EOF' ...)"` keeps the message); and an MCP tool whose last name part has a
+the call, which is where `-m "$(cat <<'EOF' ...)"` keeps the message); the `message` of the built-in SendMessage
+tool (to another agent or session; not its `to` or `summary`); and an MCP tool whose last name part has a
 sending word (send, reply, comment, post, draft, create, update, add, forward) and no reading or file word (get,
 list, search, read, fetch, file, upload), all its text fields. A date before today is a fact, never judged against
 the workweek; "not a date" is reported only next to a weekday or for a full YYYY-MM-DD. Not read: `gh api`, curl
@@ -176,9 +181,10 @@ def nearest(year, month, day, today):
     return min(found, key=lambda date: abs((date - today).days)) if found else None
 
 
-def problems(text, today, workweek=None, approved=(), exceptions_file=None):
+def problems(text, today, workweek=None, approved=(), exceptions_file=None, guessed_times=True):
     """Each calendar mistake in the text, as one line with the fix. approved: dates that count as workdays;
-    exceptions_file: where an approval is recorded, named in the refusal."""
+    exceptions_file: where an approval is recorded, named in the refusal. guessed_times=False skips the
+    placeholder-time check (informal times such as "checked 14:5x")."""
     found = []
     promised = []
     for name, year, month, day in WEEKDAY_DATE.findall(text):
@@ -195,7 +201,7 @@ def problems(text, today, workweek=None, approved=(), exceptions_file=None):
             promised.append(date)
         elif year:  # a full YYYY-MM-DD that does not exist; a bare pair may be a range ("by 10-12 people")
             found.append(f"{year}-{month}-{day} is not a date")
-    for guess in GUESSED_TIME.findall(text):
+    for guess in GUESSED_TIME.findall(text) if guessed_times else ():
         found.append(f"{guess} is a guessed time: read the clock with `date +%H:%M`")
     if workweek is not None and not ACKNOWLEDGED.search(text):
         for date in sorted(set(promised)):
@@ -207,16 +213,21 @@ def problems(text, today, workweek=None, approved=(), exceptions_file=None):
     return list(dict.fromkeys(found))  # one line per distinct mistake, in order
 
 
-def string_values(value):
-    """Every string inside a tool input (dicts and lists walked), in order."""
+ID_KEY = re.compile(r"(?:^|[_-])[iI][dD]s?$|[a-z0-9]I[dD]s?$")  # id, message_id, threadId, task_ids; not "paid"
+
+
+def string_values(value, skip_ids=False):
+    """Every string inside a tool input (dicts and lists walked), in order. skip_ids: leave out the values of id
+    fields (id, message_id, threadId, task_ids), which name an object and are not text for people."""
     if isinstance(value, str):
         yield value
     elif isinstance(value, dict):
-        for item in value.values():
-            yield from string_values(item)
+        for key, item in value.items():
+            if not (skip_ids and isinstance(key, str) and ID_KEY.search(key)):
+                yield from string_values(item, skip_ids)
     elif isinstance(value, list):
         for item in value:
-            yield from string_values(item)
+            yield from string_values(item, skip_ids)
 
 
 GH_FLAGS_WITH_VALUE = frozenset(("-R", "--repo", "--hostname"))
@@ -235,23 +246,110 @@ def spoken(args):
     return " ".join(f"{arg[:2]} {arg[2:]}" if re.match(r"^-[A-Za-z]\S", arg) else arg for arg in args)
 
 
-def bash_texts(command, programs, shell):
+GIT_FLAGS_WITH_VALUE = frozenset(("-C", "-c", "--git-dir", "--work-tree", "--namespace", "--exec-path"))
+
+
+def git_message(args):
+    """The message values of a `git commit` or `git tag` call (-m, --message, -am, -m'text'); None for any other git
+    call. Operands such as `--contains <sha>`, `--fixup=<sha>`, `-C <sha>` or a tag target are not message text."""
+    index = 0
+    while index < len(args) and args[index].startswith("-"):
+        index += 2 if args[index] in GIT_FLAGS_WITH_VALUE else 1
+    if index >= len(args) or args[index] not in ("commit", "tag"):
+        return None
+    rest, found = args[index + 1:], []
+    for position, arg in enumerate(rest):
+        following = rest[position + 1:position + 2]
+        if arg == "--message":
+            found += following
+        elif arg.startswith("--message="):
+            found.append(arg.partition("=")[2])
+        elif re.match(r"^-[A-Za-z]*m", arg):  # -m, -am, -m'text', -sam'text': the first m takes the value
+            glued = arg[arg.index("m") + 1:]
+            found += [glued] if glued else following
+    return found
+
+
+def git_reads_stdin(args):
+    """True when git reads its message from stdin: -F -, -F-, -aF -, --file=-, --file -."""
+    for position, arg in enumerate(args):
+        following = args[position + 1:position + 2]
+        if arg in ("-F-", "--file=-") or re.fullmatch(r"-[A-Za-z]*F", arg) and following == ["-"] \
+                or arg == "--file" and following == ["-"]:
+            return True
+    return False
+
+
+GH_CHECKED_FLAGS = frozenset(("--match-head-commit", "--target"))  # GitHub rejects a wrong commit itself
+
+
+def gh_message_args(args):
+    """gh's arguments without the commit operands GitHub checks: `--match-head-commit <sha>`, `--target=<sha>`."""
+    kept, skip = [], False
+    for arg in args:
+        if skip:
+            skip = False
+        elif arg.partition("=")[0] in GH_CHECKED_FLAGS:
+            skip = "=" not in arg
+        else:
+            kept.append(arg)
+    return kept
+
+
+SHELL_OPTIONS_WITH_VALUE = frozenset(("-o", "+o", "-O", "+O", "--rcfile", "--init-file"))
+
+
+def program_args(word, args, programs, shell, variables):
+    """The arguments a message program named in `programs` gets, or None when the command runs none. The program is
+    matched by its word or basename, after a $NAME set earlier in the command line (`S=./send.sh; $S`) is read, or
+    as the script a shell runs (`bash path/send.sh`, `sh $S`); `bash -c '...'` runs code, not a script."""
+    word = shell.expand(word, variables)
+    if word in programs or word.rpartition("/")[2] in programs:
+        return args
+    if word.rpartition("/")[2] not in shell.SHELLS:
+        return None
+    index = 0
+    while index < len(args) and args[index][:1] in ("-", "+"):
+        if re.fullmatch(r"-[A-Za-z]*c[A-Za-z]*", args[index]):
+            return None
+        index += 2 if args[index] in SHELL_OPTIONS_WITH_VALUE else 1
+    script = shell.expand(args[index], variables) if index < len(args) else ""
+    return args[index + 1:] if script and (script in programs or script.rpartition("/")[2] in programs) else None
+
+
+def bash_texts(command, programs, shell, messages_only=False):
     """The arguments of the message commands in a Bash call (quotes removed), and the here-document bodies of a
-    call that sends: `git commit -F - <<EOF` and `-m "$(cat <<'EOF' ... EOF)"` carry the message there."""
-    texts = []
+    call that sends: `git commit -F - <<EOF` and `-m "$(cat <<'EOF' ... EOF)"` carry the message there.
+    messages_only: for git, only the message of a commit or tag (see git_message), not its other arguments; for gh,
+    not the commit operands GitHub checks (see gh_message_args); and the here-documents only when one reaches a
+    sending command: on its stdin (directly or through a pipe; for git only with -F -) or inside one of its
+    arguments (-m "$(cat <<'EOF' ...)"). The bodies are not split per command: when one reaches a sending command,
+    every body of the call is judged."""
+    texts, sent, variables, fed = [], False, [], False
     command_part, heredoc = shell.split_heredocs(command)
-    for argv, _piped, _has_heredoc in shell.simple_commands(command_part):
+    for argv, piped, has_heredoc in shell.simple_commands(command_part):
+        fed = has_heredoc or piped and fed  # a here-document reaches this command's stdin
         name, args = shell.program(argv)
         word = argv[len(argv) - len(args) - 1] if name else ""
-        sends = name in programs or word in programs or word.rpartition("/")[2] in programs
+        if name == "export" or not name:  # `S=./send.sh;` or `export S=...`: a later $S reads it
+            variables += [arg for arg in (args if name else argv) if shell.ASSIGNMENT.match(arg)]
+            continue
+        message = program_args(word, args, programs, shell, variables)
         gh = gh_words(args) if name == "gh" else []
-        if len(gh) >= 2 and gh[1] in GH_WRITES.get(gh[0], ()):
-            sends = True
-        if name == "git" and ("commit" in args or "tag" in args):
-            sends = True
-        if sends:
-            texts.append(spoken(args))
-    if texts and heredoc:
+        if len(gh) >= 2 and gh[1] in GH_WRITES.get(gh[0], ()) or name == "git" and ("commit" in args or "tag" in args):
+            message = args
+        if message is None:
+            continue
+        if messages_only and name == "git":
+            message = git_message(args)
+            if message is None:  # `git log --grep tag`: not a commit or tag
+                continue
+            texts += message
+            sent = sent or fed and git_reads_stdin(args) or any("<<" in value for value in message)
+            continue
+        texts.append(spoken(gh_message_args(args) if messages_only and name == "gh" else message))
+        sent = sent or not messages_only or fed or any("<<" in value for value in message)
+    if sent and heredoc:
         texts.append(heredoc)
     return texts
 
@@ -265,11 +363,14 @@ def sends_text(tool_name):
     return bool(words & SEND_WORDS) and not words & NOT_SEND_WORDS
 
 
-def outbound_texts(tool_name, tool_input, programs, shell):
+def outbound_texts(tool_name, tool_input, programs, shell, messages_only=False):
     """The text a tool call sends to people; [] for anything else (file edits, reads, plain commands)."""
     if tool_name == "Bash":
         command = tool_input.get("command") if isinstance(tool_input, dict) else None
-        return bash_texts(command, programs, shell) if isinstance(command, str) else []
+        return bash_texts(command, programs, shell, messages_only) if isinstance(command, str) else []
+    if tool_name == "SendMessage":  # the built-in message to another agent or session; `to` is an address
+        message = tool_input.get("message") if isinstance(tool_input, dict) else None
+        return list(string_values(message, skip_ids=messages_only))
     if isinstance(tool_name, str) and sends_text(tool_name):
-        return list(string_values(tool_input))
+        return list(string_values(tool_input, skip_ids=messages_only))
     return []
