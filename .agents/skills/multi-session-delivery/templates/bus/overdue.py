@@ -178,6 +178,10 @@ def listing(items, now, show_all, escalate_hours, escalate_redates):
     return [line for _, line in sorted(rows, key=lambda row: row[0])]
 
 
+def lanes_file():
+    return Path(os.environ.get("BUS_LANES") or Path(__file__).resolve().parent / "lanes.txt")
+
+
 def read_lanes(path):
     text = path.read_text(encoding="utf-8", errors="replace")
     names = {line.strip().lower() for line in text.splitlines() if line.strip()}
@@ -353,6 +357,22 @@ def health(items, damaged_items, events, now, since, escalate_hours, escalate_re
     return line, degraded
 
 
+def record_lines():
+    """(path, lines) of open-items.tsv next to this script, or $BUS_OPEN_ITEMS; a missing file next to the script is
+    no items yet. OSError naming the file when it cannot be read or a $BUS_OPEN_ITEMS does not exist. Also read by
+    idle.py."""
+    named = os.environ.get("BUS_OPEN_ITEMS")
+    path = Path(named or Path(__file__).resolve().parent / "open-items.tsv")
+    try:
+        return path, path.read_text(encoding="utf-8", errors="replace").splitlines()
+    except FileNotFoundError:
+        if named:
+            raise FileNotFoundError(f"no open-items file at {path} ($BUS_OPEN_ITEMS)") from None
+        return path, []
+    except OSError as error:
+        raise OSError(f"cannot read {path}: {error}") from None
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description="List overdue bus items.")
     parser.add_argument("--all", action="store_true", help="also list open items inside their ETA")
@@ -379,25 +399,17 @@ def main(argv=None):
     if args.suggest and not args.estimate:
         print("overdue.py: --suggest needs --estimate (30m, 2h, 1d)", file=sys.stderr)
         return 2
-    named = os.environ.get("BUS_OPEN_ITEMS")
-    path = Path(named or Path(__file__).resolve().parent / "open-items.tsv")
     try:
-        lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
-    except FileNotFoundError:
-        if named:
-            print(f"overdue.py: no open-items file at {path} ($BUS_OPEN_ITEMS)", file=sys.stderr)
-            return 2
-        lines = []
+        path, lines = record_lines()
     except OSError as error:
-        print(f"overdue.py: cannot read {path}: {error}", file=sys.stderr)
+        print(f"overdue.py: {error}", file=sys.stderr)
         return 2
     items, finished, damaged = read_items(lines)
     if damaged:
         print(f"overdue.py: {damaged} damaged line(s) in {path} skipped", file=sys.stderr)
     if args.waiting:
-        lanes_file = Path(os.environ.get("BUS_LANES") or Path(__file__).resolve().parent / "lanes.txt")
         try:
-            lanes = read_lanes(lanes_file)
+            lanes = read_lanes(lanes_file())
         except (OSError, ValueError) as error:
             print(f"overdue.py: --waiting needs the session names: {error}", file=sys.stderr)
             return 2
