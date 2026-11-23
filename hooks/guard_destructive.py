@@ -6,6 +6,9 @@ The command is split into simple commands with shlex (at ; & | ( ) and newlines,
 (sudo, env, timeout, VAR=x ...) are skipped, and the program in command position is matched with its
 arguments. So `echo "git push --force"` and a grep for the words are not hits. Text inside quotes is read
 in two places only: the script given to `sh -c` / `eval`, and SQL passed to a database client.
+rm also refuses the top level of Claude Code's session scratchpad (<tmp>/claude-<uid>/<project>/<session>/scratchpad,
+shared by that session's parallel subagents): a glob directly in it (scratchpad/*, scratchpad/*/x) with or without -r,
+and with -r the folder itself.
 Not seen: a command built from variables (an rm operand of `$VAR/` or `$VAR/*` is read as broad, `cd $VAR` is not followed) or run through xargs, find -exec, ssh or a script file, command
 substitution inside double quotes, SQL in a file (psql -f), and everything after an unbalanced quote. Here-document bodies are dropped before lexing (read only as SQL).
 Time budget: pure string work, no subprocess. A push with --force-with-lease or a branch deletion reads at
@@ -39,6 +42,10 @@ REDIRECTION = frozenset("<>&")
 VARIABLE_ROOT = re.compile(r"^\$(?:\{\w+\}|\w+)/$")  # "$UNSET"/* expands to /* when the variable is empty
 WORKING_DIRECTORY = ("$PWD", "${PWD}", "$(pwd)")
 VARIABLE = re.compile(r"\$(?:\{(\w+)\}|(\w+))")
+TEMP_ROOT = re.compile(r"^(?:/private)?(?:/tmp/|/var/folders/[^/]+/[^/]+/T/)")
+SCRATCHPAD = re.compile(r"claude-(?:\d+|[\d*?\[\]-]*[*?\[][\d*?\[\]-]*)/[^/]+/[^/]+/scratchpad(?:/([^/]+)(?:/.*)?)?")  # uid may be a glob
+GLOB = re.compile(r"[*?\[]")
+TMPDIR_VARIABLE = re.compile(r"^\$(?:\{TMPDIR(?::?-([^}$]*))?\}|TMPDIR(?!\w))")  # also ${TMPDIR:-/tmp}
 
 
 HEREDOC_RE = re.compile(r"<<(?!<)-?\s*(?:'([^'\n]+)'|\"([^\"\n]+)\"|\\?(\w+))")
@@ -250,11 +257,34 @@ def is_broad(target, cwd):
     return any(place and (place == path or place.startswith(path + os.sep)) for place in (home, root))
 
 
+def empties_scratchpad(target, cwd, recursive):
+    """True for a glob directly in a session scratchpad (<tmp>/claude-<uid>/<project>/<session>/scratchpad, shared
+    by parallel subagents), or with -r the scratchpad itself. Judged by path shape only; an operand with a variable
+    other than $TMPDIR or ${TMPDIR:-default} cannot be judged."""
+    tmpdir = os.environ.get("TMPDIR", "")
+    target = TMPDIR_VARIABLE.sub(lambda m: tmpdir or (m.group(0) if m.group(1) is None else m.group(1)), target)
+    if "$" in target:
+        return False
+    path = os.path.normpath(os.path.join(cwd, os.path.expanduser(target)))
+    temp = TEMP_ROOT.match(path)
+    roots = [temp.group(0)] if temp else []
+    if tmpdir and path.startswith(os.path.normpath(tmpdir) + os.sep):
+        roots.append(os.path.normpath(tmpdir) + os.sep)
+    for root in roots:  # claude-<uid> is the first folder in the temp root
+        pad = SCRATCHPAD.fullmatch(path[len(root):])
+        if pad and (GLOB.search(pad.group(1)) if pad.group(1) else recursive):
+            return True
+    return False
+
+
 def rm_reason(args, cwd):
     found = Arguments(args)
     recursive = found.has("r", "--recursive") or "R" in found.short
     if "--no-preserve-root" in found.long or recursive and any(is_broad(word, cwd) for word in found.words):
         return "rm -r on a root, home, repository or wildcard path: name the exact directories to remove"
+    if any(empties_scratchpad(word, cwd, recursive) for word in found.words):
+        return ("rm of the shared session scratchpad's top level: other agents keep files there; delete only your own "
+                "scratchpad/<task>/")
     return ""
 
 
