@@ -22,8 +22,11 @@ Why each rule exists:
     starting a Persistent timer makes it fire a missed run at once, so a timer is never stopped to pause it.
   - launchd has no timeout and no full calendar: only fixed times, and the job runs through `run`, which
     times out the command (SIGTERM to its process group, SIGKILL after 10 s, exit 124).
-`make` and `launchd` write files only; they never run systemctl or launchctl. The margin check judges the first
-run only: later runs are not checked against the deadline.
+`make` and `launchd` write files only; they never run systemctl or launchctl. A `make` over existing units says
+"update:": the printed enable line reloads them while the timer stays active, so it is never left unwatched.
+launchd has no in-place reload, so a `launchd` over an existing plist prints a reload line that runs unload
+and load back to back.
+The margin check judges the first run only: later runs are not checked against the deadline.
 --command is one portable command line for both backends. In ExecStart, `%` is written as `%%` and `$` as `$$`
 so systemd expands nothing; a leading `-`, `@`, `+`, `!` or `:` keeps its systemd meaning (ignore failure, argv0,
 privileges). A backslash anywhere (systemd expands C escapes, launchd does not) and a lone `;` word (systemd
@@ -355,9 +358,13 @@ def cmd_make(args, out, err):
     unit_dir = Path(encodable("--dir", args.dir)) if args.dir else Path.home() / ".config" / "systemd" / "user"
     units = {f"{name}.service": ("\n".join(service) + "\n").encode(), f"{name}.timer": ("\n".join(timer) + "\n").encode()}
     verify_units(name, units)
+    updating = any((unit_dir / filename).exists() for filename in units)
     write_files({unit_dir / filename: data for filename, data in units.items()}, args.force)
     out(f"wrote {unit_dir}/{name}.service and {name}.timer; first run {fmt(next_run)}")
     out(f"enable: systemctl --user daemon-reload && systemctl --user enable --now {name}.timer")
+    if updating:
+        out(f"update: the enable line changes an active {name}.timer in place; never stop or disable it to change it, "
+            "then run check")
     tool = [python, str(Path(__file__).resolve())]
     deadline_flag = ["--deadline", args.deadline] if args.deadline else []
     out(f"state dir: {state_dir(args)} (pause file {paused})")
@@ -448,9 +455,16 @@ def cmd_launchd(args, out, err):
                "--state-dir", str(state_dir(args)), "--", *words]
     plist = {"Label": name, "ProgramArguments": program, "StartCalendarInterval": schedule}
     target = (Path(encodable("--dir", args.dir)) if args.dir else Path.home() / "Library" / "LaunchAgents") / f"{name}.plist"
+    updating = target.exists()
     write_files({target: plistlib.dumps(plist)}, args.force)
     out(f"wrote {target} (timeout {timeout}s enforced by the run wrapper)")
-    out("enable: " + shlex.join(["launchctl", "load", str(target)]))
+    load = shlex.join(["launchctl", "load", str(target)])
+    if not updating:
+        out("enable: " + load)
+        return 0
+    out(f"reload: {shlex.join(['launchctl', 'unload', str(target)])}; {load}")
+    out(f"update: launchd has no in-place reload (load fails on a loaded job); run the reload line as one command "
+        f"so {name} is off only between its two calls, then confirm it with `launchctl list {name}`")
     return 0
 
 

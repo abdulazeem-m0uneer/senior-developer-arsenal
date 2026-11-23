@@ -219,6 +219,17 @@ class OverwriteTests(TimerCase):
         self.assertEqual(self.make("--force")[0], 0)
         self.assertIn("OnCalendar=daily", self.timer_file())
 
+    def test_update_is_in_place_and_never_stops_the_timer(self):
+        _, first, _ = self.make()
+        self.assertNotIn("update:", first)
+        (self.units / "rep.timer").write_text("old")
+        code, out, _ = self.make("--force")
+        self.assertEqual(code, 0)
+        self.assertIn("update: the enable line changes an active rep.timer in place", out)
+        self.assertNotIn("stop", out.replace("never stop", ""))
+        self.assertNotIn("disable", out.replace("or disable", ""))
+        self.assertFalse((self.bin / "systemctl.calls").exists())
+
     def test_identical_rerun_is_fine(self):
         self.make()
         self.assertEqual(self.make()[0], 0)
@@ -323,6 +334,18 @@ class LaunchdTests(TimerCase):
             self.assertEqual(self.launchd("--at", at)[0], 2, at)
         for wd in ("8", "5-1", "a", "1,,3", ""):
             self.assertEqual(self.launchd("--at", "09:00", "--weekdays", wd)[0], 2, wd)
+
+    def test_update_reloads_back_to_back_instead_of_a_load_that_fails(self):
+        _, first, _ = self.launchd("--at", "09:00")
+        target = shlex.quote(str(self.units / "job.plist"))
+        self.assertIn(f"enable: launchctl load {target}", first)
+        self.assertNotIn("update:", first)
+        code, out, _ = self.launchd("--at", "10:00", "--force")
+        self.assertEqual(code, 0)
+        self.assertEqual(self.plist()["StartCalendarInterval"]["Hour"], 10)
+        self.assertIn(f"reload: launchctl unload {target}; launchctl load {target}", out)
+        self.assertIn("update: launchd has no in-place reload", out)
+        self.assertNotIn("enable:", out)
 
     def test_overwrite_refused_without_force(self):
         self.launchd("--at", "09:00")
