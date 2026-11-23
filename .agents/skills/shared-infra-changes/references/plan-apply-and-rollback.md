@@ -64,6 +64,19 @@ Never the raw plan. One table, plus the rollback:
 
 ---
 
+### Cluster namespaces: `kube_apply_check.py`
+
+A bare `kubectl apply` replaces any object with a matching name, including one another team owns. The wrapper turns the plan guard into two commands:
+
+| Command | Does |
+| :--- | :--- |
+| `check -f M --namespace NS --context CTX [--owner-label k=v] [--allow-update] [--plan P]` | Reads the manifest once and sends those bytes to a server-side dry run, whose answer (objects after defaulting and admission) is the object list. It is not a field diff: each object is found with `kubectl get`, and any existing object is `REFUSED-EXISTING` unless it carries our label and `--allow-update` is given (`UPDATE-OURS`). Refuses another namespace, cluster-scoped kinds, duplicates and an empty list. Writes the plan only when nothing is refused. |
+| `apply --plan P -f M [--max-age 30m] [--yes]` | Refuses a changed manifest, an old or empty plan, a dry run whose objects differ from the plan, a moved resourceVersion or a NEW object that has appeared. Without `--yes` it prints the command; with it, runs a client-side `apply -f -` with the verified bytes on stdin (no prune, force or overwrite) and confirms every object exists. |
+
+Exit 0 ok, 1 refused (nothing written), 2 usage or kubectl error and 4 kubectl timeout (both before the write), 3 any error after the write started (the real apply, a lookup or the output failed or timed out), or an object is missing afterwards: the namespace may be partly changed, so inspect it before retrying. Exit 3 is used only after the write started. `--overall-timeout` bounds every kubectl call of the run, and the write starts only while a full `--kubectl-timeout` is left. kubectl runs in its own process group, and a timeout kills the whole group, so a hung login plugin cannot hold the run open. POSIX only. The context is always explicit. A controller or status update changes an object's resourceVersion, so `apply` may refuse a stale plan: run `check` again. The short window between the last re-check and the apply cannot be closed with client-side apply. Generate the manifest first (`kustomize build`, `helm template`) and pass it with `-f -`, then give `apply` the same bytes.
+
+---
+
 ## 4. Rollback, Written First
 
 ```text

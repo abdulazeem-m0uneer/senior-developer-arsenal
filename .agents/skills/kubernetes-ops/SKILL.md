@@ -47,7 +47,8 @@ Consult: [Helm Conventions & Validation](./references/helm-and-validation.md)
 Consult: [Helm Conventions & Validation](./references/helm-and-validation.md)
 1. Render offline, lint, and schema-check with kubeconform.
 2. Use `kubectl apply --dry-run=server` and `kubectl diff` only against a cluster the user owns or has approved reading.
-3. Treat policy-as-code (Kyverno, OPA Gatekeeper) as an optional extra gate; never require it.
+3. Before any apply into a shared namespace, run `shared-infra-changes/scripts/kube_apply_check.py check` with an explicit `--context`: it must show no existing object changed (except our own labelled ones, with `--allow-update`).
+4. Treat policy-as-code (Kyverno, OPA Gatekeeper) as an optional extra gate; never require it.
 
 ### Step 5: Debug with Read-Only Commands First
 Consult: [Debugging Runbook](./references/debugging-runbook.md)
@@ -57,7 +58,7 @@ Consult: [Debugging Runbook](./references/debugging-runbook.md)
 
 ### Step 6: Hand Off Live Changes
 1. Never run `apply`, `patch`, `scale`, `delete`, `rollout undo`, `helm upgrade`, or `helm rollback` against a live shared cluster from this skill.
-2. Produce the exact command, the expected effect, and the rollback command; route them through `shared-infra-changes`.
+2. Produce the exact command, the expected effect, and the rollback command; route them through `shared-infra-changes`. An apply into a shared namespace happens only as `kube_apply_check.py apply` of a saved plan from `check`, never as a bare `kubectl apply`.
 
 ---
 
@@ -68,6 +69,7 @@ helm lint ./chart --strict && helm template rel ./chart -f values.yaml | kubecon
 kustomize build overlays/prod | kubeconform -strict -summary -
 grep -rnE 'image:.*(:latest|[^:@]+$)' manifests/        # untagged or latest images: must print nothing
 kubectl apply --dry-run=server -f out.yaml              # only against an approved cluster
+python3 ../shared-infra-changes/scripts/kube_apply_check.py check -f out.yaml --namespace NS --context CTX --plan p.json   # shared namespace: exit 0 required
 ```
 
 | Area | Finding | Risk | Severity | Fix |
