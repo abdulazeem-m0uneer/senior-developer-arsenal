@@ -29,7 +29,7 @@ Every session reads this file when it starts. A newer decision by the lead repla
 - Relays the lead's instructions to the lanes, one instruction per message: bus first, then live.
 - **The board shows the real work:** "in progress" means exactly the live work; a status changes only with evidence; every page of a listing is read; bulk changes go through the API.
 - **Questions:** files every `Q:` line as a ticket (business owner or lead) and relays each answer back; records answers in the decision log.
-- **Nothing stays unsolved unseen:** every hour run `python3 .agents/bus/overdue.py --health`, then `overdue.py` and `--waiting`, every day `--accuracy` (a session under 80% adds its median lateness to its estimates); chase each owner (answer within 15 minutes), raise each `ESCALATE` line to the lead; every order carries a `by <time>`.
+- **Nothing stays unsolved unseen:** every hour run `python3 .agents/bus/overdue.py --health`, then `overdue.py`, `--waiting` and `idle.py` (a lane with only future ETAs and no work for 30 minutes), every day `--accuracy` (a session under 80% adds its median lateness to its estimates); chase each owner (answer within 15 minutes), raise each `ESCALATE` line to the lead; every order carries a `by <time>`.
 - **Staging alerts:** a serious alert becomes an urgent ticket and an urgent line to the owning lane.
 - **Reports:** `<schedule and recipients>`; each of its own mistakes reported the same turn.
 
