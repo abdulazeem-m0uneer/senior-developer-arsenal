@@ -3,6 +3,8 @@
 
 Usage: found = guard_unseen_hash.unseen(texts, transcript_path, window_mb=None, agent_id=None, allow=None)
        # [] when all seen
+       found = guard_unseen_hash.unseen_tokens(tokens, transcript_path, agent_id=None, partial=True)
+       # the same check on tokens already picked (typed-sha's operands); partial=False: a timeout judges none
        text = guard_unseen_hash.named(found)  # "a1b2c3d, e4f5a6b and 2 more"
 The texts are what a call sends (guard_calendar.outbound_texts with messages_only: gh comments, PRs and issues, the
 message of a git commit or tag, the registry entry's `programs`, outbound MCP tools, the message of the built-in
@@ -231,9 +233,19 @@ def unseen(texts, transcript_path, window_mb=None, clock=time.monotonic, budget=
     """The hashes in the texts that no seen entry of the transcript window showed; [] on any failure, and only the
     ones judged before the budget ran out on a timeout. agent_id: the hook input's, when the call runs inside a
     subagent (its own transcript is read). allow: words that are not hashes."""
-    found, wanted = set(), []
     try:
         wanted = hashes(texts or [], allow)
+    except Exception:  # fail open: a broken check never refuses a call
+        return []
+    return unseen_tokens(wanted, transcript_path, window_mb, clock, budget, agent_id)
+
+
+def unseen_tokens(wanted, transcript_path, window_mb=None, clock=time.monotonic, budget=BUDGET_SECONDS, agent_id=None,
+                  partial=True):
+    """The tokens (lowercase hex, 7 to 40 characters) that no seen entry of the transcript window showed, judged as
+    unseen() judges a hash; [] on any failure. On a timeout, the ones already judged unseen with partial, else []."""
+    found = set()
+    try:
         if not wanted or not isinstance(transcript_path, str) or not transcript_path:
             return []
         deadline = clock() + budget
@@ -250,7 +262,8 @@ def unseen(texts, transcript_path, window_mb=None, clock=time.monotonic, budget=
             if token not in found and not transcript.seen(token):
                 found.add(token)
     except OutOfTime:  # a hash judged unseen stays unseen; the ones not judged yet pass
-        pass
+        if not partial:
+            return []
     except Exception:  # fail open: a broken check never refuses a call
         return []
     return [token for token in wanted if token in found]

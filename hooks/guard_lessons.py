@@ -3,8 +3,8 @@
 
 Usage: hit = guard_lessons.judge(command, cwd)  # None, or Hit(lesson, rule, reason)
        hit = guard_lessons.judge_outbound(tool_name, tool_input, cwd)  # a tool other than Bash that sends text
-       Both take transcript=<the hook input's transcript_path> and agent_id=<its agent_id> for the unseen-hash rule
-       (default None: without a transcript it passes).
+       Both take transcript=<the hook input's transcript_path> and agent_id=<its agent_id> for the unseen-hash and
+       typed-sha rules (default None: without a transcript unseen-hash passes, typed-sha checks short pins only).
 Rules: the built-in rules below, adjusted and extended by registry files. The global registry is
 $LESSONS_GUARDS_GLOBAL_FILE or ~/.agents/lesson-guards.json; the project registry is .agents/lesson-guards.json,
 searched from $CLAUDE_PROJECT_DIR (else the hook's cwd) upward. Format:
@@ -93,12 +93,29 @@ Built-in rules:
                      binary literals are built in). MCP id fields (id, message_id, threadId; not sha) are not
                      judged. Fails open when the transcript is missing, unreadable or slow (on a timeout, only
                      hashes already judged unseen refuse). See guard_unseen_hash.py.
+  typed-sha          off until a registry entry names it (give it "min_version": "1.30.0"). A literal hex value for
+                     gh pr merge --match-head-commit (`V` or `=V`) or git push --force-with-lease=<ref>:<V> that is
+                     shorter than 40 characters (the merge pin only: GitHub refuses it) or, 7 to 40 characters, was printed by no transcript entry the assistant did
+                     not write (unseen-hash's check and window). A $NAME set on the same line is read, and $'<hex>'
+                     counts as typed; a value from $(...), a backtick or a variable set elsewhere passes. Without a
+                     transcript, or on an error or timeout, only the short-pin check applies. Bash only. See
+                     guard_typed_sha.py.
+  oom-first          off until a registry entry names it (give it "min_version": "1.30.0"). A Bash call that exited
+                     134 or 137 (guard.py track's error events; an interrupted call does not count), run again (the
+                     same command by the digest track stores of what it ran, wrappers, launchers and echo left out,
+                     or one sharing a check key with it; --help and --version pass) before a later call read the
+                     kernel log (journalctl -k, --dmesg, -t kernel or a grep for oom; dmesg; a cgroup's
+                     memory.events; systemctl status). A failed call that ran under timeout (also behind systemd-run
+                     or unshare) is also cleared by a later `lessons.py cause` note: exit 137 is then often the
+                     timeout's SIGKILL. Only the newest 32 armed failures are judged. Reads the session state through
+                     `session`; without it, or on a state it cannot read, it passes. Bash only. See guard_oom.py.
 Also not seen: a pgrep inside a quoted "$(...)" in a loop condition or in the loop body (`while true; do pgrep -f x
 || break; done`), and a here-document fed to a shell
 (`bash <<EOF`), whose body is dropped as data.
 Time budget: string work and at most a few stat calls and two small file reads per Bash call, plus one `<shell> -n`
 run (at most 1 s) when shell-syntax is on; unseen-hash adds one bounded transcript read (0.2 s at most), only when an
-outbound text holds a hash.
+outbound text holds a hash, and typed-sha one more (one budget for the call) when a command types a SHA of 7
+to 40 characters; oom-first reads the session state file once (shared with rerun-after-red).
 """
 import datetime as dt
 import json
@@ -109,7 +126,9 @@ from pathlib import Path
 
 import guard_calendar
 import guard_destructive as shell
+import guard_oom
 import guard_syntax
+import guard_typed_sha
 import guard_unseen_hash
 
 Hit = namedtuple("Hit", "lesson rule reason")
@@ -152,8 +171,17 @@ BUILT_IN_REASONS = {
                    "output of this turn (run `git log -1 --format=%H <ref>` or `gh pr view N --json mergeCommit`), "
                    'never from memory. A word that is not a commit hash: reword it, or add it to the entry\'s "allow" '
                    "list.",
+    "typed-sha": 'Pass the SHA from git in the same command: --match-head-commit "$(git rev-parse HEAD)" or '
+                 '--force-with-lease=<ref>:"$(git rev-parse origin/<ref>)"; a typed SHA is refused when it is short '
+                 "or was never printed in this session.",
+    "oom-first": "{command} exited 134/137, which is usually the kernel or V8 running out of memory, not the change: "
+                 "read the kernel log first (journalctl -k --since '-15 min' | grep -i -E 'oom|killed process'), "
+                 "compare peak memory, then rerun{timeout}.",
 }
-OPT_IN = frozenset(("rerun-after-red", "shell-syntax", "unseen-hash"))  # off until a registry entry names it
+OOM_TIMEOUT = ('; or, if it ran out its timeout limit, confirm that with python3 {lessons} cause '
+               '"<command>: timeout"')
+# off until a registry entry names it
+OPT_IN = frozenset(("rerun-after-red", "shell-syntax", "unseen-hash", "typed-sha", "oom-first"))
 ENTRY_KEYS = {"rule", "lesson", "reason", "enabled", "programs", "min_version", "workweek", "exceptions", "approvers",
               "shell", "window_mb", "allow", "guessed_times"}
 TAKES_PROGRAMS = ("help-probe", "secret-in-message", "calendar", "unseen-hash")
@@ -263,6 +291,15 @@ def rerun_after_red(cmd, entry):
     return bool((state["keys"] | {push_key(cmd)}) & state["red"])
 
 
+def typed_sha(command, transcript, agent_id):
+    """A SHA typed into gh pr merge --match-head-commit or a git push lease; see guard_typed_sha."""
+    if "--match-head-commit" not in command and "--force-with-lease" not in command:  # no second parse for the rest
+        return False
+    found = [(cmd.name, leading_operands(cmd), cmd.args, cmd.variables)
+             for cmd in commands(guard_typed_sha.plain_quotes(command)) if cmd.name in ("gh", "git")]
+    return guard_typed_sha.refused(found, transcript, agent_id)
+
+
 def pgrep_wait_loop(cmd, _entry):
     return cmd.in_loop and cmd.name == "pgrep" and has_option(cmd.args, "f", "--full")
 
@@ -366,10 +403,11 @@ BUILT_IN = {"pgrep-wait-loop": pgrep_wait_loop, "hook-bypass": hook_bypass, "hel
             "secret-in-message": secret_in_message, "rerun-after-red": rerun_after_red,
             "pipe-exit": lambda cmd, entry: False,  # judged on the whole command: see pipe_exit
             "calendar": lambda cmd, entry: False,  # judged on the text a call sends: see outbound_hit
-            "unseen-hash": lambda cmd, entry: False,
+            "unseen-hash": lambda cmd, entry: False, "typed-sha": lambda cmd, entry: False,
+            "oom-first": lambda cmd, entry: False,  # judged on the whole command against the session: see judge
             "shell-syntax": lambda cmd, entry: False}  # judged on the whole command first: see judge
 OUTBOUND = ("calendar", "unseen-hash")
-WHOLE_COMMAND = frozenset(("pipe-exit", "shell-syntax") + OUTBOUND)
+WHOLE_COMMAND = frozenset(("pipe-exit", "shell-syntax", "typed-sha", "oom-first") + OUTBOUND)
 
 
 def has_word(args, word, long_value=False):
@@ -822,10 +860,12 @@ def judge_outbound(tool_name, tool_input, cwd, transcript=None, agent_id=None):
 
 def judge(command, cwd, session=None, is_check=None, transcript=None, agent_id=None):
     """The first rule the command breaks, as Hit(lesson id or None, rule name, reason); None when it breaks none.
-    session: a function returning {"red": failed check and push keys, "keys": the command's check keys}, called only
-    by a rule that needs it. is_check: a function telling whether a command text runs a test, build, lint or CI
-    check (guard.py passes its own); without it only local scripts count as checks for pipe-exit. transcript,
-    agent_id: the session transcript path and the subagent id, read by unseen-hash (without a transcript it passes).
+    session: a function returning {"red": failed check and push keys, "keys": the command's check keys, "events": the
+    session's recorded events and "check_keys": guard.py's check_keys function (oom-first)}, called only by a rule
+    that needs it. is_check: a function telling whether a command text runs a test, build, lint or CI check (guard.py
+    passes its own); without it only local scripts count as checks for pipe-exit. transcript, agent_id: the session
+    transcript path and the subagent id, read by unseen-hash (without a transcript it passes) and typed-sha (without
+    one it checks short merge pins only).
     A registry problem never raises: the entry is skipped (registry_problems lists it)."""
     if not isinstance(command, str) or not command.strip():
         return None
@@ -835,15 +875,22 @@ def judge(command, cwd, session=None, is_check=None, transcript=None, agent_id=N
     if error:  # first: the other rules read the words of a command the shell would split another way
         return Hit(syntax.get("lesson"), "shell-syntax",
                    syntax.get("reason") or BUILT_IN_REASONS["shell-syntax"].replace("{error}", error))
+    state = []
     for name, entry, _ in active:
-        if name == "pipe-exit" and pipe_exit(command, is_check):
+        if name == "oom-first" and session:
+            state = state or [session()]
+            failed = guard_oom.armed(command, state[0])
+            if failed:
+                return Hit(entry.get("lesson"), name, entry.get("reason") or BUILT_IN_REASONS[name].replace(
+                    "{timeout}", OOM_TIMEOUT if failed[1] else "").replace("{command}", failed[0]))
+        if ((name == "pipe-exit" and pipe_exit(command, is_check))
+                or (name == "typed-sha" and typed_sha(command, transcript, agent_id))):
             return Hit(entry.get("lesson"), name, entry.get("reason") or BUILT_IN_REASONS[name])
         if name in OUTBOUND:
             hit = outbound_hit(name, entry, "Bash", {"command": command}, transcript, agent_id)
             if hit:
                 return hit
     active = [rule for rule in active if rule[0] not in WHOLE_COMMAND]
-    state = []
     for cmd in commands(command):
         for name, entry, matcher in active:
             if name == "rerun-after-red" and session:

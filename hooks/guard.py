@@ -5,13 +5,16 @@ commands and the limits of an unattended run (Claude Code plugin).
 Usage (hook input is JSON on stdin):
   guard.py baseline  # SessionStart startup|resume|clear: record HEAD and the already-dirty paths; prints nothing
   guard.py track     # PostToolUseFailure / PostToolUse on Bash: record failed and passed checks and recorded lessons;
+                     # and kernel log reads (guard_oom.py, for the opt-in oom-first);
                      # a recorded lesson also appends its preceding failures to the local evidence file (save_evidence)
   guard.py pre       # PreToolUse, every tool: deny past a run limit (guard_limits.py); deny a file write outside
                      # the edit-scope lock (guard_scope.py); ask or deny an arsenal subagent call asking for a
                      # model above its tier (guard_models.py); deny a Bash command that
                      # repeats a recorded lesson (guard_lessons.py, hit logged by guard_hits.py; the opt-in rerun-after-red also reads
-                     # this session's failed checks and pushes and the `lessons.py cause` notes, the opt-in
-                     # unseen-hash reads the session or subagent transcript: transcript_path, agent_id); ask or deny a
+                     # this session's failed checks and pushes and the `lessons.py cause` notes, the opt-in oom-first
+                     # its 134/137 failures, cause notes and kernel log reads, the opt-in
+                     # unseen-hash and typed-sha read the session or subagent transcript: transcript_path,
+                     # agent_id); ask or deny a
                      # destructive Bash command (guard_destructive.py)
   guard.py stop      # Stop: block once when source changed without a test, or a check failed, never passed
                      # again and no lesson followed, or this session's changes leave dead code (dead_code.py);
@@ -86,6 +89,7 @@ def optional(name):
 guard_destructive = optional("guard_destructive")
 guard_limits = optional("guard_limits")
 guard_lessons = optional("guard_lessons")
+guard_oom = optional("guard_oom")
 
 EVIDENCE_FAILURES = 3   # failed commands kept with a lesson: the last ones since the previous lesson
 ERROR_CHARS = 400
@@ -369,6 +373,14 @@ def pushes(command):
         return []
 
 
+def reads_kernel_log(command, error=None, response=None):
+    """True when the call read the kernel log or a cgroup's OOM counters (oom-first); False without guard_oom.
+    response: the hook input's tool_response, whose stdout and stderr show a read the kernel refused."""
+    output = "\n".join(str(response.get(name) or "") for name in ("stderr", "stdout")) \
+        if isinstance(response, dict) else ""
+    return bool(guard_oom) and guard_oom.reads_kernel_log(bounded(command), error, output)
+
+
 def red_checks(events):
     """Check and push keys that failed and neither passed nor got a cause note (`lessons.py cause`) since."""
     red = set()
@@ -399,8 +411,14 @@ def track():
     checks = check_keys(command)
     if data.get("hook_event_name") == "PostToolUseFailure":
         if data.get("is_interrupt") is not True:
-            record(path, {"event": "error", "command": shown(command, FAILED_COMMAND_CHARS),
-                          "error": shown(str(data.get("error") or ""), ERROR_CHARS)})
+            error = str(data.get("error") or "")
+            failure = {"event": "error", "command": shown(command, FAILED_COMMAND_CHARS),
+                       "error": shown(error, ERROR_CHARS), "checks": checks}
+            if guard_oom and guard_oom.KILLED.match(error):  # oom-first compares the command as it ran
+                failure.update(guard_oom.facts(bounded(command)))
+            record(path, failure)
+            if reads_kernel_log(command, error):  # a grep of the log that matched nothing exits 1
+                record(path, {"event": "klog"})
             for key in pushes(command):  # not a "fail": a refused push is no failed check at the Stop gate
                 record(path, {"event": "push_fail", "key": key})
             if checks:
@@ -415,6 +433,8 @@ def track():
             pass
     if CAUSE_COMMAND.search(bounded(command)):
         record(path, {"event": "cause"})
+    if reads_kernel_log(command, response=data.get("tool_response")):
+        record(path, {"event": "klog"})
     for key in pushes(command):
         record(path, {"event": "push_ok", "key": key})
     checks = check_keys(command, decisive=True)  # a pass hidden by `| tail` or `|| true` proves nothing
@@ -582,7 +602,9 @@ def lesson_refusal(command, cwd, data=None):
     """Why the command is refused under a lesson guard (the hit is logged), or ''."""
     def session():
         path = state_path(data) if data else None
-        return {"red": red_checks(load(path)) if path else set(), "keys": set(check_keys(command))}
+        events = load(path) if path else []
+        return {"red": red_checks(events), "keys": set(check_keys(command)), "events": events,
+                "check_keys": check_keys}
     try:
         hook_data = data or {}
         hit = guard_lessons.judge(command, cwd, session, is_check_command, hook_data.get("transcript_path"),
