@@ -6,6 +6,7 @@ import tempfile
 import time
 import unittest
 from pathlib import Path
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPT = ROOT / "hooks" / "guard.py"
@@ -136,6 +137,73 @@ class DetectionTest(Sandbox):
         self.assertTrue(guard_destructive.destructive("rm -rf repo", outside))  # the repository root, named from above
         self.assertEqual(guard_destructive.destructive("rm -rf repo/dist", outside), "")
         self.assertEqual(guard_destructive.destructive("rm -rf sub", str(self.repo)), "")
+
+    def test_the_top_level_of_the_shared_session_scratchpad_is_refused(self):
+        sid = "/tmp/claude-1000/-srv-repo/0b6c2f1e-9d4a-4c1b-8e2f-3a5d7c9b1e04"
+        pad = sid + "/scratchpad"
+        refused = [
+            f"rm -rf {pad}/*", f"rm -rf {pad}/.*", f"rm -rf {pad}/*.log", f"rm -r {pad}/x*", f"rm -fr {pad}/[ab]*",
+            f"rm -R {pad}", f"rm --recursive {pad}/", f"rm -rf {pad}/agent-a/..", f"rm -rf {pad}/./*",
+            f"rm -f {pad}/*.log", f"rm {pad}/?", f'rm -rf "{pad}"/*', f"sh -c 'rm -rf {pad}/*'",
+            f"cd {pad} && rm -rf *.md", f"cd {pad} && rm -f *", f"cd {sid} && rm -f scratchpad/*.log",
+            "rm -rf /private/tmp/claude-501/-Users-me-repo/abc/scratchpad/*",
+            "rm -rf /var/folders/zz/x1y2/T/claude-501/-Users-me-repo/abc/scratchpad/*",
+            f"rm -fr {pad}/[ab]", f"rm -rf {pad}/agent-a {pad}/*", f"rm -rf {pad}/*/*", f"rm -f {pad}/*/*.log",
+            "rm -f /tmp/claude-1000/-p/*/scratchpad/*.log", "rm -rf /tmp/claude-1000/-p/*/scratchpad",
+            "rm -rf /tmp/claude-*/-srv-repo/*/scratchpad/*", "rm -rf /tmp/claude-[0-9]*/-p/s/scratchpad",
+            "rm -rf /private/var/folders/zz/x1/T/claude-501/-U/abc/scratchpad/*"]
+        for command in refused:
+            reason = guard_destructive.destructive(command, str(self.repo))
+            self.assertIn("scratchpad", reason, command)
+            self.assertNotIn("\n", reason)
+            self.assertLess(len(reason), 140, command)
+        passed = [
+            f"rm -rf {pad}/agent-a/*", f"rm -rf {pad}/agent-a", f"rm -f {pad}/file.txt", f"rm -f {pad}",
+            f"cd {pad} && rm -rf agent-a", f"cd {pad} && rm -f notes.md", f"rm -rf {pad}2/*", f"echo rm -rf {pad}/*",
+            "rm -rf ~/notes/scratchpad/*", "rm -rf /tmp/notes/scratchpad/*", "rm -rf /srv/claude-1000/a/b/scratchpad/*",
+            "rm -f /tmp/claude-1000/-srv-repo/scratchpad/*", "rm -rf /tmp/claude-1000/a/b/c/scratchpad/*",
+            f"rm -f {sid}/*.log", f"rm -rf {pad}/agent-a/*/*", f"rm -f {sid}/notes.md",
+            "rm -rf /tmp/claude-x/a/b/scratchpad/*", "rm -rf /tmp/xclaude-1000/a/b/scratchpad/*",
+            "rm -rf /tmp/claude-1000/-srv-repo/$SESSION/scratchpad/*", 'rm -rf "$TMPDIR"/claude-1000/a/b/scratchpad/*',
+            f"rm -f {pad}/agent-a/*.log", "rm -f /tmp/xclaude-1000/a/b/scratchpad/*", f"rm -rf {pad}/agent-a/claude-3/out",
+            f"rm -rf {pad}/agent-a/claude-3", f"rm -rf {pad}/claude-2", f"rm -rf {pad}/agent-a/claude-3/x/y/scratchpad/*",
+            "rm -rf /tmp/build/claude-1/dist", "rm -rf /tmp/pytest-of-u/claude-0/x", "rm -rf /tmp/claude-1000/tmp-xyz",
+            "rm -rf /tmp/claude-1000/-p/somefile.json", f"rm -rf {sid}", f"rm -rf {sid}/*", f"rm -rf {pad}/..", f"rm -rf {sid}/scratch*",
+            "rm -rf /tmp/claude-1000/-srv-repo/*", "rm -rf /tmp/claude-1000", "rm -f /tmp/claude-1000/-p/*/scratchpad/a.md",
+            "rm -rf /tmp/build/claude-1000/-srv-repo/abc/scratchpad/*",
+            "rm -rf /var/folders/zz/x1/T/a/T/claude-5/-U/a/scratchpad/*"]
+        with mock.patch.dict(os.environ, clear=False) as environ:
+            environ.pop("TMPDIR", None)
+            for command in passed:
+                self.assertEqual(guard_destructive.destructive(command, str(self.repo)), "", command)
+
+    def test_tmpdir_is_a_temp_root_for_the_scratchpad(self):
+        with mock.patch.dict(os.environ, {"TMPDIR": "/srv/tmpdir/"}):
+            for command in ("rm -rf /srv/tmpdir/claude-1000/-srv-repo/abc/scratchpad/*",
+                            'rm -rf "$TMPDIR"/claude-1000/-srv-repo/abc/scratchpad/*',
+                            "rm -rf ${TMPDIR}claude-1000/-srv-repo/abc/scratchpad/*.log"):
+                self.assertIn("scratchpad", guard_destructive.destructive(command, str(self.repo)), command)
+            for command in ("rm -rf /srv/tmpdir/claude-1000/-srv-repo/abc/scratchpad/agent-a/*",
+                            "rm -rf $TMPDIRX/claude-1000/-srv-repo/abc/scratchpad/*"):  # another variable
+                self.assertEqual(guard_destructive.destructive(command, str(self.repo)), "", command)
+        with mock.patch.dict(os.environ, {"TMPDIR": "/srv/tmp"}):  # no trailing slash, and a sibling of it
+            self.assertIn("scratchpad", guard_destructive.destructive(
+                "rm -rf ${TMPDIR:-/tmp}/claude-1000/-srv-repo/abc/scratchpad/*", str(self.repo)))
+            self.assertIn("scratchpad", guard_destructive.destructive(
+                "rm -rf /srv/tmp/claude-1000/a/b/scratchpad/*", str(self.repo)))
+            self.assertEqual(guard_destructive.destructive(
+                "rm -rf /srv/tmpx/claude-1000/a/b/scratchpad/*", str(self.repo)), "")
+
+    def test_a_tmpdir_default_and_home_are_expanded_for_the_scratchpad(self):
+        with mock.patch.dict(os.environ, {"HOME": "/tmp/h"}) as environ:
+            environ.pop("TMPDIR", None)
+            for command in ('rm -rf "${TMPDIR:-/tmp}"/claude-1000/-srv/abc/scratchpad/*',
+                            "rm -f ${TMPDIR-/tmp}/claude-1000/-srv/abc/scratchpad/*.log",
+                            "rm -rf ~/../claude-1000/a/b/scratchpad/*"):
+                self.assertIn("scratchpad", guard_destructive.destructive(command, "/srv"), command)
+            for command in ("rm -rf ${TMPDIR:-/srv}/claude-1000/-srv/abc/scratchpad/*",
+                            "rm -rf ${TMPDIR:-$X}/claude-1000/-srv/abc/scratchpad/*"):
+                self.assertEqual(guard_destructive.destructive(command, str(self.repo)), "", command)
 
     def test_long_and_hostile_input_is_handled_in_linear_time(self):
         started = time.monotonic()
