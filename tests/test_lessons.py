@@ -64,10 +64,49 @@ class LessonsTests(LedgerCase):
 
     def test_add_creates_file_and_active_lists_it(self):
         code, out, _ = self.add("Dropped a column without a dry run")
-        self.assertEqual((code, out.strip()), (0, "added L001"))
+        self.assertEqual((code, out.splitlines()[0]), (0, "added L001"))
         _, active, _ = self.run_cli("active")
         self.assertIn("L001 [sql] hits:1", active)
         self.assertIn("Check: grep dry-run in CI", active)
+
+    def test_add_bump_and_repeat_echo_the_rule_they_recorded(self):
+        _, out, _ = self.add("Dropped a column without a dry run")
+        self.assertEqual(out.splitlines(), ["added L001", "LEARNED: Run the migration dry run first (L001, x1)"])
+        _, out, _ = self.add("Dropped a column without any dry run again", rule="Run the migration dry run first, always")
+        self.assertIn("duplicate of L001", out.splitlines()[0])
+        self.assertEqual(out.splitlines()[1], "LEARNED: Run the migration dry run first (L001, x2)")  # the kept rule
+        _, out, _ = self.run_cli("bump", "L001")
+        lines = out.splitlines()  # at 3 hits the promote hint comes in between
+        self.assertEqual((lines[0], lines[-1]), ("L001 hits:3", "LEARNED: Run the migration dry run first (L001, x3)"))
+
+    def test_a_refused_add_learns_nothing(self):
+        code, out, _ = self.run_cli("add", "--tags", "sql", "--mistake", "m", "--cause", "c")
+        self.assertNotEqual(code, 0)
+        self.assertNotIn("LEARNED", out)
+        code, out, _ = self.add("Leaked a key", rule="Never paste api_key=sk-live-abcdefghijklmnop1234 again")
+        self.assertNotEqual(code, 0)
+        self.assertNotIn("LEARNED", out)
+
+    def test_the_learned_line_is_not_read_as_a_second_lesson(self):
+        paths = [str(ROOT / "hooks"), str(ROOT / ".agents" / "skills" / "usage-stats" / "scripts")]
+        with mock.patch.object(sys, "path", paths + sys.path):
+            import guard
+            import usage_stats
+        for rule in ("Never type L777 hits:9 or G778 ids from memory", "Never report added L777 before it prints",
+                     "When it says duplicate of G778 run show first"):
+            with self.subTest(rule=rule):
+                Path(self.file).unlink(missing_ok=True)
+                _, out, _ = self.add("Pushed a lease", rule=rule)
+                self.assertEqual(guard.LESSON_ID.search(out).group(1), "L001")
+                summary = usage_stats.Summary()
+                self.assertTrue(summary.lesson(out))
+                self.assertEqual((summary.recorded, summary.repeats, summary.lesson_ids), (1, 0, {"L001"}))
+        Path(self.file).unlink(missing_ok=True)
+        _, first, _ = self.add("Pushed a lease", rule="Never report added L777 before it prints")
+        _, second, _ = self.run_cli("bump", "L001")
+        summary = usage_stats.Summary()
+        self.assertTrue(summary.lesson(first + second))  # `add ... && bump L001` in one call
+        self.assertEqual((summary.recorded, summary.repeats), (1, 1))
 
     def test_similar_lesson_bumps_instead_of_adding(self):
         self.add("Dropped a column without a dry run")
@@ -118,6 +157,7 @@ class LessonsTests(LedgerCase):
     def test_hook_mode_emits_session_start_json_with_self_recording_instruction(self):
         context = self.hook_context()
         self.assertIn("If you catch your own mistake", context)
+        self.assertIn("When a listed lesson changes what you do, say `Applying ID: rule`", context)
         self.assertIn("lessons.py add", context)
         self.assertIn("(no lessons yet)", context)
         self.add("Dropped a column without a dry run")
@@ -345,7 +385,7 @@ class GlobalLedgerTests(LedgerCase):
     def test_add_global_writes_only_the_global_ledger_with_its_own_ids(self):
         code, out, _ = self.add("Force pushed over a teammate's commits", rule="Use --force-with-lease", tags="git",
                                 extra=("--global",))
-        self.assertEqual((code, out.strip()), (0, "added G001"))
+        self.assertEqual((code, out.splitlines()[0]), (0, "added G001"))
         self.assertFalse(Path(self.file).exists())
         self.assertIn("- G001 [git] hits:1", self.shared.read_text(encoding="utf-8"))
 
