@@ -49,6 +49,13 @@ Activate this skill when:
 3. A `missed-skill` finding is a hypothesis. A repeat across sessions means the skill's trigger phrases or its description need work, or the phrase is too common to be a trigger. Fix the description and re-run the trigger eval; never ignore it.
 4. Subagent transcripts (`<session>/subagents/`) count toward their session's skills and subagents in `record`, `backfill` and `diagnose`. Their tokens are not added, so nothing is counted twice.
 
+### Step 5: Daily CI Cost of a Repository
+1. `python3 <skill-dir>/scripts/usage_stats.py ci --repo OWNER/NAME` (`--days 7` for a week, 400 at most; `--json` for machines; `--max-runs 50` caps the attempts read) prints one line per day, a day without runs included: `<date> runs <n>, red <n>, wasted <m> min (timeout <m>, coverage <m>, test <m>, lint/type <m>, superseded <m>, outside <m>, unknown <m>); repeats without a guard <n>`.
+2. It lists the runs with `gh run list --created >=<first day>` (at most 200). When the list reaches that limit, the oldest day it reached and every day before it end with `partial: gh listed its 200-run limit, older runs not counted`.
+3. `red` counts red attempts (failure, timed_out, cancelled, startup_failure) on the day the run was created. gh lists only a run's latest attempt, so every earlier attempt of a re-run run is read too: a flaky failure fixed by "Re-run failed jobs" still counts. Each attempt (`gh run view <id> --attempt <k>`) is classified and timed as `ci-wait`'s `ci_learn.py <id> --dry-run` does; no ledger is written. An attempt whose view shows it did not fail is not red. One whose failed log gh will not serve (`--log-failed` exits non-zero, as for a job that never started, such as a billing lock) is classified from its jobs, with a note on stderr. `--max-runs` caps attempts, not runs: the earlier attempts of a re-run run use it even when they passed. Attempts past it, oldest first, are not in the minutes (a skipped latest attempt still counts as red), and the line then says `skipped <k> attempt(s) over --max-runs <N> (not in the minutes)` ("attempt" for 1), before any partial note. A listed run without a readable `createdAt` is not counted, with a note on stderr.
+4. "Repeats without a guard" is the lessons with 2 or more hits and no guard or holding exemption (a lesson promoted only to the `lessons-promoted.md` rule stub counts: a rule is not a guard), in the project ledger (`$LESSONS_FILE` or `.agents/lessons.md`) and the global one (`$LESSONS_GLOBAL_FILE` or `~/.agents/lessons.md`), read now: the same number on every line. Give each a guard (`lessons.py promote ID --guard PATH`) or an exemption.
+5. Exit 2 on a bad argument, a gh failure on the list or a run's `--json` view (the run id is named), any gh call that hangs past 120 s (a failed log included) or a ledger that is not a readable file; nothing is printed on stdout then, so a partial day never passes for a whole one.
+
 ---
 
 ## 3. What Is Stored, and What Never Is
@@ -71,6 +78,7 @@ Only sessions where the arsenal was active are kept. Nothing is sent anywhere.
 python3 <skill-dir>/scripts/usage_stats.py backfill; echo "exit $?"            # 0, prints transcripts read and sessions kept
 python3 <skill-dir>/scripts/usage_stats.py report --markdown; echo "exit $?"   # 0, every number with its base
 python3 <skill-dir>/scripts/usage_stats.py report --readme README.md; echo "exit $?"  # 2 when the README has no usage block
+python3 <skill-dir>/scripts/usage_stats.py ci --repo OWNER/NAME; echo "exit $?"  # 0, one line per day; 2 on a gh failure
 ```
 
 ---

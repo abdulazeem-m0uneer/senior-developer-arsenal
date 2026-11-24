@@ -130,24 +130,34 @@ def run_command(command, cwd, timeout):
     return "passed" if proc.returncode == 0 else "failed"
 
 
+DEFER = {"on": False, "signal": None}  # while on, a stop signal is only recorded; see stop()
+
+
+def defer(on):
+    """Start or end a stretch where a stop signal waits; ending it raises the signal that came meanwhile. A flag,
+    not only a signal mask: Python runs handlers in the main thread, and a mask set there does not hold back a
+    signal another thread accepts."""
+    DEFER["on"] = on
+    if not on and DEFER["signal"] is not None:
+        raise SystemExit(128 + DEFER["signal"])
+
+
 def remove(target):
-    """Delete the copy with the stop signals blocked: a signal that arrives now waits until the folder is gone."""
-    blocked = signal.pthread_sigmask(signal.SIG_BLOCK, STOP_SIGNALS)
+    """Delete the copy with a stop signal deferred: a signal that arrives now waits until the folder is gone."""
+    defer(True)
     try:
         shutil.rmtree(target, ignore_errors=True)
+        if os.path.lexists(target):
+            print(f"mutate: warning: could not remove {target}; delete it by hand", file=sys.stderr)
     finally:
-        signal.pthread_sigmask(signal.SIG_SETMASK, blocked)
-    if os.path.lexists(target):
-        print(f"mutate: warning: could not remove {target}; delete it by hand", file=sys.stderr)
+        defer(False)
 
 
 def in_copy(top, names, command, timeout, mutant=None, name=None):
-    blocked = signal.pthread_sigmask(signal.SIG_BLOCK, STOP_SIGNALS)  # no signal between creating and guarding it
+    defer(True)  # no stop between creating the folder and guarding it with the finally below
+    target = tempfile.mkdtemp(prefix=PREFIX, dir=os.environ.get("ARSENAL_MUTATION_DIR") or None)
     try:
-        target = tempfile.mkdtemp(prefix=PREFIX, dir=os.environ.get("ARSENAL_MUTATION_DIR") or None)
-    finally:
-        signal.pthread_sigmask(signal.SIG_SETMASK, blocked)
-    try:
+        defer(False)  # a stop that came during mkdtemp is raised here, inside the guard
         copy_tracked(top, names, target)
         if mutant is not None:
             apply(target, name, mutant)
@@ -172,6 +182,9 @@ def load_mutants(path):
 def stop(signum, _frame):
     for other in STOP_SIGNALS:  # a second signal must not cut the cleanup short
         signal.signal(other, signal.SIG_IGN)
+    if DEFER["on"]:  # creating or removing a copy: finish that first, then exit (see defer)
+        DEFER["signal"] = signum
+        return
     raise SystemExit(128 + signum)  # unwinds through run_command's and in_copy's finally blocks
 
 

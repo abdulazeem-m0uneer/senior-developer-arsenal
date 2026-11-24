@@ -33,9 +33,12 @@ class LedgerCase(unittest.TestCase):
         self.file = str(self.dir / "nested" / "lessons.md")
         self.shared = self.dir / "home" / "lessons.md"
         self.env = {**os.environ, "LESSONS_GLOBAL_FILE": str(self.shared)}
-        patch = mock.patch.dict(os.environ, {"LESSONS_GLOBAL_FILE": str(self.shared)})
-        patch.start()
+        patch = mock.patch.dict(os.environ, {"LESSONS_GLOBAL_FILE": str(self.shared),
+                                             "LESSONS_GUARDS_GLOBAL_FILE": str(self.dir / "no-registry.json")})
+        patch.start()  # never this machine's lesson-guard registry
         self.addCleanup(patch.stop)
+        lessons.registry_lessons.cache_clear()
+        self.addCleanup(lessons.registry_lessons.cache_clear)
 
     def run_cli(self, *argv, stdin=""):
         out, err = io.StringIO(), io.StringIO()
@@ -751,6 +754,179 @@ class RelevanceTests(LedgerCase):
             context = self.hook_context()
         self.assertEqual(context.count("\n- L"), lessons.ACTIVE_CAP)
         self.assertNotIn("more: lessons.py search", context)
+
+
+class HasGuardTests(LedgerCase):
+    """One rule for "has a guard" (lessons.has_guard), used by the escalation exit 3, `unguarded` and the
+    session-start "Repeats without a guard" note: a rules-only promotion and an exemption are no guard."""
+
+    def setUp(self):
+        super().setUp()
+        patch = mock.patch.dict(os.environ, {"LESSONS_GUARD_HITS_FILE": str(self.dir / "hits.jsonl")})
+        patch.start()
+        self.addCleanup(patch.stop)
+        os.environ.pop("LESSONS_PROMOTE_AT", None)
+        self.guard = self.dir / "guard.py"
+        self.guard.write_text("", encoding="utf-8")
+        self.run_cli("add", "--tags", "git", "--mistake", "Pushed a branch over a teammate", "--cause", "c",
+                     "--rule", "fetch before any push")
+        self.run_cli("bump", "L001")
+
+    def unguarded_ids(self):
+        return [line.split()[0] for line in self.run_cli("unguarded")[1].splitlines()[:-1]]
+
+    def note(self):
+        context = self.hook_context(stdin=json.dumps({"cwd": str(self.dir)}))
+        return [line for line in context.splitlines() if line.startswith("Repeats without a guard")]
+
+    def test_the_predicate(self):
+        for promoted, guarded in (("", False), ("exempt@3: no command shows it", False), ("global G001", False),
+                                  ("rules/lessons-promoted.md", False),
+                                  (".agents/lessons/rules/lessons-promoted.md", False),
+                                  ("tests/test_push.py", True), ("hooks/push.py + rule rules/lessons-promoted.md", True)):
+            with self.subTest(promoted=promoted):
+                self.assertIs(lessons.has_guard({"promoted": promoted}), guarded)
+
+    def registry(self, *entries):
+        path = self.dir / "lesson-guards.json"
+        path.write_text(json.dumps({"guards": list(entries)}), encoding="utf-8")
+        patch = mock.patch.dict(os.environ, {"LESSONS_GUARDS_GLOBAL_FILE": str(path), "CLAUDE_PROJECT_DIR": str(self.dir)})
+        patch.start()
+        self.addCleanup(patch.stop)
+        lessons.registry_lessons.cache_clear()
+        self.addCleanup(lessons.registry_lessons.cache_clear)
+
+    def test_a_lesson_named_by_an_applied_registry_guard_is_guarded(self):
+        self.run_cli("promote", "L001")  # rules only in the ledger, as lessons promoted before the registry existed
+        self.registry({"rule": "pipe-exit", "lesson": "L001"})
+        code, out, err = self.run_cli("bump", "L001")
+        self.assertEqual(code, 0, out + err)
+        self.assertNotIn("ESCALATE", err)
+        self.assertNotIn("L001", self.unguarded_ids())
+
+    def test_a_disabled_or_unknown_registry_entry_is_no_guard(self):
+        self.run_cli("promote", "L001")
+        self.registry({"rule": "pipe-exit", "lesson": "L001", "enabled": False}, {"rule": "no-such-rule", "lesson": "L001"})
+        code, _, err = self.run_cli("bump", "L001")
+        self.assertEqual(code, 3, err)
+        self.assertIn("L001", self.unguarded_ids())
+
+    def test_a_rules_only_promotion_escalates_and_is_listed_as_unguarded(self):
+        self.run_cli("promote", "L001")
+        code, _, err = self.run_cli("bump", "L001")
+        self.assertEqual(code, 3, err)
+        self.assertIn("ESCALATE L001 x3:", err)
+        self.assertEqual(self.unguarded_ids(), ["L001"])
+        self.assertEqual(len(self.note()), 1)
+        self.assertTrue(self.note()[0].startswith("Repeats without a guard (1): L001 x3."), self.note())
+
+    def test_a_moved_stub_is_counted_in_the_global_ledger_only(self):
+        self.run_cli("bump", "L001")
+        self.run_cli("globalize", "L001")
+        self.assertEqual(self.unguarded_ids(), ["G001"])
+
+    def test_a_guard_kept_with_its_rule_is_a_guard(self):
+        self.run_cli("promote", "L001", "--guard", str(self.guard), "--keep-rule")
+        code, out, err = self.run_cli("bump", "L001")
+        self.assertEqual((code, "ESCALATE" in err), (0, False), err)
+        self.assertIn("GUARD FAILED L001", out)
+        self.assertEqual((self.unguarded_ids(), self.note()), ([], []))
+
+    def test_a_rules_only_promotion_can_be_exempted_and_keeps_its_rule_pointer(self):
+        self.run_cli("promote", "L001")
+        promoted = Ledger_promoted(self.file, "L001")
+        code, out, err = self.run_cli("exempt", "L001", "--reason", "a judgement no command shows")
+        self.assertEqual(code, 0, out + err)
+        after = Ledger_promoted(self.file, "L001")
+        self.assertTrue(after.startswith("exempt@2: a judgement no command shows"), after)
+        self.assertIn(promoted, after)  # the rule stays where it was written
+        self.assertEqual(self.run_cli("bump", "L001")[0], 0)
+
+    def test_a_lesson_with_a_real_guard_still_refuses_an_exemption(self):
+        self.run_cli("promote", "L001", "--guard", str(self.guard))
+        code, _, err = self.run_cli("exempt", "L001", "--reason", "x")
+        self.assertNotEqual(code, 0)
+        self.assertIn("already has a guard", err)
+
+    def exempt_until(self, until, on="2026-11-24"):
+        with mock.patch.object(lessons, "today", return_value=on):
+            return self.run_cli("exempt", "L001", "--reason", "pending a guard", "--until", until)
+
+    def test_an_exemption_until_a_date_stops_escalation_only_until_then(self):
+        code, out, err = self.exempt_until("2026-12-01")
+        self.assertEqual(code, 0, out + err)
+        self.assertTrue(Ledger_promoted(self.file, "L001").startswith("exempt@2: until 2026-12-01; pending a guard"))
+        with mock.patch.object(lessons, "today", return_value="2026-12-01"):
+            code, _, err = self.run_cli("bump", "L001")  # on the last day it still holds
+        self.assertEqual((code, "ESCALATE" in err), (0, False), err)
+        with mock.patch.object(lessons, "today", return_value="2026-12-02"):
+            code, _, err = self.run_cli("bump", "L001")
+        self.assertEqual(code, 3, err)
+        self.assertIn("ESCALATE L001", err)
+
+    def test_unguarded_lists_a_pending_exemption_with_its_expiry(self):
+        self.run_cli("exempt", "L001", "--reason", "for now")  # so the bump to 3 does not escalate
+        self.run_cli("bump", "L001")
+        self.exempt_until("2026-12-01")
+        with mock.patch.object(lessons, "today", return_value="2026-11-25"):
+            out = self.run_cli("unguarded")[1]
+        self.assertIn("L001", out)
+        self.assertIn("exempt until 2026-12-01", out)
+
+    def test_an_until_date_must_be_a_real_date_after_today(self):
+        for until in ("2026-11-24", "2026-11-01", "2026-13-01", "next week"):
+            with self.subTest(until=until):
+                code, _, err = self.exempt_until(until)
+                self.assertNotEqual(code, 0, until)
+                self.assertNotIn("exempt@", Ledger_promoted(self.file, "L001"))
+
+    def test_an_exemption_without_until_still_holds_for_good(self):
+        self.run_cli("exempt", "L001", "--reason", "a judgement no command shows")
+        with mock.patch.object(lessons, "today", return_value="2030-01-01"):
+            code, _, err = self.run_cli("bump", "L001")
+        self.assertEqual((code, "ESCALATE" in err), (0, False), err)
+
+    def test_an_exemption_stops_the_escalation_but_is_listed_once_outgrown(self):
+        self.run_cli("exempt", "L001", "--reason", "judgement call: no command shows it")
+        self.assertEqual(self.unguarded_ids(), [])  # holds: 2 hits, under the threshold anyway
+        code, _, err = self.run_cli("bump", "L001")
+        self.assertEqual((code, "ESCALATE" in err), (0, False), err)
+        self.assertEqual(self.unguarded_ids(), ["L001"])
+
+
+
+def Ledger_promoted(path, lesson_id):
+    return lessons.Ledger(Path(path), "L").find(lesson_id)["promoted"]
+
+class ExitCodeTests(unittest.TestCase):
+    """Callers (hooks/guard.py, usage_stats.py) read exit 3 of an add or bump as "repeat saved, then escalated"."""
+
+    def test_the_escalation_is_lessons_only_exit_3(self):
+        import ast
+        scripts = Path(SCRIPT).parent
+        tree = ast.parse(Path(SCRIPT).read_text(encoding="utf-8"))
+        local = [scripts / f"{alias.name}.py" for node in ast.walk(tree) if isinstance(node, ast.Import)
+                 for alias in node.names if (scripts / f"{alias.name}.py").is_file()]
+        local += [scripts / f"{node.module}.py" for node in ast.walk(tree)
+                  if isinstance(node, ast.ImportFrom) and node.module and (scripts / f"{node.module}.py").is_file()]
+        self.assertIn(scripts / "promotion.py", local)
+
+        def is_3(node):
+            return isinstance(node, ast.Constant) and node.value == 3 and not isinstance(node.value, bool)
+
+        def exits_3(node):
+            return isinstance(node, ast.Call) and any(is_3(arg) for arg in node.args) and (
+                getattr(node.func, "attr", None) == "exit" or getattr(node.func, "id", None) in ("exit", "SystemExit"))
+        for path in [Path(SCRIPT), *local]:
+            for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+                with self.subTest(path=path.name, line=getattr(node, "lineno", 0)):
+                    self.assertFalse(exits_3(node))
+                    self.assertFalse(path == Path(SCRIPT) and isinstance(node, ast.Return) and node.value is not None
+                                     and is_3(node.value))
+        users = {function.name for function in ast.walk(tree) if isinstance(function, ast.FunctionDef)
+                 for node in ast.walk(function) if isinstance(node, ast.Name) and node.id == "EXIT_ESCALATE"}
+        self.assertEqual(users, {"escalate"})
+        self.assertEqual(lessons.EXIT_ESCALATE, 3)
 
 
 if __name__ == "__main__":

@@ -421,11 +421,11 @@ The arsenal includes 61 specialized skills conforming to the Agent Skills standa
 
 ### 31. ci-wait (/ci-wait)
 - **When to use**: Waiting for a pull request's checks, telling an outside failure (rate limit, runner, network) from a failure of the change, and merging only the tested commit.
-- **Includes**: [outside-failures.md](.agents/skills/ci-wait/references/outside-failures.md), bundled `scripts/ci_wait.py`.
+- **Includes**: [outside-failures.md](.agents/skills/ci-wait/references/outside-failures.md), bundled `scripts/ci_wait.py` and `scripts/ci_learn.py` (classify a red run, count its wasted minutes, record the lesson).
 
 ### 32. quality-gate (/quality-gate)
 - **When to use**: Building or running one local command that equals CI, with checks that prove they bite and coverage of changed lines.
-- **Includes**: [gate-check-catalogue.md](.agents/skills/quality-gate/references/gate-check-catalogue.md), [checks-that-bite.md](.agents/skills/quality-gate/references/checks-that-bite.md).
+- **Includes**: [gate-check-catalogue.md](.agents/skills/quality-gate/references/gate-check-catalogue.md), [checks-that-bite.md](.agents/skills/quality-gate/references/checks-that-bite.md), bundled `scripts/gate_lock.py` (one gate at a time per machine), `scripts/changed_coverage.py` (`--report <lcov|cobertura> --base <ref> [--min 90]`: refuses when the changed lines are under-covered) and `scripts/push_once.py` (pre-push: refuses a push that would start a second CI run on a branch while one is going, except a pure rebase), and the [pre-push](.agents/skills/quality-gate/templates/pre-push) hook template that runs affected tests, then both.
 
 ### 33. smoke-test (/smoke-test)
 - **When to use**: Proving a deployed API works after every release with a suite that creates its own data through the API.
@@ -537,7 +537,7 @@ The arsenal includes 61 specialized skills conforming to the Agent Skills standa
 
 ### 60. usage-stats (/usage-stats)
 - **When to use**: Numbers on how the arsenal helped in your own sessions (tests with code changes, blocks followed by a fix, failed checks turned green, destructive commands and repeat mistakes stopped, skills used, lessons enforced), for a README, a post or a talk. Local only: counts and names, never prompts, commands or paths.
-- **Includes**: [usage_stats.py](.agents/skills/usage-stats/scripts/usage_stats.py) (`record` as the `SessionEnd` hook, `backfill`, `report --markdown | --json | --readme`, `diagnose --last | --session ID`: missed skills and operating-core gaps in one session; subagent transcripts credit their skills to the session), `diagnose.py`, `skill_triggers.py`.
+- **Includes**: [usage_stats.py](.agents/skills/usage-stats/scripts/usage_stats.py) (`record` as the `SessionEnd` hook, `backfill`, `report --markdown | --json | --readme`, `diagnose --last | --session ID`: missed skills and operating-core gaps in one session; subagent transcripts credit their skills to the session; `ci --repo OWNER/NAME [--days N] [--json] [--max-runs N]`: one CI-cost line per day, red attempts (re-runs included) classified by `ci_learn.py`, wasted minutes per class, repeats without a guard), `diagnose.py`, `ci_cost.py`, `skill_triggers.py`.
 
 ### 61. ship (/ship)
 - **When to use**: A finished branch goes out: the repository's local gate, commits staged by explicit path, a push without force, the pull request opened or updated with the verification evidence, CI awaited with `ci-wait` and a fix loop of at most 3 real-fix rounds, then a hand-off; merging waits for the user's explicit approval. Babysits a pull request too: unresolved review threads and failed checks become one classified worklist (fix / question / out-of-scope), worked through the receiving-review protocol until green.

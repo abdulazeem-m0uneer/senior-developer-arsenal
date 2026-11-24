@@ -610,3 +610,73 @@ class EscalationTests(GuardLedgerCase):
         self.assertNotIn("dry run each migration", section.split("exempted on purpose")[0])
         self.assertIn(f"1 exempted on purpose: {exempted}", section)
         self.assertNotIn("is enforced by exempt", out)
+
+
+class EscalationExitTests(GuardLedgerCase):
+    """A repeat that reaches the threshold with no guard and no exemption is saved, then stops the caller (exit 3)."""
+
+    @staticmethod
+    def message(lesson_id, hits):
+        return (f"ESCALATE {lesson_id} x{hits}: this lesson has repeated without a guard. Attach one (promote "
+                f"{lesson_id} --guard PATH) or record why none fits (exempt {lesson_id} --reason ...); every further "
+                "repeat stops here until then.")
+
+    def events(self):
+        log = self.dir / "nested" / "lessons.events.jsonl"
+        return [json.loads(line)["event"] for line in log.read_text(encoding="utf-8").splitlines()]
+
+    def test_a_third_unguarded_bump_saves_the_hit_then_exits_3(self):
+        lesson_id = self.lesson("Pushed a branch over a teammate", "fetch before any push", hits=2)
+        code, out, err = self.run_cli("bump", lesson_id)
+        self.assertEqual(code, 3, err)
+        self.assertIn(f"{lesson_id} hits:3", out)
+        self.assertEqual(out.splitlines()[-1], f"LEARNED: fetch before any push ({lesson_id}, x3)")
+        self.assertIn(self.message(lesson_id, 3), err.splitlines())
+        self.assertNotIn("ESCALATE", out)
+        self.assertIn(f"- {lesson_id} [sql] hits:3 |", Path(self.file).read_text(encoding="utf-8"))
+        self.assertEqual(self.events(), ["add", "repeat", "repeat"])
+        code, _, err = self.run_cli("bump", lesson_id)  # every further repeat stops too
+        self.assertEqual((code, self.message(lesson_id, 4) in err), (3, True))
+
+    def test_a_second_hit_does_not_escalate(self):
+        lesson_id = self.lesson("Pushed a branch over a teammate", "fetch before any push")
+        code, _, err = self.run_cli("bump", lesson_id)
+        self.assertEqual((code, err), (0, ""))
+
+    def test_a_duplicate_add_reaching_three_escalates(self):
+        lesson_id = self.lesson("Dropped a column without a dry run", "Run the migration dry run first", hits=2)
+        code, out, err = self.add("Dropped a column without any dry run again")
+        self.assertEqual(code, 3, err)
+        self.assertIn(f"duplicate of {lesson_id}: hits bumped to 3", out)
+        self.assertIn(self.message(lesson_id, 3), err)
+        self.assertEqual(self.events(), ["add", "repeat", "repeat"])
+
+    def test_a_first_add_never_escalates(self):
+        with mock.patch.dict(os.environ, {"LESSONS_PROMOTE_AT": "1"}):
+            code, out, err = self.add("Dropped a column without a dry run")
+        self.assertEqual((code, err), (0, ""))
+        self.assertIn("added L001", out)
+
+    def test_a_guarded_repeat_keeps_its_guard_failed_hint_and_exits_0(self):
+        lesson_id = self.lesson("Pushed a branch over a teammate", "fetch before any push", hits=2)
+        guard = self.dir / "guard.py"
+        guard.write_text("", encoding="utf-8")
+        self.run_cli("promote", lesson_id, "--guard", str(guard))
+        code, out, err = self.run_cli("bump", lesson_id)
+        self.assertEqual(code, 0, err)
+        self.assertIn(f"GUARD FAILED {lesson_id}", out)
+        self.assertNotIn("ESCALATE", out + err)
+
+    def test_an_exempted_repeat_exits_0(self):
+        lesson_id = self.lesson("Dropped a column on staging", "dry run each migration", hits=2)
+        self.run_cli("exempt", lesson_id, "--reason", "judgement call: no command shows it")
+        code, out, err = self.run_cli("bump", lesson_id)
+        self.assertEqual(code, 0, err)
+        self.assertIn(f"EXEMPT {lesson_id} recurred", out)
+        self.assertNotIn("ESCALATE", out + err)
+
+    def test_the_threshold_follows_the_setting(self):
+        lesson_id = self.lesson("Pushed a branch over a teammate", "fetch before any push")
+        with mock.patch.dict(os.environ, {"LESSONS_PROMOTE_AT": "2"}):
+            code, _, err = self.run_cli("bump", lesson_id)
+        self.assertEqual((code, self.message(lesson_id, 2) in err), (3, True))

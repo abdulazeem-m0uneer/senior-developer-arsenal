@@ -90,7 +90,7 @@ def evidence_counts(today, days):
     return found
 
 
-def report(sources, unguarded, days, today, cwd):
+def report(sources, unguarded, days, today, cwd, has_guard=None):
     lessons = [lesson for source in sources for lesson in source.lessons]
     new = [lesson for lesson in lessons if lesson["hits"] == 1 and in_window(lesson["date"], today, days)]
     repeated = sorted((lesson for lesson in lessons if lesson["hits"] > 1 and in_window(lesson["date"], today, days)),
@@ -114,8 +114,11 @@ def report(sources, unguarded, days, today, cwd):
         lines.append(f"- lesson guards stopped {sum(hits.values())} repeats on this machine: {stopped}")
     promoted = [lesson for lesson in lessons if lesson["promoted"] and not EXEMPT.match(lesson["promoted"])
                 and in_window(lesson["date"], today, days)]
-    for lesson in promoted:
-        lines.append(f"- {lesson['id']} is enforced by {lesson['promoted']}")
+    for lesson in promoted:  # has_guard: lessons.py's own test, so a rule-only promotion is not called a guard
+        if has_guard is None or has_guard(lesson):
+            lines.append(f"- {lesson['id']} is enforced by {lesson['promoted']}")
+        else:
+            lines.append(f"- {lesson['id']} is kept as a rule only in {lesson['promoted']} (no guard)")
     if new:
         lines.append(f"- {len(new)} new lessons recorded: {', '.join(lesson['id'] for lesson in new)}")
     if not any(source.path.is_file() for source in sources):

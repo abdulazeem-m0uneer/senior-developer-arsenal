@@ -20,7 +20,7 @@ Usage:
   lessons.py guards [--registry FILE [--target LIVE]] [--strict]  # registries vs this hook and every cached version
                                      # (exit 1: a referenced version would refuse; --registry: dry run of a file not
                                      # yet in place; --target: judge it as if it sat at LIVE, so relative paths resolve)
-  lessons.py exempt ID --reason R    # no mechanical guard fits: record why, so the repeat is no longer flagged
+  lessons.py exempt ID --reason R [--until DATE]  # no guard fits (or, until DATE, a planned one): record why
   lessons.py metrics [--days 7] [--lane-tag session:] [--bus DIR] [--json] [--ledger FILE ...]
                                      # per ledger and lane: added/repeated per day, repeats, guarded/unguarded/exempt,
                                      # guard fires per day, and with --bus the ETA accuracy per session (metrics.py)
@@ -30,7 +30,14 @@ Options: --file PATH (default: $LESSONS_FILE or .agents/lessons.md); --global on
   add and bump also append one line to <ledger stem>.events.jsonl beside the ledger (lesson_events.py), for metrics,
   and globalize appends a move line to both ledgers' logs; a failed log write warns on stderr and never fails
   the command.
-Exit codes: 0 ok, 1 check found problems, 2 usage, refused content, unreadable file or busy lock.
+Escalation: a repeat (bump, or an add that is a duplicate) that brings a lesson with no guard and no exemption to
+  the threshold N or more is saved and printed as usual, then prints "ESCALATE <id> x<hits>: ..." on stderr and exits
+  3, on every further repeat until `promote ID --guard PATH` or `exempt ID --reason R`. A first add never escalates;
+  a guarded or exempted lesson that recurs keeps its GUARD FAILED / EXEMPT recurred hint and exits 0.
+  A guard is a Promoted path other than a rules-only lessons-promoted.md (a rule stub is no guard) and other than an
+  exempt@ mark (has_guard); escalation, `unguarded` and the session-start "Repeats without a guard" note share it.
+Exit codes: 0 ok, 1 check found problems, 2 usage, refused content, unreadable file or busy lock,
+  3 the repeat is recorded and escalated (see Escalation).
 Time budget: `active --hook` runs two short git reads (1.5 s timeout each) and never fails the session.
 """
 import argparse
@@ -44,6 +51,7 @@ from datetime import date
 from pathlib import Path
 
 import guard_hits
+import functools
 import guard_registry
 import lesson_events
 import metrics
@@ -55,6 +63,7 @@ from ledger_store import find_secret, locked, write_atomic
 ACTIVE_CAP = 15
 PROMOTE_AT = 3   # default; $LESSONS_PROMOTE_AT or --min overrides it
 SIMILAR_AT = 0.5
+EXIT_ESCALATE = 3  # a repeat was saved and still has no guard: the caller stops until one is attached or exempted
 FIELD_MAX = 200
 TAGS_MAX = 60
 SEARCH_MAX = 10
@@ -208,6 +217,8 @@ def promote_at(given=None):
 
 
 MOVED_MARK = "global "  # `globalize` leaves "Promoted: global <id>" on the project's stub
+KEPT_RULE = " + rule "  # promote --guard PATH --keep-rule stores "PATH + rule <rule file>"
+EXEMPT_UNTIL = re.compile(r"^exempt@\d+: until (\d{4}-\d{2}-\d{2}); ")  # a pending exemption, written by --until
 EXEMPT_MARK = re.compile(r"^exempt@(\d+): ")  # "exempt@<hits when granted>: <reason>"; never a path promote stores
 ESCALATE_SHOWN = 5  # unguarded repeats named in the session-start header; the rest are counted
 
@@ -218,15 +229,48 @@ def exempted_at(lesson):
     return int(found.group(1)) if found else None
 
 
+def exempt_until(lesson):
+    """The last day a pending exemption (`exempt --until DATE`) holds, as YYYY-MM-DD, else None."""
+    found = EXEMPT_UNTIL.match(lesson["promoted"])
+    return found.group(1) if found else None
+
+
+def exemption_expired(lesson):
+    until = exempt_until(lesson)
+    return until is not None and today() > until
+
+
 def is_exempt(lesson):
     """True while an exemption holds: the lesson has not recurred since it was granted."""
     at = exempted_at(lesson)
-    return at is not None and lesson["hits"] <= at
+    return at is not None and lesson["hits"] <= at and not exemption_expired(lesson)
+
+
+@functools.lru_cache(maxsize=None)
+def registry_lessons(cwd):
+    """Lesson ids a lesson-guard registry entry guards in cwd, as the installed hook applies them; empty on any
+    failure, so an unreadable registry never hides a lesson."""
+    try:
+        return frozenset(guard_registry.guarded_lessons(cwd))
+    except Exception:  # the registry is optional here; has_guard then reads Promoted alone
+        return frozenset()
+
+
+def has_guard(lesson):
+    """True when Promoted names a guard (a path other than a rules-only lessons-promoted.md file, an exemption mark
+    or a moved-to-global stub; `--guard PATH --keep-rule`, "PATH + rule ...", is guarded by PATH), or when an
+    applied lesson-guard registry entry names the lesson (lessons promoted before the registry existed)."""
+    promoted = lesson["promoted"]
+    if lesson.get("id") and lesson["id"] in registry_lessons(str(relevance.session_cwd())):
+        return True
+    if not promoted or EXEMPT_MARK.match(promoted) or promoted.startswith(MOVED_MARK):
+        return False
+    return Path(promoted.split(KEPT_RULE)[0]).name != promotion.RULE_FILE
 
 
 def unguarded(lesson):
-    """No guard, or an exemption the lesson has since outgrown by recurring."""
-    return not lesson["promoted"] or (exempted_at(lesson) is not None and not is_exempt(lesson))
+    """No guard (has_guard) and no exemption that holds; a moved stub is counted in the global ledger instead."""
+    return not lesson["promoted"].startswith(MOVED_MARK) and not has_guard(lesson) and not is_exempt(lesson)
 
 
 def promote_hint(lesson):
@@ -239,6 +283,25 @@ def promote_hint(lesson):
         return ""
     return (f"\nPROMOTE {lesson['id']}: seen {lesson['hits']} times. Run `promote {lesson['id']}` for a rule stub, or "
             f"enforce it mechanically (test, lint, hook, CI) and run `promote {lesson['id']} --guard PATH`.")
+
+
+def escalation(lesson):
+    """The ESCALATE line for a repeat at the threshold with no guard and no exemption, else ''."""
+    exempt = exempted_at(lesson) is not None and not exemption_expired(lesson)  # a pending one holds until its date
+    if has_guard(lesson) or exempt or lesson["promoted"].startswith(MOVED_MARK) \
+            or lesson["hits"] < promote_at():
+        return ""
+    return (f"ESCALATE {lesson['id']} x{lesson['hits']}: this lesson has repeated without a guard. Attach one (promote "
+            f"{lesson['id']} --guard PATH) or record why none fits (exempt {lesson['id']} --reason ...); every further "
+            "repeat stops here until then.")
+
+
+def escalate(lesson):
+    """After a saved repeat: print the ESCALATE line and return EXIT_ESCALATE, or return 0."""
+    line = escalation(lesson)
+    if line:
+        print(line, file=sys.stderr)
+    return EXIT_ESCALATE if line else 0
 
 
 def enforce_cap(ledger, keep):
@@ -301,7 +364,7 @@ def cmd_add(ledger, args):
     log_event(ledger, "add" if stored is new else "repeat", stored)
     print(message)
     print(learned(stored))
-    return 0
+    return 0 if stored is new else escalate(stored)
 
 
 def hook_text(project, shared, reserve=0, cwd=None):
@@ -400,7 +463,7 @@ def cmd_bump(ledger, args):
     log_event(ledger, "repeat", lesson)
     print(f"{lesson['id']} hits:{lesson['hits']}{note}")
     print(learned(lesson))
-    return 0
+    return escalate(lesson)
 
 
 def cmd_exempt(ledger, args):
@@ -411,9 +474,19 @@ def cmd_exempt(ledger, args):
     secret = find_secret(reason)
     if secret:
         raise Refused(f"looks like a secret ({secret}); lessons never store those")
-    if lesson["promoted"] and exempted_at(lesson) is None:
+    if has_guard(lesson):
         raise Refused(f"{lesson['id']} already has a guard ({lesson['promoted']}); an exemption would hide it")
-    lesson["promoted"] = clean(f"exempt@{lesson['hits']}: {reason}")
+    rule = lesson["promoted"] if lesson["promoted"] and exempted_at(lesson) is None else ""  # a rules-only promotion
+    until = ""
+    if args.until is not None:
+        try:
+            until = date.fromisoformat(args.until).isoformat()
+        except ValueError as error:
+            raise Refused(f"--until must be a date YYYY-MM-DD ({error})") from error
+        if until <= today():
+            raise Refused(f"--until {until} must be after today ({today()})")
+    lesson["promoted"] = clean(f"exempt@{lesson['hits']}: " + (f"until {until}; " if until else "") + reason
+                               + (f" (rule kept in {rule})" if rule else ""))
     ledger.save()
     print(f"exempted {lesson['id']} at {lesson['hits']} hits: {reason}. It stays in its section and is no longer "
           "flagged as a repeat without a guard, unless it recurs")
@@ -440,7 +513,7 @@ def cmd_promote(ledger, args):
         lesson["promoted"] = promotion.shown(args.guard)
         if args.keep_rule:  # a partial guard: the rest of the rule stays in force as an always-loaded rule
             path, appended = promotion.write_rule_stub(lesson, args.rules_dir or ledger.path.parent / "rules")
-            lesson["promoted"] += f" + rule {promotion.shown(path)}"
+            lesson["promoted"] += f"{KEPT_RULE}{promotion.shown(path)}"
             print(f"rule {'written to' if appended else 'already present in'} {path}: it keeps the part of the rule "
                   "the guard does not cover")
     elif args.kind == "test":
@@ -521,7 +594,7 @@ def ledger_sources(ledger, extra=(), shared=True):
 def unguarded_lessons(sources, threshold):
     """(source, lesson) seen threshold+ times with no guard, archive included, most hits first."""
     found = [(source, lesson) for source in sources for lesson in source.lessons
-             if lesson["hits"] >= threshold and unguarded(lesson)]
+             if lesson["hits"] >= threshold and (unguarded(lesson) or exempt_until(lesson))]  # pending ones too
     return sorted(found, key=lambda item: -item[1]["hits"])
 
 
@@ -531,7 +604,9 @@ def cmd_unguarded(ledger, args):
     threshold = promote_at(args.min)
     found = unguarded_lessons(ledger_sources(ledger, args.ledgers), threshold)
     for source, lesson in found:
-        print(f"{lesson['id']} hits:{lesson['hits']} [{lesson['section']}] {source.path}: {lesson['rule']}")
+        until = exempt_until(lesson)
+        state = f" (exempt until {until}{', expired' if exemption_expired(lesson) else ''})" if until else ""
+        print(f"{lesson['id']} hits:{lesson['hits']} [{lesson['section']}]{state} {source.path}: {lesson['rule']}")
     print(f"{len(found)} lessons seen {threshold}+ times without a guard")
     return 0
 
@@ -564,7 +639,7 @@ def cmd_retro(ledger, args):
         raise Refused("--days must be 1 or more")
     sources = ledger_sources(ledger, shared=not args.project)
     print(retro.report(sources, unguarded_lessons(sources, promote_at()), args.days, date.fromisoformat(today()),
-                       Path.cwd()))
+                       Path.cwd(), has_guard))
     return 0
 
 
@@ -681,6 +756,7 @@ def build_parser():
     guards.add_argument("--strict", action="store_true", help="cached versions no install references count too")
     exempt = sub.add_parser("exempt")
     exempt.add_argument("--reason")
+    exempt.add_argument("--until", help="last day the exemption holds (YYYY-MM-DD); a later repeat escalates again")
     retrospective = sub.add_parser("retro")
     retrospective.add_argument("--days", type=int, default=7)
     retrospective.add_argument("--project", action="store_true")
@@ -727,11 +803,16 @@ def run(args):
         return COMMANDS[args.command](ledger, args)
 
 
-def main(argv=None):
-    args = build_parser().parse_args(argv)
-    for stream in (sys.stdout, sys.stderr):  # a lesson with a character the console cannot encode still prints
+def tolerate_unencodable_output():
+    """A lesson with a character the console cannot encode still prints (as '?') instead of raising."""
+    for stream in (sys.stdout, sys.stderr):
         with contextlib.suppress(AttributeError, ValueError):
             stream.reconfigure(errors="replace")
+
+
+def main(argv=None):
+    args = build_parser().parse_args(argv)
+    tolerate_unencodable_output()
     hook = args.command == "active" and args.hook
     try:
         return run(args)

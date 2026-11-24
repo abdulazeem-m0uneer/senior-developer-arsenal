@@ -378,6 +378,14 @@ class RoundThreeTests(MutateCase):
             for signum, handler in saved.items():
                 signal.signal(signum, handler)
 
+    def test_a_stop_signal_during_removal_waits_even_with_another_thread_alive(self):
+        import threading
+        stop_thread = threading.Event()
+        helper = threading.Thread(target=stop_thread.wait, daemon=True)  # a thread that leaves the signal unblocked
+        helper.start()
+        self.addCleanup(stop_thread.set)
+        self.test_a_stop_signal_during_removal_waits_until_the_copy_is_gone()
+
     def test_inherited_git_variables_never_reach_the_real_repository(self):
         (self.repo / "check.py").write_text(
             "import subprocess, sys\n"

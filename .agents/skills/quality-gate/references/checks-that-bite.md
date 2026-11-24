@@ -71,7 +71,7 @@ A global percentage rewards old tests: a change can add two hundred untested lin
 | Change with no production line (docs, tests) | Division by zero or fail | Pass, stating "no measurable lines" |
 | Uncommitted work | Measured locally, not in CI | Diff commits only; say so in the output |
 
-Ready-made tools: `diff-cover` (any Cobertura or LCOV report), `jest --changedSince` with per-file thresholds, `coverlet` plus `reportgenerator` history for .NET. A custom script is under two hundred lines and is worth owning when branch-level accuracy matters.
+Bundled: `scripts/changed_coverage.py` measures changed lines (not branches) from an lcov or Cobertura report, names changed files the report does not list, and passes a change with no executable line; see SKILL.md Step 7. Ready-made tools: `diff-cover` (any Cobertura or LCOV report), `jest --changedSince` with per-file thresholds, `coverlet` plus `reportgenerator` history for .NET. A custom script is under two hundred lines and is worth owning when branch-level accuracy matters.
 
 ---
 

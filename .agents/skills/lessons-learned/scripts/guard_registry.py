@@ -72,6 +72,16 @@ def registry_paths(cwd, home=None, project=None):
         if module else []
 
 
+def guarded_lessons(cwd):
+    """Lesson ids the hook applies a registry guard for in cwd (enabled entries it can read; a rule it does not
+    know or a min_version above it is skipped, as the hook skips it); empty when the hook is not installed."""
+    module = current_module()
+    if module is None:
+        return set()
+    return {entry["lesson"] for _name, entry, _match in module.rules(str(cwd))
+            if isinstance(entry.get("lesson"), str) and entry["lesson"]}
+
+
 def current_problems(cwd):
     """Problems this hook reports for the registries in cwd; [] when the hook is not installed beside the skill."""
     module = current_module()

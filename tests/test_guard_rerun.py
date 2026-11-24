@@ -38,6 +38,17 @@ class RerunAfterRedTest(RerunCase):
         self.bash(CAUSE)
         self.assertEqual(self.pre("pytest -q"), "")
 
+    def test_a_push_behind_an_escalated_lesson_never_ran_and_is_not_red(self):
+        self.bash(f"python3 {LESSONS} bump L004 && git push origin feat", failed=True, is_interrupt=False,
+                  error="Exit code 3\nL004 hits:3\nESCALATE L004 x3: this lesson has repeated without a guard.")
+        self.assertEqual(self.pre("git push origin feat"), "")
+
+    def test_a_push_behind_a_quiet_escalated_lesson_never_ran_and_is_not_red(self):
+        self.bash(f"pytest -q; python3 {LESSONS} bump L004 >/dev/null 2>&1 && git push origin feat", failed=True,
+                  is_interrupt=False, error="Exit code 3")
+        self.assertEqual(self.pre("git push origin feat"), "")
+        self.assertIn("rerun-after-red", self.pre("pytest -q"))  # the check before the lesson did run
+
     def test_a_cause_note_before_the_failure_does_not_count(self):
         self.bash(CAUSE)
         self.bash("pytest -q", failed=True)

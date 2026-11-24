@@ -1,0 +1,46 @@
+#!/bin/sh
+# Pre-push hook template (quality-gate skill): affected tests, then changed-lines coverage, then one CI run
+# per branch. Copy to .git/hooks/pre-push (or call it from husky, lefthook or pre-commit) and set the four
+# values below for the project, here or in the environment. Each step's own exit code stops the push.
+#   AFFECTED_TESTS_CMD    the project's command that runs the tests the change affects and writes coverage
+#   COVERAGE_REPORT       the lcov.info or Cobertura XML that command writes
+#   PUSH_BASE             the ref changed lines are measured against, and push_once's rebase base
+#   ARSENAL_QUALITY_GATE  the folder holding changed_coverage.py and push_once.py
+# Tests and coverage measure the checked-out HEAD, so they run only when a pushed branch is at HEAD; a
+# deletion, a tag, or a branch other than the checked-out one goes straight to push_once (noted on stderr).
+# Never skip it with --no-verify; the opt-outs are ARSENAL_PUSH_REBASE=1 and ARSENAL_ALLOW_PUSH=1: either one
+# skips tests and coverage and makes push_once pass, which logs it to .agents/ci-optouts.log.
+set -u
+AFFECTED_TESTS_CMD="${AFFECTED_TESTS_CMD:-npm run test:affected -- --coverage}"
+COVERAGE_REPORT="${COVERAGE_REPORT:-coverage/lcov.info}"
+PUSH_BASE="${PUSH_BASE:-origin/main}"
+ARSENAL_QUALITY_GATE="${ARSENAL_QUALITY_GATE:-.agents/skills/quality-gate/scripts}"
+
+pushes=$(cat)   # git's push lines; read once, before any step can consume stdin
+
+head=$(git rev-parse --verify --quiet HEAD) || head=none
+at_head=no
+while read -r _ local_sha remote_ref _; do
+  case "$remote_ref" in refs/heads/*) [ "$local_sha" = "$head" ] && at_head=yes ;; esac
+done <<PUSHES
+$pushes
+PUSHES
+
+if [ "${ARSENAL_ALLOW_PUSH:-}" = 1 ]; then
+  skip="ARSENAL_ALLOW_PUSH=1"
+elif [ "${ARSENAL_PUSH_REBASE:-}" = 1 ]; then
+  skip="ARSENAL_PUSH_REBASE=1"
+elif [ "$at_head" = no ]; then
+  skip="no pushed branch is at HEAD"
+else
+  skip=""
+fi
+
+if [ -n "$skip" ]; then
+  echo "pre-push: $skip: affected tests and changed-lines coverage skipped" >&2
+else
+  sh -c "$AFFECTED_TESTS_CMD" </dev/null || exit $?
+  python3 "$ARSENAL_QUALITY_GATE/changed_coverage.py" --report "$COVERAGE_REPORT" --base "$PUSH_BASE" --min 90 \
+    || exit $?
+fi
+printf '%s\n' "$pushes" | python3 "$ARSENAL_QUALITY_GATE/push_once.py" hook "$@" --base "$PUSH_BASE"

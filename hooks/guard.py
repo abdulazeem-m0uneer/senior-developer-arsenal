@@ -6,7 +6,11 @@ Usage (hook input is JSON on stdin):
   guard.py baseline  # SessionStart startup|resume|clear: record HEAD and the already-dirty paths; prints nothing
   guard.py track     # PostToolUseFailure / PostToolUse on Bash: record failed and passed checks and recorded lessons;
                      # and kernel log reads (guard_oom.py, for the opt-in oom-first);
-                     # a recorded lesson also appends its preceding failures to the local evidence file (save_evidence)
+                     # a recorded lesson also appends its preceding failures to the local evidence file (save_evidence);
+                     # a failed lesson command that printed ESCALATE or exited 3 (lessons.py's only exit 3: the
+                     # repeat is saved) counts as recorded, whatever its redirection or `&&` position; when its step
+                     # decided the exit 3, that is no failure, the checks before it are and the steps after its
+                     # `&&` never ran (escalation_exit_prefix)
   guard.py pre       # PreToolUse, every tool: deny past a run limit (guard_limits.py); deny a file write outside
                      # the edit-scope lock (guard_scope.py); ask or deny an arsenal subagent call asking for a
                      # model above its tier (guard_models.py); deny a Bash command that
@@ -138,6 +142,10 @@ KEY_PARTS = ("token", "apikey", "pwd")  # whole underscore-separated parts: GITH
 KEY_PAIRS = ("api_key", "access_key", "private_key", "secret_key", "auth_token")
 # What lessons.py prints for the lesson it wrote or counted: "added L012", "duplicate of G003: ...", "L012 hits:3".
 LESSON_ID = re.compile(r"\b(?:added|duplicate of) ([LG]\d{3,})\b|^([LG]\d{3,}) hits:\d+", re.M)
+# lessons.py exits 3 after saving a repeat that still has no guard, with this line on stderr: recorded all the same.
+ESCALATE_LINE = re.compile(r"^ESCALATE [LG]\d{3,} x\d+:", re.M)
+ESCALATED_EXIT = re.compile(r"Exit code 3(?!\d)")
+LINE_CONTINUATION = re.compile(r"\\\n")  # a backslash-newline joins one shell line: no separator
 LEDGER_IN_COMMAND = re.compile(r"(?:LESSONS_FILE=|--file[=\s])(\"[^\"]+\"|'[^']+'|[^\s;&|]+)")
 
 MAX_NAMED = 8
@@ -183,9 +191,11 @@ CHECK_COMMAND = re.compile(
     r"|" + INTERPRETER + r"\s+\S*(?<![A-Za-z])tests?(?![A-Za-z])\S*"  # a script in a test directory, or a test file
     r"|" + INTERPRETER + r"\s+\S+\s[^;&|\n]*--(?:check|validate)"
     r")(?=$|[\s;&|)])")
-# lessons.py run as a command with the subcommand itself: not a word passed to "search", echo or grep, not --help.
+# lessons.py (or the `lessons` PATH shim that runs it) as a command with the subcommand itself: not a word passed to
+# "search", echo or grep, not --help.
 LESSON_COMMAND = re.compile(
-    PREFIX + r"(?:(?:\S*/)?py(?:thon[\d.]*)?(?:\s+-\S+)*\s+)?(?:\"[^\"\n]*lessons\.py\"|'[^'\n]*lessons\.py'|[^\s\"';&|]*lessons\.py)"
+    PREFIX + r"(?:(?:\S*/)?py(?:thon[\d.]*)?(?:\s+-\S+)*\s+)?(?:\"[^\"\n]*lessons\.py\"|'[^'\n]*lessons\.py'"
+    r"|[^\s\"';&|]*lessons\.py|(?:[^\s\"';&|]*/)?lessons)"
     r"(?:\s+--file[=\s](?:\"[^\"]*\"|'[^']*'|\S+))?\s+(?:add|bump)\b(?![^;&|\n]*\s(?:--help|-h)(?:\s|$))")
 CAUSE_COMMAND = re.compile(  # `lessons.py cause <note>` run as a command, as LESSON_COMMAND does for add and bump
     PREFIX + r"(?:(?:\S*/)?py(?:thon[\d.]*)?(?:\s+-\S+)*\s+)?(?:\"[^\"\n]*lessons(?:\.py)?\"|'[^'\n]*lessons(?:\.py)?'"
@@ -412,25 +422,20 @@ def track():
     if data.get("hook_event_name") == "PostToolUseFailure":
         if data.get("is_interrupt") is not True:
             error = str(data.get("error") or "")
-            failure = {"event": "error", "command": shown(command, FAILED_COMMAND_CHARS),
-                       "error": shown(error, ERROR_CHARS), "checks": checks}
-            if guard_oom and guard_oom.KILLED.match(error):  # oom-first compares the command as it ran
-                failure.update(guard_oom.facts(bounded(command)))
-            record(path, failure)
-            if reads_kernel_log(command, error):  # a grep of the log that matched nothing exits 1
-                record(path, {"event": "klog"})
-            for key in pushes(command):  # not a "fail": a refused push is no failed check at the Stop gate
-                record(path, {"event": "push_fail", "key": key})
-            if checks:
-                record(path, {"event": "fail", "command": shown(command, COMMAND_CHARS), "checks": checks})
+            before = escalation_exit_prefix(command, error)
+            if before is None:
+                if escalated_lesson(command, error):  # the repeat was saved, then a later step failed
+                    note_lesson(path, data, command, error)
+                record_failure(path, command, error, checks)
+                return
+            checks = check_keys(before)  # the lesson's exit 3 is no failure, and the steps after its `&&` never ran
+            if checks:  # recorded before the lesson, so the lesson covers it
+                record_failure(path, command, error, checks, ran=before)
+            note_lesson(path, data, command, error)
         return
     if LESSON_COMMAND.search(bounded(command)):  # PostToolUse: the command exited 0
-        before = load(path)
-        record(path, {"event": "lesson"})
-        try:
-            save_evidence(data, command, before)
-        except OSError:  # the evidence file is optional; the gate's own state is already written
-            pass
+        response = data.get("tool_response")
+        note_lesson(path, data, command, response.get("stdout") if isinstance(response, dict) else None)
     if CAUSE_COMMAND.search(bounded(command)):
         record(path, {"event": "cause"})
     if reads_kernel_log(command, response=data.get("tool_response")):
@@ -440,6 +445,54 @@ def track():
     checks = check_keys(command, decisive=True)  # a pass hidden by `| tail` or `|| true` proves nothing
     if checks:
         record(path, {"event": "pass", "checks": checks})
+
+
+def record_failure(path, command, error, checks, ran=None):
+    """ran: the part of the command that ran, when a lesson step's exit 3 stopped it (its pushes are the failed ones)."""
+    failure = {"event": "error", "command": shown(command, FAILED_COMMAND_CHARS),
+               "error": shown(error, ERROR_CHARS), "checks": checks}
+    if guard_oom and guard_oom.KILLED.match(error):  # oom-first compares the command as it ran
+        failure.update(guard_oom.facts(bounded(command)))
+    record(path, failure)
+    if reads_kernel_log(command, error):  # a grep of the log that matched nothing exits 1
+        record(path, {"event": "klog"})
+    for key in pushes(command if ran is None else ran):  # not a "fail": no failed check at the Stop gate
+        record(path, {"event": "push_fail", "key": key})
+    if checks:
+        record(path, {"event": "fail", "command": shown(command, COMMAND_CHARS), "checks": checks})
+
+
+def escalated_lesson(command, error):
+    """A failed command whose lesson step saved the repeat: it printed ESCALATE, or the command exited 3, which is
+    taken as lessons.py's only exit 3 whatever the step's redirection or position (another step exiting 3 before an
+    `&&` that skipped the lesson is the one case this misreads)."""
+    return bool(LESSON_COMMAND.search(bounded(command))) and (
+        bool(ESCALATE_LINE.search(error)) or bool(ESCALATED_EXIT.match(error)))
+
+
+def escalation_exit_prefix(command, error):
+    """When the command's exit 3 is the lesson step's own: the text before that step whose checks may have failed
+    ("" after an `&&`, which ran only on success), else None. The step decides the exit status: it ends the command
+    or only `&&` follows, which then never ran (see escalated_lesson for why its exit 3 is taken as its own)."""
+    if not ESCALATED_EXIT.match(error):
+        return None
+    text = LINE_CONTINUATION.sub("  ", bounded(command))  # same offsets
+    masked = QUOTED.sub(lambda quoted: "'" + "x" * (len(quoted.group()) - 2) + "'", text)
+    for match in LESSON_COMMAND.finditer(text):
+        after_and = masked[:match.start() + 1].rstrip().endswith("&&")
+        if decides_exit(masked, match.end()):
+            return "" if after_and else text[:match.start()]
+    return None
+
+
+def note_lesson(path, data, command, output):
+    """Record a lesson for the Stop gate, then its evidence pair; `output` is what lessons.py printed, or None."""
+    before = load(path)
+    record(path, {"event": "lesson"})
+    try:
+        save_evidence(data, command, before, output)
+    except OSError:  # the evidence file is optional; the gate's own state is already written
+        pass
 
 
 def secret_name(name):
@@ -473,7 +526,7 @@ def evidence_path():
     return Path(os.environ.get("LESSONS_EVIDENCE_FILE") or Path.home() / ".agents" / "lessons-evidence.jsonl")
 
 
-def save_evidence(data, command, events):
+def save_evidence(data, command, events, output):
     """Append {lesson, ledger, lesson command, the failures since the previous lesson} to the local evidence file,
     the labelled pairs a failure-to-lesson matcher can later be trained and measured on. Nothing when no command
     failed since the previous lesson. Never inside the transcript or the ledger; LESSONS_EVIDENCE=off disables it."""
@@ -487,9 +540,7 @@ def save_evidence(data, command, events):
             failures = []
     if not failures:
         return
-    response = data.get("tool_response")
-    stdout = response.get("stdout") if isinstance(response, dict) else None
-    found = LESSON_ID.search(stdout) if isinstance(stdout, str) else None
+    found = LESSON_ID.search(output) if isinstance(output, str) else None
     lesson = (found.group(1) or found.group(2)) if found else None
     named = LEDGER_IN_COMMAND.search(command)
     ledger = named.group(1).strip("\"'") if named else os.environ.get("LESSONS_FILE") or ".agents/lessons.md"
