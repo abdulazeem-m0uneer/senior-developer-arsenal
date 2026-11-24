@@ -397,7 +397,7 @@ The arsenal includes 61 specialized skills conforming to the Agent Skills standa
 
 ### 25. test-every-change (/test-every-change)
 - **When to use**: Every code change. Maps each changed behavior to required tests: regression test first for bug fixes, happy/error/edge cases for features, characterization tests before refactors.
-- **Includes**: [change-to-test-matrix.md](.agents/skills/test-every-change/references/change-to-test-matrix.md), [bootstrap-and-exemptions.md](.agents/skills/test-every-change/references/bootstrap-and-exemptions.md).
+- **Includes**: [change-to-test-matrix.md](.agents/skills/test-every-change/references/change-to-test-matrix.md), [bootstrap-and-exemptions.md](.agents/skills/test-every-change/references/bootstrap-and-exemptions.md), [red-run-and-ci.md](.agents/skills/test-every-change/references/red-run-and-ci.md), bundled `scripts/tdd.py` (`red -- <test command>`: runs the tests and prints a `Test-Red` commit trailer only when they really fail; `check --base <ref> [--verify] [--json]`: refuses a feature or fix branch whose first commit adds no test or records no red run, for CI).
 
 ### 26. qa-engineer (/qa-engineer)
 - **When to use**: Acceptance criteria, test plans and test cases, exploratory testing charters, bug reports, and release sign-off.

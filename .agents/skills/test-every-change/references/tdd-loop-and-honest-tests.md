@@ -11,7 +11,7 @@ REFACTOR after green only: duplication, names, helpers; no new behaviour
 NEXT     the next failing test
 ```
 
-Verify RED is mandatory. Test passes immediately: it tests existing behaviour; fix the test. Test errors (typo, import): fix until it fails correctly. Cannot explain why it failed: you do not know what it tests.
+Verify RED is mandatory. On a feature or fix branch, record it on the test commit with `scripts/tdd.py red` so review and CI can check it: [Recorded Red Runs & the CI Check](./red-run-and-ci.md). Test passes immediately: it tests existing behaviour; fix the test. Test errors (typo, import): fix until it fails correctly. Cannot explain why it failed: you do not know what it tests.
 
 Verify GREEN means the project's suite, not your file. A scope statement in the task bounds the deliverable, not the verification. Every failure that run shows, including one you did not cause, goes in the report by name.
 
