@@ -121,7 +121,7 @@ senior-developer-arsenal/
 ├── AGENTS.md                    # Root instruction file read by every agent
 ├── GEMINI.md                    # Imports AGENTS.md for Gemini CLI / Antigravity
 ├── install.sh / install.ps1     # Installers (same options on both)
-├── CONTRIBUTING.md, LICENSE, VERSION
+├── CHANGELOG.md, CONTRIBUTING.md, LICENSE, VERSION
 └── README.md
 ```
 
