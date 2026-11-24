@@ -288,6 +288,45 @@ class EvidenceTest(GuardCase):
                                               "error": "Exit code 1 fatal: no such remote"}])
         self.assertEqual(oct(self.evidence.stat().st_mode & 0o777), "0o600")
 
+    def test_an_escalated_lesson_stores_the_pair_and_is_no_failure_itself(self):
+        self.failed_command("git push upstream main")
+        self.failed_command("python3 lessons.py bump L004", error="Exit code 3\nL004 hits:3\nESCALATE L004 x3: ...")
+        [entry] = self.entries()
+        self.assertEqual((entry["lesson"], entry["lesson_command"]), ("L004", "python3 lessons.py bump L004"))
+        self.assertEqual([failure["command"] for failure in entry["failures"]], ["git push upstream main"])
+        self.failed_command("cat missing.txt")
+        self.lesson()
+        self.assertEqual([failure["command"] for failure in self.entries()[-1]["failures"]], ["cat missing.txt"])
+
+    def test_a_quiet_exit_3_lesson_after_and_stores_the_pair(self):
+        self.failed_command("git push upstream main")
+        self.failed_command("git status && python3 lessons.py bump L004 >/dev/null 2>&1", error="Exit code 3")
+        [entry] = self.entries()
+        self.assertEqual((entry["lesson"], entry["lesson_command"]),
+                         (None, "git status && python3 lessons.py bump L004 >/dev/null 2>&1"))
+        self.assertEqual([failure["command"] for failure in entry["failures"]], ["git push upstream main"])
+
+    def test_a_step_that_fails_after_an_escalated_lesson_is_kept_as_a_failure(self):
+        self.failed_command("python3 lessons.py bump L004; pytest -q",
+                            error="Exit code 3\nL004 hits:3\nESCALATE L004 x3: ...\nINTERNALERROR> boom")
+        self.lesson()
+        self.assertEqual([failure["command"] for failure in self.entries()[-1]["failures"]],
+                         ["python3 lessons.py bump L004; pytest -q"])
+
+    def test_an_escalated_lesson_before_a_failing_step_stores_the_pair(self):
+        self.failed_command("git push upstream main")
+        self.failed_command("python3 lessons.py bump L004; pytest -q",
+                            error="Exit code 1\nL004 hits:3\nESCALATE L004 x3: ...\nFAILED test_x")
+        [entry] = self.entries()
+        self.assertEqual([failure["command"] for failure in entry["failures"]], ["git push upstream main"])
+
+    def test_a_check_before_an_escalated_lesson_is_kept_as_a_failure_before_the_lesson(self):
+        self.failed_command("pytest -q; python3 lessons.py bump L004",
+                            error="Exit code 3\nL004 hits:3\nESCALATE L004 x3: ...")
+        [entry] = self.entries()
+        self.assertEqual([failure["command"] for failure in entry["failures"]],
+                         ["pytest -q; python3 lessons.py bump L004"])
+
     def test_no_failure_since_the_previous_lesson_stores_nothing(self):
         self.lesson()
         self.assertEqual(self.entries(), [])
@@ -497,13 +536,99 @@ class LessonGateTest(GuardCase):
     def test_lesson_command_forms(self):
         recorded = ['python3 lessons.py --file "my x.md" add --tags a', "python3 lessons.py --file 'a b.md' bump 1",
                     'cd repo && python3 "/plugin dir/lessons.py" add --tags js', "./lessons.py --file=x.md add",
-                    "uv run python lessons.py add --tags a", "/usr/bin/python3 -B lessons.py bump L001"]
+                    "uv run python lessons.py add --tags a", "/usr/bin/python3 -B lessons.py bump L001",
+                    "lessons bump G004", "~/.local/bin/lessons add --tags a"]  # the PATH shim runs lessons.py
         not_recorded = ["echo lessons.py add", 'grep -n "lessons.py add" README.md', "lessons.py add --help",
+                        "my-lessons add", "lessons search add", "lessons bump -h",
                         "python3 lessons.py add -h", "python3 lessons.py search add", "cat lessons.py add"]
         for command in recorded:
             self.assertTrue(guard.LESSON_COMMAND.search(command), command)
         for command in not_recorded:
             self.assertFalse(guard.LESSON_COMMAND.search(command), command)
+
+    ESCALATED = ("Exit code 3\nL001 hits:3\nLEARNED: read the remote first (L001, x3)\nESCALATE L001 x3: this lesson "
+                 "has repeated without a guard.")
+
+    def test_an_escalated_lesson_exit_3_counts_as_recorded(self):
+        self.start()
+        self.bash("npm test", failed=True, error="Exit code 1", is_interrupt=False)
+        self.bash("python3 lessons.py bump L001", failed=True, error=self.ESCALATED, is_interrupt=False)
+        self.assertEqual(self.stop(), "")
+
+    def test_exit_3_counts_only_for_a_lesson_command_and_only_code_3(self):
+        for command, error in (("npm test", "Exit code 3"), ("python3 lessons.py bump L001", "Exit code 2\nerror: x"),
+                               ("python3 lessons.py bump L001", "Exit code 30"),
+                               ("python3 lessons.py search L001", self.ESCALATED)):
+            with self.subTest(command=command, error=error):
+                self.start()
+                self.bash("npm test", failed=True, error="Exit code 1", is_interrupt=False)
+                self.bash(command, failed=True, error=error, is_interrupt=False)
+                self.assertIn("npm test", self.stop())
+
+    def test_an_escalated_lesson_chained_to_a_check_records_no_fail_for_the_check_that_never_ran(self):
+        self.start()
+        self.bash("npm test", failed=True, error="Exit code 1", is_interrupt=False)
+        self.bash("python3 lessons.py bump L001 && npm test", failed=True, error=self.ESCALATED, is_interrupt=False)
+        self.assertEqual(self.stop(), "")
+
+    def test_an_exit_3_lesson_without_its_escalate_line_counts_as_recorded(self):
+        quiet = ("python3 lessons.py add --tags ci --mistake m --cause c --rule r --check \"npm test exits 0\" "
+                 "> /tmp/l.txt 2>&1", "Exit code 3")  # output in a file
+        no_stderr = ("python3 lessons.py bump L001 2>/dev/null", "Exit code 3\nL001 hits:3\nLEARNED: r (L001, x3)")
+        after_a_step = ("cat notes.txt; python3 lessons.py bump L001 2>/dev/null", "Exit code 3\nL001 hits:3")
+        for command, error in (quiet, no_stderr, after_a_step):
+            with self.subTest(command=command):
+                self.start()
+                self.bash("npm test", failed=True, error="Exit code 1", is_interrupt=False)
+                self.bash(command, failed=True, error=error, is_interrupt=False)
+                self.assertEqual(self.stop(), "")
+
+    def test_an_exit_3_lesson_after_and_counts_as_recorded_whatever_its_redirection(self):
+        # lessons.py's only exit 3 is the escalation (pinned in test_lessons), so the saved repeat counts
+        for command, error in (("npm test && python3 lessons.py bump L001 > /tmp/l.txt 2>&1", "Exit code 3"),
+                               ("cat notes.txt && python3 lessons.py bump L001 2>/dev/null", "Exit code 3\nL001 hits:3"),
+                               ("./exits_3 && python3 lessons.py bump L001", "Exit code 3\nboom")):
+            with self.subTest(command=command):
+                self.start()
+                self.bash("npm test", failed=True, error="Exit code 1", is_interrupt=False)
+                self.bash(command, failed=True, error=error, is_interrupt=False)
+                self.assertEqual(self.stop(), "")
+
+    def test_a_check_that_exits_3_after_a_quiet_lesson_still_counts(self):
+        self.start()
+        self.bash("python3 lessons.py bump L001 >/dev/null 2>&1; npm test", failed=True, error="Exit code 3",
+                  is_interrupt=False)
+        self.assertIn("npm test", self.stop())
+
+    def test_a_multi_line_escalated_lesson_is_no_failed_check_itself(self):
+        self.start()
+        self.bash("python3 lessons.py add --check \"npm test exits 0\" \\\n  --tags ci --mistake m \\\n"
+                  "  --cause c --rule r",
+                  failed=True, error="Exit code 3\nadded L001\nESCALATE L001 x3: this lesson has repeated without a "
+                  "guard.", is_interrupt=False)
+        self.assertEqual(self.stop(), "")
+
+    def test_a_check_that_fails_after_an_escalated_lesson_still_counts(self):
+        self.start()
+        self.bash("python3 lessons.py bump L001; npm test", failed=True, error="Exit code 1\nL001 hits:3\n"
+                  "ESCALATE L001 x3: this lesson has repeated without a guard.\nnpm ERR!", is_interrupt=False)
+        self.assertIn("npm test", self.stop())
+
+    def test_exit_3_is_the_lessons_only_when_the_error_starts_with_it(self):
+        decided = "L001 hits:3\nESCALATE L001 x3: this lesson has repeated without a guard."
+        prefix = guard.escalation_exit_prefix
+        self.assertEqual(prefix("python3 lessons.py bump L001", "Exit code 3\n" + decided), "")
+        self.assertEqual(prefix("python3 lessons.py bump L001 2>/dev/null", "Exit code 3\nL001 hits:3"), "")
+        self.assertEqual(prefix("pytest -q; python3 lessons.py bump L001", "Exit code 3"), "pytest -q")
+        self.assertEqual(prefix("pytest -q && python3 lessons.py bump L001", "Exit code 3\n" + decided), "")
+        self.assertEqual(prefix("python3 lessons.py add --check x \\\n  --rule r", "Exit code 3"), "")
+        self.assertEqual(prefix("./exits_3 && python3 lessons.py bump L001 >/dev/null", "Exit code 3"), "")
+        for command, error in (("python3 lessons.py bump L001", "Exit code 2\n" + decided + "\nprinted Exit code 3"),
+                               ("python3 lessons.py bump L001", "Exit code 30\n" + decided),
+                               ("python3 lessons.py bump L001; pytest -q", "Exit code 3\n" + decided),
+                               ("npm test", "Exit code 3\n" + decided)):
+            with self.subTest(command=command, error=error):
+                self.assertIsNone(prefix(command, error))
 
     def test_failed_or_read_only_lesson_command_does_not_clear(self):
         self.start()

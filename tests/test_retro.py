@@ -92,7 +92,8 @@ class WeekTest(RetroCase):
         self.ledger(lesson("L001", 4, 1, rule="run pytest before pushing"),
                     lesson("L002", 1, 0, rule="quote heredocs"),
                     lesson("L003", 5, 20, rule="old repeat"),
-                    lesson("L004", 3, 2, rule="guarded habit", promoted="hooks/guard_lessons.py"))
+                    lesson("L004", 3, 2, rule="guarded habit", promoted="hooks/guard_lessons.py"),
+                    lesson("L005", 2, 2, rule="rule only", promoted=".agents/rules/lessons-promoted.md"))
         self.ledger(lesson("G001", 2, 3, rule="never pgrep -f"), path=self.home / "lessons.md")
         (self.home / "evidence.jsonl").write_text(json.dumps(
             {"time": date.today().isoformat() + "T10:00:00+0000", "lesson": "L001", "failures": ["a", "b"]}) + "\n")
@@ -105,6 +106,8 @@ class WeekTest(RetroCase):
         self.assertIn("- 4 commits: 1 feat, 2 fix, 1 revert, 0 other", out)
         self.assertIn("lesson guards stopped 1 repeats on this machine: L004 x1", out)
         self.assertIn("L004 is enforced by hooks/guard_lessons.py", out)
+        self.assertIn("L005 is kept as a rule only in .agents/rules/lessons-promoted.md (no guard)", out)
+        self.assertNotIn("L005 is enforced by", out)
         self.assertIn("1 new lessons recorded: L002", out)
         self.assertIn("- L001 x4 (no guard yet), 2 failed commands before it: run pytest before pushing", out)
         self.assertIn("- G001 x2: never pgrep -f", out)

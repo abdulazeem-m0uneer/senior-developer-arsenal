@@ -171,6 +171,45 @@ class ParsingTest(Case):
         self.assertEqual(record["lessons"], {"recorded": 1, "repeats": 3, "ids": ["L012"],
                                              "bumped": ["G003", "G004", "L007"], "guarded": []})
 
+    def test_an_escalated_lesson_exit_3_is_counted_and_resolves_the_block(self):
+        text = "Stop hook feedback:\narsenal guard (asked once): 1 test/build/lint command(s) failed this session."
+        escalated = "Exit code 3\nL007 hits:3\nLEARNED: r (L007, x3)\nESCALATE L007 x3: this lesson has repeated"
+        record = self.summary(start(), stop_block(text),
+                              use("t1", "Bash", command="python3 /x/lessons.py bump L007"),
+                              result("t1", escalated, error=True),
+                              use("t2", "Bash", command="python3 /x/lessons.py add --tags a"),
+                              result("t2", "Exit code 2\nadded L008", error=True),
+                              use("t3", "Bash", command="cat notes.txt"),
+                              result("t3", "Exit code 3\nadded L009", error=True))
+        self.assertEqual(record["lessons"], {"recorded": 0, "repeats": 1, "ids": [], "bumped": ["L007"], "guarded": []})
+        self.assertEqual(record["resolved"]["failed"], 1)
+
+    def test_a_check_behind_an_escalated_lesson_never_ran_and_is_no_failed_check(self):
+        escalated = "Exit code 3\nG004 hits:3\nESCALATE G004 x3: this lesson has repeated without a guard."
+        record = self.summary(start(), use("t1", "Bash", command="lessons bump G004 && npm test"),
+                              result("t1", escalated, error=True))
+        self.assertEqual((record["checks"]["failed"], record["lessons"]["bumped"]), (0, ["G004"]))
+
+    def test_an_exit_3_lesson_without_its_escalate_line_is_counted(self):
+        record = self.summary(start(), use("t1", "Bash", command="python3 /x/lessons.py bump L001 2>/dev/null"),
+                              result("t1", "Exit code 3\nL001 hits:3\nLEARNED: r (L001, x3)", error=True))
+        self.assertEqual((record["lessons"]["repeats"], record["lessons"]["bumped"]), (1, ["L001"]))
+
+    def test_a_quiet_exit_3_lesson_after_and_is_counted_and_no_failed_check(self):
+        text = "Stop hook feedback:\narsenal guard (asked once): 1 test/build/lint command(s) failed this session."
+        record = self.summary(start(), stop_block(text),
+                              use("t1", "Bash", command="npm test && python3 /x/lessons.py bump L001 >/tmp/l 2>&1"),
+                              result("t1", "Exit code 3", error=True))
+        self.assertEqual((record["checks"]["failed"], record["lessons"]["repeats"], record["lessons"]["bumped"]),
+                         (0, 1, []))
+        self.assertEqual(record["resolved"]["failed"], 1)
+
+    def test_a_check_before_an_escalated_lesson_is_a_failed_check(self):
+        escalated = "Exit code 3\nG004 hits:3\nESCALATE G004 x3: this lesson has repeated without a guard."
+        record = self.summary(start(), use("t1", "Bash", command="pytest -q; lessons bump G004"),
+                              result("t1", escalated, error=True))
+        self.assertEqual((record["checks"]["failed"], record["lessons"]["bumped"]), (1, ["G004"]))
+
     def test_a_refused_lesson_does_not_resolve_a_failure_block(self):
         text = "Stop hook feedback:\narsenal guard (asked once): 1 test/build/lint command(s) failed this session."
         record = self.summary(start(), stop_block(text), use("t1", "Bash", command="python3 lessons.py add --x y"),

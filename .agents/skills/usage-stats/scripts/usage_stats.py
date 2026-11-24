@@ -6,6 +6,7 @@ Usage:
   usage_stats.py backfill [--dir DIR]           # every *.jsonl transcript under DIR (default ~/.claude/projects)
   usage_stats.py report [--days N] [--json | --markdown] [--readme README.md]
   usage_stats.py diagnose <transcript> | --session ID | --last [--dir DIR] [--json]  # missed skills, core gaps
+  usage_stats.py ci --repo [HOST/]OWNER/NAME [--days 1] [--json] [--max-runs 50]  # CI cost per day (ci_cost.py)
 Store: one JSON line per session in $ARSENAL_USAGE_FILE (default ~/.agents/arsenal-usage.jsonl), replaced by
 session id with an atomic rewrite under a lock, so record and backfill can run any number of times. A per-machine
 random salt beside it (<store>.salt) hashes the working directory into a project id. Only counts, dates, skill
@@ -15,12 +16,16 @@ hook ran, or one of its skills, subagents or guards appears in the session.
 Transcript fields read (observed on Claude Code 2.1.321 to 2.1.325; undocumented): Skill and Agent/Task tool_use
 inputs, `<command-name>/arsenal:x</command-name>` in user text, the Stop gate's `isMeta` user line that starts with
 "Stop hook feedback:", PreToolUse denials (a tool_result with is_error true on a line that carries toolDenialKind),
-Bash tool_use commands paired with their tool_result by id, edit tool file paths, SessionStart hook attachments
-and message.usage. Text inside tool outputs is never searched: a session that prints guard source code quotes
-every marker. Lines with isSidechain true are skipped, and so are files under a subagents/ folder as sessions of their
+Bash tool_use commands paired with their tool_result by id (a lessons.py add or bump whose failed result has an
+ESCALATE line, or starts "Exit code 3" whatever the step's redirection or position, counts as recorded: lessons.py
+saved the repeat, then escalated it; a repeat with no id printed is counted unnamed), edit tool file paths, SessionStart hook attachments and message.usage. Text inside
+tool outputs is never searched: a session that prints guard source code quotes every marker. Lines with isSidechain
+true are skipped, and so are files under a subagents/ folder as sessions of their
 own; a session's subagent transcripts (<session>/subagents/*.jsonl) credit only their Skill and Agent use to it.
 Exit codes: 0 on success, 1 when backfill finds the store locked for LOCK_WAIT seconds (nothing written), 2 on a
-missing directory, a bad argument or a README without exactly one usage block.
+missing directory, a bad argument or a README without exactly one usage block; `ci` also exits 2 on a gh failure
+(the run list or a run's --json view, or any gh call that hangs past 120 s) or a ledger that is not a readable
+file (see ci_cost.py).
 """
 import argparse
 import hashlib
@@ -310,8 +315,12 @@ class Summary:
         result = entry.get("toolUseResult")
         if command is None or GUARD is None or (isinstance(result, dict) and result.get("interrupted") is True):
             return
+        output = text_of(part.get("content"))
         if failed:
-            keys = GUARD.check_keys(command)
+            if GUARD.escalated_lesson(command, output):  # lessons.py saved the repeat, then escalated it (exit 3)
+                self.lesson_command(command, output, escalated=True)
+            before = GUARD.escalation_exit_prefix(command, output)
+            keys = GUARD.check_keys(command if before is None else before)  # what follows its `&&` never ran
             if keys:
                 self.checks["failed"] += 1
                 self.red.update(keys)
@@ -322,8 +331,18 @@ class Summary:
             self.checks["red_to_green"] += len(self.red.intersection(keys))
             self.red.difference_update(keys)
             self.resolve("failed")
-        if (GUARD.LESSON_COMMAND.search(GUARD.bounded(command)) and not CUSTOM_LEDGER.search(command)
-                and self.lesson(text_of(part.get("content")))):
+        if GUARD.LESSON_COMMAND.search(GUARD.bounded(command)):
+            self.lesson_command(command, output)
+
+    def lesson_command(self, command, output, escalated=False):
+        """A lessons.py add or bump that ran: count what it reported, unless it wrote to a ledger it named.
+        escalated: its exit 3 saved a repeat, counted even when its output went to a file (no id printed)."""
+        if CUSTOM_LEDGER.search(command):
+            return
+        counted = self.lesson(output)
+        if escalated and not counted:
+            self.repeats += 1
+        if counted or escalated:
             self.resolve("failed")
 
     def lesson(self, output):
@@ -732,6 +751,12 @@ def main(argv=None, stdin=None, today=None):
     pick.add_argument("--last", action="store_true")
     check.add_argument("--dir", default=str(Path.home() / ".claude" / "projects"))
     check.add_argument("--json", action="store_true")
+    cost = commands.add_parser("ci", help="one CI-cost line per day for a repository (gh run list)")
+    cost.add_argument("--repo", required=True, help="[HOST/]OWNER/NAME")
+    cost.add_argument("--days", type=int, default=1, help="the last N days, today (UTC) included")
+    cost.add_argument("--max-runs", type=int, default=50, help="attempts read and classified at most, newest first")
+    cost.add_argument("--json", action="store_true")
+    cost.add_argument("--today", type=date.fromisoformat, help=argparse.SUPPRESS)
     try:
         options = parser.parse_args(argv)
     except SystemExit as stop:
@@ -743,6 +768,13 @@ def main(argv=None, stdin=None, today=None):
     if options.command == "diagnose":
         import diagnose  # here, not at the top: diagnose imports this module
         return diagnose.run(options.transcript, options.session, options.last, options.dir, options.json)
+    if options.command == "ci":
+        try:
+            import ci_cost  # here, not at the top: only this command needs gh and the ledgers
+        except ImportError as error:
+            print(f"ci needs the ci-wait and lessons-learned skills beside usage-stats: {error}", file=sys.stderr)
+            return 2
+        return ci_cost.run(options.repo, options.days, options.max_runs, options.json, options.today or today)
     if options.command == "backfill":
         directory = Path(options.dir).expanduser()
         if not directory.is_dir():

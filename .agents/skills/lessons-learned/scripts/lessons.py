@@ -30,7 +30,14 @@ Options: --file PATH (default: $LESSONS_FILE or .agents/lessons.md); --global on
   add and bump also append one line to <ledger stem>.events.jsonl beside the ledger (lesson_events.py), for metrics,
   and globalize appends a move line to both ledgers' logs; a failed log write warns on stderr and never fails
   the command.
-Exit codes: 0 ok, 1 check found problems, 2 usage, refused content, unreadable file or busy lock.
+Escalation: a repeat (bump, or an add that is a duplicate) that brings a lesson with no guard and no exemption to
+  the threshold N or more is saved and printed as usual, then prints "ESCALATE <id> x<hits>: ..." on stderr and exits
+  3, on every further repeat until `promote ID --guard PATH` or `exempt ID --reason R`. A first add never escalates;
+  a guarded or exempted lesson that recurs keeps its GUARD FAILED / EXEMPT recurred hint and exits 0.
+  A guard is a Promoted path other than a rules-only lessons-promoted.md (a rule stub is no guard) and other than an
+  exempt@ mark (has_guard); escalation, `unguarded` and the session-start "Repeats without a guard" note share it.
+Exit codes: 0 ok, 1 check found problems, 2 usage, refused content, unreadable file or busy lock,
+  3 the repeat is recorded and escalated (see Escalation).
 Time budget: `active --hook` runs two short git reads (1.5 s timeout each) and never fails the session.
 """
 import argparse
@@ -44,6 +51,7 @@ from datetime import date
 from pathlib import Path
 
 import guard_hits
+import functools
 import guard_registry
 import lesson_events
 import metrics
@@ -55,6 +63,7 @@ from ledger_store import find_secret, locked, write_atomic
 ACTIVE_CAP = 15
 PROMOTE_AT = 3   # default; $LESSONS_PROMOTE_AT or --min overrides it
 SIMILAR_AT = 0.5
+EXIT_ESCALATE = 3  # a repeat was saved and still has no guard: the caller stops until one is attached or exempted
 FIELD_MAX = 200
 TAGS_MAX = 60
 SEARCH_MAX = 10
@@ -208,6 +217,7 @@ def promote_at(given=None):
 
 
 MOVED_MARK = "global "  # `globalize` leaves "Promoted: global <id>" on the project's stub
+KEPT_RULE = " + rule "  # promote --guard PATH --keep-rule stores "PATH + rule <rule file>"
 EXEMPT_MARK = re.compile(r"^exempt@(\d+): ")  # "exempt@<hits when granted>: <reason>"; never a path promote stores
 ESCALATE_SHOWN = 5  # unguarded repeats named in the session-start header; the rest are counted
 
@@ -224,9 +234,31 @@ def is_exempt(lesson):
     return at is not None and lesson["hits"] <= at
 
 
+@functools.lru_cache(maxsize=None)
+def registry_lessons(cwd):
+    """Lesson ids a lesson-guard registry entry guards in cwd, as the installed hook applies them; empty on any
+    failure, so an unreadable registry never hides a lesson."""
+    try:
+        return frozenset(guard_registry.guarded_lessons(cwd))
+    except Exception:  # the registry is optional here; has_guard then reads Promoted alone
+        return frozenset()
+
+
+def has_guard(lesson):
+    """True when Promoted names a guard (a path other than a rules-only lessons-promoted.md file, an exemption mark
+    or a moved-to-global stub; `--guard PATH --keep-rule`, "PATH + rule ...", is guarded by PATH), or when an
+    applied lesson-guard registry entry names the lesson (lessons promoted before the registry existed)."""
+    promoted = lesson["promoted"]
+    if lesson.get("id") and lesson["id"] in registry_lessons(str(relevance.session_cwd())):
+        return True
+    if not promoted or EXEMPT_MARK.match(promoted) or promoted.startswith(MOVED_MARK):
+        return False
+    return Path(promoted.split(KEPT_RULE)[0]).name != promotion.RULE_FILE
+
+
 def unguarded(lesson):
-    """No guard, or an exemption the lesson has since outgrown by recurring."""
-    return not lesson["promoted"] or (exempted_at(lesson) is not None and not is_exempt(lesson))
+    """No guard (has_guard) and no exemption that holds; a moved stub is counted in the global ledger instead."""
+    return not lesson["promoted"].startswith(MOVED_MARK) and not has_guard(lesson) and not is_exempt(lesson)
 
 
 def promote_hint(lesson):
@@ -239,6 +271,24 @@ def promote_hint(lesson):
         return ""
     return (f"\nPROMOTE {lesson['id']}: seen {lesson['hits']} times. Run `promote {lesson['id']}` for a rule stub, or "
             f"enforce it mechanically (test, lint, hook, CI) and run `promote {lesson['id']} --guard PATH`.")
+
+
+def escalation(lesson):
+    """The ESCALATE line for a repeat at the threshold with no guard and no exemption, else ''."""
+    if has_guard(lesson) or exempted_at(lesson) is not None or lesson["promoted"].startswith(MOVED_MARK) \
+            or lesson["hits"] < promote_at():
+        return ""
+    return (f"ESCALATE {lesson['id']} x{lesson['hits']}: this lesson has repeated without a guard. Attach one (promote "
+            f"{lesson['id']} --guard PATH) or record why none fits (exempt {lesson['id']} --reason ...); every further "
+            "repeat stops here until then.")
+
+
+def escalate(lesson):
+    """After a saved repeat: print the ESCALATE line and return EXIT_ESCALATE, or return 0."""
+    line = escalation(lesson)
+    if line:
+        print(line, file=sys.stderr)
+    return EXIT_ESCALATE if line else 0
 
 
 def enforce_cap(ledger, keep):
@@ -301,7 +351,7 @@ def cmd_add(ledger, args):
     log_event(ledger, "add" if stored is new else "repeat", stored)
     print(message)
     print(learned(stored))
-    return 0
+    return 0 if stored is new else escalate(stored)
 
 
 def hook_text(project, shared, reserve=0, cwd=None):
@@ -400,7 +450,7 @@ def cmd_bump(ledger, args):
     log_event(ledger, "repeat", lesson)
     print(f"{lesson['id']} hits:{lesson['hits']}{note}")
     print(learned(lesson))
-    return 0
+    return escalate(lesson)
 
 
 def cmd_exempt(ledger, args):
@@ -440,7 +490,7 @@ def cmd_promote(ledger, args):
         lesson["promoted"] = promotion.shown(args.guard)
         if args.keep_rule:  # a partial guard: the rest of the rule stays in force as an always-loaded rule
             path, appended = promotion.write_rule_stub(lesson, args.rules_dir or ledger.path.parent / "rules")
-            lesson["promoted"] += f" + rule {promotion.shown(path)}"
+            lesson["promoted"] += f"{KEPT_RULE}{promotion.shown(path)}"
             print(f"rule {'written to' if appended else 'already present in'} {path}: it keeps the part of the rule "
                   "the guard does not cover")
     elif args.kind == "test":
@@ -564,7 +614,7 @@ def cmd_retro(ledger, args):
         raise Refused("--days must be 1 or more")
     sources = ledger_sources(ledger, shared=not args.project)
     print(retro.report(sources, unguarded_lessons(sources, promote_at()), args.days, date.fromisoformat(today()),
-                       Path.cwd()))
+                       Path.cwd(), has_guard))
     return 0
 
 
@@ -727,11 +777,16 @@ def run(args):
         return COMMANDS[args.command](ledger, args)
 
 
-def main(argv=None):
-    args = build_parser().parse_args(argv)
-    for stream in (sys.stdout, sys.stderr):  # a lesson with a character the console cannot encode still prints
+def tolerate_unencodable_output():
+    """A lesson with a character the console cannot encode still prints (as '?') instead of raising."""
+    for stream in (sys.stdout, sys.stderr):
         with contextlib.suppress(AttributeError, ValueError):
             stream.reconfigure(errors="replace")
+
+
+def main(argv=None):
+    args = build_parser().parse_args(argv)
+    tolerate_unencodable_output()
     hook = args.command == "active" and args.hook
     try:
         return run(args)

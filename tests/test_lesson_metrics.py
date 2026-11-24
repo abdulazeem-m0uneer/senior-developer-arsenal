@@ -149,7 +149,7 @@ class EventsLogTest(MetricsCase):
         self.write_ledger(lesson_line("L001", "ops", 1, "2026-11-01"))
         self.write_ledger(lesson_line("G001", "git", 2, "2026-11-01"), path=self.shared)
         self.assertEqual(self.run_cli("bump", "L001")[0], 0)
-        self.assertEqual(self.run_cli("bump", "G001")[0], 0)
+        self.assertEqual(self.run_cli("bump", "G001")[0], lessons.EXIT_ESCALATE)  # x3, no guard: saved, then escalated
         self.assertEqual([(e["event"], e["id"], e["tags"]) for e in self.read_events()], [("repeat", "L001", "ops")])
         self.assertEqual([(e["event"], e["id"], e["date"]) for e in self.read_events(self.shared)],
                          [("repeat", "G001", TODAY)])
@@ -353,7 +353,7 @@ class GuardCoverageTest(MetricsCase):
         code = self.run_cli("add", "--tags", "session:api", "--mistake", "skipped the dry run", "--cause", "c",
                             "--rule", "run the dry run")[0]
         self.assertEqual([code, self.run_cli("bump", "L001")[0], self.run_cli("bump", "L001")[0],
-                          self.run_cli("globalize", "L001")[0]], [0, 0, 0, 0])
+                          self.run_cli("globalize", "L001")[0]], [0, 0, lessons.EXIT_ESCALATE, 0])
         data = self.metrics_json("--days", "2")
         local, shared = self.lanes(data, 0)["api"], self.lanes(data, 1)["api"]
         self.assertEqual({key: local[key] for key in ("lessons", "moved", "repeats", "guarded", "unguarded", "added",
@@ -369,7 +369,7 @@ class GuardCoverageTest(MetricsCase):
         add = ("add", "--tags", "session:api", "--mistake", "skipped the dry run", "--cause", "c", "--rule",
                "run the dry run")
         self.assertEqual([self.run_cli(*add)[0], self.run_cli("bump", "L001")[0], self.run_cli("bump", "L001")[0],
-                          self.run_cli("globalize", "L001")[0]], [0, 0, 0, 0])
+                          self.run_cli("globalize", "L001")[0]], [0, 0, lessons.EXIT_ESCALATE, 0])
         code, out, _ = self.run_cli(*add)
         self.assertEqual(code, 0)
         self.assertIn("GUARD FAILED L001", out)
