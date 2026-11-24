@@ -848,6 +848,44 @@ class HasGuardTests(LedgerCase):
         self.assertNotEqual(code, 0)
         self.assertIn("already has a guard", err)
 
+    def exempt_until(self, until, on="2026-11-24"):
+        with mock.patch.object(lessons, "today", return_value=on):
+            return self.run_cli("exempt", "L001", "--reason", "pending a guard", "--until", until)
+
+    def test_an_exemption_until_a_date_stops_escalation_only_until_then(self):
+        code, out, err = self.exempt_until("2026-12-01")
+        self.assertEqual(code, 0, out + err)
+        self.assertTrue(Ledger_promoted(self.file, "L001").startswith("exempt@2: until 2026-12-01; pending a guard"))
+        with mock.patch.object(lessons, "today", return_value="2026-12-01"):
+            code, _, err = self.run_cli("bump", "L001")  # on the last day it still holds
+        self.assertEqual((code, "ESCALATE" in err), (0, False), err)
+        with mock.patch.object(lessons, "today", return_value="2026-12-02"):
+            code, _, err = self.run_cli("bump", "L001")
+        self.assertEqual(code, 3, err)
+        self.assertIn("ESCALATE L001", err)
+
+    def test_unguarded_lists_a_pending_exemption_with_its_expiry(self):
+        self.run_cli("exempt", "L001", "--reason", "for now")  # so the bump to 3 does not escalate
+        self.run_cli("bump", "L001")
+        self.exempt_until("2026-12-01")
+        with mock.patch.object(lessons, "today", return_value="2026-11-25"):
+            out = self.run_cli("unguarded")[1]
+        self.assertIn("L001", out)
+        self.assertIn("exempt until 2026-12-01", out)
+
+    def test_an_until_date_must_be_a_real_date_after_today(self):
+        for until in ("2026-11-24", "2026-11-01", "2026-13-01", "next week"):
+            with self.subTest(until=until):
+                code, _, err = self.exempt_until(until)
+                self.assertNotEqual(code, 0, until)
+                self.assertNotIn("exempt@", Ledger_promoted(self.file, "L001"))
+
+    def test_an_exemption_without_until_still_holds_for_good(self):
+        self.run_cli("exempt", "L001", "--reason", "a judgement no command shows")
+        with mock.patch.object(lessons, "today", return_value="2030-01-01"):
+            code, _, err = self.run_cli("bump", "L001")
+        self.assertEqual((code, "ESCALATE" in err), (0, False), err)
+
     def test_an_exemption_stops_the_escalation_but_is_listed_once_outgrown(self):
         self.run_cli("exempt", "L001", "--reason", "judgement call: no command shows it")
         self.assertEqual(self.unguarded_ids(), [])  # holds: 2 hits, under the threshold anyway
