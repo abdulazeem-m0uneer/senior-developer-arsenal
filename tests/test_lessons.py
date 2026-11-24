@@ -832,6 +832,22 @@ class HasGuardTests(LedgerCase):
         self.assertIn("GUARD FAILED L001", out)
         self.assertEqual((self.unguarded_ids(), self.note()), ([], []))
 
+    def test_a_rules_only_promotion_can_be_exempted_and_keeps_its_rule_pointer(self):
+        self.run_cli("promote", "L001")
+        promoted = Ledger_promoted(self.file, "L001")
+        code, out, err = self.run_cli("exempt", "L001", "--reason", "a judgement no command shows")
+        self.assertEqual(code, 0, out + err)
+        after = Ledger_promoted(self.file, "L001")
+        self.assertTrue(after.startswith("exempt@2: a judgement no command shows"), after)
+        self.assertIn(promoted, after)  # the rule stays where it was written
+        self.assertEqual(self.run_cli("bump", "L001")[0], 0)
+
+    def test_a_lesson_with_a_real_guard_still_refuses_an_exemption(self):
+        self.run_cli("promote", "L001", "--guard", str(self.guard))
+        code, _, err = self.run_cli("exempt", "L001", "--reason", "x")
+        self.assertNotEqual(code, 0)
+        self.assertIn("already has a guard", err)
+
     def test_an_exemption_stops_the_escalation_but_is_listed_once_outgrown(self):
         self.run_cli("exempt", "L001", "--reason", "judgement call: no command shows it")
         self.assertEqual(self.unguarded_ids(), [])  # holds: 2 hits, under the threshold anyway
@@ -839,6 +855,10 @@ class HasGuardTests(LedgerCase):
         self.assertEqual((code, "ESCALATE" in err), (0, False), err)
         self.assertEqual(self.unguarded_ids(), ["L001"])
 
+
+
+def Ledger_promoted(path, lesson_id):
+    return lessons.Ledger(Path(path), "L").find(lesson_id)["promoted"]
 
 class ExitCodeTests(unittest.TestCase):
     """Callers (hooks/guard.py, usage_stats.py) read exit 3 of an add or bump as "repeat saved, then escalated"."""

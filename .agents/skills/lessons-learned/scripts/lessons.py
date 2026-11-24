@@ -461,9 +461,10 @@ def cmd_exempt(ledger, args):
     secret = find_secret(reason)
     if secret:
         raise Refused(f"looks like a secret ({secret}); lessons never store those")
-    if lesson["promoted"] and exempted_at(lesson) is None:
+    if has_guard(lesson):
         raise Refused(f"{lesson['id']} already has a guard ({lesson['promoted']}); an exemption would hide it")
-    lesson["promoted"] = clean(f"exempt@{lesson['hits']}: {reason}")
+    rule = lesson["promoted"] if lesson["promoted"] and exempted_at(lesson) is None else ""  # a rules-only promotion
+    lesson["promoted"] = clean(f"exempt@{lesson['hits']}: {reason}" + (f" (rule kept in {rule})" if rule else ""))
     ledger.save()
     print(f"exempted {lesson['id']} at {lesson['hits']} hits: {reason}. It stays in its section and is no longer "
           "flagged as a repeat without a guard, unless it recurs")
