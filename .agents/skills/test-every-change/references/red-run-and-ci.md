@@ -58,8 +58,16 @@ jobs:
       - env:
           BASE_REF: ${{ github.base_ref }}
           HEAD_REF: ${{ github.head_ref }}   # through env: a branch name put straight into run: is a shell injection
-        run: python3 .agents/skills/test-every-change/scripts/tdd.py check --base "origin/$BASE_REF" --branch "$HEAD_REF"
+          OPENED_AT: ${{ github.event.pull_request.created_at }}
+          CUTOFF: "2026-11-30T13:00:00+02:00"   # example rollout date: PRs opened before it have no Test-Red trailer
+        run: |
+          if [ "$(date -d "$OPENED_AT" +%s)" -lt "$(date -d "$CUTOFF" +%s)" ]; then
+            echo "opened before the red-first rollout ($CUTOFF): not checked"; exit 0
+          fi
+          python3 .agents/skills/test-every-change/scripts/tdd.py check --base "origin/$BASE_REF" --branch "$HEAD_REF"
 ```
+
+Set `CUTOFF` to the day the check is turned on. Without it, every branch opened earlier is refused for the missing trailer.
 
 Add `--verify` in the job that already installs dependencies and runs the tests. It runs a command taken from the branch's commit, so use it only where that branch's tests would run anyway; never in a `pull_request_target` job with secrets.
 
