@@ -72,7 +72,8 @@ GLOBAL_LABEL = "Global lessons (every project):"
 MORE_LINE = "(+{count} more: lessons.py search <words>)"
 HOOK_HEADER = ("Lessons (obey; xN = times seen; full text: `show ID`). If you catch your own mistake, verify the cause, "
                "then `python3 {script} add --tags T --mistake M --cause C --rule R --check K` (repeat: `bump ID`; "
-               "holds in any project: `--global`). Self-audit before saying done.")
+               "holds in any project: `--global`). When a listed lesson changes what you do, say `Applying ID: rule`. "
+               "Self-audit before saying done.")
 
 
 class Refused(Exception):
@@ -280,6 +281,11 @@ def log_event(ledger, kind, lesson):
               "metrics will miss this change", file=sys.stderr)
 
 
+def learned(lesson):
+    """The line that tells the user which rule was recorded or counted, after add and bump."""
+    return f"LEARNED: {lesson['rule']} ({lesson['id']}, x{lesson['hits']})"
+
+
 def cmd_add(ledger, args):
     fields = {k: clean(getattr(args, k) or "") for k in ("mistake", "cause", "rule", "check")}
     if not (fields["mistake"] and fields["cause"] and fields["rule"]):
@@ -294,6 +300,7 @@ def cmd_add(ledger, args):
     ledger.save()
     log_event(ledger, "add" if stored is new else "repeat", stored)
     print(message)
+    print(learned(stored))
     return 0
 
 
@@ -392,6 +399,7 @@ def cmd_bump(ledger, args):
     ledger.save()
     log_event(ledger, "repeat", lesson)
     print(f"{lesson['id']} hits:{lesson['hits']}{note}")
+    print(learned(lesson))
     return 0
 
 

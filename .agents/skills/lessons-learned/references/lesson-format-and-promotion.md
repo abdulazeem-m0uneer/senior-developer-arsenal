@@ -162,7 +162,7 @@ A lesson nobody loads teaches nothing.
 - **Agents without hooks**: one line in `AGENTS.md`, "At session start run `python .agents/skills/lessons-learned/scripts/lessons.py active --hook`."
 - **Manual**: the user runs `/lessons-learned`.
 
-`--hook` emits the JSON a `SessionStart` hook uses to add context (`hookSpecificOutput.additionalContext`): a short instruction on how the agent records its own mistakes, then the project's Active lessons, then the global ones under a `Global lessons (every project):` line, or `(no lessons yet)` when both are empty, so a new project still gets the instruction. Plain `active` (no flag) prints every Active lesson as text for manual use.
+`--hook` emits the JSON a `SessionStart` hook uses to add context (`hookSpecificOutput.additionalContext`): a short instruction on how the agent records its own mistakes and names a lesson (`Applying ID: rule`) when it changes a decision, then the project's Active lessons, then the global ones under a `Global lessons (every project):` line, or `(no lessons yet)` when both are empty, so a new project still gets the instruction. Plain `active` (no flag) prints every Active lesson as text for manual use.
 
 What `--hook` selects. The host caps `additionalContext` at 10,000 characters and fifteen full-length lessons alone exceed that, so the hook output is limited to 2,000 characters and each lesson is printed brief, `- <id> [tags] x<hits>: <rule>` (plus ` -> <guard>` when promoted), about a quarter of the full line; `show <id>` prints the full line when the rule is not enough:
 

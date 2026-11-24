@@ -11,7 +11,7 @@ What the arsenal adds to the context of every Claude Code session before any wor
 | Skill listing (61 names and descriptions) (.agents/skills/*/SKILL.md frontmatter) | 9,427 | 2,357 |
 | Subagent listing (18 names and descriptions) (.agents/subagents/subagent-definitions.json) | 3,569 | 892 |
 | SessionStart hook: `session_core.py` (hooks/hooks.json, run in an empty project) | 997 | 249 |
-| SessionStart hook: `lessons.py active --hook` (hooks/hooks.json, run in an empty project) | 347 | 87 |
+| SessionStart hook: `lessons.py active --hook` (hooks/hooks.json, run in an empty project) | 414 | 104 |
 | SessionStart hook: `snapshot.py show` (hooks/hooks.json, run in an empty project) | 0 | 0 |
 | SessionStart hook: `guard.py baseline` (hooks/hooks.json, run in an empty project) | 0 | 0 |
 | Rules without a path scope (5) (dist/claude/rules/) | 17,797 | 4,449 |
@@ -22,15 +22,15 @@ Worst case for the hooks (the only always-on part that grows with project state)
 
 | Component | Characters | Tokens (est.) |
 | :--- | ---: | ---: |
-| SessionStart hook: `lessons.py active --hook` (same hook, ledger of 15 lessons at the field cap) | 1,711 | 428 |
+| SessionStart hook: `lessons.py active --hook` (same hook, ledger of 15 lessons at the field cap) | 1,778 | 444 |
 
 ## Total per install route
 
 | Route | Characters | Tokens (est.) | Characters, full ledger | Tokens (est.), full ledger |
 | :--- | ---: | ---: | ---: | ---: |
-| Plugin only | 14,340 | 3,585 | 15,704 | 3,926 |
-| Plugin + `install --global --target claude` | 32,137 | 8,034 | 33,501 | 8,375 |
-| Plugin + `install --target claude` in a project | 43,601 | 10,900 | 44,965 | 11,241 |
+| Plugin only | 14,407 | 3,602 | 15,771 | 3,943 |
+| Plugin + `install --global --target claude` | 32,204 | 8,051 | 33,568 | 8,392 |
+| Plugin + `install --target claude` in a project | 43,668 | 10,917 | 45,032 | 11,258 |
 
 Rules that load in every Claude Code session after the installer runs: `defensive-epistemology`, `minimal-change`, `senior-engineer-core`, `testing-standards`, `token-conservation`. A generated Claude rule file loads unconditionally unless it carries `paths:` frontmatter, so a rule without globs is always loaded on this target, whatever its trigger. Path-scoped: `csharp-dotnet-standards`, `database-standards`, `frontend-standards`, `fullstack-standards`, `git-standards`, `nodejs-standards`, `python-standards`, `ui-ux-standards`.
 
@@ -40,8 +40,8 @@ Not part of the totals above. Sizes in characters.
 
 | Content | Files | Min | Median | Max | Total | Total tokens (est.) |
 | :--- | ---: | ---: | ---: | ---: | ---: | ---: |
-| SKILL.md (one per skill, loaded when the skill is invoked) | 61 | 2,527 | 5,967 | 20,680 | 359,794 | 89,948 |
-| Skill reference files (a skill reads the one it needs) | 130 | 844 | 4,950 | 40,841 | 664,581 | 166,145 |
+| SKILL.md (one per skill, loaded when the skill is invoked) | 61 | 2,527 | 5,967 | 20,680 | 359,953 | 89,988 |
+| Skill reference files (a skill reads the one it needs) | 130 | 844 | 4,950 | 40,909 | 664,649 | 166,162 |
 | Subagent prompts (loaded in the subagent's own context) | 18 | 919 | 1,748 | 3,937 | 32,878 | 8,220 |
 | Path-scoped rules (loaded when a matching file is read) | 8 | 2,727 | 3,464 | 7,749 | 31,639 | 7,910 |
 
@@ -57,7 +57,7 @@ Last recorded 2026-11-13 with Claude Code 2.1.321, model `haiku`, arsenal 1.3.1.
 | `overhead`, without plugin | 1 | 2 | 7,780 | 24,365 | 4 | 0.0019 |
 | `bugfix` | not yet run |  |  |  |  |  |
 
-On `overhead` the plugin added 9,584 input-side tokens (input + cache write + cache read, with minus without). The offline estimate for the plugin-only route is 3,585.
+On `overhead` the plugin added 9,584 input-side tokens (input + cache write + cache read, with minus without). The offline estimate for the plugin-only route is 3,602.
 
 A sample this small shows that the mode works and what one session costs. It is not evidence about savings or quality on real work.
 

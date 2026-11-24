@@ -62,6 +62,7 @@ GUARDED_LESSON = re.compile(r"^arsenal lesson guard ([LG]\d{3,6})\b")
 # and before 1.5 "PROMOTE L012: seen 3 times". Output without an id (a refusal, a background launch) counts nothing.
 LESSON_OUTPUT = re.compile(r"\b(added|duplicate of) ([LG]\d{3,6})\b|^(?:PROMOTE )?([LG]\d{3,6})(?: hits:\d+|: seen \d+ times)",
                            re.M)
+LEARNED_LINE = re.compile(r"^LEARNED: .*$", re.M)  # echoes the rule text, which may name other lessons
 # A ledger named on the command line is a test or a manual check (measured: most such adds), not the user's ledger.
 CUSTOM_LEDGER = re.compile(r"\bLESSONS_(?:GLOBAL_)?FILE=|\s--file[=\s]")
 CORE_MARK = "Arsenal operating core"  # first words of hooks/core.md, injected by the SessionStart hook
@@ -327,7 +328,7 @@ class Summary:
 
     def lesson(self, output):
         """Count what lessons.py reported; True when it recorded or counted at least one lesson."""
-        matches = LESSON_OUTPUT.findall(output)
+        matches = LESSON_OUTPUT.findall(LEARNED_LINE.sub("", output))
         for verb, lesson, bumped in matches:
             if verb == "added":
                 self.recorded += 1

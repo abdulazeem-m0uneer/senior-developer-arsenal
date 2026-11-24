@@ -157,11 +157,11 @@ class EventsLogTest(MetricsCase):
     def test_a_failed_log_write_warns_and_never_fails_add_or_bump(self):
         with mock.patch.object(lesson_events.os, "open", side_effect=PermissionError("read-only")):
             code, out, err = self.add("deploy skipped smoke", "run smoke after deploy")
-            self.assertEqual((code, out.strip()), (0, "added L001"))
+            self.assertEqual((code, out.splitlines()[0]), (0, "added L001"))
             self.assertIn("warning: events log", err)
             self.assertIn("read-only", err)
             code, out, err = self.run_cli("bump", "L001")
-            self.assertEqual((code, out.strip()), (0, "L001 hits:2"))
+            self.assertEqual((code, out.splitlines()[0]), (0, "L001 hits:2"))
             self.assertIn("warning: events log", err)
         self.assertIn("hits:2", self.file.read_text())
         self.assertFalse(lesson_events.path(self.file).exists())
