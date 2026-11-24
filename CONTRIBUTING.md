@@ -94,3 +94,18 @@ Hooks for a target are separate and optional: add it to `HOOK_TARGETS` in `scrip
 ## Releases
 
 Bump `VERSION`, run `python3 scripts/build.py`, and commit with a Conventional Commit message. Claude Code plugin users receive the update when the version changes.
+
+Every version bump adds its section to [CHANGELOG.md](CHANGELOG.md) in the same pull request:
+
+- The heading is `## [X.Y.Z] - YYYY-MM-DD`, newest first, dated the day the pull request merges (UTC).
+- Use `### Added`, `### Changed`, `### Fixed` or `### Removed` as they apply. Each bullet is one plain sentence about what a user of the plugin gets, with the pull request number, such as `(#58)`.
+- Add the link reference `[X.Y.Z]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/N` at the end of the file.
+- `python3 -m unittest tests.test_changelog` checks the format, the link references and that the `VERSION` file's version has a section.
+
+After the merge, tag the merge commit `vX.Y.Z` and publish a GitHub release whose notes are that section:
+
+```sh
+git tag -a vX.Y.Z <merge-commit> -m "vX.Y.Z"
+git push origin vX.Y.Z
+gh release create vX.Y.Z --verify-tag --title "vX.Y.Z" --notes-file <file holding the section>
+```
