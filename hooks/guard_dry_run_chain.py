@@ -267,7 +267,7 @@ class Branches:
                       connector(opener) == "&&", "|" in (connector(opener), connector(closer)), self.pipefail)
         self.condition.add(argv, joiner(opener))
         match = CAPTURE.fullmatch(argv[-1]) if closer.startswith("(") else None
-        self.pending = (match[1], self.generation[match[1]]) if match else None
+        self.pending = (match[1], self.generation.get(match[1], 0)) if match else None  # export n=$(...): no bump
         return place
 
 

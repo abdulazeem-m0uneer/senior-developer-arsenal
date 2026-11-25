@@ -96,6 +96,29 @@ class BuiltInRuleTests(RegistryCase):
                         "bash -c 'set -o pipefail; npm test | tail && x'", "echo { a b } && ls"):
             self.assertIsNone(self.pipe(command), command)
 
+    def test_pipe_exit_counts_git_commit_as_a_check(self):
+        for command in ("git commit -m x | tail -1 && git push", "git commit -qm x 2>&1 | grep -v hint && git push",
+                        "git commit -qm x 2>&1 | grep -v hint; echo $?", "git -C app commit -m x | tail -1 && git push",
+                        "git commit -m x |& tail || exit 1", "if git commit -m x | grep -q done; then git push; fi",
+                        "GIT_EDITOR=true git commit --amend | tail && git push", "bash -c 'git commit -m x | tail && y'",
+                        "git -c k=v commit -m x | tail && y", "git commit -m x | tee log && git push"):
+            self.assertEqual(self.pipe(command), "pipe-exit", command)
+
+    def test_pipe_exit_passes_a_git_commit_that_commits_nothing(self):
+        for command in ("git commit --dry-run | head && echo ok", "git commit -m x --dry-run | tail && y",
+                        "git commit-tree x | tail && y"):
+            self.assertIsNone(self.pipe(command), command)
+        self.assertEqual(self.pipe("git commit -m --dry-run | tail && y"), "pipe-exit")
+
+    def test_pipe_exit_passes_git_commit_with_a_file_pipefail_or_no_acting(self):
+        for command in ("git commit -m x && git push", "git commit -m x > log 2>&1; echo rc=$?",
+                        "set -o pipefail; git commit -m x | tail -1 && git push", "git log | head",
+                        "git commit -m x | tail -1", "git commit -qm x 2>&1 | grep -v hint; git push",
+                        "git status | grep -q x && git push", "git log --grep commit | head && x",
+                        "hg commit -m x | tail && x", "echo commit | tail && x",
+                        "echo x | git commit -F - && git push", "git commit -m x | tail; echo ${PIPESTATUS[0]}"):
+            self.assertIsNone(self.pipe(command), command)
+
     def test_pipe_exit_finds_the_command_position_with_the_hooks_classifier(self):
         import guard  # the real classifier: a check counts only where a command starts
         for command, refused in (("case $1 in t) npm test | tail && x;; esac", True),

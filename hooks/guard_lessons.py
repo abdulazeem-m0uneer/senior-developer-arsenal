@@ -67,8 +67,8 @@ Built-in rules:
                      the person who approves. Hooks before the release that added "exceptions" skip the whole
                      entry for the unknown key, so give such an entry "min_version": that release.
                      See guard_calendar.py.
-  pipe-exit          a check (the Stop gate's test, build, lint or CI classifier) or a local script piped into a
-                     later command, whose exit status is then acted on (&&, ||, if/while/until/!, or $? read by
+  pipe-exit          a check (the Stop gate's test, build, lint or CI classifier), a git commit or a local script
+                     piped into a later command, whose exit status is then acted on (&&, ||, if/while/until/!, or $? read by
                      the next command) without set -o pipefail or ${PIPESTATUS[...]}: the status is the last
                      command's, so a failed check reads as success.
   rerun-after-red    off until a registry entry names it. A test, build, lint or check command (the same check as the
@@ -93,6 +93,14 @@ Built-in rules:
                      binary literals are built in). MCP id fields (id, message_id, threadId; not sha) are not
                      judged. Fails open when the transcript is missing, unreadable or slow (on a timeout, only
                      hashes already judged unseen refuse). See guard_unseen_hash.py.
+  unseen-time        off until a registry entry names it (give it "min_version": "1.33.5"). In the same outbound text
+                     as unseen-hash, a clock time HH:MM (00-23:00-59) that no entry of this session's transcript the
+                     assistant did not write shows (the same entries and window as unseen-hash). An ISO timestamp
+                     with a zone there (2026-11-25T16:36:44Z) counts as its written time, its UTC time and its
+                     time in the machine's zone. Not judged: a time in an "ETA MM-DD HH:MM" or "ETA HH:MM" clause,
+                     after by, until, before or at the latest, in a code span, fenced block or URL, and the entry's
+                     "allow" words (exact times). "programs", "window_mb" and "allow" as for unseen-hash. Fails open
+                     when the transcript is missing, unreadable or slow. See guard_unseen_time.py.
   typed-sha          off until a registry entry names it (give it "min_version": "1.30.0"). A literal hex value for
                      gh pr merge --match-head-commit (`V` or `=V`) or git push --force-with-lease=<ref>:<V> that is
                      shorter than 40 characters (the merge pin only: GitHub refuses it) or, 7 to 40 characters, was printed by no transcript entry the assistant did
@@ -148,6 +156,24 @@ Built-in rules:
                      pass, and so does a command that sets a variable of the entry's "no_queue_env" (at most 10 names)
                      to a value other than empty, 0, false, no or off, on the command or earlier on the line (a dry
                      run does not queue). Fails open. See guard_outer_timeout.py.
+  wait-on-text       off until a registry entry names it (give it "min_version": "1.33.5"). Bash: a while/until loop whose
+                     condition (not its body) reads a file of the entry's "paths" (shell globs; with a "/" they match
+                     as a path suffix, without one the basename) with grep, rg, awk, sed, tail or cat: message text can
+                     quote the event it waits for. Without "paths" nothing is judged. The reason says to wait on the
+                     authoritative state. Fails open. See guard_wait_on_text.py.
+  durable-path       off until a registry entry names it (give it "min_version": "1.33.5"). Bash: work scheduled to run
+                     later whose script is under /tmp/ or in a scratchpad (a path with /scratchpad/, or a glob of the
+                     entry's "scratch" list): systemd-run with --on-calendar, --on-active, --on-boot, --on-startup,
+                     --on-unit-* or --timer-property, at or batch reading such a file or text, a crontab installed
+                     from stdin with such a line. Write, Edit and MultiEdit (judge_outbound): a .service unit's
+                     ExecStart*, a crontab file's or an at job file's command under those places. Running a script
+                     now passes. The reason names the path and the fix. Fails open. See guard_durable_path.py.
+  tool-result-read   off until a registry entry names it (give it "min_version": "1.33.5"). A Read (judge_outbound) of a file
+                     inside <project>/<session>/tool-results/ under ~/.claude/projects/, or one
+                     matching a glob of the entry's "paths" (with a "/" a path suffix, without one the basename): a
+                     persisted oversized tool result. The reason says to narrow the source (a filter, a smaller
+                     query, an extraction prompt). Other files there (memory, transcripts) pass. Fails open. See
+                     guard_tool_result_read.py.
 Also not seen: a pgrep inside a quoted "$(...)" in a loop condition or in the loop body (`while true; do pgrep -f x
 || break; done`), and a here-document fed to a shell
 (`bash <<EOF`), whose body is dropped as data.
@@ -158,7 +184,8 @@ to 40 characters; oom-first reads the session state file once (shared with rerun
 `systemd-analyze calendar` (2 s at most) only for a Write, Edit or MultiEdit of a .timer file holding OnCalendar=
 values, and reads the edited unit file (256 KB at most) only for an edit of a .timer or .service file; live-script
 reads /proc (at most 2000 of this user's pids, 50 ms) for a Write, Edit or MultiEdit of an existing file;
-dry-run-chain and outer-timeout are string work only.
+dry-run-chain, outer-timeout, wait-on-text, durable-path and tool-result-read are string work only (durable-path reads the edited
+unit, crontab or at file for an Edit, 256 KB at most).
 """
 import datetime as dt
 import json
@@ -170,13 +197,17 @@ from pathlib import Path
 import guard_calendar
 import guard_destructive as shell
 import guard_dry_run_chain
+import guard_durable_path
 import guard_live_script
 import guard_oom
 import guard_outer_timeout
 import guard_syntax
 import guard_timer
+import guard_tool_result_read
 import guard_typed_sha
 import guard_unseen_hash
+import guard_unseen_time
+import guard_wait_on_text
 
 Hit = namedtuple("Hit", "lesson rule reason")
 
@@ -218,6 +249,10 @@ BUILT_IN_REASONS = {
                    "output of this turn (run `git log -1 --format=%H <ref>` or `gh pr view N --json mergeCommit`), "
                    'never from memory. A word that is not a commit hash: reword it, or add it to the entry\'s "allow" '
                    "list.",
+    "unseen-time": "Time {times} appears in no tool output of this session. Copy each time from `date +%H:%M` or from "
+                   "the timestamp the API returned (mergedAt, createdAt), in the zone you state, never from memory or "
+                   'by converting by hand. A time that is not a past clock time: reword it, or add it to the entry\'s '
+                   '"allow" list.',
     "typed-sha": 'Pass the SHA from git in the same command: --match-head-commit "$(git rev-parse HEAD)" or '
                  '--force-with-lease=<ref>:"$(git rev-parse origin/<ref>)"; a typed SHA is refused when it is short '
                  "or was never printed in this session.",
@@ -229,10 +264,12 @@ OOM_TIMEOUT = ('; or, if it ran out its timeout limit, confirm that with python3
                '"<command>: timeout"')
 # off until a registry entry names it
 OPT_IN = frozenset(("rerun-after-red", "shell-syntax", "unseen-hash", "typed-sha", "oom-first", "timer-safety",
-                    "live-script", "dry-run-chain", "outer-timeout"))
+                    "live-script", "dry-run-chain", "outer-timeout", "wait-on-text", "durable-path", "tool-result-read",
+                    "unseen-time"))
 ENTRY_KEYS = {"rule", "lesson", "reason", "enabled", "programs", "min_version", "workweek", "exceptions", "approvers",
-              "shell", "window_mb", "allow", "guessed_times", "confirm", "hint", "no_queue_env"}
-TAKES_PROGRAMS = ("help-probe", "secret-in-message", "calendar", "unseen-hash", "dry-run-chain", "outer-timeout")
+              "shell", "window_mb", "allow", "guessed_times", "confirm", "hint", "no_queue_env", "paths", "scratch"}
+TAKES_PROGRAMS = ("help-probe", "secret-in-message", "calendar", "unseen-hash", "unseen-time", "dry-run-chain",
+                  "outer-timeout")
 CUSTOM_KEYS = {"lesson", "reason", "program", "subcommand", "args_any", "args_all", "args_none", "assignments_any",
                "in_loop", "min_version"}
 VERSION_SHAPE = re.compile(r"\d{1,6}\.\d{1,6}\.\d{1,6}", re.ASCII)
@@ -411,6 +448,14 @@ def hook_bypass(cmd, _entry):
     return "--no-verify" in options or (subcommand == "commit" and commit_skips_hooks(options))
 
 
+def is_git_commit(cmd):
+    """A git commit that commits: a hook may refuse it, and a filtered pipe hides that. --dry-run commits nothing."""
+    if cmd.name != "git":
+        return False
+    index, subcommand = git_subcommand(cmd.args)
+    return subcommand == "commit" and "--dry-run" not in git_options(cmd.args[index + 1:])
+
+
 def is_local_script(word, programs):
     if word in programs or word.rpartition("/")[2] in programs:
         return True
@@ -479,10 +524,15 @@ BUILT_IN = {"pgrep-wait-loop": pgrep_wait_loop, "hook-bypass": hook_bypass, "hel
             "live-script": lambda cmd, entry: False,  # judged on file writes only: see judge_outbound
             "dry-run-chain": lambda cmd, entry: False,  # judged on the order of the whole command's runs
             "outer-timeout": lambda cmd, entry: False,  # judged on the wrappers of the whole command
+            "wait-on-text": lambda cmd, entry: False,  # judged on the conditions of the whole command's loops
+            "durable-path": lambda cmd, entry: False,  # judged on the whole command's scheduling and on file writes
+            "tool-result-read": lambda cmd, entry: False,  # judged on Read calls only: see judge_outbound
+            "unseen-time": lambda cmd, entry: False,  # judged on the text a call sends: see outbound_hit
             "shell-syntax": lambda cmd, entry: False}  # judged on the whole command first: see judge
-OUTBOUND = ("calendar", "unseen-hash")
+OUTBOUND = ("calendar", "unseen-hash", "unseen-time")
+UNSEEN_RULES = ("unseen-hash", "unseen-time")  # the outbound rules that read the session transcript
 WHOLE_COMMAND = frozenset(("pipe-exit", "shell-syntax", "typed-sha", "oom-first", "timer-safety", "live-script",
-                           "dry-run-chain", "outer-timeout") + OUTBOUND)
+                           "dry-run-chain", "outer-timeout", "wait-on-text", "durable-path", "tool-result-read") + OUTBOUND)
 
 
 def has_word(args, word, long_value=False):
@@ -589,8 +639,8 @@ def validate(entry, where):
                              or entry["shell"] not in guard_syntax.SHELLS):
         raise RegistryError(f"{where}: shell is for the shell-syntax rule only, one of {sorted(guard_syntax.SHELLS)}")
     if "window_mb" in entry:
-        if entry["rule"] != "unseen-hash":
-            raise RegistryError(f"{where}: window_mb is for the unseen-hash rule only")
+        if entry["rule"] not in UNSEEN_RULES:
+            raise RegistryError(f"{where}: window_mb is for the unseen-hash and unseen-time rules only")
         value = entry["window_mb"]
         if isinstance(value, bool) or not isinstance(value, (int, float)) or not \
                 0 < value <= guard_unseen_hash.MAX_WINDOW_MB:
@@ -607,11 +657,19 @@ def validate(entry, where):
                                     or not guard_outer_timeout.valid_no_queue_env(entry["no_queue_env"])):
         raise RegistryError(f"{where}: no_queue_env is a list of at most {guard_outer_timeout.MAX_NO_QUEUE_ENV} "
                             "variable names, for the outer-timeout rule only")
+    if "paths" in entry and (entry["rule"] not in ("wait-on-text", "tool-result-read")
+                             or not guard_wait_on_text.valid_paths(entry["paths"])):
+        raise RegistryError(f"{where}: paths is a list of shell globs such as .agents/bus/inbox-*.md, for the "
+                            "wait-on-text and tool-result-read rules only")
+    if "scratch" in entry and (entry["rule"] != "durable-path" or not guard_durable_path.valid_scratch(entry["scratch"])):
+        raise RegistryError(f"{where}: scratch is a list of shell globs for folders that are wiped, such as "
+                            "/var/work/tmp-*/**, for the durable-path rule only")
     if "allow" in entry:
-        if entry["rule"] != "unseen-hash":
-            raise RegistryError(f"{where}: allow is for the unseen-hash rule only")
+        if entry["rule"] not in UNSEEN_RULES:
+            raise RegistryError(f"{where}: allow is for the unseen-hash and unseen-time rules only")
         if not (text_list(entry["allow"]) and all(item.strip() for item in entry["allow"])):
-            raise RegistryError(f"{where}: allow must be a list of words that are not commit hashes")
+            raise RegistryError(f"{where}: allow must be a list of words that are not commit hashes (unseen-hash) "
+                                "or times such as 16:36 (unseen-time)")
 
 
 def valid_min_version(value):
@@ -843,7 +901,8 @@ def pipe_exit(command, is_check, depth=0):
         text = " ".join(stage)
         parsed = commands(text)
         script = script_and_args(parsed[0])[0] if parsed else ""
-        return bool(is_check and is_check(text)) or (bool(script) and is_local_script(script, []))
+        return (bool(is_check and is_check(text)) or (bool(script) and is_local_script(script, []))
+                or bool(parsed) and is_git_commit(parsed[0]))
 
     items = list_items(command)
     status_read_after = [False] * len(items)  # a ${PIPESTATUS[...]} read in any later item, found in one pass
@@ -909,14 +968,15 @@ def calendar_hit(entry, texts):
 def outbound_hit(name, entry, tool_name, tool_input, transcript, agent_id=None):
     """Hit for an outbound rule (calendar, unseen-hash) on the text this call sends; None when it is clean."""
     texts = guard_calendar.outbound_texts(tool_name, tool_input, entry.get("programs") or [], shell,
-                                          messages_only=name == "unseen-hash")
+                                          messages_only=name in UNSEEN_RULES)
     if name == "calendar":
         return calendar_hit(entry, texts)
-    found = guard_unseen_hash.unseen(texts, transcript, entry.get("window_mb"), agent_id=agent_id,
-                                     allow=entry.get("allow"))
+    check = guard_unseen_time if name == "unseen-time" else guard_unseen_hash
+    found = check.unseen(texts, transcript, entry.get("window_mb"), agent_id=agent_id, allow=entry.get("allow"))
     if not found:
         return None
-    reason = entry.get("reason") or BUILT_IN_REASONS[name].replace("{hashes}", guard_unseen_hash.named(found))
+    reason = entry.get("reason") or BUILT_IN_REASONS[name].replace("{hashes}", check.named(found)).replace(
+        "{times}", check.named(found))
     return Hit(entry.get("lesson"), name, reason)
 
 
@@ -926,8 +986,10 @@ def judge_outbound(tool_name, tool_input, cwd, transcript=None, agent_id=None):
     live-script for one of a script a shell runs; None for every other tool or when it is clean or switched off.
     transcript, agent_id: the session transcript path and the subagent id, read by unseen-hash."""
     for name, entry, _ in rules(cwd):
-        if name in ("timer-safety", "live-script"):
+        if name in ("timer-safety", "live-script", "durable-path", "tool-result-read"):
             problem = (guard_timer.file_problem(tool_name, tool_input) if name == "timer-safety"
+                       else guard_tool_result_read.problem(tool_name, tool_input, entry) if name == "tool-result-read"
+                       else guard_durable_path.file_problem(tool_name, tool_input, entry) if name == "durable-path"
                        else guard_live_script.file_problem(tool_name, tool_input, cwd))
             hit = Hit(entry.get("lesson"), name, entry.get("reason") or problem) if problem else None
         else:
@@ -966,6 +1028,11 @@ def judge(command, cwd, session=None, is_check=None, transcript=None, agent_id=N
             problem = (guard_timer.bash_problem(commands(command), commands) if name == "timer-safety"
                        else guard_outer_timeout.problem(command, entry) if name == "outer-timeout"
                        else guard_dry_run_chain.problem(chain_runs(commands(command)), entry))
+            if problem:
+                return Hit(entry.get("lesson"), name, entry.get("reason") or problem)
+        if name in ("wait-on-text", "durable-path"):
+            problem = (guard_wait_on_text if name == "wait-on-text" else guard_durable_path).problem(
+                command, entry, commands)
             if problem:
                 return Hit(entry.get("lesson"), name, entry.get("reason") or problem)
         if ((name == "pipe-exit" and pipe_exit(command, is_check))

@@ -96,6 +96,7 @@ antigravity	global	file	guard.py	hooks/guard.py	.gemini/config/arsenal-hooks/gua
 antigravity	global	file	guard_calendar.py	hooks/guard_calendar.py	.gemini/config/arsenal-hooks/guard_calendar.py	-
 antigravity	global	file	guard_destructive.py	hooks/guard_destructive.py	.gemini/config/arsenal-hooks/guard_destructive.py	-
 antigravity	global	file	guard_dry_run_chain.py	hooks/guard_dry_run_chain.py	.gemini/config/arsenal-hooks/guard_dry_run_chain.py	-
+antigravity	global	file	guard_durable_path.py	hooks/guard_durable_path.py	.gemini/config/arsenal-hooks/guard_durable_path.py	-
 antigravity	global	file	guard_lessons.py	hooks/guard_lessons.py	.gemini/config/arsenal-hooks/guard_lessons.py	-
 antigravity	global	file	guard_limits.py	hooks/guard_limits.py	.gemini/config/arsenal-hooks/guard_limits.py	-
 antigravity	global	file	guard_live_script.py	hooks/guard_live_script.py	.gemini/config/arsenal-hooks/guard_live_script.py	-
@@ -105,8 +106,11 @@ antigravity	global	file	guard_outer_timeout.py	hooks/guard_outer_timeout.py	.gem
 antigravity	global	file	guard_scope.py	hooks/guard_scope.py	.gemini/config/arsenal-hooks/guard_scope.py	-
 antigravity	global	file	guard_syntax.py	hooks/guard_syntax.py	.gemini/config/arsenal-hooks/guard_syntax.py	-
 antigravity	global	file	guard_timer.py	hooks/guard_timer.py	.gemini/config/arsenal-hooks/guard_timer.py	-
+antigravity	global	file	guard_tool_result_read.py	hooks/guard_tool_result_read.py	.gemini/config/arsenal-hooks/guard_tool_result_read.py	-
 antigravity	global	file	guard_typed_sha.py	hooks/guard_typed_sha.py	.gemini/config/arsenal-hooks/guard_typed_sha.py	-
 antigravity	global	file	guard_unseen_hash.py	hooks/guard_unseen_hash.py	.gemini/config/arsenal-hooks/guard_unseen_hash.py	-
+antigravity	global	file	guard_unseen_time.py	hooks/guard_unseen_time.py	.gemini/config/arsenal-hooks/guard_unseen_time.py	-
+antigravity	global	file	guard_wait_on_text.py	hooks/guard_wait_on_text.py	.gemini/config/arsenal-hooks/guard_wait_on_text.py	-
 antigravity	global	file	session_core.py	hooks/session_core.py	.gemini/config/arsenal-hooks/session_core.py	-
 antigravity	global	file	skill_router.py	hooks/skill_router.py	.gemini/config/arsenal-hooks/skill_router.py	-
 antigravity	global	file	core.md	hooks/core.md	.gemini/config/arsenal-hooks/core.md	-
@@ -215,6 +219,7 @@ antigravity	project	file	guard.py	hooks/guard.py	.agents/arsenal-hooks/guard.py	
 antigravity	project	file	guard_calendar.py	hooks/guard_calendar.py	.agents/arsenal-hooks/guard_calendar.py	-
 antigravity	project	file	guard_destructive.py	hooks/guard_destructive.py	.agents/arsenal-hooks/guard_destructive.py	-
 antigravity	project	file	guard_dry_run_chain.py	hooks/guard_dry_run_chain.py	.agents/arsenal-hooks/guard_dry_run_chain.py	-
+antigravity	project	file	guard_durable_path.py	hooks/guard_durable_path.py	.agents/arsenal-hooks/guard_durable_path.py	-
 antigravity	project	file	guard_lessons.py	hooks/guard_lessons.py	.agents/arsenal-hooks/guard_lessons.py	-
 antigravity	project	file	guard_limits.py	hooks/guard_limits.py	.agents/arsenal-hooks/guard_limits.py	-
 antigravity	project	file	guard_live_script.py	hooks/guard_live_script.py	.agents/arsenal-hooks/guard_live_script.py	-
@@ -224,8 +229,11 @@ antigravity	project	file	guard_outer_timeout.py	hooks/guard_outer_timeout.py	.ag
 antigravity	project	file	guard_scope.py	hooks/guard_scope.py	.agents/arsenal-hooks/guard_scope.py	-
 antigravity	project	file	guard_syntax.py	hooks/guard_syntax.py	.agents/arsenal-hooks/guard_syntax.py	-
 antigravity	project	file	guard_timer.py	hooks/guard_timer.py	.agents/arsenal-hooks/guard_timer.py	-
+antigravity	project	file	guard_tool_result_read.py	hooks/guard_tool_result_read.py	.agents/arsenal-hooks/guard_tool_result_read.py	-
 antigravity	project	file	guard_typed_sha.py	hooks/guard_typed_sha.py	.agents/arsenal-hooks/guard_typed_sha.py	-
 antigravity	project	file	guard_unseen_hash.py	hooks/guard_unseen_hash.py	.agents/arsenal-hooks/guard_unseen_hash.py	-
+antigravity	project	file	guard_unseen_time.py	hooks/guard_unseen_time.py	.agents/arsenal-hooks/guard_unseen_time.py	-
+antigravity	project	file	guard_wait_on_text.py	hooks/guard_wait_on_text.py	.agents/arsenal-hooks/guard_wait_on_text.py	-
 antigravity	project	file	session_core.py	hooks/session_core.py	.agents/arsenal-hooks/session_core.py	-
 antigravity	project	file	skill_router.py	hooks/skill_router.py	.agents/arsenal-hooks/skill_router.py	-
 antigravity	project	file	core.md	hooks/core.md	.agents/arsenal-hooks/core.md	-
@@ -318,6 +326,7 @@ gemini	global	file	guard.py	hooks/guard.py	.agents/arsenal-hooks/guard.py	-
 gemini	global	file	guard_calendar.py	hooks/guard_calendar.py	.agents/arsenal-hooks/guard_calendar.py	-
 gemini	global	file	guard_destructive.py	hooks/guard_destructive.py	.agents/arsenal-hooks/guard_destructive.py	-
 gemini	global	file	guard_dry_run_chain.py	hooks/guard_dry_run_chain.py	.agents/arsenal-hooks/guard_dry_run_chain.py	-
+gemini	global	file	guard_durable_path.py	hooks/guard_durable_path.py	.agents/arsenal-hooks/guard_durable_path.py	-
 gemini	global	file	guard_lessons.py	hooks/guard_lessons.py	.agents/arsenal-hooks/guard_lessons.py	-
 gemini	global	file	guard_limits.py	hooks/guard_limits.py	.agents/arsenal-hooks/guard_limits.py	-
 gemini	global	file	guard_live_script.py	hooks/guard_live_script.py	.agents/arsenal-hooks/guard_live_script.py	-
@@ -327,8 +336,11 @@ gemini	global	file	guard_outer_timeout.py	hooks/guard_outer_timeout.py	.agents/a
 gemini	global	file	guard_scope.py	hooks/guard_scope.py	.agents/arsenal-hooks/guard_scope.py	-
 gemini	global	file	guard_syntax.py	hooks/guard_syntax.py	.agents/arsenal-hooks/guard_syntax.py	-
 gemini	global	file	guard_timer.py	hooks/guard_timer.py	.agents/arsenal-hooks/guard_timer.py	-
+gemini	global	file	guard_tool_result_read.py	hooks/guard_tool_result_read.py	.agents/arsenal-hooks/guard_tool_result_read.py	-
 gemini	global	file	guard_typed_sha.py	hooks/guard_typed_sha.py	.agents/arsenal-hooks/guard_typed_sha.py	-
 gemini	global	file	guard_unseen_hash.py	hooks/guard_unseen_hash.py	.agents/arsenal-hooks/guard_unseen_hash.py	-
+gemini	global	file	guard_unseen_time.py	hooks/guard_unseen_time.py	.agents/arsenal-hooks/guard_unseen_time.py	-
+gemini	global	file	guard_wait_on_text.py	hooks/guard_wait_on_text.py	.agents/arsenal-hooks/guard_wait_on_text.py	-
 gemini	global	file	session_core.py	hooks/session_core.py	.agents/arsenal-hooks/session_core.py	-
 gemini	global	file	skill_router.py	hooks/skill_router.py	.agents/arsenal-hooks/skill_router.py	-
 gemini	global	file	core.md	hooks/core.md	.agents/arsenal-hooks/core.md	-
@@ -423,6 +435,7 @@ gemini	project	file	guard.py	hooks/guard.py	.agents/arsenal-hooks/guard.py	-
 gemini	project	file	guard_calendar.py	hooks/guard_calendar.py	.agents/arsenal-hooks/guard_calendar.py	-
 gemini	project	file	guard_destructive.py	hooks/guard_destructive.py	.agents/arsenal-hooks/guard_destructive.py	-
 gemini	project	file	guard_dry_run_chain.py	hooks/guard_dry_run_chain.py	.agents/arsenal-hooks/guard_dry_run_chain.py	-
+gemini	project	file	guard_durable_path.py	hooks/guard_durable_path.py	.agents/arsenal-hooks/guard_durable_path.py	-
 gemini	project	file	guard_lessons.py	hooks/guard_lessons.py	.agents/arsenal-hooks/guard_lessons.py	-
 gemini	project	file	guard_limits.py	hooks/guard_limits.py	.agents/arsenal-hooks/guard_limits.py	-
 gemini	project	file	guard_live_script.py	hooks/guard_live_script.py	.agents/arsenal-hooks/guard_live_script.py	-
@@ -432,8 +445,11 @@ gemini	project	file	guard_outer_timeout.py	hooks/guard_outer_timeout.py	.agents/
 gemini	project	file	guard_scope.py	hooks/guard_scope.py	.agents/arsenal-hooks/guard_scope.py	-
 gemini	project	file	guard_syntax.py	hooks/guard_syntax.py	.agents/arsenal-hooks/guard_syntax.py	-
 gemini	project	file	guard_timer.py	hooks/guard_timer.py	.agents/arsenal-hooks/guard_timer.py	-
+gemini	project	file	guard_tool_result_read.py	hooks/guard_tool_result_read.py	.agents/arsenal-hooks/guard_tool_result_read.py	-
 gemini	project	file	guard_typed_sha.py	hooks/guard_typed_sha.py	.agents/arsenal-hooks/guard_typed_sha.py	-
 gemini	project	file	guard_unseen_hash.py	hooks/guard_unseen_hash.py	.agents/arsenal-hooks/guard_unseen_hash.py	-
+gemini	project	file	guard_unseen_time.py	hooks/guard_unseen_time.py	.agents/arsenal-hooks/guard_unseen_time.py	-
+gemini	project	file	guard_wait_on_text.py	hooks/guard_wait_on_text.py	.agents/arsenal-hooks/guard_wait_on_text.py	-
 gemini	project	file	session_core.py	hooks/session_core.py	.agents/arsenal-hooks/session_core.py	-
 gemini	project	file	skill_router.py	hooks/skill_router.py	.agents/arsenal-hooks/skill_router.py	-
 gemini	project	file	core.md	hooks/core.md	.agents/arsenal-hooks/core.md	-
@@ -574,6 +590,7 @@ codex	global	file	guard.py	hooks/guard.py	.agents/arsenal-hooks/guard.py	-
 codex	global	file	guard_calendar.py	hooks/guard_calendar.py	.agents/arsenal-hooks/guard_calendar.py	-
 codex	global	file	guard_destructive.py	hooks/guard_destructive.py	.agents/arsenal-hooks/guard_destructive.py	-
 codex	global	file	guard_dry_run_chain.py	hooks/guard_dry_run_chain.py	.agents/arsenal-hooks/guard_dry_run_chain.py	-
+codex	global	file	guard_durable_path.py	hooks/guard_durable_path.py	.agents/arsenal-hooks/guard_durable_path.py	-
 codex	global	file	guard_lessons.py	hooks/guard_lessons.py	.agents/arsenal-hooks/guard_lessons.py	-
 codex	global	file	guard_limits.py	hooks/guard_limits.py	.agents/arsenal-hooks/guard_limits.py	-
 codex	global	file	guard_live_script.py	hooks/guard_live_script.py	.agents/arsenal-hooks/guard_live_script.py	-
@@ -583,8 +600,11 @@ codex	global	file	guard_outer_timeout.py	hooks/guard_outer_timeout.py	.agents/ar
 codex	global	file	guard_scope.py	hooks/guard_scope.py	.agents/arsenal-hooks/guard_scope.py	-
 codex	global	file	guard_syntax.py	hooks/guard_syntax.py	.agents/arsenal-hooks/guard_syntax.py	-
 codex	global	file	guard_timer.py	hooks/guard_timer.py	.agents/arsenal-hooks/guard_timer.py	-
+codex	global	file	guard_tool_result_read.py	hooks/guard_tool_result_read.py	.agents/arsenal-hooks/guard_tool_result_read.py	-
 codex	global	file	guard_typed_sha.py	hooks/guard_typed_sha.py	.agents/arsenal-hooks/guard_typed_sha.py	-
 codex	global	file	guard_unseen_hash.py	hooks/guard_unseen_hash.py	.agents/arsenal-hooks/guard_unseen_hash.py	-
+codex	global	file	guard_unseen_time.py	hooks/guard_unseen_time.py	.agents/arsenal-hooks/guard_unseen_time.py	-
+codex	global	file	guard_wait_on_text.py	hooks/guard_wait_on_text.py	.agents/arsenal-hooks/guard_wait_on_text.py	-
 codex	global	file	session_core.py	hooks/session_core.py	.agents/arsenal-hooks/session_core.py	-
 codex	global	file	skill_router.py	hooks/skill_router.py	.agents/arsenal-hooks/skill_router.py	-
 codex	global	file	core.md	hooks/core.md	.agents/arsenal-hooks/core.md	-
@@ -691,6 +711,7 @@ codex	project	file	guard.py	hooks/guard.py	.agents/arsenal-hooks/guard.py	-
 codex	project	file	guard_calendar.py	hooks/guard_calendar.py	.agents/arsenal-hooks/guard_calendar.py	-
 codex	project	file	guard_destructive.py	hooks/guard_destructive.py	.agents/arsenal-hooks/guard_destructive.py	-
 codex	project	file	guard_dry_run_chain.py	hooks/guard_dry_run_chain.py	.agents/arsenal-hooks/guard_dry_run_chain.py	-
+codex	project	file	guard_durable_path.py	hooks/guard_durable_path.py	.agents/arsenal-hooks/guard_durable_path.py	-
 codex	project	file	guard_lessons.py	hooks/guard_lessons.py	.agents/arsenal-hooks/guard_lessons.py	-
 codex	project	file	guard_limits.py	hooks/guard_limits.py	.agents/arsenal-hooks/guard_limits.py	-
 codex	project	file	guard_live_script.py	hooks/guard_live_script.py	.agents/arsenal-hooks/guard_live_script.py	-
@@ -700,8 +721,11 @@ codex	project	file	guard_outer_timeout.py	hooks/guard_outer_timeout.py	.agents/a
 codex	project	file	guard_scope.py	hooks/guard_scope.py	.agents/arsenal-hooks/guard_scope.py	-
 codex	project	file	guard_syntax.py	hooks/guard_syntax.py	.agents/arsenal-hooks/guard_syntax.py	-
 codex	project	file	guard_timer.py	hooks/guard_timer.py	.agents/arsenal-hooks/guard_timer.py	-
+codex	project	file	guard_tool_result_read.py	hooks/guard_tool_result_read.py	.agents/arsenal-hooks/guard_tool_result_read.py	-
 codex	project	file	guard_typed_sha.py	hooks/guard_typed_sha.py	.agents/arsenal-hooks/guard_typed_sha.py	-
 codex	project	file	guard_unseen_hash.py	hooks/guard_unseen_hash.py	.agents/arsenal-hooks/guard_unseen_hash.py	-
+codex	project	file	guard_unseen_time.py	hooks/guard_unseen_time.py	.agents/arsenal-hooks/guard_unseen_time.py	-
+codex	project	file	guard_wait_on_text.py	hooks/guard_wait_on_text.py	.agents/arsenal-hooks/guard_wait_on_text.py	-
 codex	project	file	session_core.py	hooks/session_core.py	.agents/arsenal-hooks/session_core.py	-
 codex	project	file	skill_router.py	hooks/skill_router.py	.agents/arsenal-hooks/skill_router.py	-
 codex	project	file	core.md	hooks/core.md	.agents/arsenal-hooks/core.md	-
@@ -984,6 +1008,7 @@ cursor	global	file	guard.py	hooks/guard.py	.agents/arsenal-hooks/guard.py	-
 cursor	global	file	guard_calendar.py	hooks/guard_calendar.py	.agents/arsenal-hooks/guard_calendar.py	-
 cursor	global	file	guard_destructive.py	hooks/guard_destructive.py	.agents/arsenal-hooks/guard_destructive.py	-
 cursor	global	file	guard_dry_run_chain.py	hooks/guard_dry_run_chain.py	.agents/arsenal-hooks/guard_dry_run_chain.py	-
+cursor	global	file	guard_durable_path.py	hooks/guard_durable_path.py	.agents/arsenal-hooks/guard_durable_path.py	-
 cursor	global	file	guard_lessons.py	hooks/guard_lessons.py	.agents/arsenal-hooks/guard_lessons.py	-
 cursor	global	file	guard_limits.py	hooks/guard_limits.py	.agents/arsenal-hooks/guard_limits.py	-
 cursor	global	file	guard_live_script.py	hooks/guard_live_script.py	.agents/arsenal-hooks/guard_live_script.py	-
@@ -993,8 +1018,11 @@ cursor	global	file	guard_outer_timeout.py	hooks/guard_outer_timeout.py	.agents/a
 cursor	global	file	guard_scope.py	hooks/guard_scope.py	.agents/arsenal-hooks/guard_scope.py	-
 cursor	global	file	guard_syntax.py	hooks/guard_syntax.py	.agents/arsenal-hooks/guard_syntax.py	-
 cursor	global	file	guard_timer.py	hooks/guard_timer.py	.agents/arsenal-hooks/guard_timer.py	-
+cursor	global	file	guard_tool_result_read.py	hooks/guard_tool_result_read.py	.agents/arsenal-hooks/guard_tool_result_read.py	-
 cursor	global	file	guard_typed_sha.py	hooks/guard_typed_sha.py	.agents/arsenal-hooks/guard_typed_sha.py	-
 cursor	global	file	guard_unseen_hash.py	hooks/guard_unseen_hash.py	.agents/arsenal-hooks/guard_unseen_hash.py	-
+cursor	global	file	guard_unseen_time.py	hooks/guard_unseen_time.py	.agents/arsenal-hooks/guard_unseen_time.py	-
+cursor	global	file	guard_wait_on_text.py	hooks/guard_wait_on_text.py	.agents/arsenal-hooks/guard_wait_on_text.py	-
 cursor	global	file	session_core.py	hooks/session_core.py	.agents/arsenal-hooks/session_core.py	-
 cursor	global	file	skill_router.py	hooks/skill_router.py	.agents/arsenal-hooks/skill_router.py	-
 cursor	global	file	core.md	hooks/core.md	.agents/arsenal-hooks/core.md	-
@@ -1101,6 +1129,7 @@ cursor	project	file	guard.py	hooks/guard.py	.agents/arsenal-hooks/guard.py	-
 cursor	project	file	guard_calendar.py	hooks/guard_calendar.py	.agents/arsenal-hooks/guard_calendar.py	-
 cursor	project	file	guard_destructive.py	hooks/guard_destructive.py	.agents/arsenal-hooks/guard_destructive.py	-
 cursor	project	file	guard_dry_run_chain.py	hooks/guard_dry_run_chain.py	.agents/arsenal-hooks/guard_dry_run_chain.py	-
+cursor	project	file	guard_durable_path.py	hooks/guard_durable_path.py	.agents/arsenal-hooks/guard_durable_path.py	-
 cursor	project	file	guard_lessons.py	hooks/guard_lessons.py	.agents/arsenal-hooks/guard_lessons.py	-
 cursor	project	file	guard_limits.py	hooks/guard_limits.py	.agents/arsenal-hooks/guard_limits.py	-
 cursor	project	file	guard_live_script.py	hooks/guard_live_script.py	.agents/arsenal-hooks/guard_live_script.py	-
@@ -1110,8 +1139,11 @@ cursor	project	file	guard_outer_timeout.py	hooks/guard_outer_timeout.py	.agents/
 cursor	project	file	guard_scope.py	hooks/guard_scope.py	.agents/arsenal-hooks/guard_scope.py	-
 cursor	project	file	guard_syntax.py	hooks/guard_syntax.py	.agents/arsenal-hooks/guard_syntax.py	-
 cursor	project	file	guard_timer.py	hooks/guard_timer.py	.agents/arsenal-hooks/guard_timer.py	-
+cursor	project	file	guard_tool_result_read.py	hooks/guard_tool_result_read.py	.agents/arsenal-hooks/guard_tool_result_read.py	-
 cursor	project	file	guard_typed_sha.py	hooks/guard_typed_sha.py	.agents/arsenal-hooks/guard_typed_sha.py	-
 cursor	project	file	guard_unseen_hash.py	hooks/guard_unseen_hash.py	.agents/arsenal-hooks/guard_unseen_hash.py	-
+cursor	project	file	guard_unseen_time.py	hooks/guard_unseen_time.py	.agents/arsenal-hooks/guard_unseen_time.py	-
+cursor	project	file	guard_wait_on_text.py	hooks/guard_wait_on_text.py	.agents/arsenal-hooks/guard_wait_on_text.py	-
 cursor	project	file	session_core.py	hooks/session_core.py	.agents/arsenal-hooks/session_core.py	-
 cursor	project	file	skill_router.py	hooks/skill_router.py	.agents/arsenal-hooks/skill_router.py	-
 cursor	project	file	core.md	hooks/core.md	.agents/arsenal-hooks/core.md	-
@@ -1344,6 +1376,7 @@ copilot	global	file	guard.py	hooks/guard.py	.agents/arsenal-hooks/guard.py	-
 copilot	global	file	guard_calendar.py	hooks/guard_calendar.py	.agents/arsenal-hooks/guard_calendar.py	-
 copilot	global	file	guard_destructive.py	hooks/guard_destructive.py	.agents/arsenal-hooks/guard_destructive.py	-
 copilot	global	file	guard_dry_run_chain.py	hooks/guard_dry_run_chain.py	.agents/arsenal-hooks/guard_dry_run_chain.py	-
+copilot	global	file	guard_durable_path.py	hooks/guard_durable_path.py	.agents/arsenal-hooks/guard_durable_path.py	-
 copilot	global	file	guard_lessons.py	hooks/guard_lessons.py	.agents/arsenal-hooks/guard_lessons.py	-
 copilot	global	file	guard_limits.py	hooks/guard_limits.py	.agents/arsenal-hooks/guard_limits.py	-
 copilot	global	file	guard_live_script.py	hooks/guard_live_script.py	.agents/arsenal-hooks/guard_live_script.py	-
@@ -1353,8 +1386,11 @@ copilot	global	file	guard_outer_timeout.py	hooks/guard_outer_timeout.py	.agents/
 copilot	global	file	guard_scope.py	hooks/guard_scope.py	.agents/arsenal-hooks/guard_scope.py	-
 copilot	global	file	guard_syntax.py	hooks/guard_syntax.py	.agents/arsenal-hooks/guard_syntax.py	-
 copilot	global	file	guard_timer.py	hooks/guard_timer.py	.agents/arsenal-hooks/guard_timer.py	-
+copilot	global	file	guard_tool_result_read.py	hooks/guard_tool_result_read.py	.agents/arsenal-hooks/guard_tool_result_read.py	-
 copilot	global	file	guard_typed_sha.py	hooks/guard_typed_sha.py	.agents/arsenal-hooks/guard_typed_sha.py	-
 copilot	global	file	guard_unseen_hash.py	hooks/guard_unseen_hash.py	.agents/arsenal-hooks/guard_unseen_hash.py	-
+copilot	global	file	guard_unseen_time.py	hooks/guard_unseen_time.py	.agents/arsenal-hooks/guard_unseen_time.py	-
+copilot	global	file	guard_wait_on_text.py	hooks/guard_wait_on_text.py	.agents/arsenal-hooks/guard_wait_on_text.py	-
 copilot	global	file	session_core.py	hooks/session_core.py	.agents/arsenal-hooks/session_core.py	-
 copilot	global	file	skill_router.py	hooks/skill_router.py	.agents/arsenal-hooks/skill_router.py	-
 copilot	global	file	core.md	hooks/core.md	.agents/arsenal-hooks/core.md	-
@@ -1461,6 +1497,7 @@ copilot	project	file	guard.py	hooks/guard.py	.agents/arsenal-hooks/guard.py	-
 copilot	project	file	guard_calendar.py	hooks/guard_calendar.py	.agents/arsenal-hooks/guard_calendar.py	-
 copilot	project	file	guard_destructive.py	hooks/guard_destructive.py	.agents/arsenal-hooks/guard_destructive.py	-
 copilot	project	file	guard_dry_run_chain.py	hooks/guard_dry_run_chain.py	.agents/arsenal-hooks/guard_dry_run_chain.py	-
+copilot	project	file	guard_durable_path.py	hooks/guard_durable_path.py	.agents/arsenal-hooks/guard_durable_path.py	-
 copilot	project	file	guard_lessons.py	hooks/guard_lessons.py	.agents/arsenal-hooks/guard_lessons.py	-
 copilot	project	file	guard_limits.py	hooks/guard_limits.py	.agents/arsenal-hooks/guard_limits.py	-
 copilot	project	file	guard_live_script.py	hooks/guard_live_script.py	.agents/arsenal-hooks/guard_live_script.py	-
@@ -1470,8 +1507,11 @@ copilot	project	file	guard_outer_timeout.py	hooks/guard_outer_timeout.py	.agents
 copilot	project	file	guard_scope.py	hooks/guard_scope.py	.agents/arsenal-hooks/guard_scope.py	-
 copilot	project	file	guard_syntax.py	hooks/guard_syntax.py	.agents/arsenal-hooks/guard_syntax.py	-
 copilot	project	file	guard_timer.py	hooks/guard_timer.py	.agents/arsenal-hooks/guard_timer.py	-
+copilot	project	file	guard_tool_result_read.py	hooks/guard_tool_result_read.py	.agents/arsenal-hooks/guard_tool_result_read.py	-
 copilot	project	file	guard_typed_sha.py	hooks/guard_typed_sha.py	.agents/arsenal-hooks/guard_typed_sha.py	-
 copilot	project	file	guard_unseen_hash.py	hooks/guard_unseen_hash.py	.agents/arsenal-hooks/guard_unseen_hash.py	-
+copilot	project	file	guard_unseen_time.py	hooks/guard_unseen_time.py	.agents/arsenal-hooks/guard_unseen_time.py	-
+copilot	project	file	guard_wait_on_text.py	hooks/guard_wait_on_text.py	.agents/arsenal-hooks/guard_wait_on_text.py	-
 copilot	project	file	session_core.py	hooks/session_core.py	.agents/arsenal-hooks/session_core.py	-
 copilot	project	file	skill_router.py	hooks/skill_router.py	.agents/arsenal-hooks/skill_router.py	-
 copilot	project	file	core.md	hooks/core.md	.agents/arsenal-hooks/core.md	-

@@ -4,6 +4,24 @@ All notable changes to Senior Developer Arsenal are recorded in this file.
 
 The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/), and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version is the one in the `VERSION` file, and each release is dated by the day its pull request merged (UTC).
 
+## [1.33.5] - 2026-11-26
+
+### Added
+
+- Four opt-in lesson-guard rules (#65):
+  - `wait-on-text` refuses a `while` or `until` loop whose condition reads the configured message files (`paths`). A loop that waits on message text matches lines that only quote the event, so the rule tells the caller to wait on the authoritative state instead.
+  - `durable-path` refuses scheduled or persistent work whose script sits in `/tmp` or a session scratchpad, where cleanup or a reboot removes it. That covers `systemd-run` timers, `at` and `batch`, crontab lines, and written `.service`, `.timer` or crontab files.
+  - `tool-result-read` refuses a Read of a persisted tool-result file under `~/.claude/projects/`, so the caller narrows the query at its source.
+  - `unseen-time` refuses a past clock time in an outbound message unless that time appeared in tool output earlier in the session. ETAs and deadlines are exempt.
+
+### Changed
+
+- The built-in rule `pipe-exit` counts `git commit` as a check, so `git commit ... | tail -1 && git push` is refused. `git commit --dry-run` is not counted (#65).
+
+### Fixed
+
+- `dry-run-chain`: a `NAME=$(...)` capture that is not a leading assignment, such as `export n=$(...)`, `local n=$(...)` or `echo n=$(...)`, no longer makes the lesson-guard check raise (#65).
+
 ## [1.33.4] - 2026-11-25
 
 ### Changed
@@ -451,6 +469,7 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 - Non-destructive installers for every supported agent.
 - CI with lint, test and smoke workflows.
 
+[1.33.5]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/65
 [1.33.4]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/64
 [1.33.3]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/63
 [1.33.2]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/62
