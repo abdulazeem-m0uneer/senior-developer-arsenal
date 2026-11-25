@@ -141,7 +141,7 @@ class RefreshTests(SlotTestCase):
     def test_every_watched_pr_is_read_with_the_repo(self):
         gh = Gh()
         self.run_cmd("status", "-R", "o/r", gh=gh)
-        self.assertEqual(gh.calls, [["pr", "view", str(n), "-R", "o/r", "--json", "state"] for n in (1, 2, 3)])
+        self.assertEqual(gh.calls, [["pr", "view", str(n), "-R", "o/r", "--json", merge_slot.VIEW_FIELDS] for n in (1, 2, 3)])
 
     def test_gh_failure_or_timeout_drops_nothing(self):
         gh = Gh({1: (1, "boom"), 2: (merge_green.GH_TIMED_OUT, "gh did not answer in 120 s"), 3: (0, "not json")})
