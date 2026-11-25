@@ -4,6 +4,17 @@ All notable changes to Senior Developer Arsenal are recorded in this file.
 
 The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/), and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version is the one in the `VERSION` file, and each release is dated by the day its pull request merged (UTC).
 
+## [1.33.4] - 2026-11-25
+
+### Changed
+
+- `merge_slot.py` releases a slot holder whose required checks failed (#64):
+  - at the next refresh, a holder whose checks show a failure or an error, with nothing still running, gives up the slot, unless the merge state is `UNSTABLE` (only non-required checks failed);
+  - its failed head is recorded, and it rejoins after a re-run turns that head green, or after a new head is pushed;
+  - pending, unknown, a `gh` error or a cancelled run keeps the slot;
+  - a failed queued pull request is skipped whenever the slot is granted;
+  - a `may-update` from a pull request on a failed head is refused.
+
 ## [1.33.3] - 2026-11-25
 
 ### Fixed
@@ -440,6 +451,7 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 - Non-destructive installers for every supported agent.
 - CI with lint, test and smoke workflows.
 
+[1.33.4]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/64
 [1.33.3]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/63
 [1.33.2]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/62
 [1.33.1]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/61
