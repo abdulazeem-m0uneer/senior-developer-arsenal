@@ -641,7 +641,8 @@ def scope_refusal(tool_name, tool_input, cwd, report_write=False):
 
 
 def outbound_refusal(tool_name, tool_input, cwd, transcript=None, agent_id=None):
-    """Why a non-Bash tool call is refused under an outbound rule (calendar, unseen-hash; the hit is logged), or ''."""
+    """Why a non-Bash tool call is refused under an outbound rule (calendar, unseen-hash), timer-safety (a unit file
+    write) or live-script (a write to a running script); the hit is logged. '' when it is not."""
     try:
         hit = guard_lessons.judge_outbound(tool_name, tool_input, cwd, transcript, agent_id)
     except Exception:  # this check must never stop a tool it cannot judge

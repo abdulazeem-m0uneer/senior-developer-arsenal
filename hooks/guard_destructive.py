@@ -82,17 +82,25 @@ def tokens(command):
     return words
 
 
-def simple_commands(command):
-    """[(argv, piped_from_previous, has_heredoc)] for each simple command, wrappers still in place."""
-    found, argv, piped = [], [], False
+def command_runs(command):
+    """[(argv, piped_from_previous, has_heredoc, starts_case_branch)] for each simple command, wrappers still in
+    place; starts_case_branch is True when a `;;` came since the previous command."""
+    found, argv, piped, case_end = [], [], False, False
     for word in tokens(command) + [";"]:
         if word and set(word) <= SEPARATORS:
             if argv:
-                found.append((argv, piped, any(arg.startswith("<<") for arg in argv)))
+                found.append((argv, piped, any(arg.startswith("<<") for arg in argv), case_end))
+                case_end = False
             argv, piped = [], word.startswith("|") and word != "||"
+            case_end = case_end or word == ";;"
         else:
             argv.append(word)
     return found
+
+
+def simple_commands(command):
+    """[(argv, piped_from_previous, has_heredoc)] for each simple command, wrappers still in place."""
+    return [run[:3] for run in command_runs(command)]
 
 
 def program(argv):
