@@ -4,6 +4,16 @@ All notable changes to Senior Developer Arsenal are recorded in this file.
 
 The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/), and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version is the one in the `VERSION` file, and each release is dated by the day its pull request merged (UTC).
 
+## [1.33.2] - 2026-11-25
+
+### Added
+
+- Lesson-guard rule `outer-timeout` takes an optional `no_queue_env` list of environment variables. A call that sets one of them to a value other than empty, `0`, `false`, `no` or `off` does not queue, so it passes. An example is the queueing program's own dry-run switch (#62).
+
+### Fixed
+
+- `outer-timeout`: a leading variable assignment on one command no longer carries over to later commands on the same line. Only a bare assignment or `export` does (#62).
+
 ## [1.33.1] - 2026-11-25
 
 ### Changed
@@ -420,6 +430,7 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 - Non-destructive installers for every supported agent.
 - CI with lint, test and smoke workflows.
 
+[1.33.2]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/62
 [1.33.1]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/61
 [1.33.0]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/60
 [1.32.1]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/59
