@@ -109,13 +109,54 @@ Built-in rules:
                      or unshare) is also cleared by a later `lessons.py cause` note: exit 137 is then often the
                      timeout's SIGKILL. Only the newest 32 armed failures are judged. Reads the session state through
                      `session`; without it, or on a state it cannot read, it passes. Bash only. See guard_oom.py.
+  timer-safety       off until a registry entry names it (give it "min_version": "1.33.0"). Bash: systemctl restarting
+                     a *.timer (restart, try-restart, reload-or-restart, try-reload-or-restart, force-reload and
+                     their aliases condrestart, reload-or-try-restart, condreload), or stopping one (stop, condstop,
+                     disable/mask --now) and starting it again (start, enable/reenable --now) in the same call and
+                     scope (through a for loop's values and ssh's remote command too): a Persistent= timer then
+                     fires its missed run at once. Write, Edit and MultiEdit
+                     (judge_outbound; for an edit, the file it would leave): a *.timer whose OnCalendar=
+                     value `systemd-analyze calendar` refuses (one run, 2 s at most; a missing analyzer or a timeout
+                     passes), or a *.service with Type=oneshot and no TimeoutStartSec=/TimeoutSec= that bounds it
+                     (RuntimeMaxSec= does not). The reason names the fix. Fails open. See guard_timer.py.
+  live-script        off until a registry entry names it (give it "min_version": "1.33.0"). A Write, Edit or MultiEdit
+                     (judge_outbound) of a file a shell of this user reads now as its script: the shell (by
+                     /proc/<pid>/exe or argv[0]: bash, sh, zsh, dash, ksh or mksh, bash-5.2 too) names it as its
+                     script operand (same basename, or same file from its cwd; none with -c or -s), and a
+                     descriptor from 10 up in /proc/<pid>/fd is the same file by device and inode (bash 255, dash
+                     10; a script that ran cd still matches, one already replaced by mv does not, nor does a lock
+                     file or saved stdout on 10 and up). A shell reads its script as it runs; python, node, perl
+                     and ruby compile it first and never count. The reason says to write <path>.next, test it, then
+                     mv it into place. Off without /proc; fails open. See
+                     guard_live_script.py.
+  dry-run-chain      off until a registry entry names it (give it "min_version": "1.33.0"). Bash: one command that runs
+                     a program of the entry's "programs" (by name or path basename, or the script an interpreter runs;
+                     none by default, so nothing is judged) as a dry run (--dry-run or --check, or no confirm flag;
+                     a read-only status/wait/view call is neither) and later in the same command for real (a flag of "confirm", by default --yes, --apply,
+                     --confirm or --force; it replaces the defaults): the real run goes ahead although the dry run
+                     refused. Wrappers, sh -c, eval, ssh, pnpm/npm run and source as for the other rules; runs in
+                     different if/else or case alternatives are not a chain. The reason says to run the dry run
+                     alone, read its line, then the real run as a separate call. Fails open. See guard_dry_run_chain.py.
+  outer-timeout      off until a registry entry names it (give it "min_version": "1.33.0"). Bash: one command that runs a
+                     queueing program of the entry's "programs" (a gate-slot or lock wrapper; by name or path basename,
+                     or the script an interpreter runs; none by default, so nothing is judged) under `timeout` (not
+                     `timeout 0`) or `systemd-run` with a RuntimeMaxSec= other than 0 or infinity, at any depth of
+                     wrappers (sudo, env [-S], nice, taskset, chrt, unshare, systemd-run, timeout, npx/pnpm/deno/bun
+                     launchers, xargs, find -exec, docker exec, sh -c, su -c, eval, ssh): the timeout kills the job while it waits for its turn. The reason says to bound the
+                     wait with the entry's "hint" (default "the tool's own wait setting") and to put the timeout
+                     inside, on the command the program runs. A timeout inside the program and separate commands
+                     pass. Fails open. See guard_outer_timeout.py.
 Also not seen: a pgrep inside a quoted "$(...)" in a loop condition or in the loop body (`while true; do pgrep -f x
 || break; done`), and a here-document fed to a shell
 (`bash <<EOF`), whose body is dropped as data.
 Time budget: string work and at most a few stat calls and two small file reads per Bash call, plus one `<shell> -n`
 run (at most 1 s) when shell-syntax is on; unseen-hash adds one bounded transcript read (0.2 s at most), only when an
 outbound text holds a hash, and typed-sha one more (one budget for the call) when a command types a SHA of 7
-to 40 characters; oom-first reads the session state file once (shared with rerun-after-red).
+to 40 characters; oom-first reads the session state file once (shared with rerun-after-red); timer-safety runs one
+`systemd-analyze calendar` (2 s at most) only for a Write, Edit or MultiEdit of a .timer file holding OnCalendar=
+values, and reads the edited unit file (256 KB at most) only for an edit of a .timer or .service file; live-script
+reads /proc (at most 2000 of this user's pids, 50 ms) for a Write, Edit or MultiEdit of an existing file;
+dry-run-chain and outer-timeout are string work only.
 """
 import datetime as dt
 import json
@@ -126,8 +167,12 @@ from pathlib import Path
 
 import guard_calendar
 import guard_destructive as shell
+import guard_dry_run_chain
+import guard_live_script
 import guard_oom
+import guard_outer_timeout
 import guard_syntax
+import guard_timer
 import guard_typed_sha
 import guard_unseen_hash
 
@@ -181,10 +226,11 @@ BUILT_IN_REASONS = {
 OOM_TIMEOUT = ('; or, if it ran out its timeout limit, confirm that with python3 {lessons} cause '
                '"<command>: timeout"')
 # off until a registry entry names it
-OPT_IN = frozenset(("rerun-after-red", "shell-syntax", "unseen-hash", "typed-sha", "oom-first"))
+OPT_IN = frozenset(("rerun-after-red", "shell-syntax", "unseen-hash", "typed-sha", "oom-first", "timer-safety",
+                    "live-script", "dry-run-chain", "outer-timeout"))
 ENTRY_KEYS = {"rule", "lesson", "reason", "enabled", "programs", "min_version", "workweek", "exceptions", "approvers",
-              "shell", "window_mb", "allow", "guessed_times"}
-TAKES_PROGRAMS = ("help-probe", "secret-in-message", "calendar", "unseen-hash")
+              "shell", "window_mb", "allow", "guessed_times", "confirm", "hint"}
+TAKES_PROGRAMS = ("help-probe", "secret-in-message", "calendar", "unseen-hash", "dry-run-chain", "outer-timeout")
 CUSTOM_KEYS = {"lesson", "reason", "program", "subcommand", "args_any", "args_all", "args_none", "assignments_any",
                "in_loop", "min_version"}
 VERSION_SHAPE = re.compile(r"\d{1,6}\.\d{1,6}\.\d{1,6}", re.ASCII)
@@ -218,18 +264,20 @@ class RegistryError(ValueError):
     """A registry file that cannot be used; the message names the file and the fault."""
 
 
-Command = namedtuple("Command", "word name args assignments in_loop variables", defaults=((),))
+Command = namedtuple("Command", "word name args assignments in_loop variables branch", defaults=((), ()))
 
 
-def commands(command, depth=0, inherited=()):
+def commands(command, depth=0, inherited=(), branches=None):
     """Each simple command as (program word, program name, args, its assignments, in a while/until condition);
     assignments include those exported earlier in the line; the script of sh -c and eval is expanded in place.
     Every command between `while`/`until` and `do` is in the condition (`while kill -0 $p && pgrep -f x; do`).
     variables: the NAME=value words a command's own words expand from, set earlier by a bare assignment or export
-    (a prefix assignment, `X=a cmd $X`, is not: the shell expands $X before it assigns)."""
+    (a prefix assignment, `X=a cmd $X`, is not: the shell expands $X before it assigns).
+    branch: the if/case alternatives it sits in (guard_dry_run_chain.Branches)."""
     found, exported, condition = [], list(inherited), False
     variables = list(inherited)
-    for argv, _piped, _heredoc in shell.simple_commands(shell.split_heredocs(command)[0]):
+    branches = branches or guard_dry_run_chain.Branches()
+    for argv, _piped, _heredoc, case_end in shell.command_runs(shell.split_heredocs(command)[0]):
         name, args = shell.program(argv)
         prefix = argv[:len(argv) - len(args) - 1] if name else argv
         word = argv[len(prefix)] if name else ""
@@ -245,7 +293,8 @@ def commands(command, depth=0, inherited=()):
         elif not name:
             variables += own  # `S=x.py; ...`: a bare assignment sets a shell variable
         assignments = exported + own
-        found.append(Command(word, name, args, assignments, condition, expands_from))
+        branch = branches.path(argv, case_end)
+        found.append(Command(word, name, args, assignments, condition, expands_from, branch))
         script = ""
         if name in shell.SHELLS and depth < MAX_DEPTH:
             flag = next((i for i, arg in enumerate(args) if re.match(r"^-[a-z]*c$", arg)), None)
@@ -253,7 +302,7 @@ def commands(command, depth=0, inherited=()):
         elif name == "eval" and depth < MAX_DEPTH:
             script = " ".join(args)
         if script:
-            found.extend(commands(script, depth + 1, assignments))  # HUSKY=0 bash -c '...'
+            found.extend(commands(script, depth + 1, assignments, guard_dry_run_chain.Branches(branch)))  # HUSKY=0 bash -c '...'
     return found
 
 
@@ -377,6 +426,25 @@ def script_and_args(cmd):
     return (cmd.args[index], cmd.args[index + 1:]) if index < len(cmd.args) else ("", [])
 
 
+def run_of(cmd):
+    """(program or script basename, its arguments): `./x.sh a`, `python3 x.py a` and `$S a` with S set on the line."""
+    behind = guard_dry_run_chain.launched(cmd.name, cmd.args) if cmd.name in guard_dry_run_chain.LAUNCHERS else None
+    script, args = behind or script_and_args(cmd)
+    return (shell.expand(script, cmd.variables).rpartition("/")[2],
+            [shell.expand(arg, cmd.variables) for arg in args], cmd.branch)
+
+
+def chain_runs(cmds):
+    """The runs of a command line for the dry-run-chain rule: the remote command of an ssh call counts as its own."""
+    for cmd in cmds:
+        remote = guard_timer.ssh_remote(cmd.args) if cmd.name == "ssh" else ""
+        if remote:
+            yield from map(run_of, commands(remote, MAX_DEPTH - 1, cmd.assignments,
+                                            guard_dry_run_chain.Branches(cmd.branch)))
+        else:
+            yield run_of(cmd)
+
+
 def help_probe(cmd, entry):
     script, args = script_and_args(cmd)
     probed = "--help" in args or args == ["-h"]  # `-h host` is an option with a value, not a probe
@@ -405,9 +473,14 @@ BUILT_IN = {"pgrep-wait-loop": pgrep_wait_loop, "hook-bypass": hook_bypass, "hel
             "calendar": lambda cmd, entry: False,  # judged on the text a call sends: see outbound_hit
             "unseen-hash": lambda cmd, entry: False, "typed-sha": lambda cmd, entry: False,
             "oom-first": lambda cmd, entry: False,  # judged on the whole command against the session: see judge
+            "timer-safety": lambda cmd, entry: False,  # judged on the whole command and on unit file writes
+            "live-script": lambda cmd, entry: False,  # judged on file writes only: see judge_outbound
+            "dry-run-chain": lambda cmd, entry: False,  # judged on the order of the whole command's runs
+            "outer-timeout": lambda cmd, entry: False,  # judged on the wrappers of the whole command
             "shell-syntax": lambda cmd, entry: False}  # judged on the whole command first: see judge
 OUTBOUND = ("calendar", "unseen-hash")
-WHOLE_COMMAND = frozenset(("pipe-exit", "shell-syntax", "typed-sha", "oom-first") + OUTBOUND)
+WHOLE_COMMAND = frozenset(("pipe-exit", "shell-syntax", "typed-sha", "oom-first", "timer-safety", "live-script",
+                           "dry-run-chain", "outer-timeout") + OUTBOUND)
 
 
 def has_word(args, word, long_value=False):
@@ -521,6 +594,13 @@ def validate(entry, where):
                 0 < value <= guard_unseen_hash.MAX_WINDOW_MB:
             raise RegistryError(f"{where}: window_mb must be a number of megabytes above 0, at most "
                                 f"{guard_unseen_hash.MAX_WINDOW_MB}")
+    if "confirm" in entry and (entry["rule"] != "dry-run-chain" or not guard_dry_run_chain.valid_confirm(
+            entry["confirm"])):
+        raise RegistryError(f"{where}: confirm is a list of options such as --yes that are not dry-run flags, for "
+                            "the dry-run-chain rule only")
+    if "hint" in entry and (entry["rule"] != "outer-timeout" or not guard_outer_timeout.valid_hint(entry["hint"])):
+        raise RegistryError(f"{where}: hint is one line of text (200 characters at most) naming the tool's own wait "
+                            "setting, for the outer-timeout rule only")
     if "allow" in entry:
         if entry["rule"] != "unseen-hash":
             raise RegistryError(f"{where}: allow is for the unseen-hash rule only")
@@ -849,10 +929,16 @@ def outbound_hit(name, entry, tool_name, tool_input, transcript, agent_id=None):
 
 def judge_outbound(tool_name, tool_input, cwd, transcript=None, agent_id=None):
     """The outbound rules for a tool other than Bash that sends text to people (SendMessage, or an MCP send, reply,
-    comment, post, draft, create or update); None for every other tool or when it is clean or switched off. transcript, agent_id:
-    the session transcript path and the subagent id, read by unseen-hash."""
+    comment, post, draft, create or update), timer-safety for a Write, Edit or MultiEdit of a unit file and
+    live-script for one of a script a shell runs; None for every other tool or when it is clean or switched off.
+    transcript, agent_id: the session transcript path and the subagent id, read by unseen-hash."""
     for name, entry, _ in rules(cwd):
-        hit = outbound_hit(name, entry, tool_name, tool_input, transcript, agent_id) if name in OUTBOUND else None
+        if name in ("timer-safety", "live-script"):
+            problem = (guard_timer.file_problem(tool_name, tool_input) if name == "timer-safety"
+                       else guard_live_script.file_problem(tool_name, tool_input, cwd))
+            hit = Hit(entry.get("lesson"), name, entry.get("reason") or problem) if problem else None
+        else:
+            hit = outbound_hit(name, entry, tool_name, tool_input, transcript, agent_id) if name in OUTBOUND else None
         if hit:
             return hit
     return None
@@ -883,6 +969,12 @@ def judge(command, cwd, session=None, is_check=None, transcript=None, agent_id=N
             if failed:
                 return Hit(entry.get("lesson"), name, entry.get("reason") or BUILT_IN_REASONS[name].replace(
                     "{timeout}", OOM_TIMEOUT if failed[1] else "").replace("{command}", failed[0]))
+        if name in ("timer-safety", "dry-run-chain", "outer-timeout"):
+            problem = (guard_timer.bash_problem(commands(command), commands) if name == "timer-safety"
+                       else guard_outer_timeout.problem(command, entry) if name == "outer-timeout"
+                       else guard_dry_run_chain.problem(chain_runs(commands(command)), entry))
+            if problem:
+                return Hit(entry.get("lesson"), name, entry.get("reason") or problem)
         if ((name == "pipe-exit" and pipe_exit(command, is_check))
                 or (name == "typed-sha" and typed_sha(command, transcript, agent_id))):
             return Hit(entry.get("lesson"), name, entry.get("reason") or BUILT_IN_REASONS[name])

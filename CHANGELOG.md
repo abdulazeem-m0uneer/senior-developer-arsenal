@@ -4,6 +4,18 @@ All notable changes to Senior Developer Arsenal are recorded in this file.
 
 The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/), and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version is the one in the `VERSION` file, and each release is dated by the day its pull request merged (UTC).
 
+## [1.33.0] - 2026-11-25
+
+### Added
+
+- Lesson-guard rule `timer-safety`. It refuses three mistakes (#60):
+  - stopping a systemd timer and starting it again, or restarting it, which fires a missed run, also when sent over ssh or inside a `for` loop;
+  - a `.timer` file whose `OnCalendar=` value `systemd-analyze calendar` rejects;
+  - a oneshot `.service` file with no `TimeoutStartSec=`.
+- Lesson-guard rule `live-script`. It refuses a Write or Edit of a shell script that a running `bash`, `sh` or `zsh` is executing, because the shell reads the file as it runs (#60).
+- Lesson-guard rule `dry-run-chain`. It refuses a dry run and the real run of the same configured program chained with `;`, `&&` or `||` in one call, so that the dry run's output is read before the real run starts (#60).
+- Lesson-guard rule `outer-timeout`. It refuses an outer `timeout` or a `systemd-run` with `RuntimeMaxSec=` around a configured queueing program. Its `--help`, `--version` and `status` calls are allowed (#60).
+
 ## [1.32.1] - 2026-11-24
 
 ### Added
@@ -397,6 +409,7 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 - Non-destructive installers for every supported agent.
 - CI with lint, test and smoke workflows.
 
+[1.33.0]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/60
 [1.32.1]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/59
 [1.32.0]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/58
 [1.31.2]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/57
