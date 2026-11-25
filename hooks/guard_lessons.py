@@ -279,7 +279,7 @@ def commands(command, depth=0, inherited=(), branches=None):
     found, exported, condition = [], list(inherited), False
     variables = list(inherited)
     branches = branches or guard_dry_run_chain.Branches()
-    for argv, _piped, _heredoc, case_end in shell.command_runs(shell.split_heredocs(command)[0]):
+    for argv, _piped, _heredoc, *ends in shell.command_runs(shell.split_heredocs(command)[0]):
         name, args = shell.program(argv)
         prefix = argv[:len(argv) - len(args) - 1] if name else argv
         word = argv[len(prefix)] if name else ""
@@ -295,7 +295,7 @@ def commands(command, depth=0, inherited=(), branches=None):
         elif not name:
             variables += own  # `S=x.py; ...`: a bare assignment sets a shell variable
         assignments = exported + own
-        branch = branches.path(argv, case_end)
+        branch = branches.path(argv, *ends)
         found.append(Command(word, name, args, assignments, condition, expands_from, branch))
         script = ""
         if name in shell.SHELLS and depth < MAX_DEPTH:
@@ -834,19 +834,6 @@ def list_items(command):
     return items
 
 
-def set_pipefail(words, state):
-    """The pipefail state after a `set` command (set -o pipefail, set -euo pipefail, set +o pipefail)."""
-    if not words or words[0] != "set" or "pipefail" not in words:
-        return state
-    at = words.index("pipefail")
-    flag = words[at - 1] if at else ""
-    if re.fullmatch(r"-[a-zA-Z]*o", flag):
-        return True
-    if re.fullmatch(r"\+[a-zA-Z]*o", flag):
-        return False
-    return state
-
-
 def pipe_exit(command, is_check, depth=0):
     """True when a check or a local script feeds a later command and the pipeline's exit status is acted on (&&, ||,
     if/elif/while/until/!, a group or subshell ending in it that is acted on, or $? read by the next command), with
@@ -873,7 +860,7 @@ def pipe_exit(command, is_check, depth=0):
             if stages:
                 pending = None
         if len(stages) == 1:
-            pipefail = set_pipefail(stages[0], pipefail)
+            pipefail = guard_dry_run_chain.set_pipefail(stages[0], pipefail)
         if len(stages) < 2 or pipefail or status_read_after[index]:
             continue
         if not (any(runs_check(stage) for stage in stages[:-1]) and not runs_check(stages[-1])):

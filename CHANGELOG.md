@@ -4,6 +4,16 @@ All notable changes to Senior Developer Arsenal are recorded in this file.
 
 The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/), and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version is the one in the `VERSION` file, and each release is dated by the day its pull request merged (UTC).
 
+## [1.33.3] - 2026-11-25
+
+### Fixed
+
+- Lesson-guard rule `dry-run-chain` no longer refuses a real run that only goes ahead after the dry run's result was checked (#63):
+  - the dry run's output is captured into a variable, and the real run sits in an `if`, an `&&` list or a `case` arm that tests that variable, also inside a loop;
+  - `set -o pipefail` is on for the chain, so the `&&` after `dry | tail` waits on the dry run's own status.
+
+  A real run outside the tested branch, in the default arm, after `||`, or gated on a different or overwritten variable is still refused. So is pipefail that is set in a subshell, a branch, a pipeline stage or the background.
+
 ## [1.33.2] - 2026-11-25
 
 ### Added
@@ -430,6 +440,7 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 - Non-destructive installers for every supported agent.
 - CI with lint, test and smoke workflows.
 
+[1.33.3]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/63
 [1.33.2]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/62
 [1.33.1]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/61
 [1.33.0]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/60
