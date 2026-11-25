@@ -29,6 +29,21 @@ Commands:
                           and it never touches the current holder; a PR that never held the slot is refused
   reset --yes             clear the state (the only way out of a damaged state file)
 
+Ready first: a PR that is READY (mergeStateStatus CLEAN, every check green as merge_green.py judges them, and
+fresh by the merge script's freshness gate: its head contains its base's tip, or the earliest pull_request run of
+the head was created after both the tip's committer date and the tip's ci.yml push run) overtakes a holder that
+is known PENDING (a recognised not-CLEAN mergeStateStatus, a check queued or running, none failed). The asker of
+`may-update` counts, queued or not. The holder goes back to the queue head, ahead of the others; when the
+overtaker merges, closes or releases (or it is READY and overtakes back) it is granted again as a claim window
+to its old expiry (at least --claim-minutes), claims a fresh lease with its first `may-update`, and is never displaced again.
+A CLEAN holder, one with an UNKNOWN or unrecognised state, a failed check or a gh error
+is never displaced, and nothing overtakes on missing data. A verdict read before the holder's last `may-update`
+yes is dropped. A returning holder is restamped (update-branch) by its own `may-update` lease like any holder;
+this script pushes nothing. The overtaken PRs, their leases and the go-ahead stamp live in the top-level
+"ready_first" key, which older merge_slot.py versions keep when they save; an unclaimed overtaken holder an older
+writer granted is upgraded to a claimed full lease. Freshness is asked only when an overtake is possible: for a
+PENDING unprotected holder, the candidates in queue order up to the first fresh one.
+
 Every command first refreshes the state: a holder past its expiry loses the slot; the holder and every queued
 PR are read with `gh pr view` and MERGED or CLOSED ones are dropped; a free slot goes to the queue head as a
 claim window of --claim-minutes (default 10): its first may-update claims it and starts the full
@@ -50,6 +65,7 @@ import datetime as dt
 import functools
 import json
 import os
+import re
 import sys
 import time
 from pathlib import Path
@@ -67,6 +83,12 @@ STATE_NAME = "merge-slot.json"
 LOCK_WAIT = 10.0
 LOCK_POLL = 0.02
 DEAD = ("MERGED", "CLOSED")
+VIEW_FIELDS = "state,mergeStateStatus,baseRefName,headRefOid,statusCheckRollup"
+CLEAN_GREEN, READY, PENDING, STALE, UNKNOWN = "clean", "ready", "pending", "stale", "unknown"
+TIP_SHA = re.compile(r"[0-9a-f]{40}")
+PENDING_MERGE_STATES = ("BLOCKED", "UNSTABLE", "BEHIND", "DIRTY", "HAS_HOOKS", "DRAFT")
+RUNNING = ("QUEUED", "IN_PROGRESS", "WAITING", "PENDING", "REQUESTED")  # a check run with no conclusion yet
+API_REPO = "{owner}/{repo}"  # gh api fills these from the current repository
 EXIT_HOLD = 1
 EXIT_BAD = 2
 GONE_MAX = 20  # holders remembered for a late release
@@ -118,23 +140,41 @@ def empty_state():
     return {"holder": None, "queue": [], "refusals": {}, "gone": []}
 
 
+def new_ready_first():
+    return {"overtaken": [], "go_ahead": None, "leases": {}}
+
+
 def _is_entry(item, fields):
     return isinstance(item, dict) and isinstance(item.get("pr"), int) and all(f in item for f in fields)
+
+
+def _is_ready_first(item):
+    return (isinstance(item, dict) and isinstance(item.get("overtaken"), list)
+            and all(isinstance(pr, int) for pr in item["overtaken"])
+            and _is_go_ahead(item.setdefault("go_ahead", None))
+            and isinstance(item.setdefault("leases", {}), dict)
+            and all(isinstance(lease, dict) for lease in item["leases"].values()))
+
+
+def _is_go_ahead(item):
+    return item is None or (isinstance(item, dict) and isinstance(item.get("pr"), int) and isinstance(item.get("n"), int))
 
 
 def load(path):
     path = Path(path)
     if not path.exists():
-        return empty_state()
+        return {**empty_state(), "ready_first": new_ready_first()}
     try:
         state = json.loads(path.read_text(encoding="utf-8"))
         holder, queue, refusals = state["holder"], state["queue"], state["refusals"]
         gone = state.setdefault("gone", [])
+        ready_first = state.setdefault("ready_first", new_ready_first())
         valid = ((holder is None or _is_entry(holder, ("lane", "granted_at", "expires_at")))
                  and isinstance(queue, list)
                  and all(_is_entry(q, ("lane", "queued_at", "refusals")) for q in queue)
                  and isinstance(refusals, dict) and all(isinstance(v, int) for v in refusals.values())
-                 and isinstance(gone, list) and all(_is_entry(g, ("reason", "at")) for g in gone))
+                 and isinstance(gone, list) and all(_is_entry(g, ("reason", "at")) for g in gone)
+                 and _is_ready_first(ready_first))
     except (OSError, ValueError, KeyError, TypeError):
         valid = False
     if not valid:
@@ -168,34 +208,127 @@ def parse(text):
 def drop(state, pr):
     state["queue"] = [q for q in state["queue"] if q["pr"] != pr]
     state["refusals"].pop(str(pr), None)
+    unmark_overtaken(state, pr)
 
 
-def pr_state(number, repo, runner):
-    """'MERGED', 'CLOSED', 'OPEN', or None when gh did not give a clear answer."""
-    target = ["-R", repo] if repo else []
-    code, text = runner(["pr", "view", str(number), *target, "--json", "state"])
-    if code != 0:
-        return None, text.strip()
+def overtaken(state):
+    """The PRs a ready PR overtook, in the order they sit at the queue head; a holder among them is protected."""
+    return state["ready_first"]["overtaken"]
+
+
+def unmark_overtaken(state, pr):
+    state["ready_first"]["overtaken"] = [p for p in overtaken(state) if p != pr]
+    state["ready_first"]["leases"].pop(str(pr), None)
+
+
+def judge_view(view):
+    """CLEAN_GREEN (CLEAN, every check green), PENDING (recognised not-CLEAN state, a check running, none failed)
+    or UNKNOWN (anything else, missing data included). Each rollup entry is judged on its own."""
+    status, rollup = view.get("mergeStateStatus"), view.get("statusCheckRollup", 0)
+    if not isinstance(status, str) or not isinstance(rollup, (list, type(None))):
+        return UNKNOWN
+    if status == "CLEAN":
+        return CLEAN_GREEN if merge_green.checks_refusal(rollup, view.get("headRefOid") or "")[1] is None else UNKNOWN
+    if status not in PENDING_MERGE_STATES or not rollup:
+        return UNKNOWN
+    entries = []  # (running, conclusion or state)
+    for check in rollup:
+        _, state = merge_green.check_state(check)
+        entries.append(((state == "" and check.get("status") in RUNNING) or state in ("PENDING", "EXPECTED"), state))
+    running = any(is_running for is_running, _ in entries)
+    failed = any(not is_running and state not in merge_green.GREEN for is_running, state in entries)
+    return PENDING if running and not failed else UNKNOWN
+
+
+def earliest(runner, path, jq):
+    """The earliest created_at the query finds, or None (a gh error, no run, an unreadable time)."""
+    code, text = runner(["api", path, "--jq", jq])
     try:
-        return json.loads(text).get("state"), ""
+        return dt.datetime.fromisoformat(text.strip()) if code == 0 and text.strip() else None
+    except ValueError:
+        return None
+
+
+def read_tip(base, repo, runner):
+    """(sha, committer date) of the base's tip, or None."""
+    code, text = runner(["api", f"repos/{repo or API_REPO}/commits/{base}", "--jq", ".sha, .commit.committer.date"])
+    sha, _, date = text.strip().partition("\n")
+    return (sha, date.strip()) if code == 0 and TIP_SHA.fullmatch(sha) and date.strip() else None
+
+
+def is_fresh(view, repo, runner, tips):
+    """the merge script's freshness gate: the head contains the base tip, or the earliest pull_request run of the
+    head was created after both the tip's committer date and the tip's ci.yml push run. Any gh error, empty
+    answer or missing field is not fresh. `tips` caches the tip of each base for one look-up."""
+    base, head = view.get("baseRefName"), view.get("headRefOid")
+    if not base or not head:
+        return False
+    if base not in tips:
+        tips[base] = read_tip(base, repo, runner)
+    if not tips[base]:
+        return False
+    tip, tip_date = tips[base]
+    api = f"repos/{repo or API_REPO}"
+    code, status = runner(["api", f"{api}/compare/{tip}...{head}", "--jq", ".status"])
+    if code != 0:
+        return False
+    if status.strip() in ("ahead", "identical"):
+        return True
+    started = earliest(runner, f"{api}/actions/runs?head_sha={head}&event=pull_request&per_page=100",
+                       "[.workflow_runs[].created_at] | min // \"\"")
+    pushed = earliest(runner, f"{api}/actions/runs?head_sha={tip}&event=push&per_page=100",
+                      "[.workflow_runs[] | select(.path | endswith(\"/ci.yml\")) | .created_at] | min // \"\"")
+    try:
+        committed = dt.datetime.fromisoformat(tip_date)
+    except ValueError:
+        return False
+    return bool(started and pushed) and started > max(committed, pushed)
+
+
+def read_view(number, repo, runner):
+    """(state, readiness, why, view): state is 'MERGED', 'CLOSED', 'OPEN', or None when gh did not give a clear
+    answer; readiness is CLEAN_GREEN, PENDING or UNKNOWN (freshness is not asked here)."""
+    target = ["-R", repo] if repo else []
+    code, text = runner(["pr", "view", str(number), *target, "--json", VIEW_FIELDS])
+    if code != 0:
+        return None, UNKNOWN, text.strip(), {}
+    try:
+        view = json.loads(text)
+        return view.get("state"), judge_view(view), "", view
     except (ValueError, AttributeError):
-        return None, "unreadable gh answer"
+        return None, UNKNOWN, "unreadable gh answer", {}
 
 
-def grant(state, pr, lane, now, minutes, say, claimed):
+def grant(state, pr, lane, now, minutes, say, claimed, returned=False):
     state["refusals"].pop(str(pr), None)
     state["gone"] = [g for g in state["gone"] if g["pr"] != pr]
     state["holder"] = {"pr": pr, "lane": lane, "granted_at": stamp(now), "claimed": claimed,
                        "expires_at": stamp(now + dt.timedelta(minutes=minutes))}
+    if returned:
+        state["holder"]["returned"] = True  # an older writer drops this: see refresh()
     who = f"#{pr}{f' ({lane})' if lane else ''}"
     say(f"granted: {who} holds the slot for {minutes:g} min" if claimed else
         f"granted: {who} has {minutes:g} min to claim the slot (its first may-update claims it)")
 
 
-def grant_head(state, now, claim_minutes, say):
+def grant_claim(state, entry, now, claim_minutes, say):
+    """Grant a claim window. An overtaken PR (from the queue head or overtaking back) returns: its window runs to
+    its old expiry, at least the claim window; its first may-update claims a fresh lease (the restamp the overtake
+    forced needs one), and a holder whose CI failed never asks again, so it still lapses."""
+    if entry["pr"] not in overtaken(state):
+        grant(state, entry["pr"], entry["lane"], now, claim_minutes, say, claimed=False)
+        return
+    claim = dt.timedelta(minutes=claim_minutes)
+    lease = state["ready_first"]["leases"].pop(str(entry["pr"]), {})
+    until = max(parse(lease["expires_at"]), now + claim) if lease.get("expires_at") else now + claim
+    grant(state, entry["pr"], entry["lane"], now, (until - now).total_seconds() / 60,
+          say, claimed=False, returned=True)
+
+
+def grant_head(state, now, options, say):
+    """Grant the queue head as a claim window (see grant_claim)."""
     if not state["holder"] and state["queue"]:
-        head = state["queue"].pop(0)
-        grant(state, head["pr"], head["lane"], now, claim_minutes, say, claimed=False)
+        grant_claim(state, state["queue"].pop(0), now, options.claim_minutes, say)
 
 
 def forget(state, pr, reason, now):
@@ -213,14 +346,36 @@ def watched(state):
     return ([state["holder"]] if state["holder"] else []) + list(state["queue"])
 
 
-def look_up(entries, repo, runner):
-    """[(entry, state or None, why)]. Slow: runs outside the lock."""
-    return [(entry, *pr_state(entry["pr"], repo, runner)) for entry in entries]
+def asker_for(state, options):
+    """The PR asking `may-update` when it neither holds the slot nor is queued: it may still overtake."""
+    if options.command != "may-update":
+        return None
+    known = {entry["pr"] for entry in watched(state)}
+    return None if options.pr in known else {"pr": options.pr, "lane": options.lane}
 
 
-def refresh(state, now, claim_minutes, verdicts, say, warn):
+def look_up(state, asker, repo, runner):
+    """[(entry, state or None, readiness, why)] for the holder, the queue and the asker. Slow: runs outside the lock.
+
+    The views come first. Freshness is asked only when an overtake is possible: the holder-to-be is PENDING and
+    not protected; then the candidates in queue order (the asker last), stopping at the first fresh one."""
+    entries = watched(state) + ([asker] if asker else [])
+    rows = [[entry, *read_view(entry["pr"], repo, runner)] for entry in entries]
+    alive = [row for row in rows if row[1] not in DEAD and row[0] is not asker]
+    holder = alive[0] if alive else None
+    if holder and holder[2] == PENDING and holder[0]["pr"] not in overtaken(state):
+        tips = {}
+        for row in alive[1:] + [r for r in rows if r[0] is asker]:
+            if row[2] == CLEAN_GREEN:
+                row[2] = READY if is_fresh(row[4], repo, runner, tips) else STALE
+                if row[2] == READY:
+                    break
+    return [(entry, found, readiness, why) for entry, found, readiness, why, _ in rows]
+
+
+def refresh(state, now, options, verdicts, go_ahead_seen, say, warn):
     """Apply gh verdicts only to entries still in the state unchanged, then expiry, then the grant."""
-    for entry, found, why in verdicts:
+    for entry, found, _, why in verdicts:
         number = entry["pr"]
         if found is None:
             warn(f"warning: #{number} state unknown ({why}); kept")
@@ -235,6 +390,12 @@ def refresh(state, now, claim_minutes, verdicts, say, warn):
                 continue
             say(f"dropped: #{number} is {found}")
     holder = state["holder"]
+    if holder and not holder.get("claimed", True) and holder["pr"] in overtaken(state) and not holder.get("returned"):
+        # an older merge_slot.py granted this overtaken PR its claim window: keep the place it was promised
+        holder["claimed"] = True
+        holder["expires_at"] = stamp(parse(holder["granted_at"]) + dt.timedelta(minutes=options.slot_minutes))
+        state["ready_first"]["leases"].pop(str(holder["pr"]), None)
+        say(f"claimed: #{holder['pr']} was overtaken and keeps its place for {options.slot_minutes:g} min")
     if holder and now >= parse(holder["expires_at"]):
         claimed = holder.get("claimed", True)
         say(f"expired: #{holder['pr']} ({holder['lane']}) " +
@@ -243,7 +404,37 @@ def refresh(state, now, claim_minutes, verdicts, say, warn):
         forget(state, holder["pr"], "expired" if claimed else "unclaimed", now)
         state["holder"] = None
     prune_gone(state, now)
-    grant_head(state, now, claim_minutes, say)
+    grant_head(state, now, options, say)
+    if state["ready_first"]["go_ahead"] == go_ahead_seen:  # else a lane got a go-ahead since gh was asked
+        overtake(state, {entry["pr"]: ready for entry, found, ready, _ in verdicts if found == "OPEN"},
+                 now, options.claim_minutes, say, asker_for(state, options))
+    live = {entry["pr"] for entry in watched(state)}
+    for pr in [pr for pr in overtaken(state) if pr not in live]:
+        unmark_overtaken(state, pr)
+
+
+def overtake(state, readiness, now, claim_minutes, say, asker=None):
+    """Ready first: the first queued PR that is READY takes the slot from a holder that is PENDING.
+
+    The holder goes back to the queue head, after earlier overtaken holders, and is protected once it returns.
+    An overtaken PR that overtakes back returns the same way (grant_claim), so it is never upgraded as an older
+    writer's grant."""
+    holder = state["holder"]
+    if not holder or holder["pr"] in overtaken(state) or readiness.get(holder["pr"]) != PENDING:
+        return
+    first = next((q for q in [*state["queue"], *([asker] if asker else [])] if readiness.get(q["pr"]) == READY), None)
+    if not first:
+        return
+    if first in state["queue"]:
+        state["queue"].remove(first)
+    state["ready_first"]["leases"][str(holder["pr"])] = {"expires_at": holder["expires_at"]}
+    place = sum(q["pr"] in overtaken(state) for q in state["queue"])  # earlier overtaken holders keep the head
+    state["queue"].insert(place, {"pr": holder["pr"], "lane": holder["lane"], "queued_at": holder["granted_at"],
+                                  "refusals": 0})
+    overtaken(state).insert(place, holder["pr"])
+    say(f"overtaken: #{first['pr']} is ready, so it takes the slot from #{holder['pr']} (checks running); "
+        f"#{holder['pr']} is back in the queue at place {place + 1}")
+    grant_claim(state, first, now, claim_minutes, say)
 
 
 def enqueue(state, pr, lane, now, say):
@@ -264,14 +455,20 @@ def cmd_refused(state, options, now, say):
     say(f"refused: #{options.pr} freshness refusal {count} of {options.after}")
     if count >= options.after:
         enqueue(state, options.pr, options.lane, now, say)
-        grant_head(state, now, options.claim_minutes, say)
+        grant_head(state, now, options, say)
     return 0
 
 
 def cmd_request(state, options, now, say):
     enqueue(state, options.pr, options.lane, now, say)
-    grant_head(state, now, options.claim_minutes, say)
+    grant_head(state, now, options, say)
     return 0
+
+
+def stamp_go_ahead(state, pr):
+    """Every yes counts: a verdict read before it must not displace the PR that may now merge."""
+    last = state["ready_first"]["go_ahead"]
+    state["ready_first"]["go_ahead"] = {"pr": pr, "n": last["n"] + 1 if last else 1}
 
 
 def cmd_may_update(state, options, now, say):
@@ -281,11 +478,13 @@ def cmd_may_update(state, options, now, say):
             holder["claimed"] = True
             holder["expires_at"] = stamp(now + dt.timedelta(minutes=options.slot_minutes))
             say(f"claimed: #{pr} holds the slot for {options.slot_minutes:g} min")
+        stamp_go_ahead(state, pr)
         say(f"yes: #{pr} holds the slot until {holder['expires_at']}: update, wait for CI, merge, then release")
         return 0
     places = [q["pr"] for q in state["queue"]]
     if not holder and not places:
         grant(state, pr, options.lane, now, options.slot_minutes, say, claimed=True)
+        stamp_go_ahead(state, pr)
         say(f"yes: nobody contended, so #{pr} now holds the slot until {state['holder']['expires_at']} "
             "(update, wait for CI, merge, then release; it also ends at expiry)")
         return 0
@@ -297,6 +496,13 @@ def cmd_may_update(state, options, now, say):
 
 def cmd_release(state, options, now, say):
     holder = state["holder"]
+    queued = next((q for q in state["queue"] if q["pr"] == options.pr), None)
+    if queued and options.pr in overtaken(state):  # it held the slot, was overtaken, and now gives its place up
+        state["queue"].remove(queued)
+        state["refusals"].pop(str(options.pr), None)
+        unmark_overtaken(state, options.pr)
+        say(f"released: #{options.pr} (it was overtaken; its place is given up)")
+        return 0
     if not holder or holder["pr"] != options.pr:
         past = next((g for g in state["gone"] if g["pr"] == options.pr), None)
         if past:
@@ -309,8 +515,9 @@ def cmd_release(state, options, now, say):
         return EXIT_HOLD
     state["holder"] = None
     state["refusals"].pop(str(options.pr), None)
+    unmark_overtaken(state, options.pr)
     say(f"released: #{options.pr}")
-    grant_head(state, now, options.claim_minutes, say)
+    grant_head(state, now, options, say)
     return 0
 
 
@@ -394,13 +601,14 @@ def main(argv=None, runner=None, out=print, err=None):
             out("reset: merge slot cleared")
             return 0
         with locked(path):  # short: read the entries to ask gh about
-            entries = watched(load(path))
-        verdicts = look_up(entries, options.repo, runner)  # slow: no lock held
+            snapshot = load(path)
+            go_ahead_seen = snapshot["ready_first"]["go_ahead"]
+        verdicts = look_up(snapshot, asker_for(snapshot, options), options.repo, runner)  # slow: no lock held
         with locked(path):  # re-read, because another lane may have written meanwhile
             state = load(path)
             before = json.dumps(state, sort_keys=True)
             now = clock()  # gh may have been slow: expiry and grant stamps use the time after it
-            refresh(state, now, options.claim_minutes, verdicts, out, err)
+            refresh(state, now, options, verdicts, go_ahead_seen, out, err)
             code = COMMANDS[options.command](state, options, now, out)
             if json.dumps(state, sort_keys=True) != before:
                 save(path, state)

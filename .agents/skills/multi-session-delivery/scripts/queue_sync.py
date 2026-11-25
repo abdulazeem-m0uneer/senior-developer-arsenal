@@ -134,8 +134,10 @@ def plan(state, views, trunk):
         else:
             ready[entry["pr"]] = judge(pr, trunk)
     # ready first, flagged last (a flagged PR is never ready, so it never reaches the head over an unflagged one)
+    # an overtaken holder keeps the head (stable sort: in the order it holds); ready first, flagged last
+    pinned = merge_slot.overtaken(state)
     queue = sorted((e for e in state["queue"] if e not in dropped),
-                   key=lambda e: (not ready[e["pr"]][0], bool(ready[e["pr"]][2])))
+                   key=lambda e: (e["pr"] not in pinned, not ready[e["pr"]][0], bool(ready[e["pr"]][2])))
     lines += [f"{place}. #{e['pr']} ({e['lane']}) {describe(*ready[e['pr']])}" for place, e in enumerate(queue, 1)]
     if not queue:
         lines.append("queue: empty")
@@ -150,11 +152,13 @@ def write(path, queue, dropped, say):
         for entry in dropped:
             if entry in state["queue"]:
                 merge_slot.drop(state, entry["pr"])
-        kept = [e for e in queue if e in state["queue"]]
-        joined = [e for e in state["queue"] if e not in kept]
+        pinned = merge_slot.overtaken(state)  # read now: an overtake may have landed while gh was asked
+        head = sorted((e for e in state["queue"] if e["pr"] in pinned), key=lambda e: pinned.index(e["pr"]))
+        kept = [e for e in queue if e in state["queue"] and e not in head]
+        joined = [e for e in state["queue"] if e not in kept and e not in head]
         for entry in joined:
             say(f"kept at the end, not checked: #{entry['pr']} ({entry['lane']}) changed or joined during the sync")
-        state["queue"] = kept + joined
+        state["queue"] = head + kept + joined
         if json.dumps(state, sort_keys=True) == before:
             return None
         merge_slot.save(path, state)
