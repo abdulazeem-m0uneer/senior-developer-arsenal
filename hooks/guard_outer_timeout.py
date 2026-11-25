@@ -32,6 +32,9 @@ import guard_oom
 import guard_timer
 
 MAX_HINT_CHARS = 200
+MAX_NO_QUEUE_ENV = 10
+VARIABLE_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]*", re.ASCII)
+OFF_VALUES = frozenset(("", "0", "false", "no", "off"))  # a variable set to one of these (any case) is not set
 DEFAULT_HINT = "the tool's own wait setting"
 TIMEOUT_VALUES = frozenset(("-k", "-s", "--kill-after", "--signal"))
 NO_RUN = frozenset(("--help", "--version"))
@@ -61,6 +64,25 @@ def valid_hint(value):
     """A short one-line text the refusal can name: the tool's own wait setting."""
     return (isinstance(value, str) and bool(value.strip()) and len(value) <= MAX_HINT_CHARS
             and "\n" not in value and "\r" not in value)
+
+
+def valid_no_queue_env(value):
+    """A registry "no_queue_env" value: a list of at most 10 shell variable names."""
+    return (isinstance(value, list) and len(value) <= MAX_NO_QUEUE_ENV
+            and all(isinstance(name, str) and VARIABLE_NAME.fullmatch(name) for name in value))
+
+
+class Queues(set):
+    """The queueing program names, and the variables that make them run without queueing."""
+
+    def __init__(self, names, no_queue_env=()):
+        super().__init__(names)
+        self.no_queue_env = frozenset(no_queue_env)
+
+    def skipped_by(self, variables):
+        """Whether the latest assignment of a no_queue_env variable in `variables` is a value other than off."""
+        values = dict(variable.split("=", 1) for variable in variables)
+        return any(values.get(name, "").lower() not in OFF_VALUES for name in self.no_queue_env)
 
 
 def skip_leading(argv, variables):
@@ -266,7 +288,7 @@ def walk(argv, queues, timed, variables):
         operand = (expand(operand[0], variables).rpartition("/")[2], operand[1])
     for candidate, rest in ((name, args), operand or (None, [])):
         if candidate in queues and not set(rest[:1]) & QUEUE_NO_RUN:
-            return candidate if timed else None
+            return candidate if timed and not queues.skipped_by(variables) else None
     return None
 
 
@@ -274,16 +296,19 @@ def walk_script(script, queues, timed, variables):
     """walk() over each simple command of a script text; variables set in it stay in it."""
     scoped = list(variables)
     for argv, *_ in shell.command_runs(shell.split_heredocs(script)[0]):
-        found = walk(argv, queues, timed, scoped)
+        local = list(scoped)  # `NAME=1 cmd` sets NAME for cmd only; a bare assignment and export stay for the next commands
+        found = walk(argv, queues, timed, local)
         if found:
             return found
+        if skip_leading(argv, [])[:1] in ([], ["export"]):
+            scoped = local
     return None
 
 
 def problem(command, entry):
     """The refusal for a queueing program under an outer timeout; None otherwise or on any error."""
     try:
-        queues = {name.rpartition("/")[2] for name in entry.get("programs") or ()}
+        queues = Queues((name.rpartition("/")[2] for name in entry.get("programs") or ()), entry.get("no_queue_env") or ())
         if not queues or not isinstance(command, str):
             return None
         found = walk_script(command, queues, False, [])
