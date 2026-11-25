@@ -289,6 +289,61 @@ class SecondReviewTests(TimeoutCase):
         self.assertPasses("timeout 5 gate-slot -h")
 
 
+class NoQueueEnvTests(TimeoutCase):
+    """A registry "no_queue_env" names variables that make the queueing program run without queueing (a dry run)."""
+
+    def setUp(self):
+        super().setUp()
+        self.registry({**ENTRY, "no_queue_env": ["DRY_RUN"]})
+
+    def test_the_variable_set_for_the_command_passes(self):
+        self.assertPasses("DRY_RUN=1 timeout 20 gate-slot true 2>&1 | tail -1")
+        self.assertPasses("timeout 20 env DRY_RUN=1 gate-slot true")
+        self.assertPasses("DRY_RUN=yes timeout 20 gate-slot true")
+
+    def test_the_variable_set_earlier_on_the_line_passes(self):
+        self.assertPasses("export DRY_RUN=1; timeout 20 gate-slot true")
+        self.assertPasses("DRY_RUN=1; timeout 20 gate-slot true")
+        self.assertPasses("sh -c 'DRY_RUN=1 timeout 20 gate-slot true'")
+
+    def test_an_off_value_still_queues(self):
+        for value in ("0", "false", "FALSE", "no", "No", "off", "OFF", "''"):
+            self.assertRefused(f"DRY_RUN={value} timeout 20 gate-slot true")
+        self.assertRefused("DRY_RUN= timeout 20 gate-slot true")
+
+    def test_the_latest_value_wins(self):
+        self.assertRefused("export DRY_RUN=1; DRY_RUN=0 timeout 20 gate-slot true")
+        self.assertPasses("export DRY_RUN=0; DRY_RUN=1 timeout 20 gate-slot true")
+
+    def test_without_the_variable_or_for_another_one_it_queues(self):
+        self.assertRefused("timeout 20 gate-slot true")
+        self.assertRefused("OTHER=1 timeout 20 gate-slot true")
+        self.assertRefused("DRY_RUN_X=1 timeout 20 gate-slot true")
+
+    def test_a_later_command_is_still_judged(self):
+        self.assertRefused("DRY_RUN=1 timeout 20 gate-slot true; timeout 20 gate-slot true")
+
+    def test_without_the_key_nothing_changes(self):
+        self.registry(ENTRY)
+        self.assertRefused("DRY_RUN=1 timeout 20 gate-slot true")
+
+    def test_bad_values_are_skipped(self):
+        for bad in ("DRY_RUN", ["1BAD"], ["A-B"], ["A B"], [3], ["A"] * 11, ["A\n"]):
+            self.registry({**ENTRY, "no_queue_env": bad})
+            self.assertPasses("timeout 5 gate-slot x")
+            self.assertTrue(guard_lessons.registry_problems(str(self.project)), bad)
+
+    def test_ten_names_are_valid(self):
+        names = [f"V{i}" for i in range(10)]
+        self.registry({**ENTRY, "no_queue_env": names})
+        self.assertEqual(guard_lessons.registry_problems(str(self.project)), [])
+        self.assertPasses("V9=1 timeout 5 gate-slot x")
+
+    def test_for_this_rule_only(self):
+        self.registry({"rule": "help-probe", "no_queue_env": ["A"]}, ENTRY)
+        self.assertEqual(len(guard_lessons.registry_problems(str(self.project))), 1)
+
+
 class EntryTests(TimeoutCase):
     def test_off_until_a_registry_entry_names_it(self):
         self.registry()

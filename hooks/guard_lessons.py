@@ -145,7 +145,9 @@ Built-in rules:
                      launchers, xargs, find -exec, docker exec, sh -c, su -c, eval, ssh): the timeout kills the job while it waits for its turn. The reason says to bound the
                      wait with the entry's "hint" (default "the tool's own wait setting") and to put the timeout
                      inside, on the command the program runs. A timeout inside the program and separate commands
-                     pass. Fails open. See guard_outer_timeout.py.
+                     pass, and so does a command that sets a variable of the entry's "no_queue_env" (at most 10 names)
+                     to a value other than empty, 0, false, no or off, on the command or earlier on the line (a dry
+                     run does not queue). Fails open. See guard_outer_timeout.py.
 Also not seen: a pgrep inside a quoted "$(...)" in a loop condition or in the loop body (`while true; do pgrep -f x
 || break; done`), and a here-document fed to a shell
 (`bash <<EOF`), whose body is dropped as data.
@@ -229,7 +231,7 @@ OOM_TIMEOUT = ('; or, if it ran out its timeout limit, confirm that with python3
 OPT_IN = frozenset(("rerun-after-red", "shell-syntax", "unseen-hash", "typed-sha", "oom-first", "timer-safety",
                     "live-script", "dry-run-chain", "outer-timeout"))
 ENTRY_KEYS = {"rule", "lesson", "reason", "enabled", "programs", "min_version", "workweek", "exceptions", "approvers",
-              "shell", "window_mb", "allow", "guessed_times", "confirm", "hint"}
+              "shell", "window_mb", "allow", "guessed_times", "confirm", "hint", "no_queue_env"}
 TAKES_PROGRAMS = ("help-probe", "secret-in-message", "calendar", "unseen-hash", "dry-run-chain", "outer-timeout")
 CUSTOM_KEYS = {"lesson", "reason", "program", "subcommand", "args_any", "args_all", "args_none", "assignments_any",
                "in_loop", "min_version"}
@@ -601,6 +603,10 @@ def validate(entry, where):
     if "hint" in entry and (entry["rule"] != "outer-timeout" or not guard_outer_timeout.valid_hint(entry["hint"])):
         raise RegistryError(f"{where}: hint is one line of text (200 characters at most) naming the tool's own wait "
                             "setting, for the outer-timeout rule only")
+    if "no_queue_env" in entry and (entry["rule"] != "outer-timeout"
+                                    or not guard_outer_timeout.valid_no_queue_env(entry["no_queue_env"])):
+        raise RegistryError(f"{where}: no_queue_env is a list of at most {guard_outer_timeout.MAX_NO_QUEUE_ENV} "
+                            "variable names, for the outer-timeout rule only")
     if "allow" in entry:
         if entry["rule"] != "unseen-hash":
             raise RegistryError(f"{where}: allow is for the unseen-hash rule only")
