@@ -83,16 +83,18 @@ def tokens(command):
 
 
 def command_runs(command):
-    """[(argv, piped_from_previous, has_heredoc, starts_case_branch)] for each simple command, wrappers still in
-    place; starts_case_branch is True when a `;;` came since the previous command."""
-    found, argv, piped, case_end = [], [], False, False
+    """[(argv, piped_from_previous, has_heredoc, starts_case_branch, opener, closer)] for each simple command,
+    wrappers still in place; starts_case_branch is True when a `;;` came since the previous command; opener is
+    every separator between the previous command and this one, closer the separator that ends this one."""
+    found, argv, piped, case_end, opener = [], [], False, False, ""
     for word in tokens(command) + [";"]:
         if word and set(word) <= SEPARATORS:
             if argv:
-                found.append((argv, piped, any(arg.startswith("<<") for arg in argv), case_end))
-                case_end = False
+                found.append((argv, piped, any(arg.startswith("<<") for arg in argv), case_end, opener, word))
+                case_end, opener = False, ""
             argv, piped = [], word.startswith("|") and word != "||"
-            case_end = case_end or word == ";;"
+            case_end = case_end or ";;" in word
+            opener += word
         else:
             argv.append(word)
     return found

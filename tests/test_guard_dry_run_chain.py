@@ -425,3 +425,141 @@ class ConstructTests(ChainCase):
                         "merge-green --dry-run; sh -c 'if x; then merge-green --yes; else :; fi'",
                         "sh -c 'if x; then merge-green --dry-run; else :; fi'; merge-green --yes"):
             self.assertRefused(command)
+
+
+class GatedOnCapturedOutputTests(ChainCase):
+    """The dry run's output is captured and the real run sits only in a branch that tests it."""
+
+    def test_an_if_on_the_captured_output(self):
+        for command in ('d=$(merge-green 1); if [[ $d == "would merge"* ]]; then merge-green 1 --yes; fi',
+                        'd=$(merge-green 1); if [ "$d" = "would merge 1" ]; then merge-green 1 --yes; fi',
+                        'd=$(merge-green 1); if [[ ${d} == "would merge"* ]]; then merge-green 1 --yes; fi',
+                        'd=$(merge-green 1); if test "$d" = ok; then merge-green 1 --yes; fi',
+                        'o=$(merge-green 1 2>&1 | tail -1); if echo "$o" | grep -q "^would merge"; then '
+                        "merge-green 1 --yes; fi",
+                        'd=$(merge-green 1); if [[ $x == a ]]; then echo a; elif [[ $d == "would merge"* ]]; then '
+                        "merge-green 1 --yes; fi"):
+            self.assertPasses(command)
+
+    def test_a_case_arm_on_the_captured_output(self):
+        for command in ('d=$(merge-green 1 2>&1 | tail -1); case $d in "would merge"*) merge-green 1 --yes;; esac',
+                        'd=$(merge-green 1); case "$d" in ok|"would merge"*) merge-green 1 --yes;; *) sleep 1;; esac',
+                        'd=$(merge-green 1)\ncase $d in\n  "would merge"*) merge-green 1 --yes;;\n  *) sleep 1;;\nesac'):
+            self.assertPasses(command)
+
+    def test_a_grep_on_the_captured_output_joined_by_and(self):
+        self.assertPasses('o=$(merge-green 1 2>&1 | tail -3); echo "$o" | grep -q "^would merge" && '
+                          "merge-green 1 --yes")
+        self.assertPasses('o=$(merge-green 1); [[ $o == "would merge"* ]] && merge-green 1 --yes')
+
+    def test_inside_a_loop_or_a_shell_string(self):
+        for command in ('for i in 1 2 3; do d=$(merge-green 1 2>&1 | tail -1); case $d in "would merge"*) '
+                        "merge-green 1 --yes; break ;; *) sleep 5 ;; esac; done",
+                        'while true; do d=$(merge-green 1); if [[ $d == "would merge"* ]]; then merge-green 1 --yes; '
+                        "break; fi; sleep 5; done",
+                        'until false; do d=$(merge-green 1 | tail -1); case $d in "would merge"*) merge-green 1 '
+                        "--yes; break;; esac; done",
+                        "sh -c 'd=$(merge-green 1); if [[ $d == x ]]; then merge-green 1 --yes; fi'"):
+            self.assertPasses(command)
+
+    def test_the_real_run_outside_the_gated_branch_is_refused(self):
+        self.assertRefused("d=$(merge-green 1); merge-green 1 --yes", flag="--yes")
+        self.assertRefused('d=$(merge-green 1); if [[ $d == x ]]; then echo ok; fi; merge-green 1 --yes')
+        self.assertRefused('d=$(merge-green 1); case $d in x*) :;; esac; merge-green 1 --yes')
+        self.assertRefused('for i in 1 2; do d=$(merge-green 1); done; merge-green 1 --yes')
+
+    def test_a_branch_that_tests_another_variable_is_refused(self):
+        self.assertRefused('d=$(merge-green 1); e=x; if [[ $e == x ]]; then merge-green 1 --yes; fi')
+        self.assertRefused('d=$(merge-green 1); case $e in x*) merge-green 1 --yes;; esac')
+        self.assertRefused('o=$(merge-green 1); echo "$e" | grep -q x && merge-green 1 --yes')
+
+    def test_the_else_or_default_arm_is_refused(self):
+        self.assertRefused('d=$(merge-green 1); if [[ $d == "would merge"* ]]; then :; else merge-green 1 --yes; fi')
+        self.assertRefused('d=$(merge-green 1); case $d in "would merge"*) :;; *) merge-green 1 --yes;; esac')
+        self.assertRefused('d=$(merge-green 1)\ncase $d in\n  "would merge"*) :;;\n  *) merge-green 1 --yes;;\nesac')
+
+    def test_a_shell_string_inside_the_gated_branch_is_gated(self):
+        self.assertPasses("d=$(merge-green 1); if [[ $d == x ]]; then sh -c 'merge-green 1 --yes'; fi")
+
+    def test_a_chain_broken_by_semicolon_or_or_or_not_a_test_is_refused(self):
+        self.assertRefused('o=$(merge-green 1); echo "$o" | grep -q x || merge-green 1 --yes')
+        self.assertRefused('o=$(merge-green 1); echo "$o" | grep -q x; merge-green 1 --yes')
+        self.assertRefused('o=$(merge-green 1); echo "$o" && merge-green 1 --yes')
+
+    def test_a_dry_run_that_is_not_captured_still_chains(self):
+        self.assertRefused('merge-green 1; if [[ $d == x ]]; then merge-green 1 --yes; fi')
+        self.assertRefused('d=$(echo hi); merge-green 1; if [[ $d == x ]]; then merge-green 1 --yes; fi')
+        self.assertRefused('d=$(merge-green 1); merge-green 1; if [[ $d == x ]]; then merge-green 1 --yes; fi')
+
+    def test_the_lesson_mistake_stays_refused(self):
+        self.assertRefused("merge-green 1 2>&1 | tail -1 && merge-green 1 --yes")
+
+
+class PipefailTests(ChainCase):
+    """set -o pipefail makes `dry | tail && real` act on the dry run's own status."""
+
+    def test_pipefail_then_a_piped_dry_run_and_the_real_run_joined_by_and(self):
+        for setting in ("set -o pipefail", "set -eo pipefail", "set -euo pipefail", "set -o errexit -o pipefail"):
+            with self.subTest(setting=setting):
+                self.assertPasses(f"{setting}; merge-green 1 | tail -1 && merge-green 1 --yes")
+        self.assertPasses("set -o pipefail; merge-green 1 2>&1 | tail -1 && echo ok && merge-green 1 --yes")
+        self.assertPasses("sh -c 'set -o pipefail; merge-green 1 | tail -1 && merge-green 1 --yes'")
+
+    def test_without_pipefail_it_is_refused(self):
+        self.assertRefused("merge-green 1 | tail -1 && merge-green 1 --yes")
+        self.assertRefused("set -e; merge-green 1 | tail -1 && merge-green 1 --yes")
+
+    def test_semicolon_or_or_between_them_is_refused_even_with_pipefail(self):
+        self.assertRefused("set -o pipefail; merge-green 1 | tail -1; merge-green 1 --yes")
+        self.assertRefused("set -o pipefail; merge-green 1 | tail -1 || merge-green 1 --yes")
+        self.assertRefused("set -o pipefail; merge-green 1 | tail -1 && echo ok; merge-green 1 --yes")
+        self.assertRefused("set -o pipefail; merge-green 1 | tail -1; echo ok && merge-green 1 --yes")
+        self.assertRefused("set -o pipefail; merge-green 1 | merge-green 1 --yes")
+
+    def test_pipefail_turned_off_or_set_later_or_in_another_shell_is_refused(self):
+        self.assertRefused("set -o pipefail; set +o pipefail; merge-green 1 | tail -1 && merge-green 1 --yes")
+        self.assertRefused("merge-green 1 | tail -1; set -o pipefail; merge-green 1 --yes")
+        self.assertRefused("set -o pipefail; sh -c 'merge-green 1 | tail -1 && merge-green 1 --yes'")
+
+    def test_pipefail_does_not_excuse_a_dry_run_that_is_not_piped(self):
+        self.assertRefused("set -o pipefail; merge-green 1 && merge-green 1 --yes")
+
+
+class ReviewRoundTests(ChainCase):
+    """The gate must make the real run depend on the test, and pipefail must be on in the shell that runs the chain."""
+
+    def test_an_or_in_the_condition_makes_the_test_no_gate(self):
+        for command in ("d=$(merge-green 1); if [[ $d == x ]] || true; then merge-green 1 --yes; fi",
+                        "d=$(merge-green 1); true || [[ $d == x ]] && merge-green 1 --yes",
+                        "d=$(merge-green 1); if true || [[ $d == x ]]; then merge-green 1 --yes; fi"):
+            self.assertRefused(command)
+
+    def test_an_or_of_tests_on_the_output_is_a_gate(self):
+        self.assertPasses("d=$(merge-green 1); if [[ $d == a ]] || [[ $d == b ]]; then merge-green 1 --yes; fi")
+        self.assertPasses("d=$(merge-green 1); [[ $d == a ]] || [[ $d == b ]] && merge-green 1 --yes")
+
+    def test_a_default_arm_among_joined_patterns_is_refused(self):
+        for command in ("d=$(merge-green 1); case $d in x|*) merge-green 1 --yes;; esac",
+                        "d=$(merge-green 1); case $d in *|x) merge-green 1 --yes;; esac",
+                        "d=$(merge-green 1); case $d in a) :;; b|c|*) merge-green 1 --yes;; esac"):
+            self.assertRefused(command)
+        self.assertPasses("d=$(merge-green 1); case $d in a|b) merge-green 1 --yes;; *) :;; esac")
+
+    def test_pipefail_that_is_not_on_for_the_chain_is_refused(self):
+        for setting in ("(set -o pipefail)", "if cond; then set -o pipefail; fi", "set -o pipefail | cat",
+                        "cond && set -o pipefail"):
+            self.assertRefused(f"{setting}; merge-green 1 | tail -1 && merge-green 1 --yes")
+        self.assertRefused("set -o pipefail &\nmerge-green 1 | tail -1 && merge-green 1 --yes")
+
+    def test_pipefail_on_in_the_shell_that_runs_the_chain_passes(self):
+        self.assertPasses("set -o pipefail && merge-green 1 | tail -1 && merge-green 1 --yes")
+        self.assertPasses("(set -o pipefail; merge-green 1 | tail -1 && merge-green 1 --yes)")
+        self.assertPasses("{ set -o pipefail; merge-green 1 | tail -1 && merge-green 1 --yes; }")
+
+    def test_a_grep_pattern_or_an_overwritten_variable_is_no_gate(self):
+        self.assertRefused('d=$(merge-green 1); echo hi | grep -q "$d" && merge-green 1 --yes')
+        self.assertRefused("d=$(merge-green 1); d=ok; if [[ $d == ok ]]; then merge-green 1 --yes; fi")
+
+    def test_a_grep_fed_the_output_is_a_gate(self):
+        self.assertPasses('d=$(merge-green 1); grep -q ok <<< "$d" && merge-green 1 --yes')
+        self.assertPasses('d=$(merge-green 1); if printf %s "$d" | grep -q ok; then merge-green 1 --yes; fi')
