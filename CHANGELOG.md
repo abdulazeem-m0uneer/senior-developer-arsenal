@@ -4,6 +4,17 @@ All notable changes to Senior Developer Arsenal are recorded in this file.
 
 The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/), and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version is the one in the `VERSION` file, and each release is dated by the day its pull request merged (UTC).
 
+## [1.33.1] - 2026-11-25
+
+### Changed
+
+- `merge_slot.py` lets a ready pull request go first (#61):
+  - a pull request whose checks are green, that merges cleanly and already contains the base branch tip, takes the merge slot from a holder whose checks are still running;
+  - the displaced holder keeps its place at the head of the queue, also through `queue_sync.py`;
+  - when the holder gets the slot back, it is given a window up to the later of its old expiry and a fresh claim window;
+  - a pending pull request never takes the slot from a pending holder, and a clean, protected or returning holder is never displaced;
+  - unknown data or a `gh` error means the holder keeps the slot.
+
 ## [1.33.0] - 2026-11-25
 
 ### Added
@@ -409,6 +420,7 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 - Non-destructive installers for every supported agent.
 - CI with lint, test and smoke workflows.
 
+[1.33.1]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/61
 [1.33.0]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/60
 [1.32.1]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/59
 [1.32.0]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/58
