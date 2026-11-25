@@ -6,6 +6,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from test_merge_slot import SlotTestCase  # noqa: E402  (also puts the scripts on sys.path)
+import merge_slot  # noqa: E402
 import queue_sync  # noqa: E402
 import test_queue_sync  # noqa: E402
 
@@ -165,6 +166,254 @@ class ReadinessTests(ReadyFirstCase):
         self.queue_up(1, 2)
         self.sync({1: SAME_NAME, 2: CLEAN})
         self.assertEqual(self.order(), (1, [2]))
+
+
+FAILED_NAMES = {**PENDING, "statusCheckRollup": [{"name": "ci", "status": "COMPLETED", "conclusion": "FAILURE"},
+                                                 {"name": "e2e", "status": "COMPLETED", "conclusion": "TIMED_OUT"},
+                                                 {"name": "lint", "status": "COMPLETED", "conclusion": "SUCCESS"}]}
+FAILED_NEW_HEAD = {**FAILED, "headRefOid": "fixed002"}
+
+
+class FailedHolderTests(ReadyFirstCase):
+    """A holder whose checks all finished and at least one failed loses the slot at once; it rejoins by asking
+    again after a fix push (a new head sha). Pending, mixed or unknown data never costs the slot."""
+
+    def test_failed_holder_loses_the_slot_and_the_next_in_line_is_granted(self):
+        self.queue_up(1, 2, 3)
+        _, out, _ = self.run_cmd("status", gh=ViewGh({1: FAILED_NAMES, 2: PENDING, 3: PENDING}))
+        self.assertEqual(self.order(), (2, [3]))
+        self.assertIn("released: #1 its checks failed (ci, e2e); ask again after a fix push", out)
+
+    def test_pending_holder_keeps_the_slot(self):
+        self.queue_up(1, 2)
+        self.sync({1: PENDING, 2: PENDING})
+        self.assertEqual(self.order(), (1, [2]))
+
+    def test_failed_check_sharing_a_running_check_name_keeps_the_slot(self):
+        self.queue_up(1, 2)
+        self.sync({1: SAME_NAME, 2: PENDING})
+        self.assertEqual(self.order(), (1, [2]))
+
+    def test_failed_check_next_to_a_running_check_keeps_the_slot(self):
+        self.queue_up(1, 2)
+        self.sync({1: FAILED_WHILE_RUNNING, 2: PENDING})
+        self.assertEqual(self.order(), (1, [2]))
+
+    def test_gh_error_keeps_the_slot(self):
+        self.queue_up(1, 2)
+        self.sync({1: GH_ERROR, 2: PENDING})
+        self.assertEqual(self.order(), (1, [2]))
+
+    def test_failed_holder_asking_again_on_the_same_head_is_refused_and_not_queued(self):
+        self.queue_up(1, 2)
+        self.sync({1: FAILED, 2: PENDING})
+        code, out, _ = self.run_cmd("request", "1", "--lane", "l1", gh=ViewGh({1: FAILED, 2: PENDING}))
+        self.assertEqual((code, self.order()), (1, (2, [])))
+        self.assertIn("ask again after a fix push", out)
+
+    def test_failed_holder_is_queued_again_once_its_head_changes(self):
+        self.queue_up(1, 2)
+        self.sync({1: FAILED, 2: PENDING})
+        code, _, _ = self.run_cmd("request", "1", "--lane", "l1", gh=ViewGh({1: FAILED_NEW_HEAD, 2: PENDING}))
+        self.assertEqual((code, self.order()), (0, (2, [1])))
+        self.assertNotIn("1", self.data()["failed"])
+
+    def test_failed_holder_may_update_on_the_same_head_is_held(self):
+        self.queue_up(1, 2)
+        self.sync({1: FAILED, 2: PENDING})
+        code, _, _ = self.run_cmd("may-update", "1", gh=ViewGh({1: FAILED, 2: PENDING}))
+        self.assertEqual((code, self.order()), (1, (2, [])))
+
+    def test_returning_overtaken_holder_that_failed_is_released(self):
+        self.claimed_holder(1)
+        self.queue_up(2, 3)
+        self.sync({1: PENDING, 2: CLEAN, 3: PENDING})  # #2 overtakes, #1 is back at the queue head
+        self.sync({1: FAILED, 2: MERGED, 3: PENDING}, now=at(35))  # #1 returns as a claim window
+        self.sync({1: FAILED, 3: PENDING}, now=at(36))
+        self.assertEqual(self.order(), (3, []))
+        self.assertEqual(self.data()["ready_first"]["overtaken"], [])
+
+
+    def failed_release(self):
+        """#1 held the slot, its checks failed (head abc12345) and #2 now holds it."""
+        self.queue_up(1, 2)
+        self.sync({1: FAILED, 2: PENDING})
+
+    def test_failed_pr_asking_with_an_unreadable_view_is_not_queued_and_keeps_its_record(self):
+        self.failed_release()
+        code, _, _ = self.run_cmd("request", "1", "--lane", "l1", gh=ViewGh({1: GH_ERROR, 2: PENDING}))
+        self.assertEqual((code, self.order(), self.data()["failed"]), (1, (2, []), {"1": "abc12345"}))
+
+    def test_failed_record_is_cleared_when_the_pr_is_granted_the_slot(self):
+        self.queue_up(2, 5)
+        state = self.data()
+        state["failed"] = {"5": "abc12345"}
+        self.write_state(state)
+        self.run_cmd("release", "2", gh=ViewGh({5: PENDING}))
+        self.assertEqual((self.data()["holder"]["pr"], self.data()["failed"]), (5, {}))
+
+    def test_failed_pr_rejoins_when_the_same_head_is_running_again(self):
+        self.failed_release()
+        code, _, _ = self.run_cmd("request", "1", "--lane", "l1", gh=ViewGh({1: PENDING, 2: PENDING}))
+        self.assertEqual((code, self.order(), self.data()["failed"]), (0, (2, [1]), {}))
+
+    def test_failed_pr_rejoins_when_the_same_head_is_green_and_may_update_is_not_refused(self):
+        self.failed_release()
+        self.run_cmd("release", "2", gh=ViewGh({}))
+        code, _, _ = self.run_cmd("may-update", "1", "--lane", "l1", gh=ViewGh({1: CLEAN}))
+        self.assertEqual((code, self.order()), (0, (1, [])))
+
+    def test_failed_pr_rejoins_when_its_state_is_unknown(self):
+        self.failed_release()
+        unknown = {**PENDING, "statusCheckRollup": None}
+        code, _, _ = self.run_cmd("request", "1", "--lane", "l1", gh=ViewGh({1: unknown, 2: PENDING}))
+        self.assertEqual((code, self.order()), (0, (2, [1])))
+
+    def test_unstable_holder_with_a_failed_non_required_check_keeps_the_slot(self):
+        self.queue_up(1, 2)
+        self.sync({1: {**FAILED, "mergeStateStatus": "UNSTABLE"}, 2: PENDING})
+        self.assertEqual(self.order(), (1, [2]))
+
+    def test_failed_holder_in_any_other_not_mergeable_state_is_released(self):
+        for status in ("BEHIND", "DIRTY"):
+            with self.subTest(status=status):
+                self.setUp()
+                self.queue_up(1, 2)
+                self.sync({1: {**FAILED, "mergeStateStatus": status}, 2: PENDING})
+                self.assertEqual(self.order(), (2, []))
+
+    def test_incomplete_entry_next_to_a_real_failure_keeps_the_slot(self):
+        self.queue_up(1, 2)
+        incomplete = {**FAILED, "statusCheckRollup": [*FAILED["statusCheckRollup"], {"name": "x"}]}
+        self.sync({1: incomplete, 2: PENDING})
+        self.assertEqual(self.order(), (1, [2]))
+
+    def test_cancelled_check_keeps_the_slot(self):
+        self.queue_up(1, 2)
+        cancelled = {**FAILED, "statusCheckRollup": [{"name": "ci", "status": "COMPLETED", "conclusion": "CANCELLED"}]}
+        self.sync({1: cancelled, 2: PENDING})
+        self.assertEqual(self.order(), (1, [2]))
+
+    def test_action_required_releases_because_nothing_runs_until_a_person_acts(self):
+        self.queue_up(1, 2)
+        waiting = {**FAILED, "statusCheckRollup": [{"name": "ci", "status": "COMPLETED", "conclusion": "ACTION_REQUIRED"}]}
+        self.sync({1: waiting, 2: PENDING})
+        self.assertEqual(self.order(), (2, []))
+
+    def test_failed_key_that_is_not_a_dict_of_strings_is_damaged_state(self):
+        for bad in ([], {"1": 5}, {"1": None}):
+            with self.subTest(bad=bad):
+                self.setUp()
+                self.queue_up(1)
+                state = self.data()
+                state["failed"] = bad
+                self.write_state(state)
+                self.assertEqual(self.run_cmd("status")[0], 2)
+
+    def test_late_release_of_a_failed_holder_says_its_checks_failed(self):
+        self.failed_release()
+        code, out, _ = self.run_cmd("release", "1", gh=ViewGh({2: PENDING}))
+        self.assertEqual((code, out), (0, "released: #1 (its checks failed)"))
+
+    def test_failed_queued_pr_is_skipped_at_grant_time_not_granted(self):
+        self.queue_up(1, 2, 3)
+        _, out, _ = self.run_cmd("status", gh=ViewGh({1: MERGED, 2: FAILED, 3: PENDING}))
+        self.assertEqual((self.order(), self.data()["failed"]), ((3, []), {"2": "abc12345"}))
+        self.assertNotIn("granted: #2", out)
+        self.assertIn("released: #2 its checks failed (ci); ask again after a fix push", out)
+
+    def test_failed_verdict_read_before_the_holders_go_ahead_is_dropped(self):
+        self.run_cmd("may-update", "1", "--lane", "l1", gh=ViewGh({}))
+        self.run_cmd("request", "2", "--lane", "l2", gh=ViewGh({1: PENDING}))
+
+        def lane_b(args):
+            if args[0] == "pr" and int(args[2]) == 2 and not self.data()["ready_first"]["go_ahead"]["n"] > 1:
+                self.run_cmd("may-update", "1", gh=ViewGh({1: CLEAN, 2: PENDING}))
+            return ViewGh({1: FAILED, 2: PENDING})(args)
+
+        self.run_cmd("status", gh=lane_b)
+        self.assertEqual(self.order(), (1, [2]))
+
+    def test_failed_holder_view_without_a_state_field_keeps_the_slot(self):
+        self.queue_up(1, 2)
+        self.sync({1: {k: v for k, v in FAILED.items() if k != "state"}, 2: PENDING})
+        self.assertEqual(self.order(), (1, [2]))
+
+    def test_failed_heads_are_capped_at_fifty_keeping_the_newest(self):
+        self.queue_up(1, 2)
+        state = self.data()
+        state["failed"] = {str(n): "h" for n in range(100, 150)}
+        self.write_state(state)
+        self.sync({1: FAILED, 2: PENDING})
+        failed = self.data()["failed"]
+        self.assertEqual((len(failed), "1" in failed, "100" in failed), (50, True, False))
+
+    def test_two_failures_are_both_remembered(self):
+        self.failed_release()
+        self.sync({2: FAILED})
+        self.assertEqual(sorted(self.data()["failed"]), ["1", "2"])
+
+    def test_failing_again_makes_the_record_the_newest(self):
+        self.queue_up(1, 2)
+        state = self.data()
+        state["failed"] = {"1": "old", **{str(n): "h" for n in range(100, 149)}}
+        self.write_state(state)
+        self.sync({1: FAILED, 2: FAILED})  # #1 is released, then the queued #2 is skipped: 51 records, one is pruned
+        failed = self.data()["failed"]
+        self.assertEqual(("1" in failed, "100" in failed, failed["1"]), (True, False, "abc12345"))
+
+    def test_released_holder_loses_its_refusal_count_and_so_does_a_skipped_queued_pr(self):
+        self.queue_up(1, 2, 3)
+        state = self.data()
+        state["refusals"] = {"1": 2, "2": 2}
+        self.write_state(state)
+        self.sync({1: FAILED, 2: FAILED, 3: PENDING})
+        self.assertEqual((self.order(), self.data()["refusals"]), ((3, []), {}))
+
+    def test_drop_forgets_the_failed_record(self):
+        state = {**merge_slot.empty_state(), "ready_first": merge_slot.new_ready_first(), "failed": {"7": "h", "8": "h"}}
+        merge_slot.drop(state, 7)
+        self.assertEqual(state["failed"], {"8": "h"})
+
+    def test_failed_holder_that_sends_refused_on_the_same_head_is_refused_and_not_queued(self):
+        self.failed_release()
+        code, _, _ = self.run_cmd("refused", "1", "--lane", "l1", "--after", "1", gh=ViewGh({1: FAILED, 2: PENDING}))
+        self.assertEqual((code, self.order()), (1, (2, [])))
+
+    def test_uncontended_may_update_on_a_failed_head_is_refused_and_remembered(self):
+        code, out, _ = self.run_cmd("may-update", "1", "--lane", "l1", gh=ViewGh({1: FAILED}))
+        self.assertEqual((code, self.data()["holder"], self.data()["failed"]), (1, None, {"1": "abc12345"}))
+        self.assertIn("refused: #1 its checks failed on abc12345; ask again after a fix push", out)
+        self.assertEqual(self.run_cmd("may-update", "1", "--lane", "l1", gh=ViewGh({1: FAILED_NEW_HEAD}))[0], 0)
+
+    def test_errored_commit_status_is_a_failure(self):
+        self.queue_up(1, 2)
+        errored = {**PENDING, "statusCheckRollup": [{"context": "ci/ext", "state": "ERROR"}]}
+        _, out, _ = self.run_cmd("status", gh=ViewGh({1: errored, 2: PENDING}))
+        self.assertEqual(self.order(), (2, []))
+        self.assertIn("released: #1 its checks failed (ci/ext)", out)
+
+    def test_release_skips_a_failed_queued_pr(self):
+        self.queue_up(1, 2, 3)
+        _, out, _ = self.run_cmd("release", "1", gh=ViewGh({1: PENDING, 2: FAILED, 3: PENDING}))
+        self.assertEqual((self.order(), self.data()["failed"]), ((3, []), {"2": "abc12345"}))
+        self.assertNotIn("granted: #2", out)
+
+    def test_pr_granted_after_a_failed_holder_can_be_overtaken_in_the_same_refresh(self):
+        self.queue_up(1, 2, 3)
+        self.sync({1: FAILED, 2: PENDING, 3: CLEAN})
+        self.assertEqual(self.order(), (3, [2]))
+
+    def test_failed_verdict_for_an_entry_changed_since_gh_was_asked_is_dropped(self):
+        self.queue_up(2, 1)
+
+        def lane_b(args):  # while #1 is read, another lane releases #2, so #1 is granted the slot
+            if args[0] == "pr" and int(args[2]) == 1 and self.data()["holder"]["pr"] == 2:
+                self.run_cmd("release", "2", gh=ViewGh({1: PENDING}))
+            return ViewGh({1: FAILED})(args)
+
+        self.run_cmd("status", gh=lane_b)
+        self.assertEqual((self.order(), self.data().get("failed", {})), ((1, []), {}))
 
 
 class FreshnessTests(ReadyFirstCase):
@@ -381,10 +630,9 @@ class ReturningHolderTests(ReadyFirstCase):
         self.claimed_holder(1)
         self.queue_up(2)
         self.sync({1: PENDING, 2: CLEAN})
-        self.sync({1: FAILED, 2: MERGED}, now=at(35))
-        self.assertEqual(self.data()["holder"]["expires_at"], at(45))  # max(5 min left, 10 min claim window)
-        self.sync({1: FAILED}, now=at(50))  # nobody drives it: the lease lapses
+        self.sync({1: FAILED, 2: MERGED}, now=at(35))  # it would return, but its checks failed: skipped, not granted
         self.assertIsNone(self.data()["holder"])
+        self.assertEqual(self.data()["queue"], [])
 
     def test_overtaken_holder_whose_lease_ran_out_returns_with_the_claim_window(self):
         self.claimed_holder(1)

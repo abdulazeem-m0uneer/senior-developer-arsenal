@@ -36,6 +36,15 @@ is known PENDING (a recognised not-CLEAN mergeStateStatus, a check queued or run
 `may-update` counts, queued or not. The holder goes back to the queue head, ahead of the others; when the
 overtaker merges, closes or releases (or it is READY and overtakes back) it is granted again as a claim window
 to its old expiry (at least --claim-minutes), claims a fresh lease with its first `may-update`, and is never displaced again.
+Failed holder: a holder whose checks all ended and at least one concluded failure, timed out or action_required
+or errored (a commit status) (none running; each rollup entry judged on its own) loses the slot on the next refresh,
+at once: `released: #N its checks failed (<names>); ask again after a fix push`. The next in line is granted; a
+queued PR in that state is skipped at every grant. It is not kept in the queue: it asks again (refused, request,
+may-update) only after a fix push; an ask on the head that failed is refused (1), a new head rejoins normally. A
+`may-update` from a PR that neither holds nor is queued, on a failed head, is refused the same way. The failed
+head is kept in the top-level "failed" key. Pending checks, a failed check next to a running one, unknown data and
+gh errors never cost the slot.
+
 A CLEAN holder, one with an UNKNOWN or unrecognised state, a failed check or a gh error
 is never displaced, and nothing overtakes on missing data. A verdict read before the holder's last `may-update`
 yes is dropped. A returning holder is restamped (update-branch) by its own `may-update` lease like any holder;
@@ -84,11 +93,17 @@ LOCK_WAIT = 10.0
 LOCK_POLL = 0.02
 DEAD = ("MERGED", "CLOSED")
 VIEW_FIELDS = "state,mergeStateStatus,baseRefName,headRefOid,statusCheckRollup"
-CLEAN_GREEN, READY, PENDING, STALE, UNKNOWN = "clean", "ready", "pending", "stale", "unknown"
+CLEAN_GREEN, READY, PENDING, STALE, UNKNOWN, FAILED = "clean", "ready", "pending", "stale", "unknown", "failed"
+# a check that ended red. CANCELLED is not here: a cancel-in-progress or a rerun gap must not cost a healthy holder
+# its slot. ACTION_REQUIRED is: nothing runs until a person acts, so the slot would idle. ERROR is a commit status
+# that ended red.
+FAILED_STATES = ("FAILURE", "TIMED_OUT", "ACTION_REQUIRED", "ERROR")
+FAILED_MAX = 50  # failed heads remembered, so an ask on the head that failed is refused
 TIP_SHA = re.compile(r"[0-9a-f]{40}")
 PENDING_MERGE_STATES = ("BLOCKED", "UNSTABLE", "BEHIND", "DIRTY", "HAS_HOOKS", "DRAFT")
 RUNNING = ("QUEUED", "IN_PROGRESS", "WAITING", "PENDING", "REQUESTED")  # a check run with no conclusion yet
 API_REPO = "{owner}/{repo}"  # gh api fills these from the current repository
+ASKING = ("refused", "request", "may-update")  # the commands by which a PR asks for the slot
 EXIT_HOLD = 1
 EXIT_BAD = 2
 GONE_MAX = 20  # holders remembered for a late release
@@ -169,12 +184,14 @@ def load(path):
         holder, queue, refusals = state["holder"], state["queue"], state["refusals"]
         gone = state.setdefault("gone", [])
         ready_first = state.setdefault("ready_first", new_ready_first())
+        failed = state.get("failed", {})
         valid = ((holder is None or _is_entry(holder, ("lane", "granted_at", "expires_at")))
                  and isinstance(queue, list)
                  and all(_is_entry(q, ("lane", "queued_at", "refusals")) for q in queue)
                  and isinstance(refusals, dict) and all(isinstance(v, int) for v in refusals.values())
                  and isinstance(gone, list) and all(_is_entry(g, ("reason", "at")) for g in gone)
-                 and _is_ready_first(ready_first))
+                 and _is_ready_first(ready_first)
+                 and isinstance(failed, dict) and all(isinstance(head, str) for head in failed.values()))
     except (OSError, ValueError, KeyError, TypeError):
         valid = False
     if not valid:
@@ -208,6 +225,7 @@ def parse(text):
 def drop(state, pr):
     state["queue"] = [q for q in state["queue"] if q["pr"] != pr]
     state["refusals"].pop(str(pr), None)
+    failed_heads(state).pop(str(pr), None)
     unmark_overtaken(state, pr)
 
 
@@ -222,22 +240,30 @@ def unmark_overtaken(state, pr):
 
 
 def judge_view(view):
-    """CLEAN_GREEN (CLEAN, every check green), PENDING (recognised not-CLEAN state, a check running, none failed)
-    or UNKNOWN (anything else, missing data included). Each rollup entry is judged on its own."""
+    """(verdict, names): CLEAN_GREEN (CLEAN, every check green), PENDING (recognised not-CLEAN state, a check
+    running, none failed), FAILED (a not-mergeable state other than UNSTABLE, which means only non-required checks
+    failed; no check running or incomplete; at least one ended failure, timed out or action required; names lists
+    them) or UNKNOWN (anything else, missing data included). Each rollup entry is judged on its own."""
     status, rollup = view.get("mergeStateStatus"), view.get("statusCheckRollup", 0)
     if not isinstance(status, str) or not isinstance(rollup, (list, type(None))):
-        return UNKNOWN
+        return UNKNOWN, []
     if status == "CLEAN":
-        return CLEAN_GREEN if merge_green.checks_refusal(rollup, view.get("headRefOid") or "")[1] is None else UNKNOWN
+        clean = merge_green.checks_refusal(rollup, view.get("headRefOid") or "")[1] is None
+        return (CLEAN_GREEN if clean else UNKNOWN), []
     if status not in PENDING_MERGE_STATES or not rollup:
-        return UNKNOWN
-    entries = []  # (running, conclusion or state)
+        return UNKNOWN, []
+    entries = []  # (name, running, incomplete, conclusion or state)
     for check in rollup:
-        _, state = merge_green.check_state(check)
-        entries.append(((state == "" and check.get("status") in RUNNING) or state in ("PENDING", "EXPECTED"), state))
-    running = any(is_running for is_running, _ in entries)
-    failed = any(not is_running and state not in merge_green.GREEN for is_running, state in entries)
-    return PENDING if running and not failed else UNKNOWN
+        name, state = merge_green.check_state(check)
+        entries.append((name, (state == "" and check.get("status") in RUNNING) or state in ("PENDING", "EXPECTED"),
+                        state == "" and not check.get("status"), state))
+    running = any(is_running for _, is_running, _, _ in entries)
+    failed = any(not is_running and state not in merge_green.GREEN for _, is_running, _, state in entries)
+    if running:
+        return (UNKNOWN if failed else PENDING), []
+    red = [name for name, _, _, state in entries if state in FAILED_STATES]
+    incomplete = any(unfinished for _, _, unfinished, _ in entries)
+    return (FAILED, red) if red and status != "UNSTABLE" and not incomplete else (UNKNOWN, [])
 
 
 def earliest(runner, path, jq):
@@ -287,20 +313,23 @@ def is_fresh(view, repo, runner, tips):
 
 def read_view(number, repo, runner):
     """(state, readiness, why, view): state is 'MERGED', 'CLOSED', 'OPEN', or None when gh did not give a clear
-    answer; readiness is CLEAN_GREEN, PENDING or UNKNOWN (freshness is not asked here)."""
+    answer; readiness is CLEAN_GREEN, PENDING, FAILED (why names the failed checks) or UNKNOWN (freshness is not
+    asked here)."""
     target = ["-R", repo] if repo else []
     code, text = runner(["pr", "view", str(number), *target, "--json", VIEW_FIELDS])
     if code != 0:
         return None, UNKNOWN, text.strip(), {}
     try:
         view = json.loads(text)
-        return view.get("state"), judge_view(view), "", view
+        readiness, failed = judge_view(view)
+        return view.get("state"), readiness, ", ".join(failed), view
     except (ValueError, AttributeError):
         return None, UNKNOWN, "unreadable gh answer", {}
 
 
 def grant(state, pr, lane, now, minutes, say, claimed, returned=False):
     state["refusals"].pop(str(pr), None)
+    failed_heads(state).pop(str(pr), None)
     state["gone"] = [g for g in state["gone"] if g["pr"] != pr]
     state["holder"] = {"pr": pr, "lane": lane, "granted_at": stamp(now), "claimed": claimed,
                        "expires_at": stamp(now + dt.timedelta(minutes=minutes))}
@@ -325,9 +354,13 @@ def grant_claim(state, entry, now, claim_minutes, say):
           say, claimed=False, returned=True)
 
 
-def grant_head(state, now, options, say):
-    """Grant the queue head as a claim window (see grant_claim)."""
-    if not state["holder"] and state["queue"]:
+def grant_head(state, now, options, say, failed):
+    """Grant the queue head as a claim window (see grant_claim); a head in `failed` (see failed_rows) is skipped."""
+    if state["holder"]:
+        return
+    while state["queue"] and failed_row(failed, state["queue"][0]):
+        lose_slot(state, state["queue"][0], failed_row(failed, state["queue"][0]), now, say)
+    if state["queue"]:
         grant_claim(state, state["queue"].pop(0), now, options.claim_minutes, say)
 
 
@@ -347,35 +380,38 @@ def watched(state):
 
 
 def asker_for(state, options):
-    """The PR asking `may-update` when it neither holds the slot nor is queued: it may still overtake."""
-    if options.command != "may-update":
+    """The PR asking when it neither holds the slot nor is queued: a `may-update` asker may still overtake, and
+    any asker that lost the slot to failed checks needs its head read, to see whether it was fixed."""
+    if options.command not in ASKING or (options.command != "may-update" and str(options.pr) not in failed_heads(state)):
         return None
     known = {entry["pr"] for entry in watched(state)}
     return None if options.pr in known else {"pr": options.pr, "lane": options.lane}
 
 
 def look_up(state, asker, repo, runner):
-    """[(entry, state or None, readiness, why)] for the holder, the queue and the asker. Slow: runs outside the lock.
+    """[(entry, state or None, readiness, why, head)] for the holder, the queue and the asker. Slow: runs outside the lock.
 
     The views come first. Freshness is asked only when an overtake is possible: the holder-to-be is PENDING and
     not protected; then the candidates in queue order (the asker last), stopping at the first fresh one."""
     entries = watched(state) + ([asker] if asker else [])
     rows = [[entry, *read_view(entry["pr"], repo, runner)] for entry in entries]
     alive = [row for row in rows if row[1] not in DEAD and row[0] is not asker]
-    holder = alive[0] if alive else None
+    place = next((i for i, row in enumerate(alive) if not (row[1] == "OPEN" and row[2] == FAILED)), len(alive))
+    holder = alive[place] if alive[place:] else None  # a failed holder or queue head loses the slot to the next
     if holder and holder[2] == PENDING and holder[0]["pr"] not in overtaken(state):
         tips = {}
-        for row in alive[1:] + [r for r in rows if r[0] is asker]:
+        for row in alive[place + 1:] + [r for r in rows if r[0] is asker]:
             if row[2] == CLEAN_GREEN:
                 row[2] = READY if is_fresh(row[4], repo, runner, tips) else STALE
                 if row[2] == READY:
                     break
-    return [(entry, found, readiness, why) for entry, found, readiness, why, _ in rows]
+    return [(entry, found, readiness, why, view.get("headRefOid")) for entry, found, readiness, why, view in rows]
 
 
 def refresh(state, now, options, verdicts, go_ahead_seen, say, warn):
-    """Apply gh verdicts only to entries still in the state unchanged, then expiry, then the grant."""
-    for entry, found, _, why in verdicts:
+    """Apply gh verdicts only to entries still in the state unchanged, then expiry, then the grant. Returns the
+    failed rows (see failed_rows), which every later grant in this call skips."""
+    for entry, found, _, why, _ in verdicts:
         number = entry["pr"]
         if found is None:
             warn(f"warning: #{number} state unknown ({why}); kept")
@@ -403,14 +439,87 @@ def refresh(state, now, options, verdicts, go_ahead_seen, say, warn):
              f"did not claim its grant by {holder['expires_at']}"))
         forget(state, holder["pr"], "expired" if claimed else "unclaimed", now)
         state["holder"] = None
+    failed = failed_rows(state, verdicts, go_ahead_seen)
+    if state["holder"] and failed_row(failed, state["holder"]):
+        lose_slot(state, state["holder"], failed_row(failed, state["holder"]), now, say)
     prune_gone(state, now)
-    grant_head(state, now, options, say)
+    grant_head(state, now, options, say, failed)
     if state["ready_first"]["go_ahead"] == go_ahead_seen:  # else a lane got a go-ahead since gh was asked
-        overtake(state, {entry["pr"]: ready for entry, found, ready, _ in verdicts if found == "OPEN"},
+        overtake(state, {entry["pr"]: ready for entry, found, ready, _, _ in verdicts if found == "OPEN"},
                  now, options.claim_minutes, say, asker_for(state, options))
     live = {entry["pr"] for entry in watched(state)}
     for pr in [pr for pr in overtaken(state) if pr not in live]:
         unmark_overtaken(state, pr)
+    return failed
+
+
+def failed_heads(state):
+    """{pr: head sha} of the holders that lost the slot to failed checks; they rejoin on a new head."""
+    return state.get("failed", {})  # read-only: only remember_failed creates the key
+
+
+def lose_slot(state, entry, row, now, say):
+    """Take a PR whose checks failed out of the holder place or the queue and remember its failed head."""
+    number = entry["pr"]
+    if state["holder"] == entry:
+        state["holder"] = None
+    else:
+        state["queue"].remove(entry)
+    state["refusals"].pop(str(number), None)
+    forget(state, number, "failed", now)
+    remember_failed(state, number, row[4])
+    say(f"released: #{number} its checks failed ({row[3]}); ask again after a fix push")
+
+
+def remember_failed(state, number, head):
+    """Record the head whose checks failed, newest last, so an ask on that head is refused (see refuse_failed)."""
+    heads = state.setdefault("failed", {})
+    heads.pop(str(number), None)  # re-added last, so the oldest records are the ones pruned
+    heads[str(number)] = head or ""
+    for old in list(heads)[:max(0, len(heads) - FAILED_MAX)]:
+        del heads[old]
+
+
+def failed_rows(state, verdicts, go_ahead_seen):
+    """{pr: verdict} of the open PRs whose required checks all ended and at least one failed: a holder among them
+    loses the slot at once and a queued one is skipped at every grant, neither kept in the queue (it asks again after
+    a fix push, see refuse_failed). Empty when a lane got a go-ahead since gh was asked: its yes stands."""
+    if state["ready_first"]["go_ahead"] != go_ahead_seen:
+        return {}
+    return {v[0]["pr"]: v for v in verdicts if v[1] == "OPEN" and v[2] == FAILED}
+
+
+def failed_row(failed, entry):
+    """The failed verdict of an entry still in the state unchanged, else None."""
+    row = failed.get(entry["pr"])
+    return row if row and row[0] == entry else None
+
+
+def refuse_failed(state, options, verdicts, say):
+    """True when a PR that lost the slot to failed checks asks again and may not rejoin yet: its checks cannot be
+    read (a gh error), or the head that failed is still judged FAILED. A fix push, a rerun that is running or green,
+    or a state that is no longer judged failed clears the record and the ask goes on. A `may-update` from a PR that
+    neither holds nor is queued, read FAILED, is refused and its head recorded: an empty slot is no go-ahead."""
+    if options.command not in ASKING:
+        return False
+    heads = failed_heads(state)
+    failed_head = heads.get(str(options.pr))
+    row = next((v for v in verdicts if v[0]["pr"] == options.pr), None)
+    if failed_head is None:
+        outsider = options.pr not in {entry["pr"] for entry in watched(state)}
+        if options.command != "may-update" or not outsider or not row or row[1] != "OPEN" or row[2] != FAILED:
+            return False
+        remember_failed(state, options.pr, row[4])
+        say(f"refused: #{options.pr} its checks failed on {(row[4] or '')[:8]}; ask again after a fix push")
+        return True
+    if row is None or row[1] is None:
+        say(f"refused: #{options.pr} its checks could not be read; ask again")
+        return True
+    if row[2] == FAILED and (row[4] or "") == failed_head:
+        say(f"refused: #{options.pr} its checks failed on {failed_head[:8]}; ask again after a fix push")
+        return True
+    del heads[str(options.pr)]
+    return False
 
 
 def overtake(state, readiness, now, claim_minutes, say, asker=None):
@@ -449,19 +558,19 @@ def enqueue(state, pr, lane, now, say):
         say(f"queued: #{pr} ({lane}) is position {len(state['queue'])}")
 
 
-def cmd_refused(state, options, now, say):
+def cmd_refused(state, options, now, say, failed):
     count = state["refusals"].get(str(options.pr), 0) + 1
     state["refusals"][str(options.pr)] = count
     say(f"refused: #{options.pr} freshness refusal {count} of {options.after}")
     if count >= options.after:
         enqueue(state, options.pr, options.lane, now, say)
-        grant_head(state, now, options, say)
+        grant_head(state, now, options, say, failed)
     return 0
 
 
-def cmd_request(state, options, now, say):
+def cmd_request(state, options, now, say, failed):
     enqueue(state, options.pr, options.lane, now, say)
-    grant_head(state, now, options, say)
+    grant_head(state, now, options, say, failed)
     return 0
 
 
@@ -471,7 +580,7 @@ def stamp_go_ahead(state, pr):
     state["ready_first"]["go_ahead"] = {"pr": pr, "n": last["n"] + 1 if last else 1}
 
 
-def cmd_may_update(state, options, now, say):
+def cmd_may_update(state, options, now, say, failed):
     holder, pr = state["holder"], options.pr
     if holder and holder["pr"] == pr:
         if not holder.get("claimed", True):
@@ -494,7 +603,7 @@ def cmd_may_update(state, options, now, say):
     return EXIT_HOLD
 
 
-def cmd_release(state, options, now, say):
+def cmd_release(state, options, now, say, failed):
     holder = state["holder"]
     queued = next((q for q in state["queue"] if q["pr"] == options.pr), None)
     if queued and options.pr in overtaken(state):  # it held the slot, was overtaken, and now gives its place up
@@ -508,6 +617,7 @@ def cmd_release(state, options, now, say):
         if past:
             state["gone"].remove(past)
             say(f"released: #{options.pr} " + (f"(already {past['reason']})" if past["reason"] in ("merged", "closed")
+                                              else "(its checks failed)" if past["reason"] == "failed"
                                               else "(slot had expired)"))
             return 0
         who = f"#{holder['pr']} holds it" if holder else "nobody holds it"
@@ -517,7 +627,7 @@ def cmd_release(state, options, now, say):
     state["refusals"].pop(str(options.pr), None)
     unmark_overtaken(state, options.pr)
     say(f"released: #{options.pr}")
-    grant_head(state, now, options, say)
+    grant_head(state, now, options, say, failed)
     return 0
 
 
@@ -530,7 +640,7 @@ def status_view(state, now):
     return {"holder": view, "queue": state["queue"], "refusals": state["refusals"], "gone": state["gone"]}
 
 
-def cmd_status(state, options, now, say):
+def cmd_status(state, options, now, say, failed):
     view = status_view(state, now)
     if options.json:
         say(json.dumps(view, indent=2))
@@ -549,6 +659,7 @@ def cmd_status(state, options, now, say):
     return 0
 
 
+# each command gets the failed rows of this call's refresh (see failed_rows): a grant skips those PRs
 COMMANDS = {"refused": cmd_refused, "request": cmd_request, "may-update": cmd_may_update,
             "release": cmd_release, "status": cmd_status}
 
@@ -608,8 +719,9 @@ def main(argv=None, runner=None, out=print, err=None):
             state = load(path)
             before = json.dumps(state, sort_keys=True)
             now = clock()  # gh may have been slow: expiry and grant stamps use the time after it
-            refresh(state, now, options, verdicts, go_ahead_seen, out, err)
-            code = COMMANDS[options.command](state, options, now, out)
+            failed = refresh(state, now, options, verdicts, go_ahead_seen, out, err)
+            code = (EXIT_HOLD if refuse_failed(state, options, verdicts, out)
+                    else COMMANDS[options.command](state, options, now, out, failed))
             if json.dumps(state, sort_keys=True) != before:
                 save(path, state)
             return code
