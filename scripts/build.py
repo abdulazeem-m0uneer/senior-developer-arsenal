@@ -24,6 +24,18 @@ PLUGIN_NAME = "arsenal"
 PLUGIN_AGENTS = "agents"
 MARKETPLACE_NAME = "senior-developer-arsenal"
 OWNER = "Abdulazeem Mohammed"
+REPO_URL = "https://github.com/abdulazeem-m0uneer/senior-developer-arsenal"
+# Fields the plugin directory reads for its listing; the agent ignores them at load time.
+DIRECTORY_LISTING = {
+    "homepage": REPO_URL,
+    "repository": REPO_URL,
+    "keywords": ["senior-engineering", "code-review", "testing", "security", "devops", "skills", "subagents"],
+    "icon": "./assets/icon.png",
+    "documentationUrl": f"{REPO_URL}#readme",
+    "supportUrl": f"{REPO_URL}/issues",
+    "privacyPolicyUrl": f"{REPO_URL}/blob/master/PRIVACY.md",
+    "termsOfServiceUrl": f"{REPO_URL}/blob/master/LICENSE",
+}
 DESCRIPTION = (
     "Senior engineering skills, subagents and rules for Node.js, .NET, Python, "
     "SQL, frontend, security, testing and DevOps."
@@ -549,6 +561,7 @@ def generate(sources):
         "name": PLUGIN_NAME, "version": sources["version"], "description": DESCRIPTION,
         "author": {"name": OWNER}, "license": "MIT",
         "skills": ["./.agents/skills/"],
+        **DIRECTORY_LISTING,
     }, indent=2) + "\n"
     out[".claude-plugin/marketplace.json"] = json.dumps({
         "name": MARKETPLACE_NAME, "owner": {"name": OWNER}, "description": DESCRIPTION,

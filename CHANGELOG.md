@@ -4,6 +4,18 @@ All notable changes to Senior Developer Arsenal are recorded in this file.
 
 The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/), and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version is the one in the `VERSION` file, and each release is dated by the day its pull request merged (UTC).
 
+## [1.35.0] - 2026-11-26
+
+### Added
+
+- Plugin directory listing fields in `.claude-plugin/plugin.json`: `homepage`, `repository`, `keywords`, `icon`, `documentationUrl`, `supportUrl`, `privacyPolicyUrl` and `termsOfServiceUrl` (#67).
+- `PRIVACY.md`: what the plugin stores locally and what leaves the machine (#67).
+- README: a "Start Here" section with the five skills to learn first (#67).
+
+### Fixed
+
+- `test_eval_outcomes`: the missing-runner test is skipped where pytest is installed, since it checks the no-pytest runner; it failed on any machine with pytest (#67).
+
 ## [1.34.0] - 2026-11-26
 
 ### Added
@@ -479,6 +491,7 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 - Non-destructive installers for every supported agent.
 - CI with lint, test and smoke workflows.
 
+[1.35.0]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/67
 [1.34.0]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/66
 [1.33.5]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/65
 [1.33.4]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/64
