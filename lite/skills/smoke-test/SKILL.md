@@ -63,7 +63,7 @@ Consult: [Verdicts, Failure Report & Fix Loop](./references/verdicts-and-fix-loo
 ## 3. Verification Protocol
 
 ```bash
-curl -fsS "$BASE_URL/health" | grep "$(git rev-parse HEAD)"        # layer 0: the server is this commit
+# HTTP GET "$BASE_URL/health" | grep "$(git rev-parse HEAD)"        # layer 0: the server is this commit
 git worktree add ../smoke-$SHA $SHA && cd ../smoke-$SHA            # run from the released commit
 npm run smoke -- --target local;   echo "exit $?"                # or the project smoke entry point; before the pull request and the release
 npm run smoke -- --target staging; echo "exit $?"                # 0 PASSED, 1 FAILED, 3 PARTIAL

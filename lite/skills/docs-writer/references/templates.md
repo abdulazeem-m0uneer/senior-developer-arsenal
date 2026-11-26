@@ -113,7 +113,7 @@ Written in the same change as the endpoint. Schemas and status codes come from t
 - Request: <fields with type, constraints, example>
 - Response: <status, fields, example>
 
-<A runnable example: one curl command and its real response, trimmed.>
+<A runnable example: one HTTP request command and its real response, trimmed.>
 
 ### Errors
 | Status | Code | Cause | What the caller should do |

@@ -40,7 +40,8 @@ class BuildLiteTest(unittest.TestCase):
     def test_manifest_has_only_accepted_fields(self):
         manifest = json.loads(self.expected[".claude-plugin/plugin.json"])
         self.assertEqual(set(manifest) - ALLOWED_MANIFEST, set())
-        self.assertEqual(manifest["icon"], "./.claude-plugin/icon.png")
+        self.assertNotIn("icon", manifest)  # the portal warns on the field; it finds the file by path
+        self.assertIn(".claude-plugin/icon.png", self.expected)
 
     def test_subagents_keep_only_accepted_frontmatter(self):
         agents = {rel: text for rel, text in self.expected.items() if rel.startswith("agents/")}
@@ -65,7 +66,8 @@ class BuildLiteTest(unittest.TestCase):
     def test_files_the_portal_flagged_no_longer_match(self):
         flagged = {  # file the portal named -> what matched there
             "skills/payments-integrity/SKILL.md": r"github\.com|\$DATABASE_URL",
-            "skills/security-audit/references/agent-config-rules.md": r"GITHUB_TOKEN|\$\{|mcp\.example\.com",
+            "skills/security-audit/references/agent-config-rules.md": r"GITHUB_TOKEN|\$\{|mcp\.example\.com|`~/|https://|\bcurl\b",
+            "skills/data-privacy/SKILL.md": r"pass ids",
             "skills/dependency-upgrade/SKILL.md": r"\bcurl\b",
             "skills/devops-ci/references/dockerfile-hardening.md": r"\bcurl\b|/bin/sh -c",
             "skills/devops-ci/references/pipeline-and-deploy.md": r"GITHUB_TOKEN",
@@ -79,6 +81,11 @@ class BuildLiteTest(unittest.TestCase):
         }
         for rel, pattern in flagged.items():
             self.assertIsNone(re.search(pattern, self.expected[rel]), rel)
+
+    def test_no_curl_anywhere(self):
+        for rel, content in self.expected.items():
+            if rel.endswith(".md"):
+                self.assertIsNone(re.search(r"\bcurl\b", content), rel)
 
     def test_subagents_drop_only_the_refused_key(self):
         text = self.expected["agents/code-explorer.md"]
