@@ -41,7 +41,7 @@ Consult: [Node.js Security Reference](./references/node-security.md)
 ### Step 3: Resilient Process Lifecycle & Graceful Shutdown
 Equip HTTP servers with graceful termination handling:
 ```typescript
-import { createServer } from 'http';
+import { createServer } from 'node:http';
 import { pool } from './database.js';
 
 const server = createServer(app);

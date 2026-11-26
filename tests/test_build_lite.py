@@ -67,7 +67,8 @@ class BuildLiteTest(unittest.TestCase):
         flagged = {  # file the portal named -> what matched there
             "skills/payments-integrity/SKILL.md": r"github\.com|\$DATABASE_URL",
             "skills/security-audit/references/agent-config-rules.md": r"GITHUB_TOKEN|\$\{|mcp\.example\.com|`~/|https://|\bcurl\b",
-            "skills/data-privacy/SKILL.md": r"pass ids",
+            "skills/data-privacy/SKILL.md": r"\bpass (ids|internal)",
+            "skills/nodejs-backend-expert/SKILL.md": r"from 'http'",
             "skills/dependency-upgrade/SKILL.md": r"\bcurl\b",
             "skills/devops-ci/references/dockerfile-hardening.md": r"\bcurl\b|/bin/sh -c",
             "skills/devops-ci/references/pipeline-and-deploy.md": r"GITHUB_TOKEN",
