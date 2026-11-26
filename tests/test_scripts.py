@@ -148,6 +148,18 @@ class RepositoryTests(unittest.TestCase):
         self.assertTrue(all(field for row in rows for field in row))
         self.assertTrue(all((ROOT / row[4]).exists() for row in rows if row[4] != "-"))
 
+    def test_mcp_plugins_follow_the_plugin_reference(self):
+        outputs = build.generate(build.load_sources())
+        hindsight = json.loads(outputs["plugins/hindsight/.mcp.json"])["mcpServers"]["hindsight"]
+        self.assertEqual(hindsight["url"], "http://localhost:8888/mcp/${user_config.bank_id}/")
+        self.assertNotIn("HINDSIGHT_BANK_ID", outputs["plugins/hindsight/.mcp.json"])
+        option = json.loads(outputs["plugins/hindsight/.claude-plugin/plugin.json"])["userConfig"]["bank_id"]
+        self.assertEqual((option["type"], option["default"]), ("string", "default"))
+        self.assertNotIn("sensitive", option)  # a bank name is not a secret
+        codegraph = json.loads(outputs["plugins/codegraph/.mcp.json"])["mcpServers"]["codegraph"]
+        self.assertEqual(codegraph["type"], "stdio")
+        self.assertNotIn("userConfig", json.loads(outputs["plugins/codegraph/.claude-plugin/plugin.json"]))
+
     def test_plugin_json_declares_the_hosts_privacy_md_names(self):
         plugin = json.loads(build.generate(build.load_sources())[".claude-plugin/plugin.json"])
         hosts = plugin["network"]["hosts"]

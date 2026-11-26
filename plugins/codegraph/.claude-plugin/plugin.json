@@ -1,9 +1,10 @@
 {
   "name": "arsenal-codegraph",
-  "version": "1.36.0",
+  "version": "1.37.0",
   "description": "Registers the codegraph MCP server for the Senior Developer Arsenal.",
   "author": {
     "name": "Abdulazeem Mohammed"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "privacyPolicyUrl": "https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/blob/master/PRIVACY.md"
 }

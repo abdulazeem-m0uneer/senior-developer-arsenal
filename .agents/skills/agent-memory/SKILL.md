@@ -26,7 +26,7 @@ Activate this skill when:
 
 ### Step 1: Pick the Bank
 Consult: [Hindsight Memory Architecture](./references/memory-architecture.md)
-1. Name the bank after the repository or service (`billing-service`), never after a person or a session.
+1. Name the bank after the repository or service (`billing-service`), never after a person or a session. With the Claude Code plugin, the MCP server's bank is the `bank_id` option in `/config`; set it there to the same name.
 2. Confirm how memory is reached: the Hindsight MCP tools when the server is connected, otherwise the bundled script. Resolve the script path relative to the directory that contains this file.
 
 ### Step 2: Retain
