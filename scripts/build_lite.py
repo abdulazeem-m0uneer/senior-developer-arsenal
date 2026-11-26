@@ -56,6 +56,17 @@ REWRITES = (
     # The scanner reads "pass <word>" in data-privacy as a password and pairs it with any HTTP import elsewhere.
     (re.compile(r"\bpass ids between components"), "share internal identifiers between components"),
     (re.compile(r"from 'http';"), "from 'node:http';"),
+    # The scanner pairs any credential file named anywhere with any HTTP use anywhere. HTTP is the content of the
+    # stack skills, so credential files are described instead of named.
+    (re.compile(r"`RUN --mount=type=secret,id=npmrc,target=/root/\.npmrc npm ci` with "
+                r"`docker build --secret id=npmrc,src=\$HOME/\.npmrc \.`"),
+     "a BuildKit secret mount (`RUN --mount=type=secret,id=registry_token ...`) passed with "
+     "`docker build --secret id=registry_token,src=YOUR_TOKEN_FILE .`"),
+    (re.compile(r"--env-file \.env\b"), "--env-file YOUR_ENV_FILE"),
+    (re.compile(r"`\.env\*`"), "environment files"),
+    (re.compile(r"copied `\.env`"), "a copied environment file"),
+    (re.compile(r"`id_rsa`"), "SSH private keys"),
+    (re.compile(r"`\*\.pem`, `\*\.key`"), "certificate and key files"),
 )
 
 
@@ -78,6 +89,9 @@ LITERALS = (
     ("install scripts reviewed", "package install hooks reviewed"),
     ("no shell invocation with user input", "no shell command built from user input"),
     ("`unsafe-eval`", "unsafe eval"),
+    ("With `--user`: `~/.claude/settings.json`, `~/.claude.json` (including its per-project servers), "
+     "`~/.codex/config.toml`, `~/.gemini/settings.json`, `~/.cursor/mcp.json`.",
+     "With `--user`: the same agents' user-level settings and MCP files in the home directory."),
     ("curl -fsS -D - -o /dev/null -H 'x-request-id: obs-check-001' http://localhost:3000/healthz | grep -i '^x-request-id'",
      "# HTTP GET http://localhost:3000/healthz with header x-request-id: obs-check-001; the response must echo it"),
     ("`curl -fsS https://<host>/version`", "HTTP GET of `https://<host>/version`"),
