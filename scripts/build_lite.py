@@ -66,6 +66,13 @@ LITERALS = (
     ("install scripts reviewed", "package install hooks reviewed"),
     ("no shell invocation with user input", "no shell command built from user input"),
     ("`unsafe-eval`", "unsafe eval"),
+    ("`curl -fsS https://<host>/version`", "HTTP GET of `https://<host>/version`"),
+    ('q() { curl -fsS --get http://prometheus:9090/api/v1/query --data-urlencode "query=$1" \\\n  | jq -r \'.data.result[] | "\\(.metric | to_entries | map(.value) | join(" ")) \\(.value[1])"\' | head -n 20; }\n',
+     "# q '<promql>': send each query to the Prometheus HTTP API (GET /api/v1/query on port 9090) with your HTTP\n"
+     "# client, then print one line per series (labels and value), at most 20 lines.\n"),
+    ('curl -fsS "http://tempo:3200/api/traces/<trace_id>" \\\n  | jq -r \'.batches[].scopeSpans[].spans[] | "\\(.name) \\((.endTimeUnixNano|tonumber) - (.startTimeUnixNano|tonumber) | . / 1e6 | floor)ms \\(.status.code // "")"\' | head -n 40\n',
+     "# GET /api/traces/<trace_id> from the trace store (Tempo: port 3200) with your HTTP client, then print\n"
+     "# each span's name, duration in ms and status, at most 40 lines.\n"),
     ("dotnet tool install --global nuget-license && nuget-license -i <solution.sln>",
      "nuget-license -i <solution.sln>  # install nuget-license from its own instructions first"),
     ("`docker run -it --rm -p 8000:8000 opensecurity/mobile-security-framework-mobsf`, then upload",
