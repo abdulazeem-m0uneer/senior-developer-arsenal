@@ -560,6 +560,12 @@ class ReviewRoundTests(ChainCase):
         self.assertRefused('d=$(merge-green 1); echo hi | grep -q "$d" && merge-green 1 --yes')
         self.assertRefused("d=$(merge-green 1); d=ok; if [[ $d == ok ]]; then merge-green 1 --yes; fi")
 
+    def test_a_capture_that_is_not_a_leading_assignment_never_raises(self):
+        for command in ("export n=$(date +%s); echo $n", "local n=$(date); echo $n", "echo n=$(date)",
+                        "timeout 5 n=$(date)", 'printf "%s" behind=$(git rev-list --count a..b)'):
+            self.assertPasses(command)
+        self.assertPasses('export d=$(merge-green 1); case $d in "would merge"*) merge-green 1 --yes;; esac')
+
     def test_a_grep_fed_the_output_is_a_gate(self):
         self.assertPasses('d=$(merge-green 1); grep -q ok <<< "$d" && merge-green 1 --yes')
         self.assertPasses('d=$(merge-green 1); if printf %s "$d" | grep -q ok; then merge-green 1 --yes; fi')

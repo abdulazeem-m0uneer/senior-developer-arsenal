@@ -601,12 +601,12 @@ class RuleTests(RuleCase):
             self.assertEqual(self.judge(f'gh pr comment 5 -b "{OTHER} on Wed 11-26"').rule, "calendar")
 
     def test_window_mb_is_checked(self):
-        for entry, fault in (({"rule": "calendar", "window_mb": 4}, "unseen-hash rule only"),
+        for entry, fault in (({"rule": "calendar", "window_mb": 4}, "unseen-hash and unseen-time rules only"),
                              ({"rule": "unseen-hash", "window_mb": 0}, "above 0"),
                              ({"rule": "unseen-hash", "window_mb": -1}, "above 0"),
                              ({"rule": "unseen-hash", "window_mb": 17}, "at most 16"),
                              ({"rule": "unseen-hash", "window_mb": 64}, "at most 16"),
-                             ({"rule": "calendar", "allow": ["ff00ff00"]}, "unseen-hash rule only"),
+                             ({"rule": "calendar", "allow": ["ff00ff00"]}, "unseen-hash and unseen-time rules only"),
                              ({"rule": "unseen-hash", "allow": "ed448"}, "list of words"),
                              ({"rule": "unseen-hash", "allow": []}, "list of words"),
                              ({"rule": "unseen-hash", "allow": ["ok", " "]}, "list of words"),
