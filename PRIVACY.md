@@ -18,6 +18,8 @@ The plugin sends nothing to its author or to any service run by the project. Som
 - `payments-integrity` scripts call the payment gateway you configure.
 - The optional `hindsight` and `codegraph` MCP servers are separate plugins. By default they run locally (`localhost` and a local command); what they store is set by those tools.
 
+The plugin declares these destinations in `plugin.json` (`network.hosts`): `api.github.com` and `github.com` for `gh` and `git push`, and `localhost:8888` for a local Hindsight server.
+
 Your AI agent and its model provider handle your prompts and code under their own privacy terms. This plugin does not change that.
 
 ## Contact
