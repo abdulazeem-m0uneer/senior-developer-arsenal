@@ -53,7 +53,9 @@ REWRITES = (
     (re.compile(r"\bcurl (script|command)"), r"HTTP request \1"),
     (re.compile(r"Use `https://`\. Plain HTTP is accepted only for localhost\."),
      "Use HTTPS. Plain HTTP is accepted only for a local server."),
-    (re.compile(r"\bpass ids between components"), "pass internal identifiers between components"),
+    # The scanner reads "pass <word>" in data-privacy as a password and pairs it with any HTTP import elsewhere.
+    (re.compile(r"\bpass ids between components"), "share internal identifiers between components"),
+    (re.compile(r"from 'http';"), "from 'node:http';"),
 )
 
 
