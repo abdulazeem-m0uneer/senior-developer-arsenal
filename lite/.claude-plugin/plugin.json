@@ -1,0 +1,20 @@
+{
+  "name": "arsenal-lite",
+  "version": "1.36.0",
+  "description": "Senior engineering skills and subagents (text-only edition): review, testing, security, databases, APIs, frontend, mobile and DevOps runbooks.",
+  "author": {
+    "name": "Abdulazeem Mohammed"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/abdulazeem-m0uneer/senior-developer-arsenal",
+  "repository": "https://github.com/abdulazeem-m0uneer/senior-developer-arsenal",
+  "keywords": [
+    "senior-engineering",
+    "code-review",
+    "testing",
+    "security",
+    "devops",
+    "skills"
+  ],
+  "icon": "./.claude-plugin/icon.png"
+}

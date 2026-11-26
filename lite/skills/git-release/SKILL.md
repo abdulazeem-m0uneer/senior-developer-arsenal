@@ -1,0 +1,81 @@
+---
+name: git-release
+description: 'Prepare a release: verify build and tests, bump the SemVer version, write the changelog, cut the tag. Use for any release.'
+---
+
+> **Lite edition:** steps that run a bundled script (a `scripts/` or `templates/` path) need the full arsenal (https://github.com/abdulazeem-m0uneer/senior-developer-arsenal). Here, do that step by hand or skip it and say so.
+
+<!-- routing (read by the skill router, not loaded into the skill listing): Release preparation: verify build and tests, bump the version by SemVer, write release notes or a changelog, cut the tag. Use to prepare a release, bump versions or cut a tag. Triggers: "prepare release", "cut tag", "bump version", "release notes", /git-release. Not for rebasing or merge conflicts (use git-workflow-master). -->
+
+# Production Release Preparation Skill
+
+Follow this procedure when cutting a milestone release, calculating SemVer version bumps, and authoring release changelogs.
+
+---
+
+## 1. When to Use This Skill
+
+Activate this skill when:
+- Preparing a production release tag from clean branch commits.
+- Evaluating Conventional Commits history to determine Major, Minor, or Patch SemVer bumps.
+- Drafting structured release notes and changelog summaries.
+- The user runs the `/git-release` slash command.
+
+*Boundary*: For interactive git rebasing, commit squashing, or resolving git merge conflicts, use `git-workflow-master`. For pipelines and deploy strategy, use `devops-ci`. For the check after a deploy, use `smoke-test`.
+
+---
+
+## 2. Step-by-Step Execution Runbook
+
+### Step 1: Pre-Release Working Tree & Test Verification
+1. Ensure working directory is clean: `git status`.
+2. Sync with upstream: `git fetch origin main && git rebase origin/main`.
+3. Execute full automated test suite:
+   - C#: `dotnet test --configuration Release`
+   - Node.js: `npm test && npm run build`
+   - Python: `pytest`
+
+### Step 2: SemVer Calculation
+Consult: [Release Preparation & SemVer Guide](./references/release-guide.md)
+1. Inspect commit range since last tag: `git log $(git describe --tags --abbrev=0)..HEAD --oneline`.
+2. Determine bump level:
+   - `BREAKING CHANGE:` or `!` $\to$ **MAJOR** bump.
+   - `feat:` $\to$ **MINOR** bump.
+   - `fix:`, `perf:`, `refactor:` $\to$ **PATCH** bump.
+
+### Step 3: Author Release Changelog
+Group commits into structured sections: `Features`, `Bug Fixes`, `Performance Improvements`, and `Breaking Changes`. Include commit hashes with clickable file links.
+
+### Step 3b: Check the Docs Against the Change
+1. Run `python3 <skill-dir>/scripts/doc_drift.py <last-tag>` (exit 1 drift, 0 clean, 2 git or usage error; `--docs <path>` adds a docs folder).
+2. `undocumented`: a flag, environment variable, route, export or config key the release adds that no README or `docs/` page mentions. Document it, or say in the release notes why it is internal.
+3. `stale`: a name the docs still mention that the code no longer has. Correct or delete that sentence.
+4. Done when the check exits 0, or each remaining line has a reason in the release notes.
+
+### Step 4: Tag & Publish
+```bash
+git tag -a vX.Y.Z -m "Release vX.Y.Z"
+```
+
+### Step 5: Promote & Confirm the Deploy
+1. Where environments are branches, release by a promotion pull request that fast-forwards the target; list what is promoted, the migrations, the new configuration keys, and any breaking API change.
+2. Promote the artifact that was tested; never rebuild it for the next environment.
+3. A deploy is finished when the running service answers with the released commit, not when the pipeline turns green.
+
+---
+
+## 3. Verification Protocol
+
+1. Assert all tests pass with zero failures.
+2. Assert calculated SemVer adheres strictly to Conventional Commits rules.
+3. Verify git tag exists: `git tag -l "vX.Y.Z"`.
+4. Verify the deployed version: `curl -fsS https://<host>/version` returns the released commit.
+
+---
+
+## 4. ⚡ Token-Saving Execution Rule
+
+- Output only the calculated version bump, the formatted changelog markdown, and the git tag command.
+- Do not dump full git log outputs into chat.
+
+**Next**: once the release is deployed, verify it with `smoke-test`.

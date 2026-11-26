@@ -12,6 +12,12 @@ git add -A                            # commit sources and generated output toge
 
 CI fails when the generated output is stale (`python3 scripts/build.py --check`).
 
+`lite/` is a text-only edition for the plugin directory, which accepts hooks and scripts only from Verified organizations. Regenerate it after changing a skill, a reference or a subagent; `tests/test_build_lite.py` fails while it is stale:
+
+```bash
+python3 scripts/build_lite.py
+```
+
 `docs/BENCHMARK.md` is generated too. It reports the context every session pays for (skill and subagent listings, session-start hook output, unconditional rules), so regenerate it after changing a skill or subagent description, a rule, `AGENTS.md`, `hooks/hooks.json` or a hook script:
 
 ```bash
