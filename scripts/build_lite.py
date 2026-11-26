@@ -47,7 +47,27 @@ REWRITES = (
 )
 
 
+# The directory also warns on credentials read from the user's machine ("change a variable such as $API_KEY to
+# the fake value YOUR_API_KEY") and on install-then-run commands ("point the user to the tool's own install
+# instructions instead of showing it").
+LITERALS = (
+    ('"GITHUB_TOKEN": "ghp_..."', '"YOUR_TOKEN_NAME": "YOUR_TOKEN"'),
+    ('"${GITHUB_TOKEN}"', '"${YOUR_TOKEN_NAME}"'),
+    ("${{ secrets.GITHUB_TOKEN }}", "${{ secrets.YOUR_REGISTRY_TOKEN }}"),
+    ("PROVIDER_API_KEY", "YOUR_API_KEY"),
+    ("dotnet tool install --global nuget-license && nuget-license -i <solution.sln>",
+     "nuget-license -i <solution.sln>  # install nuget-license from its own instructions first"),
+    ("`docker run -it --rm -p 8000:8000 opensecurity/mobile-security-framework-mobsf`, then upload",
+     "Start MobSF as its own install instructions describe (`mobsf` on port 8000), then upload"),
+    ("`npm ci && npm run dev`, `dotnet restore && dotnet run --project src/Api`, `uv sync && uv run python -m app`",
+     "`npm run dev`, `dotnet run --project src/Api`, `uv run python -m app`, each after installing the "
+     "dependencies"),
+)
+
+
 def reword(text):
+    for old, new in LITERALS:
+        text = text.replace(old, new)
     for pattern, replacement in REWRITES:
         text = pattern.sub(replacement, text)
     return text

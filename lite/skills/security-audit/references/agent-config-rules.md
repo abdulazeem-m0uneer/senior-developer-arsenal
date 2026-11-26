@@ -5,7 +5,7 @@ Read in Step 4b of the security-audit skill. The script is `scripts/agent_config
 | Severity | Rule | Example that fires | Fix |
 | :--- | :--- | :--- | :--- |
 | high | `remote-exec` | a remote script piped into a shell in a hook or MCP command; a PowerShell download-and-execute | Vendor the script into the repository, pin it by hash, and run the local copy. |
-| high | `secret` | `"env": {"GITHUB_TOKEN": "ghp_..."}` in `.mcp.json` | Reference an environment variable (`"${GITHUB_TOKEN}"`), rotate the leaked value, and purge it from git history. |
+| high | `secret` | `"env": {"YOUR_TOKEN_NAME": "YOUR_TOKEN"}` in `.mcp.json` | Reference an environment variable (`"${YOUR_TOKEN_NAME}"`), rotate the leaked value, and purge it from git history. |
 | high | `bypass-default` | `"defaultMode": "bypassPermissions"`; Codex `sandbox_mode = "danger-full-access"` | Keep the default mode; grant narrow allow rules instead. |
 | medium | `broad-allow` | `Bash`, `Bash(*)`, `*`, `Bash(curl:*)`, `Bash(sudo:*)`, `Bash(python3:*)` | Allow the exact commands the project runs (`Bash(npm test:*)`). |
 | medium | `unpinned-mcp` | a package runner with no version, a `latest` tag, a uv tool run with no version | Pin the version (`some-server@1.4.2`, `tool==1.4.2`), so a hijacked release cannot run unasked. |
