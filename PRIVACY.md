@@ -2,6 +2,10 @@
 
 Senior Developer Arsenal is a set of skills, subagents, rules, hooks and scripts that run on your machine inside your AI coding agent. It has no server, no account and no telemetry.
 
+## Lite edition
+
+The lite edition (`lite/`, listed in the Claude plugin directory as `arsenal-lite`) has no hooks, scripts or network hosts. It stores nothing and sends nothing; the rest of this page is about the full edition.
+
 ## What the plugin stores
 
 Everything below stays on your machine. You can read, edit or delete these files at any time.

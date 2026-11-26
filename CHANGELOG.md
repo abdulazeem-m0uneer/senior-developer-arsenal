@@ -4,6 +4,18 @@ All notable changes to Senior Developer Arsenal are recorded in this file.
 
 The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/), and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version is the one in the `VERSION` file, and each release is dated by the day its pull request merged (UTC).
 
+## [1.37.0] - 2026-11-27
+
+### Added
+
+- `lite/`: a text-only edition for the Claude plugin directory, which accepts hooks, scripts, `network` and some subagent frontmatter only from Verified organizations. `scripts/build_lite.py` generates it from the same sources: 51 skills (Markdown and references only, with a note on steps that run a bundled script), 18 subagents without `omitClaudeMd`, and a manifest with accepted fields, with the icon found by path. Ten skills built around their scripts are left out. The full plugin is unchanged (#69).
+- `tests/test_build_lite.py`: `lite/` is current and holds only what the directory accepts (#69).
+- README "Two editions" table, `lite/` in the repository structure, the lite edition in `PRIVACY.md` (#75).
+
+### Fixed
+
+- Lite text reworded where the directory's scanner warned, for credentials read from the machine and download-and-run commands: fake values for token and key names, no `curl` or `npx` downloads, install-then-run lines pointing to each tool's own instructions, agent config files named without the home path, and `node:http` (#70, #71, #72, #73, #74).
+
 ## [1.36.0] - 2026-11-26
 
 ### Added
@@ -498,6 +510,7 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 - Non-destructive installers for every supported agent.
 - CI with lint, test and smoke workflows.
 
+[1.37.0]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/75
 [1.36.0]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/68
 [1.35.0]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/67
 [1.34.0]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/66

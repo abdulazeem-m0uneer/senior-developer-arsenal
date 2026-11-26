@@ -118,8 +118,10 @@ senior-developer-arsenal/
 ├── assets/icon.png              # Plugin icon (source: assets/icon.svg)
 ├── evals/                       # claude plugin eval cases: skill triggering and real tasks vs a no-plugin baseline (docs/EVALS.md)
 ├── plugins/                     # GENERATED opt-in Claude plugins for the MCP servers
+├── lite/                        # GENERATED text-only edition for the Claude plugin directory (scripts/build_lite.py)
 ├── scripts/
 │   ├── build.py                 # Generator: --validate, --check, or write dist/
+│   ├── build_lite.py            # Generator for lite/: writes it, or --check
 │   ├── mcp_merge.py             # Safe JSON merge for MCP configs (used by install.sh)
 │   ├── trending_rank.py         # Updates the trending table in this README
 │   ├── token_benchmark.py       # Measures per-session context overhead: writes docs/BENCHMARK.md, --check, --json, --live
@@ -142,6 +144,19 @@ senior-developer-arsenal/
 ---
 
 ## 🛠️ Installation
+
+### Two editions
+
+| | Full (this repository root) | Lite (`lite/`) |
+| :--- | :--- | :--- |
+| Where | This marketplace, below | The Claude plugin directory, as `arsenal-lite` |
+| Skills | 61 | 51: the 10 built around their scripts are left out (ship, ci-wait, quality-gate, lessons-learned, usage-stats, multi-session-delivery, autonomous-run, agent-memory, repo-scan, shared-infra-changes) |
+| Subagents | 18 | 18 |
+| Hooks and guards | Yes | No |
+| Bundled scripts | Yes | No: a step that runs one says to do it by hand or skip it |
+| Stores or sends data | See [PRIVACY.md](PRIVACY.md) | Nothing |
+
+The directory accepts hooks and scripts only from Verified organizations, so the lite edition is Markdown only. Its text is reworded where the directory's scanner flags it: no `curl` commands, no `npx` downloads, and fake values for credential names. Use the full edition for the guards, the lessons ledger and the ship and CI skills.
 
 ### Claude Code (plugin)
 
