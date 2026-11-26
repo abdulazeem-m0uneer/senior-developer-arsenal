@@ -34,7 +34,7 @@ Consult: [CodeGraph Architecture & Reference Guide](./references/codegraph-guide
 1. List the CodeGraph tools connected to the session; tool names differ between server versions, so use the ones that are present.
 2. If the server reports that the project is not initialised, build the index once from the project root:
    ```bash
-   npx @colbymchenry/codegraph init -i
+   npx --no-install @colbymchenry/codegraph init -i
    ```
 
 ### Step 2: Ask the Graph First

@@ -1,5 +1,6 @@
 """lite/ is current and holds only what the plugin directory accepts from an unverified organization."""
 import json
+import re
 import sys
 import unittest
 from pathlib import Path
@@ -49,6 +50,18 @@ class BuildLiteTest(unittest.TestCase):
             keys = {line.split(":", 1)[0] for line in head.splitlines()}
             self.assertLessEqual(keys, set(build_lite.AGENT_KEYS), rel)
             self.assertIn("name", keys, rel)
+
+    def test_no_download_and_run_text(self):
+        pattern = re.compile(r"\|\s*(ba|z)?sh\b|\biex \(|\buvx |\bnpx (?!--no-install)|@latest\b")
+        for rel, content in self.expected.items():
+            if rel.endswith(".md"):
+                self.assertIsNone(pattern.search(content), rel)
+
+    def test_subagents_drop_only_the_refused_key(self):
+        text = self.expected["agents/code-explorer.md"]
+        self.assertNotIn("omitClaudeMd", text)
+        self.assertIn("effort: low", text)
+        self.assertIn("disallowedTools:", text)
 
     def test_script_bound_skills_are_left_out_and_others_get_the_note(self):
         names = {rel.split("/")[1] for rel in self.expected if rel.startswith("skills/")}

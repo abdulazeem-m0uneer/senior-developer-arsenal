@@ -62,7 +62,7 @@ Consult: [Release Pipeline](./references/release-pipeline.md)
 
 ## 3. Verification Protocol
 
-1. Run the typecheck, linter, and unit tests (`npx tsc --noEmit && npx jest`, or `flutter analyze && flutter test`).
+1. Run the typecheck, linter, and unit tests (`npx --no-install tsc --noEmit && npx --no-install jest`, or `flutter analyze && flutter test`).
 2. Build a release artifact for each platform and install it on a physical device; run the critical journeys, including airplane mode and token expiry.
 3. Confirm no secret, token, or personal data appears in the bundle, logs, or crash reports.
 4. Report findings in this table:

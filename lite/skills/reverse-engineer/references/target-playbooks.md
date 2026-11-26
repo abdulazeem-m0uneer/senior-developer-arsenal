@@ -7,7 +7,7 @@ Read the one section that matches the target in Step 3. Each section lists where
 ## 1. Electron / JavaScript Desktop
 
 - **Where the code is**: `resources/app.asar` (or `app.asar.unpacked`); main process entry in `package.json#main`; preload scripts bridge renderer and main; renderer bundles are usually webpack or Vite output.
-- **Run**: `npx -y rea-agents@latest analyze-javascript-application /abs/path/to/app --json`.
+- **Run**: `npx --no-install rea-agents analyze-javascript-application /abs/path/to/app --json`.
 - **List first**: IPC channel names (`ipcMain.handle`, `ipcRenderer.invoke`, `contextBridge.exposeInMainWorld`), `protocol.registerSchemesAsPrivileged`, menu and shortcut registrations, and strings from the oracle cases.
 - **Gotchas**:
   - Source maps may describe a different build than the bundle shipped; trust the bundle, use the map only for names.

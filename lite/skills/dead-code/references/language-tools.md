@@ -4,7 +4,7 @@ Read in Step 2 of the dead-code skill. Prefer the project's own pinned version (
 
 | Language | Command | Finds |
 | :--- | :--- | :--- |
-| TypeScript / JavaScript | `npx knip` | unused files, exports, types, dependencies |
+| TypeScript / JavaScript | `npx --no-install knip` | unused files, exports, types, dependencies |
 | Python | `vulture . --min-confidence 80` | unused functions, classes, variables |
 | Python | `ruff check --select F401,F841 .` | unused imports (F401) and local variables (F841) |
 | C# | `dotnet build -warnaserror:IDE0051,IDE0052,CS0168` (enable `EnforceCodeStyleInBuild`) | unused private members (IDE0051), unread private members (IDE0052), unused variables (CS0168) |
@@ -17,8 +17,8 @@ Read in Step 2 of the dead-code skill. Prefer the project's own pinned version (
 | Ruby | `debride .` | methods never called |
 | Swift | `periphery scan` | unused declarations |
 | Dart / Flutter | `dart analyze` | `unused_element`, `unused_import`, `unused_local_variable` |
-| CSS | `npx purgecss --css <css> --content <templates>` | selectors no template uses |
-| Unused dependencies | `npx knip` (JS), `deptry .` (Python), `cargo +nightly udeps` (Rust) | declared but never imported packages |
+| CSS | `npx --no-install purgecss --css <css> --content <templates>` | selectors no template uses |
+| Unused dependencies | `npx --no-install knip` (JS), `deptry .` (Python), `cargo +nightly udeps` (Rust) | declared but never imported packages |
 
 ## Without a Tool
 

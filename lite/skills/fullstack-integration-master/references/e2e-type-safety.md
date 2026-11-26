@@ -11,7 +11,7 @@ When the backend is .NET and the frontend is TypeScript (React/Angular):
 2. **Client Type Synthesis**:
    ```bash
    # Generate pristine TypeScript types from OpenAPI spec
-   npx openapi-typescript ./swagger.json -o ./src/api/schema.d.ts
+   npx --no-install openapi-typescript ./swagger.json -o ./src/api/schema.d.ts
    ```
 3. **Type-Safe Fetcher**:
    ```typescript

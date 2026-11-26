@@ -50,7 +50,7 @@ Consult: [Evaluation Questions](./references/evaluation-questions.md)
 
 ```bash
 npm run build && node dist/index.js --help            # or: python -m py_compile server.py
-npx @modelcontextprotocol/inspector                   # tools listed with title, description, schema, annotations
+npx --no-install @modelcontextprotocol/inspector                   # tools listed with title, description, schema, annotations
 ```
 
 | Area | Finding | Risk | Severity | Fix |

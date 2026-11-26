@@ -13,7 +13,7 @@ Inventory, upgrade, reproducible install, audit, licence, and provenance command
 | Why is it installed | `npm explain <pkg>` | `pnpm why -r <pkg>` |
 | Upgrade one | `npm install <pkg>@<version>` | `pnpm up <pkg>@<version>` (add `-r` for all workspaces) |
 | Reproducible install | `npm ci` | `pnpm install --frozen-lockfile` |
-| Licences | `npx license-checker --production --summary` | `pnpm licenses list --prod --json` |
+| Licences | `npx --no-install license-checker --production --summary` | `pnpm licenses list --prod --json` |
 | Registry signatures and provenance | `npm audit signatures` | `npm audit signatures` after an npm install of the same lockfile, or check the package page |
 | Scripts a version would run | `npm view <pkg>@<version> scripts` | same |
 | Unmaintained signal | `npm view <pkg> time.modified deprecated` | same |

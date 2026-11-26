@@ -47,7 +47,7 @@ it('rejects a refund on day 31', () => {
 });
 ```
 - [ ] **Step 2: Run it, expect failure**
-  Run: `npx vitest run tests/refunds/window.test.ts -t 'day 31'`
+  Run: `npx --no-install vitest run tests/refunds/window.test.ts -t 'day 31'`
   Expected: FAIL, `isWithinWindow is not defined`
 - [ ] **Step 3: Implement `isWithinWindow(order: Order, now: Date): boolean` in `src/refunds/window.ts`**
   <one line on approach only where the signature and test leave a choice>

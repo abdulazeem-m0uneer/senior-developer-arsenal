@@ -42,7 +42,7 @@ Consult: [Angular Signals & Modern Best Practices](./references/angular-signals-
 
 ## 3. Verification Protocol
 
-1. Verify TypeScript types: `npx tsc --noEmit` or `ng build --configuration production`.
+1. Verify TypeScript types: `npx --no-install tsc --noEmit` or `ng build --configuration production`.
 2. Run automated component unit tests (`vitest` or `karma`/`jest`).
 3. Check for zero console warnings regarding missing keys, duplicate effects, or hydration mismatches.
 

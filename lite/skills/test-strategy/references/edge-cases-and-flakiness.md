@@ -30,11 +30,11 @@ Reproduce first:
 
 | Runner | Repeat | Shuffle order | Isolate |
 | :--- | :--- | :--- | :--- |
-| Vitest | `npx vitest run --retry=0` in a shell loop | `--sequence.shuffle` (`--sequence.seed=<n>` to replay) | `--no-file-parallelism` |
-| Jest | shell loop over `npx jest path/to/test` | `--randomize` (`--seed=<n>` to replay) | `--runInBand`, `--detectOpenHandles` |
+| Vitest | `npx --no-install vitest run --retry=0` in a shell loop | `--sequence.shuffle` (`--sequence.seed=<n>` to replay) | `--no-file-parallelism` |
+| Jest | shell loop over `npx --no-install jest path/to/test` | `--randomize` (`--seed=<n>` to replay) | `--runInBand`, `--detectOpenHandles` |
 | pytest | `pytest --count=50 -x` (pytest-repeat) | pytest-randomly shuffles once installed (`-p randomly_seed=<n>` to replay, `-p no:randomly` to disable) | `pytest path::test_name`, `--lf` |
 | xUnit | shell loop over `dotnet test --filter "FullyQualifiedName~OrderTests"` | No built-in shuffle; test collections already run in parallel | `[Collection("name")]` to serialize |
-| Playwright | `npx playwright test --repeat-each=20` | `fullyParallel: true` in config | `--workers=1`, `--trace on` |
+| Playwright | `npx --no-install playwright test --repeat-each=20` | `fullyParallel: true` in config | `--workers=1`, `--trace on` |
 
 Then classify and fix the cause:
 
@@ -59,7 +59,7 @@ Then classify and fix the cause:
 - [ ] Measure **branch** coverage, not just lines; an `if` without an `else` test is a hidden gap.
 - [ ] Prioritize by risk: money, authorization, data mutation, parsing of external input, concurrency. Generated code, DTOs, and framework glue can stay low.
 - [ ] Gate on changed code (diff coverage) rather than a repo-wide number that invites trivial tests.
-- [ ] A covered line with no assertion proves nothing; verify with mutation testing on critical modules (`npx stryker run`, `dotnet stryker`, `mutmut run`).
+- [ ] A covered line with no assertion proves nothing; verify with mutation testing on critical modules (`npx --no-install stryker run`, `dotnet stryker`, `mutmut run`).
 
 | Stack | Threshold configuration |
 | :--- | :--- |

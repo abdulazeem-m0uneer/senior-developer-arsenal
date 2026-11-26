@@ -67,7 +67,7 @@ process.on('SIGINT', () => handleShutdown('SIGINT'));
 Verify the codebase using npm/pnpm commands:
 ```bash
 # 1. Type check without emitting files
-npx tsc --noEmit
+npx --no-install tsc --noEmit
 
 # 2. Run linter
 npm run lint

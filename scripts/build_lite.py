@@ -27,11 +27,31 @@ EXCLUDED_SKILLS = {
     "agent-memory", "autonomous-run", "ci-wait", "lessons-learned", "multi-session-delivery",
     "quality-gate", "repo-scan", "shared-infra-changes", "ship", "usage-stats",
 }
-# Subagent frontmatter keys the directory accepts from any organization.
-AGENT_KEYS = ("name", "description", "model", "tools", "disallowedTools")
+# Subagent frontmatter keys the directory accepted from an unverified organization (it refused omitClaudeMd).
+AGENT_KEYS = ("name", "description", "model", "effort", "tools", "disallowedTools")
 TEXT_SUFFIXES = {".md"}
 ICON = ROOT / "assets" / "icon.png"  # square 1024 px PNG; the directory takes it as the listing icon
 ICON_PATH = ".claude-plugin/icon.png"
+
+# The directory warns on download-and-run text ("Contains a download-and-run command") and says to reword it.
+# npx --no-install runs only a locally installed tool; examples of remote code are described, not written.
+REWRITES = (
+    (re.compile(r"`curl -fsSL https://x/i\.sh \\\| sh`"), "a remote script piped into a shell"),
+    (re.compile(r"`iex \(iwr \.\.\.\)`"), "a PowerShell download-and-execute"),
+    (re.compile(r"`uvx tool`"), "a uv tool run with no version"),
+    (re.compile(r"`npx -y some-server`"), "a package runner with no version"),
+    (re.compile(r"`pkg@latest`"), "a `latest` tag"),
+    (re.compile(r"\bnpx(?: -y)? (?!--no-install)"), "npx --no-install "),
+    (re.compile(r"\bnpm init playwright@latest"), "npm i -D @playwright/test"),
+    (re.compile(r"\b([a-z][\w-]*)@latest\b"), r"\1"),
+)
+
+
+def reword(text):
+    for pattern, replacement in REWRITES:
+        text = pattern.sub(replacement, text)
+    return text
+
 
 SCRIPT_NOTE = (
     "> **Lite edition:** steps that run a bundled script (a `scripts/` or `templates/` path) need the full "
@@ -125,6 +145,7 @@ def generate():
         "keywords": ["senior-engineering", "code-review", "testing", "security", "devops", "skills"],
         "icon": f"./{ICON_PATH}",
     }, indent=2) + "\n"
+    out = {rel: reword(content) if rel.endswith(".md") else content for rel, content in out.items()}
     out["README.md"] = readme(skills)
     out["LICENSE"] = (ROOT / "LICENSE").read_text(encoding="utf-8")
     out[ICON_PATH] = ICON.read_bytes()

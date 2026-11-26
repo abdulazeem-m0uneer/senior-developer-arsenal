@@ -90,7 +90,7 @@ An agent reads a script's stdout and stderr to decide its next step, in a shell 
 | `--dry-run` on anything stateful or destructive; `--confirm` or `--force` to execute | Previews before changes |
 | Distinct exit codes per failure class (not found, bad arguments, auth, upstream), documented in `--help` | The agent branches on the code without parsing prose |
 | Bounded output: summary by default, `--limit` and `--offset` for more, or `--output <file|->` when large | Harness truncation at 10–30k characters loses the decisive line |
-| Pin versions in one-off commands (`npx tool@9.0.0`); state runtime prerequisites in SKILL.md | Same behaviour next month, no silent environment assumption |
+| Pin versions in one-off commands (`npx --no-install tool@9.0.0`); state runtime prerequisites in SKILL.md | Same behaviour next month, no silent environment assumption |
 | Move a command into a script once it is hard to get right first time | A tested script beats a long inline command |
 
 The arsenal adds: standard library only, a test under `tests/`, and the SKILL.md path stated relative to the directory containing the skill.

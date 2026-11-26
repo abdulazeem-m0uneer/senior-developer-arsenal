@@ -29,7 +29,7 @@ Consult: [Legal Boundaries](./references/legal-boundaries.md) when the target is
 1. Record the target (name, version, build hash), how the user is authorized to examine it, and the license terms that apply. Without an authorization line the work stops here.
 2. Pin the feature to one user action and its observable result ("press ⌘K → palette lists recent pages"). One feature per run; a second feature is a second run.
 3. Define done: an explanation, or a rebuild in the user's stack, or both. Record the stack and where the rebuild lives.
-4. Run `rea update` (or `npx rea-agents@latest setup`) so findings come from the current analyzers. Done when the authorization line, the pinned action, and the definition of done are written at the top of the evidence log.
+4. Run `rea update` (or `npx --no-install rea-agents setup`) so findings come from the current analyzers. Done when the authorization line, the pinned action, and the definition of done are written at the top of the evidence log.
 
 ### Step 2: Observe Before Reading
 1. Exercise the feature from the outside first: screenshots, a HAR capture, log lines, a file-system diff, a SQLite snapshot before and after. Outside observation is the oracle the rebuild is tested against and is the only evidence that never lies about intent.
@@ -66,7 +66,7 @@ Consult: [Verification Checklist](./references/verification-checklist.md) before
 
 ```bash
 rea --help && rea update                                               # analyzers current
-npx -y rea-agents@latest analyze-javascript-application /abs/app --json  # Electron / web bundle surface map
+npx --no-install rea-agents analyze-javascript-application /abs/app --json  # Electron / web bundle surface map
 npm test -- reverse-engineer                                           # or: dotnet test --filter Category=Oracle, pytest -m oracle
 ```
 

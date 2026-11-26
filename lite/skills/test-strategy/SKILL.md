@@ -69,10 +69,10 @@ Consult: [Test Audit](./references/test-audit.md)
 ## 3. Verification Protocol
 
 1. Run the full suite with coverage and confirm it is green:
-   - Vitest / Jest: `npx vitest run --coverage` or `npx jest --ci --coverage`
+   - Vitest / Jest: `npx --no-install vitest run --coverage` or `npx --no-install jest --ci --coverage`
    - .NET: `dotnet test --collect:"XPlat Code Coverage"`
    - Python: `pytest --cov --cov-branch --cov-report=term-missing`
-   - Playwright: `npx playwright test --trace on-first-retry`
+   - Playwright: `npx --no-install playwright test --trace on-first-retry`
 2. Prove each new test can fail: break the code under test (or revert the fix) and confirm the test goes red.
 3. Run new tests repeatedly and in shuffled order to confirm determinism.
 4. Report in a compact table:

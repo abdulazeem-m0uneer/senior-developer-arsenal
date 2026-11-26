@@ -63,9 +63,9 @@ Consult: [Documentation Review Checklist](./references/review-checklist.md)
 ## 3. Verification Protocol
 
 ```bash
-npx markdownlint-cli2 "**/*.md" "#node_modules"              # structure and style
+npx --no-install markdownlint-cli2 "**/*.md" "#node_modules"              # structure and style
 lychee --no-progress "**/*.md"                               # dead links, internal and external
-npx @redocly/cli lint openapi.yaml                           # the spec is valid OpenAPI
+npx --no-install @redocly/cli lint openapi.yaml                           # the spec is valid OpenAPI
 <generate-spec command> && git diff --exit-code openapi.yaml # committed spec equals generated spec
 python -m doctest -v docs/usage.md                           # Python examples run (Node.js and .NET: compile the samples in CI)
 grep -rnE '\b(TODO|TBD|FIXME|lorem)\b' docs README.md        # must print nothing

@@ -32,7 +32,7 @@ Activate this skill when:
 
 ### Step 2: Automated Pass
 Consult: [WCAG 2.2 Test Matrix](./references/wcag22-test-matrix.md)
-1. Run axe-core against each page and state, with tags `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`, `wcag22aa` (`npx @axe-core/cli <url> --tags wcag22aa`, or `@axe-core/playwright` for states behind interaction).
+1. Run axe-core against each page and state, with tags `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`, `wcag22aa` (`npx --no-install @axe-core/cli <url> --tags wcag22aa`, or `@axe-core/playwright` for states behind interaction).
 2. Automated tools detect only a minority of WCAG failures. A clean axe run proves nothing about keyboard flow, announcements, reading order, alt-text quality, or captions. Triage each hit (true failure, false positive, needs review) and dedupe by cause.
 
 ### Step 3: Keyboard-Only Pass
@@ -70,7 +70,7 @@ Consult: [Audit Report Template](./references/audit-report-template.md)
 | Evidence | Each Fail has reproducible steps and a verbatim observation; no finding rests on axe output alone for a human-check criterion |
 | Pairings | Report names screen reader, browser, and OS versions actually used |
 | Citations | Every cited SC number, name, and level matches WCAG 2.2; no 4.1.1; AAA criteria (2.4.12, 2.4.13, 3.3.9) not presented as AA |
-| Guard | `npx playwright test a11y` passes locally and in CI; a deliberately broken label makes it fail |
+| Guard | `npx --no-install playwright test a11y` passes locally and in CI; a deliberately broken label makes it fail |
 
 ---
 

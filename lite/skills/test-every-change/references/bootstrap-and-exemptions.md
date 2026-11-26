@@ -23,13 +23,13 @@ How to proceed when the repository has no test framework, and the narrow conditi
 | Node.js / TypeScript | `npm i -D vitest` | `"test": "vitest run"` in the manifest scripts | `npm test` |
 | Node.js without dependencies | none | built-in runner, files named `*.test.js` | `node --test` |
 | React components | `npm i -D vitest jsdom @testing-library/react` | `test.environment: 'jsdom'` in the Vitest config | `npm test` |
-| Angular | already scaffolded by the CLI | default test target | `npx ng test --watch=false` |
+| Angular | already scaffolded by the CLI | default test target | `npx --no-install ng test --watch=false` |
 | .NET | `dotnet new xunit -o tests/App.Tests` then `dotnet add tests/App.Tests reference src/App` | add the project to the solution | `dotnet test` |
 | Python | `pip install pytest` (add to the dev dependencies) | `[tool.pytest.ini_options] testpaths = ["tests"]` | `pytest` |
 | Python without dependencies | none | `unittest` test cases under `tests/` | `python -m unittest discover` |
 | SQL / migrations | disposable database (container or scratch schema) | script: apply, assert, roll back | project migration command |
 | Shell scripts | none | script exiting non-zero on failure | `sh tests/smoke.sh` |
-| Browser journeys | `npm init playwright@latest` | default config | `npx playwright test` |
+| Browser journeys | `npm i -D @playwright/test` | default config | `npx --no-install playwright test` |
 
 Bootstrap rules:
 - [ ] Add the smallest setup that runs with one command; no coverage gates, plugins, or reporters yet.

@@ -26,9 +26,9 @@ Prefer the scripts the project defines; fall back to these.
 
 | Gate | Node.js / TypeScript | .NET | Python |
 | :--- | :--- | :--- | :--- |
-| Tests | `npm test` or `npx vitest run` | `dotnet test` | `pytest` |
+| Tests | `npm test` or `npx --no-install vitest run` | `dotnet test` | `pytest` |
 | Lint | `npm run lint` | `dotnet format --verify-no-changes` | `ruff check .` |
-| Type-check | `npx tsc --noEmit` | part of the build | `mypy .` |
+| Type-check | `npx --no-install tsc --noEmit` | part of the build | `mypy .` |
 | Build | `npm run build` | `dotnet build --configuration Release` | `python -m build` or import smoke test |
 | Dependency advisories | `npm audit --omit=dev` | `dotnet list package --vulnerable` | `pip-audit` |
 
