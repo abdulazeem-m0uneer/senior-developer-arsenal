@@ -1,0 +1,51 @@
+---
+name: fullstack-integration-master
+description: 'Keep client and API in sync: shared types, optimistic updates with rollback, real-time streams. Use when a change spans frontend and backend.'
+---
+<!-- routing (read by the skill router, not loaded into the skill listing): Bridge a React or Angular frontend with a .NET or Node.js backend. Use when synchronizing client types with API contracts, building optimistic mutations with rollback, or wiring real-time streams. Triggers: "fullstack integration", "type contracts", "optimistic mutation", "SSE", "WebSockets". Not for backend API design alone (use api-design), a whole feature slice (use e2e-feature) or UI tokens (use ui-ux-architect). -->
+
+# Fullstack Integration Skill
+
+This skill guides the agent through building coherent, end-to-end fullstack features bridging frontend clients and backend APIs.
+
+---
+
+## 1. When to Use This Skill
+
+Activate this skill when:
+- Delivering complete features that span database schema, backend API endpoints, and frontend views.
+- Synchronizing type contracts between C#/.NET or Node.js backends and TypeScript frontends.
+- Implementing optimistic UI mutations with rollback resilience (TanStack Query / Angular SignalStore).
+- Configuring Server-Sent Events (SSE) or WebSockets for real-time synchronization.
+- Debugging end-to-end data flow, CORS, cookie authentication, or serialization mismatches.
+
+*Boundary*: For standalone backend endpoint architecture, use `api-design`. For standalone UI design systems and tokens, use `ui-ux-architect`.
+
+---
+
+## 2. Step-by-Step Execution Runbook
+
+### Step 1: Contract-First Design
+Consult: [End-to-End Type Safety Guide](./references/e2e-type-safety.md)
+1. Define the shared DTO contract and input validation schema.
+2. Ensure both backend validator (FluentValidation / Zod / Pydantic) and frontend client types match identically.
+
+### Step 2: Resilient Mutation & UI Sync
+Consult: [Real-Time & Optimistic UI Guide](./references/realtime-optimistic-ui.md)
+1. Write the backend mutation handler with idempotency and optimistic concurrency.
+2. Implement the frontend mutation with instant cache update, error rollback snapshot, and query invalidation.
+
+---
+
+## 3. Verification Protocol
+
+1. Run backend integration tests asserting database persistence.
+2. Run frontend component tests asserting loading indicator, successful optimistic mutation, and graceful rollback on network error.
+3. Verify zero serialization or casing discrepancies (camelCase vs PascalCase).
+
+---
+
+## 4. ⚡ Token-Saving Execution Rule
+
+- **Contract + Mutation Only**: Output only the DTO interface, the endpoint handler, and the frontend mutation hook. Do not output surrounding scaffolding.
+- **Zero Narrative**: Skip conversational transitions between backend and frontend code blocks.

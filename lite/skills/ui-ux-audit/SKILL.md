@@ -1,0 +1,71 @@
+---
+name: ui-ux-audit
+description: 'Audit screens against anti-slop gates, tokens, states, contrast and target sizes. Use to audit a UI.'
+---
+
+> **Lite edition:** steps that run a bundled script (a `scripts/` or `templates/` path) need the full arsenal (https://github.com/abdulazeem-m0uneer/senior-developer-arsenal). Here, do that step by hand or skip it and say so.
+
+<!-- routing (read by the skill router, not loaded into the skill listing): UI/UX audit of screens and components against anti-slop gates, DTCG tokens, state completeness and contrast. Use to audit UI, check anti-slop gates, or verify contrast and touch targets. Triggers: "ui audit", "ux audit", "anti-slop audit", "audit contrast", /ui-ux-audit. Not for a full WCAG audit of a running page (use accessibility-audit) or re-render profiling (use frontend-audit). -->
+
+# UI/UX & Design Audit Workflow Skill
+
+Follow this procedure when auditing or reviewing user interfaces, components, or design tokens against objective production criteria.
+
+---
+
+## 1. When to Use This Skill
+
+Activate this skill when:
+- Auditing web or native UI components for accessibility (WCAG 2.2 AA contrast and touch target sizing).
+- Scanning for AI-generated design slop (emojis in UI, em-dashes in copy, identical stat cards, harsh pure black/white).
+- Checking component state completeness (Default, Hover, Active, Focus-Visible, Disabled, Loading).
+- The user runs the `/ui-ux-audit` slash command.
+
+*Boundary*: For React/Angular re-render churn and memoization profiling, use `frontend-audit`. For code reviews, use `code-review`.
+
+---
+
+## 2. Step-by-Step Execution Runbook
+
+### Step 1: Automated Verification Scan
+Run the automated verification script bundled with this skill (path is relative to this skill's directory):
+```bash
+python scripts/verify_ui_ux.py <target-path>
+```
+Flags Unicode emojis, em-dashes, marketing fluff, and mismatched intent tokens.
+
+### Step 2: Execute the 10 Anti-Slop Gates
+Consult the anti-slop gates reference (`references/anti-slop-gates.md`) of the `ui-ux-architect` skill.
+1. **Zero-Emoji Gate**: Zero emoji glyphs in UI; Lucide SVG with `currentColor` only.
+2. **Intent Token Gate**: Red/danger for destructive actions; blue Delete button fails.
+3. **Contrast Gate**: WCAG 2.2 AA ($\ge 4.5:1$ text, $\ge 3:1$ UI boundaries).
+4. **State Completeness Gate**: All 6 states defined; `:focus-visible` ring preserved.
+5. **Target Size Gate**: Targets $\ge 24\times 24$px desktop, $\ge 44\times 44$px touch, $\ge 48\times 48$px POS.
+6. **Responsive Gate**: Fluid down to 280px without horizontal scrollbar.
+7. **Keyboard & Focus Gate**: Full Tab navigation, Escape to close, focus trapped in modals.
+8. **Anti-AI Copy Gate**: No em-dashes (`—`), no marketing filler ("elevate", "seamless").
+9. **Visual Hierarchy Gate**: Hero metric $\ge 2.5\times$ body size; asymmetric layout.
+10. **Theme Parity Gate**: CSS variables only; zero hardcoded hex colors in components.
+
+### Step 3: Format the Audit Matrix
+Consult: [Audit Matrix Template](./references/audit-matrix-template.md)
+Produce a dense Markdown table reporting status per gate with actionable, surgical fixes.
+
+### Step 4: Render Critique (when screenshots are obtainable)
+Consult: [Screenshot Critique](./references/screenshot-critique.md)
+Capture 1440 / 768 / 390, fold and full page. Run the fourteen passes on the pictures only, apply the caps, score with the Awwwards weighting, and write the critique record. Report the top three problems in fix order (idea, hierarchy, composition, type, imagery, colour, detail, motion). Three rounds maximum; a gate-clean page can still score 6 and say so.
+For app screens, substitute the tells list in `ui-ux-architect/references/app-screen-rules.md` §8 for Gate 9.
+
+---
+
+## 3. Verification Protocol
+
+1. Run this skill's `scripts/verify_ui_ux.py` against the project root to ensure automated gates pass.
+2. Verify all failing gates in the matrix have corresponding 2–5 line surgical unified diffs.
+
+---
+
+## 4. ⚡ Token-Saving Execution Rule
+
+- Deliver the structured matrix and surgical diffs only.
+- Never reprint entire page source code or generic styles.

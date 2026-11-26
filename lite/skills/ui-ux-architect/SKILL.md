@@ -1,0 +1,72 @@
+---
+name: ui-ux-architect
+description: 'Design systems: DTCG tokens, state-complete components, WCAG 2.2 AA. Use to design components or tokens.'
+---
+<!-- routing (read by the skill router, not loaded into the skill listing): UI/UX and design system architecture: DTCG tokens, state-complete components, WCAG 2.2 AA. Use to design UI components, create design tokens or structure a design system. Triggers: "design component", "create tokens", "DTCG tokens", "design system". Not for auditing existing UI (use ui-ux-audit) or re-render profiling (use frontend-audit). -->
+
+# UI/UX & Design System Architecture Skill
+
+This skill equips the agent to act as a **Senior Design Architect**, building and auditing production-grade design systems, DTCG tokens, accessible components, and anti-slop interfaces.
+
+---
+
+## 1. When to Use This Skill
+
+Activate this skill when:
+- Designing or architecting component systems (React, Angular, HTML/Tailwind, or Native UI).
+- Formulating, extending, or validating **DTCG design tokens** (`$type`, `$value`).
+- Implementing state-complete UI controls (Default, Hover, Active, Focus-Visible, Disabled, Loading).
+- Auditing screens against **WCAG 2.2 AA/AAA** accessibility (contrast, target sizing, keyboard navigation).
+- Eliminating generic AI design slop (emojis in UI, em-dashes in copy, identical stat cards, harsh pure black/white).
+
+*Boundary*: For auditing an existing screen against the gates, use `ui-ux-audit`. For re-render and bundle profiling, use `frontend-audit`. Where an existing interface is frozen and must be reproduced unchanged, use `legacy-parity`.
+
+---
+
+## 2. Step-by-Step Execution Runbook
+
+### Step 1: Brief Inference (Decide Before Generating)
+Consult: [Visual Direction Brief](./references/visual-direction-brief.md), [Visual Registers](./references/visual-registers.md)
+Before writing markup or CSS, write and commit the brief:
+1. **Surface**: page (read once: landing, marketing, portfolio) vs app screen (worked in daily: dashboard, admin, settings). App screens follow [App Screen Rules](./references/app-screen-rules.md) and skip Gate 9's hero-metric rule.
+2. **Subject inventory** (8-12 facts only this product has) and the competitor test.
+3. **Register** from the selection table (one per product, never blended) with its token values.
+4. **Palette** (4-6 named hex with roles) and **type** ([Typography System](./references/typography-system.md): one family default, two max).
+5. **Default-check**: if a similar brief for another client would yield the same plan, revise that axis and say why.
+
+### Step 2: Token Scaffolding
+Consult: [DTCG Design Tokens Architecture](./references/dtcg-tokens.md)
+- Ensure 3 tiers: Primitives $\rightarrow$ Semantic Aliases $\rightarrow$ Component Tokens.
+- Map actions strictly by intent (`action.destructive` for danger; neutral outline for secondary).
+
+### Step 3: State-Complete Component Engineering
+Ensure all 6 interactive states are implemented:
+- Default, Hover ($\Delta L \approx 4\text{--}8\%$), Active (scale $0.98$), Focus-Visible (2px outline + 2px offset), Disabled (`aria-disabled="true"`), and Loading (preserved dimensions + spinner).
+- Durations and curves from [Motion Tokens](./references/motion-tokens.md); every hidden state inside `prefers-reduced-motion: no-preference`.
+
+---
+
+## 3. Verification Protocol
+
+Consult: [The 10 Anti-Slop Verification Gates](./references/anti-slop-gates.md)
+
+Before marking any UI task complete, verify against the 10 gates:
+1. **Zero-Emoji Gate**: No emoji in UI or code; inline SVGs with `currentColor` only.
+2. **Intent Token Gate**: Red/danger for destructive actions; blue Delete button fails build.
+3. **Contrast Gate**: WCAG 2.2 AA ($\ge 4.5:1$ normal text, $\ge 3:1$ large/UI boundaries).
+4. **State Completeness Gate**: All 6 states defined; `:focus-visible` ring preserved.
+5. **Target Size Gate**: Targets $\ge 24\times 24$px desktop, $\ge 44\times 44$px touch, $\ge 48\times 48$px POS.
+6. **Responsive Gate**: Fluid down to 280px without horizontal scrollbar.
+7. **Keyboard & Focus Gate**: Full Tab navigation, Escape to close, focus trapped in modals.
+8. **Anti-AI Copy Gate**: No em-dashes (`—`), no marketing filler ("elevate", "seamless").
+9. **Visual Hierarchy Gate**: Hero metric $\ge 2.5\times$ body size; asymmetric layout.
+10. **Theme Parity Gate**: CSS variables only; zero hardcoded hex colors in components.
+11. **Tells Registry**: scan against [Generated-Page Tells](./references/generated-page-tells.md) (eyebrows, index numbering, mono labels, cream+terracotta, violet gradients, glass content panels).
+12. **Forms & WCAG 2.2**: [Forms and Feedback Contract](./references/forms-feedback-contract.md) for any screen with inputs, toasts, chips, or drag.
+
+---
+
+## 4. ⚡ Token-Saving Execution Rule
+
+- **Targeted Output**: Output only the modified component snippet, template, or CSS/Tailwind classes.
+- **Verification Matrix**: When auditing, output a compact Markdown table (`Gate`, `Component`, `Status`, `Surgical Fix`). Never dump full unmodified page source.

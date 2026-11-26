@@ -1,0 +1,57 @@
+---
+name: database-migration
+description: 'Safe, non-blocking migrations on live tables (expand and contract). Use to create a migration, alter a table, or add a column or index.'
+---
+<!-- routing (read by the skill router, not loaded into the skill listing): Safe, non-blocking database migrations for PostgreSQL, SQLite and MSSQL. Use to create a migration, alter a table, or add a column or index on a live table. Triggers: "database migration", "schema migration", "alter table", "add column", /database-migration. Not for query plan profiling or indexing strategy (use database-architect). -->
+
+# Safe Database Migration Procedure
+
+Follow this procedure when creating, verifying, or rolling back schema migrations in production databases.
+
+---
+
+## 1. When to Use This Skill
+
+Activate this skill when:
+- Authoring EF Core migrations, Flyway/Liquibase scripts, or raw SQL DDL files.
+- Adding non-blocking indexes (`CREATE INDEX CONCURRENTLY`), columns, or constraints on high-throughput tables.
+- Preparing zero-downtime database deployment scripts with rollback companions.
+- The user runs the `/database-migration` slash command.
+
+*Boundary*: For query execution plan analysis (`EXPLAIN ANALYZE`) or deep indexing architecture, use `database-architect`. For checking these rules automatically on every change, use `quality-gate`.
+
+---
+
+## 2. Step-by-Step Execution Runbook
+
+### Step 1: Pre-Migration Lock & Safety Assessment
+Consult: [Migration Safety Reference](./references/migration-safety.md)
+1. Identify target table size and read/write throughput.
+2. Check lock level required: Avoid table-rewriting operations during peak load.
+3. Enforce statement lock timeout: `SET lock_timeout = '3s';`.
+
+### Step 2: Non-Blocking DDL Authoring
+1. Indexes: Use `CREATE INDEX CONCURRENTLY` in PostgreSQL (outside transaction block).
+2. Foreign Keys: Add with `NOT VALID`, then validate in a second step via `VALIDATE CONSTRAINT`.
+3. Column Renames: Use expand/contract pattern (add new column $\to$ dual-write $\to$ backfill $\to$ drop old) rather than renaming active columns.
+4. Ordering: take the migration number or timestamp at commit time; when another branch merged first, renumber rather than edit a migration that already ran anywhere.
+5. Poolers: behind a transaction-mode connection pooler, keep session state (`SET`, advisory locks, prepared statements) out of the application and run migrations on a direct connection.
+
+### Step 3: Author Companion Rollback Script
+Ensure every migration script has an accompanying idempotent rollback file (`U{timestamp}__rollback.sql` or EF Core `Down()` method).
+
+---
+
+## 3. Verification Protocol
+
+1. Run migration against a local/staging database instance.
+2. Verify table locks were not held: assert duration $< 500$ms for metadata alterations.
+3. Execute the rollback script and verify schema returns cleanly to initial state without orphaned constraints.
+4. Verify the ORM model and the migrated schema agree (no drift) and that the previous application version still runs against the new schema.
+
+---
+
+## 4. ⚡ Token-Saving Execution Rule
+
+- Output only the specific SQL DDL script or EF Core migration code snippet.
+- Never output full database schemas or unchanged model snapshots.
