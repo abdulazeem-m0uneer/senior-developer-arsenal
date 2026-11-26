@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 - Plugin directory listing fields in `.claude-plugin/plugin.json`: `homepage`, `repository`, `keywords`, `icon`, `documentationUrl`, `supportUrl`, `privacyPolicyUrl` and `termsOfServiceUrl` (#67).
 - `PRIVACY.md`: what the plugin stores locally and what leaves the machine (#67).
 - README: a "Start Here" section with the five skills to learn first (#67).
+- README: an "Available for Work" section with contact links (#67).
 
 ### Fixed
 

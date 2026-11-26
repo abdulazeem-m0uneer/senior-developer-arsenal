@@ -684,6 +684,16 @@ Contributors edit `.agents/` only, then run `python3 scripts/build.py` and commi
 
 ---
 
+## 💼 Available for Work
+
+I build and ship AI-powered software end to end, in whatever language the project runs on: Node.js/TypeScript, C#/.NET, Python, React/Angular, React Native, SQL, and native code (C++/N-API).
+
+This arsenal is how I work: every change tested, every claim backed by evidence, measured results instead of promises. I take on the hard projects: legacy rebuilds, payment systems, security-critical apps, multi-agent delivery, and AI integrations that have to work in production.
+
+📩 [eng.abdul.azeem@gmail.com](mailto:eng.abdul.azeem@gmail.com) · [LinkedIn](https://www.linkedin.com/in/abdelazeemmohammed/)
+
+---
+
 ## 📄 License & Attribution
 
 Crafted for high-performance software engineering teams. Released under the [MIT License](LICENSE): free to use, customize, and extend across all personal and enterprise repositories.
