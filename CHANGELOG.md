@@ -4,6 +4,12 @@ All notable changes to Senior Developer Arsenal are recorded in this file.
 
 The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/), and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version is the one in the `VERSION` file, and each release is dated by the day its pull request merged (UTC).
 
+## [1.37.1] - 2026-11-27
+
+### Fixed
+
+- Lite names no credential file anywhere (`.npmrc`, `.env`, `id_rsa`, `*.pem`, `*.key`, the agents' home-directory config files). Each is described instead, because the directory's scanner pairs any named credential file with HTTP use in any other skill. A test covers every lite file (#76).
+
 ## [1.37.0] - 2026-11-27
 
 ### Added
@@ -514,6 +520,7 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 - Non-destructive installers for every supported agent.
 - CI with lint, test and smoke workflows.
 
+[1.37.1]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/76
 [1.37.0]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/75
 [1.36.0]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/68
 [1.35.0]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/67
