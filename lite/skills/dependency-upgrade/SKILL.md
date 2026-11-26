@@ -65,7 +65,7 @@ git diff --stat HEAD                                         # only the intended
 npm ci && npm audit --omit=dev && npm test                   # Node.js (pnpm: install --frozen-lockfile)
 dotnet restore --locked-mode && dotnet list package --vulnerable --include-transitive && dotnet test
 uv sync --locked && uv run pip-audit && uv run pytest        # Python (pip: --require-hashes -r requirements.txt)
-<start command> & sleep 10 && curl -fsS http://localhost:<port>/healthz   # real start answers
+<start command>   # then confirm the health endpoint answers 200 within 10 seconds
 ```
 
 | Area | Finding | Risk | Severity | Fix |

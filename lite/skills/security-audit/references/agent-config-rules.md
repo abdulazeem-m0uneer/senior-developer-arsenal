@@ -5,11 +5,11 @@ Read in Step 4b of the security-audit skill. The script is `scripts/agent_config
 | Severity | Rule | Example that fires | Fix |
 | :--- | :--- | :--- | :--- |
 | high | `remote-exec` | a remote script piped into a shell in a hook or MCP command; a PowerShell download-and-execute | Vendor the script into the repository, pin it by hash, and run the local copy. |
-| high | `secret` | `"env": {"YOUR_TOKEN_NAME": "YOUR_TOKEN"}` in `.mcp.json` | Reference an environment variable (`"${YOUR_TOKEN_NAME}"`), rotate the leaked value, and purge it from git history. |
+| high | `secret` | `"env": {"YOUR_TOKEN_NAME": "YOUR_TOKEN"}` in `.mcp.json` | Reference an environment variable instead of the value, rotate the leaked value, and purge it from git history. |
 | high | `bypass-default` | `"defaultMode": "bypassPermissions"`; Codex `sandbox_mode = "danger-full-access"` | Keep the default mode; grant narrow allow rules instead. |
 | medium | `broad-allow` | `Bash`, `Bash(*)`, `*`, `Bash(curl:*)`, `Bash(sudo:*)`, `Bash(python3:*)` | Allow the exact commands the project runs (`Bash(npm test:*)`). |
 | medium | `unpinned-mcp` | a package runner with no version, a `latest` tag, a uv tool run with no version | Pin the version (`some-server@1.4.2`, `tool==1.4.2`), so a hijacked release cannot run unasked. |
-| medium | `insecure-mcp` | `"url": "http://mcp.example.com/sse"` | Use `https://`. Plain HTTP is accepted only for localhost. |
+| medium | `insecure-mcp` | a remote server `url` that starts with `http://` | Use `https://`. Plain HTTP is accepted only for localhost. |
 | medium | `temp-path-hook` | a hook running `bash /tmp/check.sh` or writing to `$TMPDIR` | Ship the script with the project or plugin; any local user can replace a file in a world-writable path. |
 | medium | `no-approval` | Codex `approval_policy = "never"` | Use `on-request` or `untrusted` outside a sandboxed CI runner. |
 | low | `all-project-mcp` | `"enableAllProjectMcpServers": true` | Approve project servers one by one (`enabledMcpjsonServers`). |

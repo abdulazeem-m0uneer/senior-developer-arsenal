@@ -3,7 +3,7 @@ name: payments-integrity
 description: 'Code that moves money: ledger, idempotency, signed webhooks, refunds, reconciliation. Use for any payment, refund, payout or gateway change.'
 ---
 
-> **Lite edition:** steps that run a bundled script (a `scripts/` or `templates/` path) need the full arsenal (https://github.com/abdulazeem-m0uneer/senior-developer-arsenal). Here, do that step by hand or skip it and say so.
+> **Lite edition:** steps that run a bundled script (a `scripts/` or `templates/` path) need the full Senior Developer Arsenal. Here, do that step by hand or skip it and say so.
 
 <!-- routing (read by the skill router, not loaded into the skill listing): Code that moves money (charges, refunds, payouts, wallet balances, gateway webhooks): ledger, idempotency, signed webhooks, reconciliation. Use to add or review a payment flow, refund or webhook handler. Triggers: "payment flow", "refund", "gateway webhook", "double charge", /payments-integrity. Not for wrapping a provider API (use provider-sdk) or vulnerability hunting (use security-audit). -->
 
@@ -70,8 +70,8 @@ Consult: [Money Traps](./references/money-traps.md)
 
 ```bash
 npm test -- payments ledger webhooks                   # or: dotnet test --filter Category=Money, pytest -m money
-psql "$DATABASE_URL" -c "SELECT transaction_id, currency FROM ledger_entries GROUP BY 1, 2 HAVING SUM(amount_minor) <> 0;"   # 0 rows
-psql "$DATABASE_URL" -c "SELECT p.id FROM payments p JOIN refunds r ON r.payment_id = p.id AND r.status <> 'failed' GROUP BY p.id, p.captured_minor HAVING SUM(r.amount_minor) > p.captured_minor;"   # 0 rows
+psql "YOUR_DATABASE_URL" -c "SELECT transaction_id, currency FROM ledger_entries GROUP BY 1, 2 HAVING SUM(amount_minor) <> 0;"   # 0 rows
+psql "YOUR_DATABASE_URL" -c "SELECT p.id FROM payments p JOIN refunds r ON r.payment_id = p.id AND r.status <> 'failed' GROUP BY p.id, p.captured_minor HAVING SUM(r.amount_minor) > p.captured_minor;"   # 0 rows
 rg -n "float|double|parseFloat|toFixed|Math\.round" src/payments src/ledger   # each hit is a candidate rounding bug
 python3 .agents/skills/payments-integrity/scripts/confirm_status.py --fetch-cmd 'status-cmd {ref}' --reference ORDER_REF --amount-minor 5000 --currency EUR --success paid --failure failed --deadline 10m   # exit 0 paid, 1 failed, 3 pending-reconcile, 4 mismatch, 2 usage, 5 internal error, 143 SIGTERM: act only on 0 or 1
 ```

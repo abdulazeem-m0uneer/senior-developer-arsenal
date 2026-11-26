@@ -11,7 +11,7 @@ Bounded, read-only queries for common backends. Replace `REQ` with the request i
 - [ ] **Line limit**: explicit on every query; 20 to 100 lines. A truncated answer is a prompt to narrow, not to raise the limit.
 - [ ] **Filter on the server**: label and field filters in the query; `grep` after the fact means the limit applied to the wrong lines.
 - [ ] **One question per command**: "what did this request log", "how many errors per service", "is the pool saturated".
-- [ ] **Read-only**: no `delete`, `restart`, `scale`, `exec` into a data store, or port-forward left open.
+- [ ] **Read-only**: no `delete`, `restart`, `scale`, shell session in a data store, or port-forward left open.
 - [ ] **Trim the output**: project the fields needed (time, service, level, message, error type); never paste raw JSON.
 
 ---

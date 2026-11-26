@@ -3,7 +3,7 @@ name: test-every-change
 description: 'Tests for every code change: a failing regression test before a fix, cases for a feature, characterization before a refactor. Use for any code change.'
 ---
 
-> **Lite edition:** steps that run a bundled script (a `scripts/` or `templates/` path) need the full arsenal (https://github.com/abdulazeem-m0uneer/senior-developer-arsenal). Here, do that step by hand or skip it and say so.
+> **Lite edition:** steps that run a bundled script (a `scripts/` or `templates/` path) need the full Senior Developer Arsenal. Here, do that step by hand or skip it and say so.
 
 <!-- routing (read by the skill router, not loaded into the skill listing): Tests for every code change: regression test before a bug fix, happy, error and edge cases for a feature, characterization tests before a refactor. Use when implementing a feature, fixing a bug, refactoring, or changing any code or config. Triggers: "add tests for this change", "regression test", /test-every-change. Not for suite design or flaky tests (use test-strategy) or manual test plans (use qa-engineer). -->
 

@@ -3,7 +3,7 @@ name: code-review
 description: 'Senior review of a diff or pull request: correctness, security, performance, tests. Use for any code review; for an exhaustive audit use deep-review.'
 ---
 
-> **Lite edition:** steps that run a bundled script (a `scripts/` or `templates/` path) need the full arsenal (https://github.com/abdulazeem-m0uneer/senior-developer-arsenal). Here, do that step by hand or skip it and say so.
+> **Lite edition:** steps that run a bundled script (a `scripts/` or `templates/` path) need the full Senior Developer Arsenal. Here, do that step by hand or skip it and say so.
 
 <!-- routing (read by the skill router, not loaded into the skill listing): Senior code review of a change. Use to review a pull request, inspect a git diff, or audit code changes. Triggers: "review code", "audit PR", "inspect diff", /code-review. Not for an exhaustive multi-pass audit (use deep-review), frontend re-render audits (use frontend-audit) or UI/UX visual audits (use ui-ux-audit). -->
 

@@ -3,7 +3,7 @@ name: security-audit
 description: 'Security audit of existing code: OWASP Top 10, injection, IDOR, secrets, SSRF. Use for a vulnerability hunt or pre-release hardening.'
 ---
 
-> **Lite edition:** steps that run a bundled script (a `scripts/` or `templates/` path) need the full arsenal (https://github.com/abdulazeem-m0uneer/senior-developer-arsenal). Here, do that step by hand or skip it and say so.
+> **Lite edition:** steps that run a bundled script (a `scripts/` or `templates/` path) need the full Senior Developer Arsenal. Here, do that step by hand or skip it and say so.
 
 <!-- routing (read by the skill router, not loaded into the skill listing): Application security audit of existing code: OWASP Top 10, injection, authn/authz (IDOR/BOLA), secrets, SSRF. Use for a security audit, vulnerability hunt or pre-release hardening pass. Triggers: "security audit", "find vulnerabilities", "OWASP", "check for IDOR", /security-audit. Not for design-time threats (use threat-model), personal data (use data-privacy) or general PR review (use code-review). -->
 

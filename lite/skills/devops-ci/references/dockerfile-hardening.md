@@ -50,7 +50,7 @@ Cache mounts for dependency stores: `/root/.npm` (npm), `/root/.nuget/packages` 
 - [ ] **No secrets in layers**: no `ARG`/`ENV` credentials (visible in `docker history --no-trunc`). Use `RUN --mount=type=secret,id=npmrc,target=/root/.npmrc npm ci` with `docker build --secret id=npmrc,src=$HOME/.npmrc .`.
 - [ ] **`.dockerignore` present**: excludes `.git`, `node_modules`, `bin/`, `obj/`, `.env*`, test output, local caches.
 - [ ] **Layer order**: lockfiles copied and dependencies installed before `COPY . .` so source edits do not invalidate the dependency layer.
-- [ ] **Exec-form `CMD` / `ENTRYPOINT`**: JSON array so the application is PID 1 and receives `SIGTERM`. Shell form wraps it in `/bin/sh -c`.
+- [ ] **Exec-form `CMD` / `ENTRYPOINT`**: JSON array so the application is PID 1 and receives `SIGTERM`. Shell form wraps it in a shell process.
 - [ ] **OS packages**: `apt-get update && apt-get install -y --no-install-recommends <pkgs> && rm -rf /var/lib/apt/lists/*` in a single `RUN`.
 - [ ] **`COPY` not `ADD`**: `ADD` auto-extracts archives and fetches URLs.
 - [ ] **Health check**: `HEALTHCHECK` for plain Docker/Compose; orchestrator probes for Kubernetes (which ignores `HEALTHCHECK`).
@@ -94,7 +94,7 @@ securityContext:
 | Container takes 10 s to stop | Shell-form `CMD` or `npm start` swallows `SIGTERM` | Exec-form `CMD`; handle `SIGTERM`; `--init` for zombie reaping |
 | Image is 1 GB+ | SDK or dev dependencies in final stage | Multi-stage; `npm prune --omit=dev`; publish output only |
 | Secret found by scanner in image | Passed via `ARG` or copied `.env` | Secret mount; rotate the leaked credential; fix `.dockerignore` |
-| Health check always failing | Probe tool (`curl`) missing in slim image, or app bound to a different port | Probe with the runtime itself; align port with `EXPOSE` |
+| Health check always failing | Probe tool (an HTTP client) missing in slim image, or app bound to a different port | Probe with the runtime itself; align port with `EXPOSE` |
 
 ---
 
