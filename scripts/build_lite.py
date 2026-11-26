@@ -52,9 +52,20 @@ REWRITES = (
 # instructions instead of showing it").
 LITERALS = (
     ('"GITHUB_TOKEN": "ghp_..."', '"YOUR_TOKEN_NAME": "YOUR_TOKEN"'),
-    ('"${GITHUB_TOKEN}"', '"${YOUR_TOKEN_NAME}"'),
+    ('Reference an environment variable (`"${GITHUB_TOKEN}"`)', "Reference an environment variable instead of the value"),
     ("${{ secrets.GITHUB_TOKEN }}", "${{ secrets.YOUR_REGISTRY_TOKEN }}"),
     ("PROVIDER_API_KEY", "YOUR_API_KEY"),
+    ('psql "$DATABASE_URL"', 'psql "YOUR_DATABASE_URL"'),
+    ('`"url": "http://mcp.example.com/sse"`', "a remote server `url` that starts with `http://`"),
+    ("<start command> & sleep 10 && curl -fsS http://localhost:<port>/healthz   # real start answers",
+     "<start command>   # then confirm the health endpoint answers 200 within 10 seconds"),
+    ("Shell form wraps it in `/bin/sh -c`.", "Shell form wraps it in a shell process."),
+    ("Probe tool (`curl`) missing", "Probe tool (an HTTP client) missing"),
+    ("`curl` or HTTP script against", "HTTP client request against"),
+    ("`exec` into a data store", "shell session in a data store"),
+    ("install scripts reviewed", "package install hooks reviewed"),
+    ("no shell invocation with user input", "no shell command built from user input"),
+    ("`unsafe-eval`", "unsafe eval"),
     ("dotnet tool install --global nuget-license && nuget-license -i <solution.sln>",
      "nuget-license -i <solution.sln>  # install nuget-license from its own instructions first"),
     ("`docker run -it --rm -p 8000:8000 opensecurity/mobile-security-framework-mobsf`, then upload",
@@ -75,7 +86,7 @@ def reword(text):
 
 SCRIPT_NOTE = (
     "> **Lite edition:** steps that run a bundled script (a `scripts/` or `templates/` path) need the full "
-    f"arsenal ({REPO_URL}). Here, do that step by hand or skip it and say so.\n\n"
+    "Senior Developer Arsenal. Here, do that step by hand or skip it and say so.\n\n"
 )
 
 

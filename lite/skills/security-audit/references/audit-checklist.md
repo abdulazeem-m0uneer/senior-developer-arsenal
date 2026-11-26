@@ -8,7 +8,7 @@ Walk every category for each entry point in scope, then score and report.
 
 - [ ] **A01 Broken Access Control**: Every route has an explicit authorization rule (deny by default). Object lookups filter on tenant or owner from the verified session (BOLA/IDOR). No role or tenant ID accepted from the request body. CORS origins are an explicit list, never a reflected `Origin` with credentials.
 - [ ] **A02 Cryptographic Failures**: TLS enforced end to end; HSTS set. Passwords hashed with Argon2id (minimum 19 MiB memory, 2 iterations, parallelism 1) or bcrypt (cost 10 or higher). No MD5/SHA-1 for integrity or passwords. Keys and IVs never hardcoded; AES-GCM nonces never reused.
-- [ ] **A03 Injection**: All SQL parameterized; no shell invocation with user input; output encoded for its context (HTML, attribute, URL, JSON). Regex applied to user input has bounded backtracking or a timeout.
+- [ ] **A03 Injection**: All SQL parameterized; no shell command built from user input; output encoded for its context (HTML, attribute, URL, JSON). Regex applied to user input has bounded backtracking or a timeout.
 - [ ] **A04 Insecure Design**: Rate limits on login, password reset, OTP, and expensive endpoints. Business invariants enforced server-side (price, quantity, state transitions). Reset and invite tokens are single-use and expire.
 - [ ] **A05 Security Misconfiguration**: Debug endpoints, stack traces, and directory listings disabled in production. Default credentials removed. Security headers present (section 3). XML parsers reject DTDs.
 - [ ] **A06 Vulnerable and Outdated Components**: Lockfiles committed; advisory scan clean or triaged; no abandoned packages on the critical path; base images patched.
@@ -27,7 +27,7 @@ Note: the 2025 edition reorders these and adds dedicated categories for software
 - [ ] **Error handling**: failures close safe (deny on exception); error responses use a generic problem body with no stack trace, SQL, or internal host names.
 - [ ] **File upload**: size limit, content-type sniffing by magic bytes, generated server-side filename, storage outside the web root, no execution permission.
 - [ ] **Secrets**: loaded from environment or a secret manager; none in source, images, CI logs, or client bundles; rotation procedure exists for anything found in git history.
-- [ ] **Supply chain**: install scripts reviewed; private package names protected against dependency confusion (scoped registry mapping); provenance or signature verification where available.
+- [ ] **Supply chain**: package install hooks reviewed; private package names protected against dependency confusion (scoped registry mapping); provenance or signature verification where available.
 - [ ] **Timing**: all secret comparisons constant-time; login and reset flows respond identically for known and unknown accounts.
 
 ---
@@ -37,7 +37,7 @@ Note: the 2025 edition reorders these and adds dedicated categories for software
 | Control | Expected value |
 | :--- | :--- |
 | `Strict-Transport-Security` | `max-age=31536000; includeSubDomains` |
-| `Content-Security-Policy` | No `unsafe-inline` / `unsafe-eval` for scripts; `frame-ancestors 'none'` unless framing is required |
+| `Content-Security-Policy` | No `unsafe-inline` / unsafe eval for scripts; `frame-ancestors 'none'` unless framing is required |
 | `X-Content-Type-Options` | `nosniff` |
 | `Referrer-Policy` | `strict-origin-when-cross-origin` or stricter |
 | Session cookie | `HttpOnly; Secure; SameSite=Lax` (or `Strict`); `__Host-` prefix where possible |

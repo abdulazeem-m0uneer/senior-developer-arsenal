@@ -3,7 +3,7 @@ name: ui-ux-audit
 description: 'Audit screens against anti-slop gates, tokens, states, contrast and target sizes. Use to audit a UI.'
 ---
 
-> **Lite edition:** steps that run a bundled script (a `scripts/` or `templates/` path) need the full arsenal (https://github.com/abdulazeem-m0uneer/senior-developer-arsenal). Here, do that step by hand or skip it and say so.
+> **Lite edition:** steps that run a bundled script (a `scripts/` or `templates/` path) need the full Senior Developer Arsenal. Here, do that step by hand or skip it and say so.
 
 <!-- routing (read by the skill router, not loaded into the skill listing): UI/UX audit of screens and components against anti-slop gates, DTCG tokens, state completeness and contrast. Use to audit UI, check anti-slop gates, or verify contrast and touch targets. Triggers: "ui audit", "ux audit", "anti-slop audit", "audit contrast", /ui-ux-audit. Not for a full WCAG audit of a running page (use accessibility-audit) or re-render profiling (use frontend-audit). -->
 

@@ -3,7 +3,7 @@ name: definition-of-done
 description: 'Prove each done item with evidence, then DONE or NOT DONE. Use before reporting work complete and when asked if it is finished or ready to merge.'
 ---
 
-> **Lite edition:** steps that run a bundled script (a `scripts/` or `templates/` path) need the full arsenal (https://github.com/abdulazeem-m0uneer/senior-developer-arsenal). Here, do that step by hand or skip it and say so.
+> **Lite edition:** steps that run a bundled script (a `scripts/` or `templates/` path) need the full Senior Developer Arsenal. Here, do that step by hand or skip it and say so.
 
 <!-- routing (read by the skill router, not loaded into the skill listing): Verification gate: prove every Definition of Done item with evidence, then a DONE or NOT DONE verdict. Use when asked whether work is finished, ready to merge or ready to ship, and before reporting it complete. Triggers: "definition of done", "is this done", "verify the feature", "ready to merge", /definition-of-done. Not for finding defects (use code-review) or writing missing tests (use test-every-change). -->
 

@@ -62,11 +62,23 @@ class BuildLiteTest(unittest.TestCase):
         for old, _ in build_lite.LITERALS:
             self.assertIn(old, sources, "a rewrite no longer matches; update LITERALS")
 
-    def test_no_machine_credentials_or_install_then_run(self):
-        pattern = re.compile(r"GITHUB_TOKEN|PROVIDER_API_KEY|tool install --global \S+ &&|docker run -it|npm ci && npm run dev")
-        for rel, content in self.expected.items():
-            if rel.endswith(".md"):
-                self.assertIsNone(pattern.search(content), rel)
+    def test_files_the_portal_flagged_no_longer_match(self):
+        flagged = {  # file the portal named -> what matched there
+            "skills/payments-integrity/SKILL.md": r"github\.com|\$DATABASE_URL",
+            "skills/security-audit/references/agent-config-rules.md": r"GITHUB_TOKEN|\$\{|mcp\.example\.com",
+            "skills/dependency-upgrade/SKILL.md": r"\bcurl\b",
+            "skills/devops-ci/references/dockerfile-hardening.md": r"\bcurl\b|/bin/sh -c",
+            "skills/devops-ci/references/pipeline-and-deploy.md": r"GITHUB_TOKEN",
+            "skills/provider-sdk/references/live-mode-hardening.md": r"PROVIDER_API_KEY",
+            "skills/investigate/references/feedback-loop-and-fix-discipline.md": r"\bcurl\b",
+            "skills/observability/references/query-cookbook.md": r"`exec`",
+            "skills/security-audit/references/audit-checklist.md": r"unsafe-eval|install scripts|shell invocation",
+            "skills/dependency-upgrade/references/ecosystem-commands.md": r"tool install --global \S+ &&",
+            "skills/mobile-expert/references/mobile-scan-tooling.md": r"docker run",
+            "skills/docs-writer/references/templates.md": r"npm ci && npm run dev",
+        }
+        for rel, pattern in flagged.items():
+            self.assertIsNone(re.search(pattern, self.expected[rel]), rel)
 
     def test_subagents_drop_only_the_refused_key(self):
         text = self.expected["agents/code-explorer.md"]

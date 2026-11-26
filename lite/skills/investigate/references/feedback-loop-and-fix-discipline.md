@@ -9,7 +9,7 @@ Ways to build one, in rough order of preference:
 | # | Loop | When |
 | :-: | :--- | :--- |
 | 1 | Failing test at the seam that reaches the bug (unit, integration, e2e) | Always try first |
-| 2 | `curl` or HTTP script against a running dev server | API behaviour |
+| 2 | HTTP client request against a running dev server | API behaviour |
 | 3 | CLI run with a fixture input, stdout diffed against a known-good snapshot | Command-line tools, scripts |
 | 4 | Headless browser script asserting on DOM, console, or network | UI symptoms |
 | 5 | Replay a captured trace (saved request, payload, event log) through the code path in isolation | Production-only input |

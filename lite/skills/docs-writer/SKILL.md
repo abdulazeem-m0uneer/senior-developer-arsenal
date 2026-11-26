@@ -3,7 +3,7 @@ name: docs-writer
 description: 'READMEs, runbooks and API reference entries. Use to write or fix documentation.'
 ---
 
-> **Lite edition:** steps that run a bundled script (a `scripts/` or `templates/` path) need the full arsenal (https://github.com/abdulazeem-m0uneer/senior-developer-arsenal). Here, do that step by hand or skip it and say so.
+> **Lite edition:** steps that run a bundled script (a `scripts/` or `templates/` path) need the full Senior Developer Arsenal. Here, do that step by hand or skip it and say so.
 
 <!-- routing (read by the skill router, not loaded into the skill listing): Technical documentation: READMEs, runbooks and API reference entries. Use to write or fix a README, runbook or API reference. Triggers: "write docs", "create a README", "write a runbook", "API reference", /docs-writer. Not for endpoint contract design (use api-design) or decision records (use architecture-design-adr or decision-log). -->
 

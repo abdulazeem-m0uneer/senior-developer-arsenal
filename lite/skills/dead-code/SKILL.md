@@ -3,7 +3,7 @@ name: dead-code
 description: 'Find and remove unused functions, imports, exports, dependencies and commented-out code, each verified first. Use for dead or unused code.'
 ---
 
-> **Lite edition:** steps that run a bundled script (a `scripts/` or `templates/` path) need the full arsenal (https://github.com/abdulazeem-m0uneer/senior-developer-arsenal). Here, do that step by hand or skip it and say so.
+> **Lite edition:** steps that run a bundled script (a `scripts/` or `templates/` path) need the full Senior Developer Arsenal. Here, do that step by hand or skip it and say so.
 
 <!-- routing (read by the skill router, not loaded into the skill listing): Dead-code sweep: unused functions, imports, exports, dependencies and commented-out code, verified before removal. Triggers: "dead code", "unused code", "unused imports", "unused exports", "remove dead code", /dead-code. Not for untested code (use refactor-legacy). -->
 

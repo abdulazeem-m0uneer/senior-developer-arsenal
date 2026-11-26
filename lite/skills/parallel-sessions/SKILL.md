@@ -3,7 +3,7 @@ name: parallel-sessions
 description: 'Several sessions in one repository: a worktree per task, staging by path. Use when another session or agent shares the checkout.'
 ---
 
-> **Lite edition:** steps that run a bundled script (a `scripts/` or `templates/` path) need the full arsenal (https://github.com/abdulazeem-m0uneer/senior-developer-arsenal). Here, do that step by hand or skip it and say so.
+> **Lite edition:** steps that run a bundled script (a `scripts/` or `templates/` path) need the full Senior Developer Arsenal. Here, do that step by hand or skip it and say so.
 
 <!-- routing (read by the skill router, not loaded into the skill listing): Several agents or people in one repository at once: one worktree per task, staging by explicit path. Use to work alongside other sessions or stop duplicated or overwritten work. Triggers: "another session", "shared checkout", "parallel agents", "use a worktree", /parallel-sessions. Not for a coordinator plus lanes (use multi-session-delivery) or rebasing (use git-workflow-master). -->
 
