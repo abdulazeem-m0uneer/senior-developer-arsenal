@@ -148,6 +148,15 @@ class RepositoryTests(unittest.TestCase):
         self.assertTrue(all(field for row in rows for field in row))
         self.assertTrue(all((ROOT / row[4]).exists() for row in rows if row[4] != "-"))
 
+    def test_plugin_json_carries_directory_listing_fields_that_resolve(self):
+        plugin = json.loads(build.generate(build.load_sources())[".claude-plugin/plugin.json"])
+        for field in ("homepage", "icon", "documentationUrl", "supportUrl", "privacyPolicyUrl", "termsOfServiceUrl"):
+            self.assertIn(field, plugin)
+        self.assertTrue((ROOT / plugin["icon"]).is_file())
+        for field, path in (("privacyPolicyUrl", "PRIVACY.md"), ("termsOfServiceUrl", "LICENSE")):
+            self.assertTrue(plugin[field].endswith(f"/blob/master/{path}"))
+            self.assertTrue((ROOT / path).is_file(), path)
+
     def test_plugin_ships_agents_in_the_default_directory_and_marketplace_sources_resolve(self):
         sources = build.load_sources()
         outputs = build.generate(sources)

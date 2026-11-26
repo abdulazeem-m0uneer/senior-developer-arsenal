@@ -1,6 +1,6 @@
 {
   "name": "arsenal",
-  "version": "1.34.0",
+  "version": "1.35.0",
   "description": "Senior engineering skills, subagents and rules for Node.js, .NET, Python, SQL, frontend, security, testing and DevOps.",
   "author": {
     "name": "Abdulazeem Mohammed"
@@ -8,5 +8,21 @@
   "license": "MIT",
   "skills": [
     "./.agents/skills/"
-  ]
+  ],
+  "homepage": "https://github.com/abdulazeem-m0uneer/senior-developer-arsenal",
+  "repository": "https://github.com/abdulazeem-m0uneer/senior-developer-arsenal",
+  "keywords": [
+    "senior-engineering",
+    "code-review",
+    "testing",
+    "security",
+    "devops",
+    "skills",
+    "subagents"
+  ],
+  "icon": "./assets/icon.png",
+  "documentationUrl": "https://github.com/abdulazeem-m0uneer/senior-developer-arsenal#readme",
+  "supportUrl": "https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/issues",
+  "privacyPolicyUrl": "https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/blob/master/PRIVACY.md",
+  "termsOfServiceUrl": "https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/blob/master/LICENSE"
 }

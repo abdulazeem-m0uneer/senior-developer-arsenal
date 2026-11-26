@@ -308,6 +308,7 @@ class AddedTestsTest(WithoutPytest):
         workspace = self.solved(self.CASE, {"test_pricing.py": plain})
         self.assertEqual(self.statuses(self.CASE, workspace)[self.CHECK], "pass")
 
+    @unittest.skipIf(eval_outcomes.pytest_installed(), "checks the no-pytest runner; pytest is installed here")
     def test_tests_that_need_a_missing_runner_are_inconclusive(self):
         for text in ("import pytest\n\n\ndef test_x():\n    assert True\n",
                      "def test_needs_a_fixture(tmp_path):\n    assert tmp_path\n"):
