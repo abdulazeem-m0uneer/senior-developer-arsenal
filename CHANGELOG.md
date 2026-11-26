@@ -13,6 +13,11 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
   - `mobile-expert`: `references/mobile-scan-tooling.md` (MobSF, QARK, drozer), with hits mapped to MASVS items.
   - `devops-ci`: `references/host-hardening-tooling.md` (Lynis, sslscan, trivy).
   - `test-strategy`: `references/fuzzing-tooling.md` (libFuzzer, AFL++, honggfuzz) for parsers and native bindings; each crash becomes a regression test.
+- README: a "Start Here" section with the five skills to learn first (#66).
+
+### Fixed
+
+- `test_eval_outcomes`: the missing-runner test is skipped where pytest is installed, since it checks the no-pytest runner; it failed on any machine with pytest (#66).
 
 ## [1.33.5] - 2026-11-26
 

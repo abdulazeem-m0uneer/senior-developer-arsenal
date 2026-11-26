@@ -13,6 +13,20 @@ One source of truth (`.agents/`), usable from **any AI coding agent**: Claude Co
 
 ---
 
+## 🏁 Start Here: Five Skills
+
+You do not need all 61. Install (see [Installation](#️-installation)), then use these five; the rest load only when a task needs them.
+
+| When you... | Skill | What you get |
+| :--- | :--- | :--- |
+| hit a bug | `investigate` | Root cause from competing hypotheses and evidence, before any fix |
+| change code | `test-every-change` | A test in the same change; a fix gets a regression test that fails first |
+| want a review | `code-review` | Correctness, security, performance and test findings at file:line |
+| are finishing | `definition-of-done` | Each done item proven with evidence, then DONE or NOT DONE |
+| are ready to ship | `ship` | Gate, commit, push, PR, and a bounded wait for CI |
+
+---
+
 ## 📈 GitHub Trending Rank
 
 <!-- BEGIN trending -->
