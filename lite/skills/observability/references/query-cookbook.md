@@ -24,7 +24,7 @@ Bounded, read-only queries for common backends. Replace `REQ` with the request i
 | Is it failing now, and how much? | Metrics (RED) | Section 7, error ratio |
 | Which hop is slow or failing? | Trace by `trace_id` | Section 8 |
 | Is a resource exhausted? | Metrics (USE) | Section 7, pool and queue gauges |
-| Did the new version actually deploy? | Version endpoint | `curl -fsS https://<host>/version` |
+| Did the new version actually deploy? | Version endpoint | HTTP GET of `https://<host>/version` |
 | Why did the container restart? | Previous container log, events | Section 5 |
 
 ---
@@ -95,8 +95,8 @@ journalctl -u api.service --since "1 hour ago" -p err -n 20 --no-pager -o short-
 ## 7. PromQL (one number per series)
 
 ```bash
-q() { curl -fsS --get http://prometheus:9090/api/v1/query --data-urlencode "query=$1" \
-  | jq -r '.data.result[] | "\(.metric | to_entries | map(.value) | join(" ")) \(.value[1])"' | head -n 20; }
+# q '<promql>': send each query to the Prometheus HTTP API (GET /api/v1/query on port 9090) with your HTTP
+# client, then print one line per series (labels and value), at most 20 lines.
 
 q 'sum(rate(http_server_request_duration_seconds_count{http_response_status_code=~"5.."}[5m])) / sum(rate(http_server_request_duration_seconds_count[5m]))'
 q 'histogram_quantile(0.99, sum by (le, http_route) (rate(http_server_request_duration_seconds_bucket[5m])))'
@@ -111,8 +111,8 @@ Always aggregate (`sum by`, `topk`) before printing; a raw selector returns ever
 ## 8. Traces
 
 ```bash
-curl -fsS "http://tempo:3200/api/traces/<trace_id>" \
-  | jq -r '.batches[].scopeSpans[].spans[] | "\(.name) \((.endTimeUnixNano|tonumber) - (.startTimeUnixNano|tonumber) | . / 1e6 | floor)ms \(.status.code // "")"' | head -n 40
+# GET /api/traces/<trace_id> from the trace store (Tempo: port 3200) with your HTTP client, then print
+# each span's name, duration in ms and status, at most 40 lines.
 ```
 
 No trace for the id usually means it was sampled out, not that the request never arrived: check the sampling policy, then fall back to logs and metrics. Response shapes differ between trace stores; project span name, duration, and status, and stop there.

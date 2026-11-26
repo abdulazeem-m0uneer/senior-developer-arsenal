@@ -71,7 +71,7 @@ class BuildLiteTest(unittest.TestCase):
             "skills/devops-ci/references/pipeline-and-deploy.md": r"GITHUB_TOKEN",
             "skills/provider-sdk/references/live-mode-hardening.md": r"PROVIDER_API_KEY",
             "skills/investigate/references/feedback-loop-and-fix-discipline.md": r"\bcurl\b",
-            "skills/observability/references/query-cookbook.md": r"`exec`",
+            "skills/observability/references/query-cookbook.md": r"`exec`|\bcurl\b",
             "skills/security-audit/references/audit-checklist.md": r"unsafe-eval|install scripts|shell invocation",
             "skills/dependency-upgrade/references/ecosystem-commands.md": r"tool install --global \S+ &&",
             "skills/mobile-expert/references/mobile-scan-tooling.md": r"docker run",

@@ -69,7 +69,7 @@ git tag -a vX.Y.Z -m "Release vX.Y.Z"
 1. Assert all tests pass with zero failures.
 2. Assert calculated SemVer adheres strictly to Conventional Commits rules.
 3. Verify git tag exists: `git tag -l "vX.Y.Z"`.
-4. Verify the deployed version: `curl -fsS https://<host>/version` returns the released commit.
+4. Verify the deployed version: HTTP GET of `https://<host>/version` returns the released commit.
 
 ---
 
