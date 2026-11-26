@@ -45,6 +45,11 @@ DESCRIPTION = (
 
 NAME_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 BANK_PLACEHOLDER = "{{BANK_ID}}"
+BANK_USER_CONFIG = {"bank_id": {
+    "type": "string", "title": "Hindsight memory bank",
+    "description": "Bank ID in the local Hindsight server; one bank per project keeps memories apart",
+    "default": "default",
+}}
 MAX_DESCRIPTION = 1024
 MAX_RULE_CHARS = 12000
 # Token budgets for text that loads in every session (descriptions are always in context).
@@ -548,16 +553,24 @@ def generate(sources):
             extension = "toml" if flavor == "codex" else "json"
             out[f"{DIST}/mcp/{flavor}/{name}.{extension}"] = render_mcp(flavor, spec)
         plugin_spec = dict(spec)
-        if "url" in plugin_spec:
-            plugin_spec["url"] = plugin_spec["url"].replace(BANK_PLACEHOLDER, "${HINDSIGHT_BANK_ID:-default}")
+        # A value the user sets comes from userConfig (asked in /config), not from their environment.
+        user_config = BANK_USER_CONFIG if BANK_PLACEHOLDER in plugin_spec.get("url", "") else None
+        if user_config:
+            plugin_spec["url"] = plugin_spec["url"].replace(BANK_PLACEHOLDER, "${user_config.bank_id}")
+        entry = json.loads(render_mcp("standard", plugin_spec))
+        if spec["type"] == "stdio":
+            entry = {"type": "stdio", **entry}
         base = f"plugins/{name}"
-        out[f"{base}/.mcp.json"] = json.dumps(
-            {"mcpServers": {name: json.loads(render_mcp("standard", plugin_spec))}}, indent=2) + "\n"
-        out[f"{base}/.claude-plugin/plugin.json"] = json.dumps({
+        out[f"{base}/.mcp.json"] = json.dumps({"mcpServers": {name: entry}}, indent=2) + "\n"
+        manifest = {
             "name": f"{PLUGIN_NAME}-{name}", "version": sources["version"],
             "description": f"Registers the {name} MCP server for the Senior Developer Arsenal.",
             "author": {"name": OWNER}, "license": "MIT",
-        }, indent=2) + "\n"
+            "privacyPolicyUrl": DIRECTORY_LISTING["privacyPolicyUrl"],
+        }
+        if user_config:
+            manifest["userConfig"] = user_config
+        out[f"{base}/.claude-plugin/plugin.json"] = json.dumps(manifest, indent=2) + "\n"
 
     out[".claude-plugin/plugin.json"] = json.dumps({
         "name": PLUGIN_NAME, "version": sources["version"], "description": DESCRIPTION,

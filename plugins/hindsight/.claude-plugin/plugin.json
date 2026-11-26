@@ -5,5 +5,14 @@
   "author": {
     "name": "Abdulazeem Mohammed"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "privacyPolicyUrl": "https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/blob/master/PRIVACY.md",
+  "userConfig": {
+    "bank_id": {
+      "type": "string",
+      "title": "Hindsight memory bank",
+      "description": "Bank ID in the local Hindsight server; one bank per project keeps memories apart",
+      "default": "default"
+    }
+  }
 }

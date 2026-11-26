@@ -12,6 +12,10 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 - `tests/test_build_lite.py`: `lite/` is current and holds only what the directory accepts (#69).
 - README "Two editions" table, `lite/` in the repository structure, the lite edition in `PRIVACY.md` (#75).
 
+### Changed
+
+- MCP plugins follow the plugin reference: `arsenal-hindsight` takes its memory bank from a `userConfig` option (`bank_id`, default `default`, set in `/config`) through `${user_config.bank_id}`, instead of reading `HINDSIGHT_BANK_ID` from the environment. **If you set `HINDSIGHT_BANK_ID`, set `bank_id` in `/config` once.** `arsenal-codegraph` declares `"type": "stdio"`. Both MCP plugins set `privacyPolicyUrl` (#75).
+
 ### Fixed
 
 - Lite text reworded where the directory's scanner warned, for credentials read from the machine and download-and-run commands: fake values for token and key names, no `curl` or `npx` downloads, install-then-run lines pointing to each tool's own instructions, agent config files named without the home path, and `node:http` (#70, #71, #72, #73, #74).

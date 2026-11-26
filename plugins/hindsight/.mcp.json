@@ -2,7 +2,7 @@
   "mcpServers": {
     "hindsight": {
       "type": "http",
-      "url": "http://localhost:8888/mcp/${HINDSIGHT_BANK_ID:-default}/"
+      "url": "http://localhost:8888/mcp/${user_config.bank_id}/"
     }
   }
 }
