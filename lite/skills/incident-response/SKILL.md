@@ -61,7 +61,7 @@ Consult: [Status Update & Postmortem Templates](./references/incident-templates.
 ## 3. Verification Protocol
 
 ```bash
-curl -fsS https://<host>/version                              # running commit equals the rollback target
+# HTTP GET https://<host>/version                              # running commit equals the rollback target
 kubectl rollout status deployment/<name> --timeout=120s       # replicas ready on that revision
 kubectl logs deployment/<name> --since=10m --tail=500 | grep -c '"level":"error"'   # falling, compare with the peak
 git log --oneline -5 <rollback-target>..<bad-release>         # what the rollback removed

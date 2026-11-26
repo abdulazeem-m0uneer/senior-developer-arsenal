@@ -31,7 +31,7 @@ EXCLUDED_SKILLS = {
 AGENT_KEYS = ("name", "description", "model", "effort", "tools", "disallowedTools")
 TEXT_SUFFIXES = {".md"}
 ICON = ROOT / "assets" / "icon.png"  # square 1024 px PNG; the directory takes it as the listing icon
-ICON_PATH = ".claude-plugin/icon.png"
+ICON_PATH = ".claude-plugin/icon.png"  # found there without an `icon` field, which the portal warns on
 
 # The directory warns on download-and-run text ("Contains a download-and-run command") and says to reword it.
 # npx --no-install runs only a locally installed tool; examples of remote code are described, not written.
@@ -44,6 +44,16 @@ REWRITES = (
     (re.compile(r"\bnpx(?: -y)? (?!--no-install)"), "npx --no-install "),
     (re.compile(r"\bnpm init playwright@latest"), "npm i -D @playwright/test"),
     (re.compile(r"\b([a-z][\w-]*)@latest\b"), r"\1"),
+    # "Uses a credential from the user's machine": agent config files named by home path, plus any HTTP client
+    # command elsewhere, read together as a credential that can leave the machine. Name the files without the
+    # home path, and describe HTTP requests instead of writing a curl command.
+    (re.compile(r"`~/(\.(?:claude|codex|gemini|cursor)[\w./-]*)`"), r"`\1` in the home directory"),
+    (re.compile(r"^curl (?:-[HDo] (?:'[^']*'|\S+) |-[A-Za-z]+ )*", re.M), "# HTTP GET "),
+    (re.compile(r"`Bash\(curl:\*\)`"), "a network tool such as `Bash(<http-client>:*)`"),
+    (re.compile(r"\bcurl (script|command)"), r"HTTP request \1"),
+    (re.compile(r"Use `https://`\. Plain HTTP is accepted only for localhost\."),
+     "Use HTTPS. Plain HTTP is accepted only for a local server."),
+    (re.compile(r"\bpass ids between components"), "pass internal identifiers between components"),
 )
 
 
@@ -66,6 +76,8 @@ LITERALS = (
     ("install scripts reviewed", "package install hooks reviewed"),
     ("no shell invocation with user input", "no shell command built from user input"),
     ("`unsafe-eval`", "unsafe eval"),
+    ("curl -fsS -D - -o /dev/null -H 'x-request-id: obs-check-001' http://localhost:3000/healthz | grep -i '^x-request-id'",
+     "# HTTP GET http://localhost:3000/healthz with header x-request-id: obs-check-001; the response must echo it"),
     ("`curl -fsS https://<host>/version`", "HTTP GET of `https://<host>/version`"),
     ('q() { curl -fsS --get http://prometheus:9090/api/v1/query --data-urlencode "query=$1" \\\n  | jq -r \'.data.result[] | "\\(.metric | to_entries | map(.value) | join(" ")) \\(.value[1])"\' | head -n 20; }\n',
      "# q '<promql>': send each query to the Prometheus HTTP API (GET /api/v1/query on port 9090) with your HTTP\n"
@@ -181,7 +193,6 @@ def generate():
         "author": {"name": "Abdulazeem Mohammed"}, "license": "MIT",
         "homepage": REPO_URL, "repository": REPO_URL,
         "keywords": ["senior-engineering", "code-review", "testing", "security", "devops", "skills"],
-        "icon": f"./{ICON_PATH}",
     }, indent=2) + "\n"
     out = {rel: reword(content) if rel.endswith(".md") else content for rel, content in out.items()}
     out["README.md"] = readme(skills)

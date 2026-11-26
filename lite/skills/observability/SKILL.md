@@ -62,10 +62,10 @@ Consult: [Telemetry Query Cookbook](./references/query-cookbook.md)
 ## 3. Verification Protocol
 
 ```bash
-curl -fsS -D - -o /dev/null -H 'x-request-id: obs-check-001' http://localhost:3000/healthz | grep -i '^x-request-id'
+# HTTP GET http://localhost:3000/healthz with header x-request-id: obs-check-001; the response must echo it
 docker logs app --since 1m 2>&1 | jq -c 'select(.request_id=="obs-check-001") | {level, trace_id, message}' | head -n 5
-curl -fsS http://localhost:3000/version                      # commit must equal: git rev-parse HEAD
-curl -fsS http://localhost:3000/metrics | grep -c '^http_server_request_duration_seconds_bucket'
+# HTTP GET http://localhost:3000/version                      # commit must equal: git rev-parse HEAD
+# HTTP GET http://localhost:3000/metrics | grep -c '^http_server_request_duration_seconds_bucket'
 docker logs app --since 10m 2>&1 | grep -ciE 'bearer [a-z0-9._-]{20,}'    # must print 0
 promtool check rules alerts/*.yml                            # alert rules parse
 ```

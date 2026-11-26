@@ -48,7 +48,7 @@ A solo responder still switches hats aloud: write the decision in the timeline a
 kubectl rollout history deployment/<name>                    # find the last good revision
 kubectl rollout undo deployment/<name> --to-revision=<n>
 kubectl rollout status deployment/<name> --timeout=120s
-curl -fsS https://<host>/version                             # the proof, not the exit code
+# HTTP GET https://<host>/version                             # the proof, not the exit code
 ```
 
 ---

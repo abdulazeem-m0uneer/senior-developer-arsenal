@@ -47,7 +47,7 @@ Consult: [Data-to-Sink Matrix](./references/data-sink-matrix.md)
 3. Sensitive fields are masked by default and unmasked by an explicit permission, with the unmasking audited.
 
 ### Step 4: Minimise, Retain, Delete
-1. Collect and store only what the feature needs; pass ids between components and resolve the person at the edge.
+1. Collect and store only what the feature needs; pass internal identifiers between components and resolve the person at the edge.
 2. Every new store of personal data names its retention period and the job that enforces it.
 3. Deletion and anonymisation reach every copy from Step 2, or the copy has a stated expiry.
 4. Note the purpose and whether consent or another lawful basis is recorded for it. Flag for the data protection officer or a lawyer: a new purpose, a special category, data about children, a new outside recipient, a transfer to another country.
