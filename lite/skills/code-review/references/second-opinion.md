@@ -13,7 +13,7 @@ Read in Step 4a of the code-review skill, before you run `scripts/second_opinion
 ## What is sent, and what is not
 
 - Only the diff against `<base>` (or the plan file). It never sends the repository, history or environment. Untracked files are not part of `git diff`: run `git add -N <file>` first to include a new file.
-- The blocks of secret-looking files (`.env*`, `*.pem`, `*.key`, `id_rsa`, names with a `key`, `secret` or `credential` segment) are dropped and named on stderr.
+- The blocks of secret-looking files (environment files, certificate and key files, SSH private keys, names with a `key`, `secret` or `credential` segment) are dropped and named on stderr.
 - Every remaining line that looks like a credential is replaced by `[redacted: <reason>]`.
 - Material over `--max-bytes` (default 200,000) is refused, not truncated. A cut diff hides findings, so narrow the ref.
 - `--dry-run` prints exactly what would be sent. Use it the first time in a repository.

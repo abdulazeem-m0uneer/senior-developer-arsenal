@@ -83,6 +83,14 @@ class BuildLiteTest(unittest.TestCase):
         for rel, pattern in flagged.items():
             self.assertIsNone(re.search(pattern, self.expected[rel]), rel)
 
+    def test_no_credential_file_named_anywhere(self):
+        # The portal pairs a named credential file with any HTTP use in another skill; HTTP stays, files go.
+        pattern = re.compile(r"\.npmrc|\.netrc|\.pypirc|git-credentials|id_(rsa|ed25519)|\.env\b|"
+                             r"\.aws/|\.ssh/|\.kube/config|\.docker/config|~/\.claude|\.claude\.json|\*\.pem|\*\.key\b")
+        for rel, content in self.expected.items():
+            if rel.endswith(".md"):
+                self.assertIsNone(pattern.search(content), rel)
+
     def test_no_curl_anywhere(self):
         for rel, content in self.expected.items():
             if rel.endswith(".md"):
