@@ -47,6 +47,7 @@ Consult: [React Native Guide](./references/react-native-guide.md) or [Flutter Gu
 Consult: [Mobile Security Checklist](./references/mobile-security-checklist.md)
 1. Walk the checklist by MASVS category; mark each item pass, fail, or not applicable with evidence.
 2. Treat client-side controls (pinning, root detection, obfuscation, request envelopes) as defence in depth; authorization and validation stay on the server.
+3. If a scanner is installed, run it on the release build: [Optional Mobile Scanners](./references/mobile-scan-tooling.md).
 
 ### Step 5: Test on the Right Layers
 1. Unit and component tests for logic and screens, a small E2E suite for the critical journeys, and a device and OS matrix drawn from your own analytics.

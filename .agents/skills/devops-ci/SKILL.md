@@ -36,6 +36,7 @@ Consult: [Dockerfile Hardening & Health Probes](./references/dockerfile-hardenin
 2. Order layers for cache reuse: copy lockfiles, install dependencies, then copy source.
 3. Run as a non-root user, use exec-form `CMD`, add a health check, pin the base image.
 4. Pass build-time credentials with BuildKit secret mounts; never with `ARG` or `ENV`.
+5. Scan the image and its host with any installed tool: [Optional Host and TLS Checks](./references/host-hardening-tooling.md).
 
 ### Step 3: Design the Pipeline
 Consult: [Pipeline & Deployment Reference](./references/pipeline-and-deploy.md)
