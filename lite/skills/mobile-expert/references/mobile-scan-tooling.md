@@ -4,7 +4,7 @@ Run a tool only when it is already installed; otherwise finish the checklist by 
 
 | Tool | Use when | Command |
 | :--- | :--- | :--- |
-| MobSF | Static scan of a release APK or IPA: hardcoded secrets, insecure storage, exported components, cleartext traffic | `docker run -it --rm -p 8000:8000 opensecurity/mobile-security-framework-mobsf`, then upload the build and export the JSON report |
+| MobSF | Static scan of a release APK or IPA: hardcoded secrets, insecure storage, exported components, cleartext traffic | Start MobSF as its own install instructions describe (`mobsf` on port 8000), then upload the build and export the JSON report |
 | QARK | Android-only static scan of source or APK when MobSF is unavailable | `qark --apk <app.apk>` |
 | drozer | Probe exported activities, providers and services on a test device | `drozer console connect`, then `run app.package.attacksurface <package>` |
 

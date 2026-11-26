@@ -33,7 +33,7 @@ dotnet list package --deprecated
 dotnet nuget why <project.csproj> <package>            # which dependency pulls it in (recent SDKs)
 dotnet add <project.csproj> package <package> --version <version>
 dotnet restore --locked-mode                           # CI: fails if packages.lock.json would change
-dotnet tool install --global nuget-license && nuget-license -i <solution.sln>
+nuget-license -i <solution.sln>  # install nuget-license from its own instructions first
 ```
 
 - Enable lockfiles once: `<RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>` in `Directory.Build.props`; commit every `packages.lock.json`.

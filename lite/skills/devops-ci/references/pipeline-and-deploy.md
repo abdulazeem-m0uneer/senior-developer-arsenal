@@ -43,7 +43,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.YOUR_REGISTRY_TOKEN }}
       - uses: docker/build-push-action@v7
         with:
           context: .

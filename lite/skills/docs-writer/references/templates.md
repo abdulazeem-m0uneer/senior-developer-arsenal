@@ -49,7 +49,7 @@ Expected: `<the line that proves it started>`, <URL> answers, and the checks pas
 <Branching, commit convention, what must pass before review; link to CONTRIBUTING.md. SPDX licence identifier.>
 ````
 
-Node.js, .NET, and Python projects differ only in the commands: `npm ci && npm run dev`, `dotnet restore && dotnet run --project src/Api`, `uv sync && uv run python -m app`.
+Node.js, .NET, and Python projects differ only in the commands: `npm run dev`, `dotnet run --project src/Api`, `uv run python -m app`, each after installing the dependencies.
 
 ---
 

@@ -19,9 +19,9 @@ export function selectProvider(config: Config): ProviderPort {
       throw new ProviderConfigError('the mock provider is refused in production; set PROVIDER_MODE=live');
     return new ProviderAdapter(createProvider({ mode: 'mock' }));
   }
-  const missing = ['PROVIDER_URL', 'PROVIDER_API_KEY'].filter((key) => !config[key]);
+  const missing = ['PROVIDER_URL', 'YOUR_API_KEY'].filter((key) => !config[key]);
   if (missing.length) throw new ProviderConfigError(`live provider needs ${missing.join(', ')}`);
-  return new ProviderAdapter(createProvider({ mode: 'live', url: config.PROVIDER_URL, apiKey: config.PROVIDER_API_KEY, timeoutMs: config.PROVIDER_TIMEOUT_MS }));
+  return new ProviderAdapter(createProvider({ mode: 'live', url: config.PROVIDER_URL, apiKey: config.YOUR_API_KEY, timeoutMs: config.PROVIDER_TIMEOUT_MS }));
 }
 ```
 

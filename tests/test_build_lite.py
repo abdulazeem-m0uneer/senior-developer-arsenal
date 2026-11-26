@@ -57,6 +57,17 @@ class BuildLiteTest(unittest.TestCase):
             if rel.endswith(".md"):
                 self.assertIsNone(pattern.search(content), rel)
 
+    def test_every_literal_rewrite_still_matches_a_source(self):
+        sources = "".join(p.read_text(encoding="utf-8") for p in build_lite.SKILLS.rglob("*.md"))
+        for old, _ in build_lite.LITERALS:
+            self.assertIn(old, sources, "a rewrite no longer matches; update LITERALS")
+
+    def test_no_machine_credentials_or_install_then_run(self):
+        pattern = re.compile(r"GITHUB_TOKEN|PROVIDER_API_KEY|tool install --global \S+ &&|docker run -it|npm ci && npm run dev")
+        for rel, content in self.expected.items():
+            if rel.endswith(".md"):
+                self.assertIsNone(pattern.search(content), rel)
+
     def test_subagents_drop_only_the_refused_key(self):
         text = self.expected["agents/code-explorer.md"]
         self.assertNotIn("omitClaudeMd", text)
