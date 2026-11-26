@@ -43,6 +43,7 @@ Consult: [Edge Cases & Flakiness](./references/edge-cases-and-flakiness.md)
 1. List the happy path, then walk the edge-case matrix: empty/null, boundaries, invalid input, permission denial, concurrency, dependency failure.
 2. Convert input variations into table-driven tests (`it.each`, `[Theory]` with `[InlineData]`, `@pytest.mark.parametrize`).
 3. For every bug fix, write the failing regression test first and confirm it fails for the right reason.
+4. For parsers and native code, add fuzzing: [Optional Fuzzing](./references/fuzzing-tooling.md).
 
 ### Step 4: Author Deterministic Tests
 1. One behaviour per test, Arrange-Act-Assert layout, name states scenario and expected outcome.

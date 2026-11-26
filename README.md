@@ -389,11 +389,11 @@ The arsenal includes 61 specialized skills conforming to the Agent Skills standa
 
 ### 23. security-audit (/security-audit)
 - **When to use**: Security audits, vulnerability hunts, and pre-release hardening (OWASP Top 10, injection, IDOR/BOLA, secrets, SSRF, supply chain).
-- **Includes**: [vulnerability-patterns.md](.agents/skills/security-audit/references/vulnerability-patterns.md), [audit-checklist.md](.agents/skills/security-audit/references/audit-checklist.md), [agent-config-rules.md](.agents/skills/security-audit/references/agent-config-rules.md), bundled `scripts/agent_config_scan.py [--user]` (agent hooks, MCP servers, permissions and settings: remote code piped into a shell, plaintext secrets, bypass defaults, broad allow rules, unpinned or plain-HTTP MCP servers).
+- **Includes**: [vulnerability-patterns.md](.agents/skills/security-audit/references/vulnerability-patterns.md), [audit-checklist.md](.agents/skills/security-audit/references/audit-checklist.md), [agent-config-rules.md](.agents/skills/security-audit/references/agent-config-rules.md), [scanner-tooling.md](.agents/skills/security-audit/references/scanner-tooling.md) (optional graudit, semgrep, sqlmap, sslscan, vulnhuntr), bundled `scripts/agent_config_scan.py [--user]` (agent hooks, MCP servers, permissions and settings: remote code piped into a shell, plaintext secrets, bypass defaults, broad allow rules, unpinned or plain-HTTP MCP servers).
 
 ### 24. test-strategy (/test-strategy)
 - **When to use**: Designing a test suite, choosing unit vs integration vs end-to-end scope, test doubles, and fixing flaky tests.
-- **Includes**: [test-layering-and-doubles.md](.agents/skills/test-strategy/references/test-layering-and-doubles.md), [edge-cases-and-flakiness.md](.agents/skills/test-strategy/references/edge-cases-and-flakiness.md), [test-audit.md](.agents/skills/test-strategy/references/test-audit.md), bundled `scripts/test_audit.py` (tests with no assertion, skipped or focused tests, duplicate bodies, tests that only grep the source; Python, JavaScript/TypeScript, C#, Java, Kotlin, Go, Rust, PHP, Ruby).
+- **Includes**: [test-layering-and-doubles.md](.agents/skills/test-strategy/references/test-layering-and-doubles.md), [edge-cases-and-flakiness.md](.agents/skills/test-strategy/references/edge-cases-and-flakiness.md), [test-audit.md](.agents/skills/test-strategy/references/test-audit.md), [fuzzing-tooling.md](.agents/skills/test-strategy/references/fuzzing-tooling.md) (optional libFuzzer, AFL++, honggfuzz), bundled `scripts/test_audit.py` (tests with no assertion, skipped or focused tests, duplicate bodies, tests that only grep the source; Python, JavaScript/TypeScript, C#, Java, Kotlin, Go, Rust, PHP, Ruby).
 
 ### 25. test-every-change (/test-every-change)
 - **When to use**: Every code change. Maps each changed behavior to required tests: regression test first for bug fixes, happy/error/edge cases for features, characterization tests before refactors.
@@ -417,7 +417,7 @@ The arsenal includes 61 specialized skills conforming to the Agent Skills standa
 
 ### 30. devops-ci (/devops-ci)
 - **When to use**: Dockerfile hardening, GitHub Actions pipelines, caching, secrets handling, deploy strategies, and rollback.
-- **Includes**: [dockerfile-hardening.md](.agents/skills/devops-ci/references/dockerfile-hardening.md), [pipeline-and-deploy.md](.agents/skills/devops-ci/references/pipeline-and-deploy.md).
+- **Includes**: [dockerfile-hardening.md](.agents/skills/devops-ci/references/dockerfile-hardening.md), [pipeline-and-deploy.md](.agents/skills/devops-ci/references/pipeline-and-deploy.md), [host-hardening-tooling.md](.agents/skills/devops-ci/references/host-hardening-tooling.md) (optional Lynis, sslscan, trivy).
 
 ### 31. ci-wait (/ci-wait)
 - **When to use**: Waiting for a pull request's checks, telling an outside failure (rate limit, runner, network) from a failure of the change, and merging only the tested commit.
@@ -525,7 +525,7 @@ The arsenal includes 61 specialized skills conforming to the Agent Skills standa
 
 ### 57. mobile-expert (/mobile-expert)
 - **When to use**: React Native (Expo and bare) and Flutter work: project shape, navigation, state, offline sync, performance, mobile security, and store release pipelines.
-- **Includes**: [flutter-guide.md](.agents/skills/mobile-expert/references/flutter-guide.md), [mobile-security-checklist.md](.agents/skills/mobile-expert/references/mobile-security-checklist.md), [react-native-guide.md](.agents/skills/mobile-expert/references/react-native-guide.md), [release-pipeline.md](.agents/skills/mobile-expert/references/release-pipeline.md).
+- **Includes**: [flutter-guide.md](.agents/skills/mobile-expert/references/flutter-guide.md), [mobile-security-checklist.md](.agents/skills/mobile-expert/references/mobile-security-checklist.md), [mobile-scan-tooling.md](.agents/skills/mobile-expert/references/mobile-scan-tooling.md) (optional MobSF, QARK, drozer), [react-native-guide.md](.agents/skills/mobile-expert/references/react-native-guide.md), [release-pipeline.md](.agents/skills/mobile-expert/references/release-pipeline.md).
 
 ### 58. multi-session-delivery (/multi-session-delivery)
 - **When to use**: Several long-running agent sessions deliver one product: a coordinator that writes no code (plan, tracker, questions, watches, reports) plus build lanes with fixed names and owned modules, a pulled priority queue, contract first, one agent per story, a file message bus, a guarded merge and timed routines. `repo-scan` offers it when it finds two or more app folders.

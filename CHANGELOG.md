@@ -4,6 +4,16 @@ All notable changes to Senior Developer Arsenal are recorded in this file.
 
 The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/), and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version is the one in the `VERSION` file, and each release is dated by the day its pull request merged (UTC).
 
+## [1.34.0] - 2026-11-26
+
+### Added
+
+- Optional scanner references, loaded only when their skill runs (no change to per-session context). Each tool has a use case and a command, runs only when already installed, and a tool that was not run is named in the report (#66):
+  - `security-audit`: `references/scanner-tooling.md` (graudit, semgrep, sqlmap, sslscan, vulnhuntr); dynamic tools only against environments the user owns.
+  - `mobile-expert`: `references/mobile-scan-tooling.md` (MobSF, QARK, drozer), with hits mapped to MASVS items.
+  - `devops-ci`: `references/host-hardening-tooling.md` (Lynis, sslscan, trivy).
+  - `test-strategy`: `references/fuzzing-tooling.md` (libFuzzer, AFL++, honggfuzz) for parsers and native bindings; each crash becomes a regression test.
+
 ## [1.33.5] - 2026-11-26
 
 ### Added
@@ -469,6 +479,7 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 - Non-destructive installers for every supported agent.
 - CI with lint, test and smoke workflows.
 
+[1.34.0]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/66
 [1.33.5]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/65
 [1.33.4]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/64
 [1.33.3]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/63

@@ -35,6 +35,7 @@ Use your search tool with the patterns in [Vulnerability Patterns by Language](.
 - **Deserialization & Parsing**: `pickle`, `BinaryFormatter`, polymorphic JSON type handling, unsafe YAML loaders, XML with DTDs enabled.
 - **SSRF & Path Traversal**: outbound requests or file paths built from request data without an allow-list.
 - Report a sink only when attacker-controlled data reaches it without validation or encoding; otherwise note it as hardening.
+- Installed scanners can speed this sweep: [Optional Scanners](./references/scanner-tooling.md).
 
 ### Step 3: Authentication, Authorization & Session Review
 1. **BOLA / IDOR**: every lookup by ID must also filter on tenant ID or owner ID taken from the verified session, never from the request body.
