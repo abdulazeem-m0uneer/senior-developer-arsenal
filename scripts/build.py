@@ -36,6 +36,8 @@ DIRECTORY_LISTING = {
     "privacyPolicyUrl": f"{REPO_URL}/blob/master/PRIVACY.md",
     "termsOfServiceUrl": f"{REPO_URL}/blob/master/LICENSE",
 }
+# Hosts the hooks and skill scripts reach: GitHub through `gh` and `git push`, and the optional local Hindsight server.
+NETWORK_HOSTS = ["api.github.com", "github.com", "localhost:8888"]
 DESCRIPTION = (
     "Senior engineering skills, subagents and rules for Node.js, .NET, Python, "
     "SQL, frontend, security, testing and DevOps."
@@ -562,6 +564,7 @@ def generate(sources):
         "author": {"name": OWNER}, "license": "MIT",
         "skills": ["./.agents/skills/"],
         **DIRECTORY_LISTING,
+        "network": {"hosts": NETWORK_HOSTS},
     }, indent=2) + "\n"
     out[".claude-plugin/marketplace.json"] = json.dumps({
         "name": MARKETPLACE_NAME, "owner": {"name": OWNER}, "description": DESCRIPTION,

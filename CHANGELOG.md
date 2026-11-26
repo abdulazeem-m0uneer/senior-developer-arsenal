@@ -4,6 +4,12 @@ All notable changes to Senior Developer Arsenal are recorded in this file.
 
 The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/), and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version is the one in the `VERSION` file, and each release is dated by the day its pull request merged (UTC).
 
+## [1.36.0] - 2026-11-26
+
+### Added
+
+- `plugin.json` declares `network.hosts`: `api.github.com`, `github.com` and `localhost:8888`, the only hosts the hooks and skill scripts reach; `PRIVACY.md` names them (#68).
+
 ## [1.35.0] - 2026-11-26
 
 ### Added
@@ -492,6 +498,7 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 - Non-destructive installers for every supported agent.
 - CI with lint, test and smoke workflows.
 
+[1.36.0]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/68
 [1.35.0]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/67
 [1.34.0]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/66
 [1.33.5]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/65

@@ -148,6 +148,14 @@ class RepositoryTests(unittest.TestCase):
         self.assertTrue(all(field for row in rows for field in row))
         self.assertTrue(all((ROOT / row[4]).exists() for row in rows if row[4] != "-"))
 
+    def test_plugin_json_declares_the_hosts_privacy_md_names(self):
+        plugin = json.loads(build.generate(build.load_sources())[".claude-plugin/plugin.json"])
+        hosts = plugin["network"]["hosts"]
+        self.assertEqual(hosts, ["api.github.com", "github.com", "localhost:8888"])
+        policy = (ROOT / "PRIVACY.md").read_text(encoding="utf-8")
+        for host in hosts:
+            self.assertIn(host, policy, host)
+
     def test_plugin_json_carries_directory_listing_fields_that_resolve(self):
         plugin = json.loads(build.generate(build.load_sources())[".claude-plugin/plugin.json"])
         for field in ("homepage", "icon", "documentationUrl", "supportUrl", "privacyPolicyUrl", "termsOfServiceUrl"):
