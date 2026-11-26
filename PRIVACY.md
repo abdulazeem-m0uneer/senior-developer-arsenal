@@ -4,10 +4,11 @@ Senior Developer Arsenal is a set of skills, subagents, rules, hooks and scripts
 
 ## What the plugin stores
 
-- **Lessons ledger:** mistakes the agent records, in files inside your project and, for global lessons, in your home directory.
-- **Usage stats:** the `usage-stats` skill keeps its counts in a local store on your machine. Nothing is uploaded.
+Everything below stays on your machine. You can read, edit or delete these files at any time.
 
-You can read, edit or delete these files at any time.
+- **Usage stats** (`~/.agents/arsenal-usage.jsonl`, or `$ARSENAL_USAGE_FILE`). A `SessionEnd` hook, on by default, reads the session's Claude Code transcript (and its subagent transcripts) to derive one line per session where the arsenal was active. That line holds: the session ID, its first and last dates, a 12-character project ID (a hash of the working directory with a random salt kept beside the store in `arsenal-usage.jsonl.salt`), the Claude Code and arsenal versions, the names and call counts of skills and subagents used, lesson IDs, token counts (input, output, cache), and counts of blocks, guard denials, checks and edits. It never stores a prompt, command, path, output or code. Turn it off with `ARSENAL_USAGE=off`.
+- **Lessons ledgers** (`.agents/lessons.md` in the project, `~/.agents/lessons.md` for global lessons): the mistake, cause and rule text the agent records.
+- **Lessons evidence** (`~/.agents/lessons-evidence.jsonl`, or `$LESSONS_EVIDENCE_FILE`): when a lesson is added or bumped, up to three failed commands that preceded it. Credential values are masked and secret-looking fields are withheld; the file stops at 5 MB. Turn it off with `LESSONS_EVIDENCE=off`.
 
 ## What leaves your machine
 
