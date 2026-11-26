@@ -111,6 +111,8 @@ A marked block (`<!-- BEGIN senior-developer-arsenal -->` ... `<!-- END senior-d
 
 Source: `.agents/mcp/servers.json`. Registered only with `--codegraph` / `--hindsight`.
 
+The installer writes the Hindsight bank from `--bank <id>` into each config. The Claude Code plugin `arsenal-hindsight` instead takes it from its `userConfig` option `bank_id` (default `default`), set in `/config` and used as `${user_config.bank_id}`; it does not read `HINDSIGHT_BANK_ID`. `arsenal-codegraph` declares `"type": "stdio"`.
+
 | Agent | Global config | Project config | Root key |
 | :--- | :--- | :--- | :--- |
 | Claude Code | `arsenal-codegraph` / `arsenal-hindsight` plugins | `P/.mcp.json` | `mcpServers` |

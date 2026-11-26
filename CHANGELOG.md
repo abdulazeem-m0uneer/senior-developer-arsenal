@@ -14,7 +14,7 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 
 ### Changed
 
-- MCP plugins follow the plugin reference: `arsenal-hindsight` takes its memory bank from a `userConfig` option (`bank_id`, default `default`, set in `/config`) through `${user_config.bank_id}`, instead of reading `HINDSIGHT_BANK_ID` from the environment. **If you set `HINDSIGHT_BANK_ID`, set `bank_id` in `/config` once.** `arsenal-codegraph` declares `"type": "stdio"`. Both MCP plugins set `privacyPolicyUrl` (#75).
+- MCP plugins follow the plugin reference: `arsenal-hindsight` takes its memory bank from a `userConfig` option (`bank_id`, default `default`, set in `/config`) through `${user_config.bank_id}`, instead of reading `HINDSIGHT_BANK_ID` from the environment. **If you set `HINDSIGHT_BANK_ID`, set `bank_id` in `/config` once.** `arsenal-codegraph` declares `"type": "stdio"`. Both MCP plugins set `privacyPolicyUrl`. README, `docs/TARGETS.md` and the `agent-memory` skill say where the bank is set (#75).
 
 ### Fixed
 

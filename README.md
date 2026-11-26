@@ -249,7 +249,7 @@ git config core.hooksPath .githooks
 | Server | Flag | Requirement |
 | :--- | :--- | :--- |
 | [CodeGraph](https://github.com/colbymchenry/codegraph) AST intelligence | `--codegraph` / `-CodeGraph` | `npm install -g @colbymchenry/codegraph`, then `codegraph init` in each project. |
-| [Hindsight](https://github.com/vectorize-io/hindsight) long-term memory | `--hindsight` / `-Hindsight` (`--bank <id>`) | A Hindsight server on `http://localhost:8888`. |
+| [Hindsight](https://github.com/vectorize-io/hindsight) long-term memory | `--hindsight` / `-Hindsight` (`--bank <id>`; the Claude Code plugin takes `bank_id` from `/config` instead) | A Hindsight server on `http://localhost:8888`. |
 
 ```bash
 ./install.sh --global --target cursor,codex --codegraph --hindsight
