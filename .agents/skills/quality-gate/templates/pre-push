@@ -5,6 +5,11 @@
 #   AFFECTED_TESTS_CMD    the project's command that runs the tests the change affects and writes coverage
 #   COVERAGE_REPORT       the lcov.info or Cobertura XML that command writes
 #   PUSH_BASE             the ref changed lines are measured against, and push_once's rebase base
+#   ARSENAL_PUSH_BASE     optional: a base such as origin/development; push_once fetches it and refuses a push
+#                         that does not contain its tip (ARSENAL_ALLOW_STALE_BASE=1 passes, logged)
+#   ARSENAL_TEST_LOG      where the affected tests' output is kept (default .agents/test-run.log, appended to, trimmed to its last 2 MiB once over 5 MiB); push_once refuses
+#                         a push when CI's last red run failed test files that no run after a newer `### arsenal-test-run <epoch>` marker names
+#                         (ARSENAL_ALLOW_UNRUN_RED=<reason> passes, logged)
 #   ARSENAL_QUALITY_GATE  the folder holding changed_coverage.py and push_once.py
 # Tests and coverage measure the checked-out HEAD, so they run only when a pushed branch is at HEAD; a
 # deletion, a tag, or a branch other than the checked-out one goes straight to push_once (noted on stderr).
@@ -39,7 +44,24 @@ fi
 if [ -n "$skip" ]; then
   echo "pre-push: $skip: affected tests and changed-lines coverage skipped" >&2
 else
-  sh -c "$AFFECTED_TESTS_CMD" </dev/null || exit $?
+  test_log="${ARSENAL_TEST_LOG:-.agents/test-run.log}"
+  mkdir -p "$(dirname "$test_log")"
+  # The log accumulates, so a rerun of a few files keeps what earlier runs named; over 5 MiB, only the last 2 MiB stay.
+  if [ -f "$test_log" ] && [ "$(wc -c <"$test_log")" -gt 5242880 ]; then
+    tail -c 2097152 "$test_log" >"$test_log.tmp" && mv "$test_log.tmp" "$test_log"
+  fi
+  printf '### arsenal-test-run %s\n' "$(date +%s)" >>"$test_log"   # push_once counts only the text after a marker newer than the red record
+  # tee streams the output to the terminal while it is appended to the log; plain sh has no PIPESTATUS, so the
+  # runner's own exit code goes through a temp file.
+  rc_file=
+  trap 'rm -f "$rc_file"' EXIT   # an EXIT trap keeps the exit status; INT and TERM exit with 128+signal, which runs it
+  trap 'exit 130' INT
+  trap 'exit 143' TERM
+  rc_file=$(mktemp) || exit 1
+  { sh -c "$AFFECTED_TESTS_CMD" </dev/null 2>&1; echo $? >"$rc_file"; } | tee -a "$test_log"
+  tests_rc=$(cat "$rc_file"); rm -f "$rc_file"
+  [ -n "$tests_rc" ] || tests_rc=1   # the runner never reported: fail
+  [ "$tests_rc" -eq 0 ] || exit "$tests_rc"
   python3 "$ARSENAL_QUALITY_GATE/changed_coverage.py" --report "$COVERAGE_REPORT" --base "$PUSH_BASE" --min 90 \
     || exit $?
 fi

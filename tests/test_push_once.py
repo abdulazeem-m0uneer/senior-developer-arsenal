@@ -4,6 +4,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -18,6 +19,7 @@ IDENTITY = ("-c", "user.name=t", "-c", "user.email=t@example.com")
 ZEROS = "0" * 40
 REPO_URL = "git@github.com:owner/repo.git"
 OPT_OUTS = ("ARSENAL_PUSH_REBASE", "ARSENAL_ALLOW_PUSH")
+FRESH_ENV = ("ARSENAL_PUSH_BASE", "ARSENAL_ALLOW_STALE_BASE", "ARSENAL_ALLOW_UNRUN_RED", "ARSENAL_TEST_LOG")
 
 
 def git(cwd, *args):
@@ -56,6 +58,7 @@ class PushOnceCase(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         base = Path(os.path.realpath(self.tmp.name))
         self.origin, self.repo = base / "origin.git", base / "repo"
+        self.red_runs = base / "red-runs.json"  # never the real ~/.cache state
         git(base, "init", "-q", "--bare", "-b", "main", str(self.origin))
         git(base, "clone", "-q", str(self.origin), str(self.repo))
         git(self.repo, "checkout", "-q", "-b", "main")
@@ -81,8 +84,8 @@ class PushOnceCase(unittest.TestCase):
         return git(self.repo, "rev-parse", "HEAD")
 
     def env(self, **extra):
-        env = {key: value for key, value in self.gh.env().items() if key not in OPT_OUTS}
-        return {**env, **extra}
+        env = {key: value for key, value in self.gh.env().items() if key not in OPT_OUTS + FRESH_ENV}
+        return {**env, "ARSENAL_RED_RUNS": str(self.red_runs), **extra}
 
     def hook(self, local, remote=None, env=None, *args, url=REPO_URL, ref="refs/heads/feature"):
         line = f"{ref} {local} {ref} {remote or self.pushed}\n"
@@ -454,6 +457,234 @@ class CliTests(PushOnceCase):
         result = subprocess.run([sys.executable, str(SCRIPT), "hook", "origin", "x"], input="garbage\n",
                                 cwd=self.repo, capture_output=True, text=True, env=self.env())
         self.assertEqual(result.returncode, 2)
+
+
+class FreshBaseTests(PushOnceCase):
+    """--fresh-base BASE: refuse a push whose head does not contain the base tip, fetched just now."""
+
+    def setUp(self):
+        super().setUp()
+        self.gh.rules([runs("completed", self.pushed)])
+        self.base = Path(self.tmp.name)
+        git(self.repo, "checkout", "-q", "-b", "development", "main")
+        git(self.repo, "push", "-q", "origin", "development")
+        git(self.repo, "checkout", "-q", "feature")
+        git(self.repo, "rebase", "-q", "development")
+        git(self.repo, "push", "-q", "-f", "origin", "feature")
+        self.pushed = git(self.repo, "rev-parse", "HEAD")
+        self.other = self.base / "other"
+        git(self.base, "clone", "-q", str(self.origin), str(self.other))
+        git(self.other, "checkout", "-q", "development")
+
+    def move_base(self):
+        """Another clone pushes to development; this clone's origin/development is not updated."""
+        (self.other / "moved.txt").write_text("m\n")
+        git(self.other, "add", "moved.txt")
+        git(self.other, "commit", "-q", "-m", "dev moves")
+        git(self.other, "push", "-q", "origin", "development")
+        return git(self.other, "rev-parse", "HEAD")
+
+    def push_new_commit(self):
+        return self.commit("c.py", "c\n", "feat: c")
+
+    def test_refuses_when_the_fetched_base_tip_is_not_in_the_head(self):
+        tip = self.move_base()
+        code, out = self.hook(self.push_new_commit(), None, None, "--fresh-base", "origin/development")
+        self.assertEqual(code, 1, out)
+        self.assertIn(tip, out)
+        self.assertIn("rebase onto it, rerun the checks that depend on the base", out)
+
+    def test_passes_once_rebased_onto_the_fetched_base(self):
+        self.move_base()
+        git(self.repo, "fetch", "-q", "origin")
+        git(self.repo, "rebase", "-q", "origin/development")
+        code, out = self.hook(git(self.repo, "rev-parse", "HEAD"), None, None, "--fresh-base", "origin/development")
+        self.assertEqual(code, 0, out)
+
+    def test_passes_when_the_base_has_not_moved(self):
+        code, out = self.hook(self.push_new_commit(), None, None, "--fresh-base", "origin/development")
+        self.assertEqual(code, 0, out)
+
+    def test_env_names_the_base(self):
+        self.move_base()
+        code, out = self.hook(self.push_new_commit(), None, self.env(ARSENAL_PUSH_BASE="origin/development"))
+        self.assertEqual(code, 1, out)
+
+    def test_option_beats_env(self):
+        self.move_base()
+        code, out = self.hook(self.push_new_commit(), None, self.env(ARSENAL_PUSH_BASE="origin/development"),
+                              "--fresh-base", "origin/main")
+        self.assertEqual(code, 0, out)
+
+    def test_base_without_remote_prefix(self):
+        self.move_base()
+        code, out = self.hook(self.push_new_commit(), None, None, "--fresh-base", "development")
+        self.assertEqual(code, 1, out)
+
+    def test_no_option_no_fetch_and_passes(self):
+        self.move_base()
+        code, out = self.hook(self.push_new_commit())
+        self.assertEqual(code, 0, out)
+
+    def test_new_branch_is_checked_too(self):
+        self.move_base()
+        code, out = self.hook(self.push_new_commit(), ZEROS, None, "--fresh-base", "origin/development")
+        self.assertEqual(code, 1, out)
+
+    def test_opt_out_passes_and_logs(self):
+        tip = self.move_base()
+        code, out = self.hook(self.push_new_commit(), None, self.env(ARSENAL_ALLOW_STALE_BASE="1"),
+                              "--fresh-base", "origin/development")
+        self.assertEqual(code, 0, out)
+        self.assertIn("ARSENAL_ALLOW_STALE_BASE=1", out)
+        entry = self.optouts()[-1]
+        self.assertEqual(entry["flag"], "ARSENAL_ALLOW_STALE_BASE")
+        self.assertIn(tip, entry["reason"])
+
+    def test_pushing_the_base_branch_itself_passes(self):
+        self.move_base()
+        git(self.repo, "checkout", "-q", "development")
+        local = self.commit("d.txt", "d\n", "dev: d")
+        code, out = self.hook(local, git(self.repo, "rev-parse", "origin/development"), None,
+                              "--fresh-base", "origin/development", ref="refs/heads/development")
+        self.assertEqual(code, 0, out)
+
+    def test_deletion_passes(self):
+        self.move_base()
+        code, out = self.hook(ZEROS, None, None, "--fresh-base", "origin/development")
+        self.assertEqual(code, 0, out)
+
+    def test_deletion_alone_does_not_fetch(self):
+        self.move_base()
+        git(self.repo, "remote", "set-url", "origin", str(self.base / "missing.git"))
+        code, out = self.hook(ZEROS, None, None, "--fresh-base", "origin/development")
+        self.assertEqual(code, 0, out)
+        self.assertNotIn("warning", out)
+
+    def test_fetches_from_the_pushed_remote(self):
+        self.move_base()
+        git(self.repo, "remote", "add", "up", str(self.origin))
+        git(self.repo, "remote", "set-url", "origin", str(self.base / "missing.git"))
+        local = self.push_new_commit()
+        result = subprocess.run([sys.executable, str(SCRIPT), "hook", "up", REPO_URL, "--fresh-base",
+                                 "up/development"], input=f"refs/heads/feature {local} refs/heads/feature {self.pushed}\n",
+                                cwd=self.repo, capture_output=True, text=True, env=self.env())
+        self.assertEqual(result.returncode, 1, result.stderr)
+
+    def test_deletion_next_to_a_stale_push_passes_only_the_deletion(self):
+        self.move_base()
+        lines = (f"(delete) {ZEROS} refs/heads/old {self.pushed}\n"
+                 f"refs/heads/feature {self.push_new_commit()} refs/heads/feature {self.pushed}\n")
+        result = subprocess.run([sys.executable, str(SCRIPT), "hook", "origin", REPO_URL, "--fresh-base",
+                                 "origin/development"], input=lines, cwd=self.repo, capture_output=True, text=True,
+                                env=self.env())
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertEqual(result.stderr.count("refused"), 1, result.stderr)
+        self.assertIn("old: deletion", result.stderr)
+
+    def test_fetch_failure_passes_with_warning(self):
+        self.move_base()
+        git(self.repo, "remote", "set-url", "origin", str(self.base / "missing.git"))
+        code, out = self.hook(self.push_new_commit(), None, None, "--fresh-base", "origin/development")
+        self.assertEqual(code, 0, out)
+        self.assertIn("warning", out)
+
+    def test_fetch_timeout_passes_with_warning(self):
+        real = subprocess.run(["which", "git"], capture_output=True, text=True).stdout.strip()
+        fake = self.base / "gitbin" / "git"
+        fake.parent.mkdir()
+        fake.write_text(f'#!/bin/sh\ncase "$1" in fetch) sleep 5;; esac\nexec {real} "$@"\n')
+        fake.chmod(0o755)
+        env = self.env(PATH=f"{fake.parent}{os.pathsep}{self.env()['PATH']}", PUSH_ONCE_FETCH_TIMEOUT="0.3")
+        self.move_base()
+        code, out = self.hook(self.push_new_commit(), None, env, "--fresh-base", "origin/development")
+        self.assertEqual(code, 0, out)
+        self.assertIn("did not finish", out)
+
+    def fake_git(self, fetch_script):
+        real = subprocess.run(["which", "git"], capture_output=True, text=True).stdout.strip()
+        fake = self.base / "gitbin" / "git"
+        fake.parent.mkdir(exist_ok=True)
+        fake.write_text(f'#!/bin/sh\ncase "$1" in fetch) {fetch_script};; esac\nexec {real} "$@"\n')
+        fake.chmod(0o755)
+        return f"{fake.parent}{os.pathsep}{self.env()['PATH']}"
+
+    def test_stale_push_with_another_opt_out_names_the_staleness_and_logs_once(self):
+        tip = self.move_base()
+        for flag in OPT_OUTS:
+            with self.subTest(flag=flag):
+                code, out = self.hook(self.commit(f"{flag}.py", "c\n", f"feat: {flag}"), None,
+                                      self.env(**{flag: "1"}), "--fresh-base", "origin/development")
+                self.assertEqual(code, 0, out)
+                self.assertIn(f"moved to {tip}", out)
+                self.assertEqual(self.optouts()[-1]["flag"], flag)
+                self.assertIn(tip, self.optouts()[-1]["reason"])
+
+    def test_stale_base_opt_out_next_to_another_opt_out_logs_once(self):
+        self.move_base()
+        before = len(self.optouts())
+        code, out = self.hook(self.push_new_commit(), None,
+                              self.env(ARSENAL_ALLOW_STALE_BASE="1", ARSENAL_ALLOW_PUSH="1"),
+                              "--fresh-base", "origin/development")
+        self.assertEqual(code, 0, out)
+        self.assertEqual(len(self.optouts()) - before, 1)
+
+    def test_remote_given_as_a_url_still_fetches_the_base(self):
+        self.move_base()
+        local = self.push_new_commit()
+        result = subprocess.run([sys.executable, str(SCRIPT), "hook", str(self.origin), REPO_URL, "--fresh-base",
+                                 "origin/development"], input=f"refs/heads/feature {local} refs/heads/feature {self.pushed}\n",
+                                cwd=self.repo, capture_output=True, text=True, env=self.env())
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertNotIn("warning", result.stderr)
+
+    def test_ancestry_error_is_not_a_stale_refusal(self):
+        self.move_base()
+        code, out = self.hook("1" * 40, None, None, "--fresh-base", "origin/development")
+        self.assertEqual(code, 0, out)
+        self.assertNotIn("moved to", out)
+
+    def test_fetch_that_leaves_no_commit_passes_with_warning(self):
+        self.move_base()
+        env = self.env(PATH=self.fake_git('rm -f "$(git rev-parse --git-dir)/FETCH_HEAD"; exit 0'))
+        code, out = self.hook(self.push_new_commit(), None, env, "--fresh-base", "origin/development")
+        self.assertEqual(code, 0, out)
+        self.assertIn("left no commit", out)
+
+    def test_bad_timeout_values_use_the_default(self):
+        self.move_base()
+        local = self.push_new_commit()
+        for value in ("nan", "0", "-1", "abc"):
+            with self.subTest(value=value):
+                code, out = self.hook(local, None, self.env(PUSH_ONCE_FETCH_TIMEOUT=value),
+                                      "--fresh-base", "origin/development")
+                self.assertEqual(code, 1, out)
+                self.assertNotIn("warning", out)
+
+    def test_timeout_does_not_wait_for_a_fetch_child_holding_the_pipes(self):
+        env = self.env(PATH=self.fake_git("sleep 6 & sleep 6"), PUSH_ONCE_FETCH_TIMEOUT="0.3")
+        self.move_base()
+        start = time.monotonic()
+        code, out = self.hook(self.push_new_commit(), None, env, "--fresh-base", "origin/development")
+        self.assertEqual(code, 0, out)
+        self.assertIn("did not finish", out)
+        self.assertLess(time.monotonic() - start, 4)
+
+    def test_fetch_never_prompts(self):
+        seen = self.base / "prompt.txt"
+        env = self.env(PATH=self.fake_git(f'echo "$GIT_TERMINAL_PROMPT" > {seen}'))
+        self.move_base()
+        self.hook(self.push_new_commit(), None, env, "--fresh-base", "origin/development")
+        self.assertEqual(seen.read_text().strip(), "0")
+
+    def test_cli_check_takes_the_option(self):
+        git(self.repo, "config", "remote.origin.pushurl", REPO_URL)
+        self.move_base()
+        self.push_new_commit()
+        result = subprocess.run([sys.executable, str(SCRIPT), "check", "--fresh-base", "origin/development"],
+                                cwd=self.repo, capture_output=True, text=True, env=self.env())
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertIn("rebase onto it", result.stderr)
 
 
 class HookTemplateTests(PushOnceCase):

@@ -606,7 +606,7 @@ class RuleTests(RuleCase):
                              ({"rule": "unseen-hash", "window_mb": -1}, "above 0"),
                              ({"rule": "unseen-hash", "window_mb": 17}, "at most 16"),
                              ({"rule": "unseen-hash", "window_mb": 64}, "at most 16"),
-                             ({"rule": "calendar", "allow": ["ff00ff00"]}, "unseen-hash and unseen-time rules only"),
+                             ({"rule": "calendar", "allow": ["ff00ff00"]}, "unseen-hash, unseen-time and container-limits rules only"),
                              ({"rule": "unseen-hash", "allow": "ed448"}, "list of words"),
                              ({"rule": "unseen-hash", "allow": []}, "list of words"),
                              ({"rule": "unseen-hash", "allow": ["ok", " "]}, "list of words"),

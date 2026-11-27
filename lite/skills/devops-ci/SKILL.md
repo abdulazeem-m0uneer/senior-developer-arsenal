@@ -2,6 +2,9 @@
 name: devops-ci
 description: 'Dockerfiles, CI/CD pipelines, deployments and rollbacks. Use to write or harden a Dockerfile or pipeline, or fix a failing workflow.'
 ---
+
+> **Lite edition:** steps that run a bundled script (a `scripts/` or `templates/` path) need the full Senior Developer Arsenal. Here, do that step by hand or skip it and say so.
+
 <!-- routing (read by the skill router, not loaded into the skill listing): CI/CD and containers. Use to write or harden a Dockerfile, build or speed up a pipeline, plan a deployment, or fix a failing workflow. Triggers: "Dockerfile", "GitHub Actions", "CI pipeline", "deploy strategy", "rollback", /devops-ci. Not for version bumps and release notes (use git-release) or latency profiling (use perf-audit). -->
 
 # DevOps, CI/CD & Containerisation Procedure
@@ -69,7 +72,10 @@ docker build -t app:ci .                               # image builds from a cle
 docker run --rm app:ci id -u                           # must not print 0 (skip for shell-less images)
 trivy image --severity HIGH,CRITICAL --exit-code 1 --ignore-unfixed app:ci
 actionlint                                             # workflow syntax and expression check
+python3 scripts/download_retry_check.py                # exit 1: a CI download has no retry
 ```
+
+`scripts/download_retry_check.py [PATH ...]` reads the `run:` text of workflow files (default `.github/workflows`, plus `ci/`, `tools/ci/`, `scripts/ci/`) and CI shell, JS and Python scripts. It reports each HTTP-client download (`-O`, `-o`, `-L`, or piped to a shell or tar) without `--retry N` (N at least 2) and each `wget` (not `--spider`) with `--tries=1` or `-t 1` (wget tries 20 times by default, so a plain `wget` is fine), as `path:line: <client> needs --retry N`; in shell text a command inside a loop that reruns it (`until`, `while` but not `while read`, or `for` whose command does not use the loop variable) counts as retried; output-discarding probes and `wget -t 0` (unlimited) are not reported; folder scans skip `.git`, `node_modules` and similar. Exit 0 none, 1 findings, 2 bad input. One failed CDN fetch must not turn a run red.
 
 Report findings in a compact table:
 

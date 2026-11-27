@@ -22,7 +22,18 @@ records nothing and exits 0.
 Prints "<class>[/<sub-kind>] <minutes> min wasted, run <id> <branch>: <lesson id> <added|repeat xN|already counted
 (xN)>" and the first deciding log line; --json prints the same as one object; --dry-run writes nothing and never
 exits 3.
-A run that passed (success, skipped, neutral) has nothing to record; one still running is refused (exit 2).
+A run that passed (success, skipped, neutral) has nothing to record, except that a success of the same workflow and
+branch as the red run removes the repository's red-runs record (a record without those fields, an older one, is removed
+only by a success at its head sha; no write on --dry-run); one still running is refused (exit 2).
+A red run classed test also leaves its failed test files for push_once.py's unrun-red check (G038): one record per
+repository, "owner/name" lower case, in the JSON file $ARSENAL_RED_RUNS (default ~/.cache/arsenal/red-runs.json):
+{"owner/name": {"run": id, "head_sha": sha, "time": epoch seconds, "files": [paths], "workflow": name, "branch":
+name}}; "time" is the run's own update time (its creation time, else now, when gh gives none). The files come from the failed
+log's failure lines (pytest FAILED/ERROR, jest and vitest FAIL, one path per test file name found, `.py`, `_test.go`,
+`.test.` and `.spec.` files); a log naming none records an empty list. A red run replaces the repository's
+record unless the record's run id is higher; other repositories keep theirs. A success clears it only when its run id is
+higher than the record's (its creation time against the record's time when the record has no run id). --dry-run writes nothing; a state file that cannot be written is a warning on
+stderr, never a failure (the ledger result stands).
 Exit codes: 0 recorded, already counted or nothing to record, 2 unreadable or unfinished run, gh error, usage or
 ledger error,
   3 recorded, and the lesson now needs a guard (lessons.py's PROMOTE / GUARD FAILED / EXEMPT recurred hint);
@@ -36,6 +47,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import time
 from datetime import datetime
 from pathlib import Path
 
@@ -49,7 +61,12 @@ import lessons  # noqa: E402
 EXIT_OK, EXIT_UNREADABLE, EXIT_ESCALATE = 0, 2, 3
 LOG_MAX = 2 * 1024 * 1024  # bytes of the failed log kept, from its end
 EVIDENCE_MAX = 200
-RUN_FIELDS = "jobs,conclusion,headBranch,headSha,event,url,workflowName"
+RED_RUNS = "~/.cache/arsenal/red-runs.json"  # ARSENAL_RED_RUNS overrides; push_once.py reads the same file
+FAILURE_LINE = re.compile(r"^(?:FAILED|FAIL|ERROR|[❯×✕✗])\s")
+TEST_FILE = re.compile(r"(?<![\w./@-])((?:[\w.@-]+/)*(?:test_[\w.-]*\.py|[\w.-]*_test\.(?:py|go)"
+                       r"|[\w.-]*\.(?:test|spec)\.[cm]?[jt]sx?))(?![\w-])")
+FAILED_FILES_MAX = 50
+RUN_FIELDS = "jobs,conclusion,headBranch,headSha,event,url,workflowName,createdAt,updatedAt"
 WASTED = {"failure", "timed_out", "cancelled"}
 NOT_FAILED = {"success", "skipped", "neutral"}
 RUNNER_CAUSES = {"runner lost", "billing"}  # outside causes only GitHub prints, even in the middle of a test step
@@ -248,6 +265,100 @@ def repo_name(repo, url):
     return re.sub(r"[^a-z0-9._-]", "-", parts[-1].lower())  # NAME, with or without a host in front
 
 
+def repo_key(repo, url):
+    """OWNER/NAME in lower case: the key of a repository's record in the red-runs file."""
+    in_url = REPO_IN_URL.search(url or "")
+    parts = [part for part in (repo or (in_url.group(1) if in_url else "")).split("/") if part]
+    return "/".join(parts[-2:]).lower().removesuffix(".git")
+
+
+def failed_test_files(text):
+    """Pure: the sorted test files named on the log's failure lines (FAILED/FAIL/ERROR ...), at most FAILED_FILES_MAX."""
+    found = {match.group(1).removeprefix("./") for _, _, body in runtime_lines(text) if FAILURE_LINE.match(body)
+             for match in TEST_FILE.finditer(body)}
+    return sorted(found)[:FAILED_FILES_MAX]
+
+
+def red_runs_path():
+    return Path(os.environ.get("ARSENAL_RED_RUNS") or RED_RUNS).expanduser()
+
+
+def read_red_state(path):
+    """The red-runs file as a dict; a missing, unreadable or damaged file is None."""
+    try:
+        state = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    return state if isinstance(state, dict) else None
+
+
+def save_red_state(path, state):
+    """Write the red-runs file atomically; a failure is a warning on stderr, never an error."""
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        handle, temp = tempfile.mkstemp(dir=path.parent, prefix=".red-runs-")
+        try:
+            with os.fdopen(handle, "w", encoding="utf-8") as out:
+                json.dump(state, out)
+            os.replace(temp, path)
+        finally:
+            with contextlib.suppress(FileNotFoundError):
+                os.unlink(temp)
+    except OSError as error:
+        print(f"warning: could not record the failed test files in {path}: {error}", file=sys.stderr)
+
+
+def epoch(run, *fields):
+    """Epoch seconds of the first of the run's `fields` that gh reported, else None."""
+    moments = (stamp(run.get(field)) for field in fields)
+    return next((moment.timestamp() for moment in moments if moment), None)
+
+
+def run_number(value):
+    """A run id as an int, or None when it is missing or not digits."""
+    return int(value) if isinstance(value, (str, int)) and str(value).isdigit() else None
+
+
+def write_red_record(key, run, at=None):
+    """Replace `key`'s record with red run `run`, stamped `at` (epoch seconds; now when None), unless the record is of
+    a higher run id; a damaged file starts over; the other keys stay."""
+    path = red_runs_path()
+    state = read_red_state(path) or {}
+    held, new = state.get(key), run_number(run["run"])
+    if isinstance(held, dict) and None not in (run_number(held.get("run")), new) and run_number(held["run"]) > new:
+        return
+    state[key] = {"run": run["run"], "head_sha": run["head_sha"], "time": time.time() if at is None else at,
+                  "files": run["files"], "workflow": run["workflow"], "branch": run["branch"]}
+    save_red_state(path, state)
+
+
+def clears_record(record, run, created=None):
+    """True when passing `run` answers the red run in `record`: a later run (higher run id; else created after the
+    record's time) of the same workflow and branch. A record without those fields (an older one) is answered only by
+    a run at its head sha."""
+    if not isinstance(record, dict):
+        return True  # a damaged record answers nothing; drop it
+    held, new = run_number(record.get("run")), run_number(run.get("run"))
+    if None not in (held, new):
+        if new <= held:
+            return False
+    elif created is None or not isinstance(record.get("time"), (int, float)) or created <= record["time"]:
+        return False
+    if isinstance(record.get("workflow"), str) and isinstance(record.get("branch"), str):
+        return (record["workflow"], record["branch"]) == (run["workflow"], run["branch"])
+    return bool(run["head_sha"]) and record.get("head_sha") == run["head_sha"]
+
+
+def clear_red_record(key, run, created=None):
+    """Remove `key`'s record when the passing `run` answers it; a missing or damaged file stays untouched."""
+    path = red_runs_path()
+    state = read_red_state(path)
+    if state is None or key not in state or not clears_record(state[key], run, created):
+        return
+    del state[key]
+    save_red_state(path, state)
+
+
 def read_run(run_id, repo):
     where = ["-R", repo] if repo else []
     run = ci_wait.gh_json(ci_wait.run_gh, ["run", "view", run_id, *where, "--json", RUN_FIELDS])
@@ -395,12 +506,18 @@ def learn(args):
         raise ci_wait.Unreadable("the run has not finished; run this again once it ends")
     if run.get("conclusion") in NOT_FAILED:
         result["class"] = run["conclusion"]
+        if run["conclusion"] == "success" and not args.dry_run:
+            clear_red_record(repo_key(args.repo, run.get("url")), result, epoch(run, "createdAt"))
         return result
     repo = repo_name(args.repo, run.get("url"))
     text = failed_log(args.run_id, where, superseded(run)) + annotations_text(run, args.repo)
     kind, sub, evidence, cause = classify(run, text)
     result.update({"class": kind, "sub_kind": sub, "minutes": minutes_wasted(run, kind), "cause": cause,
                    "evidence": evidence[:EVIDENCE_MAX], "repo": repo})
+    if kind == "test" and not args.dry_run:
+        write_red_record(repo_key(args.repo, run.get("url")),
+                         {**result, "run": args.run_id, "files": failed_test_files(text)},
+                         epoch(run, "updatedAt", "createdAt"))
     if kind in RULES:
         lesson, action, hint = record(args, kind, repo, result["minutes"])
         result.update({"lesson": lesson["id"], "action": action, "hits": lesson["hits"], "escalation": hint})

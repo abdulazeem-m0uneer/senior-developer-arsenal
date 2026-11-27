@@ -4,6 +4,22 @@ All notable changes to Senior Developer Arsenal are recorded in this file.
 
 The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/), and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version is the one in the `VERSION` file, and each release is dated by the day its pull request merged (UTC).
 
+## [1.38.0] - 2026-11-27
+
+### Added
+
+- `rerun-after-red` rule (`hooks/guard_ci_rerun.py`): `gh run rerun`, `gh workflow run` and their `gh api` forms are refused after a red CI run (seen through `gh run view`, `gh run list`, `gh run watch` or `gh pr checks`) until a cause note is recorded. A green run or an all-pass `gh pr checks` output closes it; a red with no run id holds for 2 hours only (#77).
+- `container-limits` rule (`hooks/guard_container_limits.py`, opt-in): `docker`/`podman` `run` and `create` without a memory or CPU limit, and `docker compose up` without a project name, are refused (#77).
+- `push_once.py --fresh-base` (or `ARSENAL_PUSH_BASE`): checks the branch against a freshly fetched base before pushing, with a 20 s timeout that passes with a warning; opt-out `ARSENAL_ALLOW_STALE_BASE` (#77).
+- Unrun-red check before a push: `ci_learn.py` records a red run's failed test files in `ARSENAL_RED_RUNS`, and `push_once.py` refuses a push until a test run after that record names each file in `ARSENAL_TEST_LOG`. The pre-push template appends each run, with a `### arsenal-test-run <epoch>` marker, to that log. A missing or unreadable record passes with a warning; opt-out `ARSENAL_ALLOW_UNRUN_RED=<reason>` (#77).
+- `devops-ci/scripts/download_retry_check.py`: reports CI downloads (`curl`, `wget -t 1`, and the like) without a retry (#77).
+- `test-every-change/scripts/locator_check.py`: reports loose Playwright locators (a literal `name` without `exact`) (#77).
+- `tests/test_py39_syntax.py`: every script parses on Python 3.9 (#77).
+
+### Changed
+
+- `hooks/guard_lessons.py`: the per-rule reference text moved to `hooks/guard_lessons_docs.py`, to keep the file under 1000 lines (#77).
+
 ## [1.37.1] - 2026-11-27
 
 ### Fixed
@@ -520,6 +536,7 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 - Non-destructive installers for every supported agent.
 - CI with lint, test and smoke workflows.
 
+[1.38.0]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/77
 [1.37.1]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/76
 [1.37.0]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/75
 [1.36.0]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/68

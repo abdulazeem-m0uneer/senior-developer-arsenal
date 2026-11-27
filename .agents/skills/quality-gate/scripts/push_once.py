@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """One CI run per branch: refuse a push that would start a second run while the first is still going.
 
-usage: push_once.py hook <remote> <url> [--base REF]          (pre-push hook: push lines on stdin)
-       push_once.py check [--remote origin] [--branch B] [--base REF]
+usage: push_once.py hook <remote> <url> [--base REF] [--fresh-base BASE]   (pre-push hook: push lines on stdin)
+       push_once.py check [--remote origin] [--branch B] [--base REF] [--fresh-base BASE]
 
 Why: every push starts a new CI run, and a fix pushed while the last run is still going wastes that run's
 minutes and hides its result. A pure rebase is different: the content is the same, so a merge train or a
@@ -38,6 +38,26 @@ builds one line from the branch, default the current one, and refs/remotes/<remo
     The old head unknown locally (not fetched) or no base found is refused, with what to do.
   Base: --base, else the remote's default branch (refs/remotes/<remote>/HEAD), else <remote>/main, main,
   <remote>/master, master.
+Fresh base: --fresh-base BASE (e.g. origin/development; env ARSENAL_PUSH_BASE, the option wins) guards against a
+base that moved after the checks ran. Before pushing, `git fetch --quiet <remote> <base branch>` (BASE without a
+leading "<remote>/"; 20 s, PUSH_ONCE_FETCH_TIMEOUT overrides, for tests) and the push is refused when the
+fetched base tip is not an ancestor of the pushed head: "rebase onto it, rerun the checks that depend on the
+base". A deletion, a push of the base branch itself and a non-branch ref pass; a fetch that fails or times out
+passes with a warning, never blocks (the fetch has no stdin or prompt, and a timeout kills its ssh children; a bad
+PUSH_ONCE_FETCH_TIMEOUT means 20 s; BASE loses its leading remote name whether the hook's <remote> is a name or a
+URL; only an is-ancestor exit 1 refuses, an error passes). An opt-out below also passes a stale push, and says so
+in its message and log line. ARSENAL_ALLOW_STALE_BASE=1 passes a stale push and logs it like the opt-outs
+below (it waives this check only; the CI-run check still applies).
+Unrun red (G038): ci_learn.py records, per repository (OWNER/REPO, lower case), the test files a red CI run failed in
+a JSON state file (ARSENAL_RED_RUNS, default ~/.cache/arsenal/red-runs.json: {"owner/repo": {run, head_sha, time,
+files}}). When a record exists, its head_sha is an ancestor of (or is) the pushed head, and it lists files, each file
+must be named in a run of the local test log (ARSENAL_TEST_LOG, default <repository top>/.agents/test-run.log) that
+starts at a `### arsenal-test-run <epoch>` marker line with epoch >= the record's time;
+templates/pre-push writes it from AFFECTED_TESTS_CMD), else the push is refused
+with the files and the command to run them. ARSENAL_ALLOW_UNRUN_RED=<reason> passes it and logs the reason like the
+opt-outs below. It reads local files only: a missing, corrupt or unreadable state file, no record for the repository,
+or a record whose head the pushed head does not contain, or gh or the network being down pass with a warning, never a
+refusal. An unreadable test log refuses (every file counts as unrun, the message says so). An opt-out below skips it.
 Opt-outs (value 1), each logged as one JSON line {time, branch, local_sha, flag, reason} to
 .agents/ci-optouts.log at the repository top, reason being what the check found:
   ARSENAL_PUSH_REBASE=1  a merge train's own rebase push: passes.
@@ -51,12 +71,16 @@ a refusal (fail-closed, unlike gh): fix git, or pass one push with ARSENAL_ALLOW
 Standard library only.
 """
 import argparse
+import contextlib
 import datetime
 import json
+import math
 import os
 import re
+import signal
 import subprocess
 import sys
+import tempfile
 from collections import Counter
 from pathlib import Path
 
@@ -64,7 +88,10 @@ ZEROS = "0" * 40
 RUNNING = {"in_progress", "queued", "waiting", "requested", "pending"}
 PUSH_EVENTS = {"push", "pull_request", "pull_request_target", None}  # None: gh gave no event; count the run
 OPT_OUTS = ("ARSENAL_ALLOW_PUSH", "ARSENAL_PUSH_REBASE")
+FETCH_TIMEOUT = 20
 LOG = Path(".agents") / "ci-optouts.log"
+TEST_LOG = Path(".agents") / "test-run.log"
+RED_RUNS = "~/.cache/arsenal/red-runs.json"  # ci_learn.py writes it; ARSENAL_RED_RUNS overrides both ends
 URL = re.compile(r"^(?:ssh|git|https?|git\+ssh|ssh\+git)://(?:[^@/]+@)?([^/:]+)(?::\d+)?/(.+)$")
 SCP_URL = re.compile(r"^(?:[^@/:]+@)?([^/:]{2,}):(.+)$")  # user@host:owner/repo; a 2+ letter host is no drive
 
@@ -196,6 +223,66 @@ def verdict(branch, local, remote_sha, remote, base, repo):
     return False, f"{branch}: {busy} (this push changes content: not a pure rebase onto {base_ref})"
 
 
+def base_branch(remote, base):
+    """`base` without its leading remote name: the hook's <remote> (a name or a URL), else any configured remote."""
+    if base.startswith(f"{remote}/"):
+        return base[len(remote) + 1:]
+    first, _, rest = base.partition("/")
+    code, names, _ = git("remote")
+    return rest if rest and code == 0 and first in names.split() else base
+
+
+def fetch_timeout():
+    """PUSH_ONCE_FETCH_TIMEOUT seconds when it is a positive finite number, else FETCH_TIMEOUT."""
+    try:
+        value = float(os.environ.get("PUSH_ONCE_FETCH_TIMEOUT", FETCH_TIMEOUT))
+    except ValueError:
+        return FETCH_TIMEOUT
+    return value if math.isfinite(value) and value > 0 else FETCH_TIMEOUT
+
+
+def run_fetch(remote, branch, timeout):
+    """git fetch that cannot prompt and, on timeout, is killed with its ssh or remote-helper children."""
+    process = subprocess.Popen(["git", "fetch", "--quiet", remote, branch], stdin=subprocess.DEVNULL,
+                               stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, start_new_session=True,
+                               env={**os.environ, "GIT_TERMINAL_PROMPT": "0"})
+    try:
+        _, err = process.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        process.communicate()
+        raise
+    return process.returncode, err
+
+
+def fetched_base_tip(remote, branch):
+    """(tip sha or None, warning or None) of `branch` fetched from `remote` just now; a problem is a warning."""
+    timeout = fetch_timeout()
+    try:
+        code, err = run_fetch(remote, branch, timeout)
+    except OSError as error:
+        return None, f"fresh-base: could not run git fetch: {error}"
+    except subprocess.TimeoutExpired:
+        return None, f"fresh-base: git fetch {remote} {branch} did not finish within {timeout:g}s"
+    if code:
+        return None, f"fresh-base: git fetch {remote} {branch} exited {code}: {err.strip()[:300]}"
+    tip = resolve("FETCH_HEAD")
+    return tip, None if tip else f"fresh-base: git fetch {remote} {branch} left no commit"
+
+
+def stale_base(branch, local, base, base_name, tip):
+    """The refusal message when `local` lacks the fetched base tip (is-ancestor exits 1), else None."""
+    if is_zero(local) or branch == base_name:
+        return None
+    if git("merge-base", "--is-ancestor", tip, local)[0] != 1:
+        return None
+    return (f"{branch}: the base {base} moved to {tip} and this push does not contain it; rebase onto it, rerun "
+            f"the checks that depend on the base")
+
+
 def log_opt_out(top, branch, local, flag, reason):
     entry = {"time": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"), "branch": branch,
              "local_sha": local, "flag": flag, "reason": reason}
@@ -206,6 +293,121 @@ def log_opt_out(top, branch, local, flag, reason):
             handle.write(json.dumps(entry) + "\n")
     except OSError as error:
         print(f"push_once: warning: could not log the opt-out to {path}: {error}", file=sys.stderr)
+
+
+def red_record(repo_key):
+    """(record or None, warning or None) for `repo_key` in the red-runs state file; a problem is a warning."""
+    path = Path(os.environ.get("ARSENAL_RED_RUNS") or RED_RUNS).expanduser()
+    try:
+        state = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return None, f"no CI record ({path} is missing)"
+    except (OSError, ValueError) as error:
+        return None, f"CI record unreadable ({path}: {error})"
+    record = state.get(repo_key) if isinstance(state, dict) else None
+    if record is None:
+        return None, f"no CI record for {repo_key}"
+    damaged = not isinstance(record, dict) or not (
+        isinstance(record.get("files"), list) and all(isinstance(f, str) for f in record["files"])
+        and isinstance(record.get("time"), (int, float)) and isinstance(record.get("head_sha"), str))
+    if damaged:
+        return None, f"CI record for {repo_key} is damaged ({path})"
+    return record, None
+
+
+RUN_MARKER = "### arsenal-test-run"
+MARKER_LINE = re.compile(rf"^{RUN_MARKER} (\d+)[ \t]*$", re.MULTILINE)
+
+
+def unrun_files(record, log_path, top=None):
+    """(files of the record that the local test log does not name, warning or None). Only the log text from the first
+    run marker at or after the record's time counts; with no such marker, or a missing or unreadable log, nothing is
+    named, so every file counts as unrun."""
+    try:
+        text = log_path.read_text(encoding="utf-8", errors="replace")
+    except FileNotFoundError:
+        return list(record["files"]), None
+    except OSError as error:
+        return list(record["files"]), f"test log unreadable ({log_path}: {error})"
+    start = next((m.end() for m in MARKER_LINE.finditer(text) if int(m.group(1)) >= record["time"]), None)
+    if start is None:
+        return list(record["files"]), None
+    text = text[start:]
+    text = relative_paths(text, top)
+    return [name for name in record["files"] if not names_file(text, name)], None
+
+
+def relative_paths(text, top):
+    """The log text with `./` and the repository's absolute top path (as given and resolved) removed where they start
+    a path, so ./tests/test_a.py and /<top>/tests/test_a.py read as tests/test_a.py."""
+    for prefix in sorted({f"{top}/", f"{Path(top).resolve()}/"} if top else (), key=len, reverse=True):
+        text = re.sub(rf"(?<![\w./]){re.escape(prefix)}", "", text)
+    return re.sub(r"(?<![\w./])\./", "", text)
+
+
+def names_file(text, name):
+    """True when the log shows the file by path (tests/test_a.py) or as a dotted module (tests.test_a), as a whole
+    token: not preceded by a path or word character and not followed by a word character."""
+    module = re.sub(r"\.py$", "", name).replace("/", ".")
+    # A dotted form must not be the start of a longer file name (test_a.pyc).
+    return any(re.search(rf"(?<![\w./]){re.escape(form)}(?!{follow})", text)
+               for form, follow in ((name, r"\w"), (module, r"\w|\.py")))
+
+
+def drop_record(repo_key):
+    """Remove `repo_key` from the red-runs file atomically; a failure is only a warning."""
+    path = Path(os.environ.get("ARSENAL_RED_RUNS") or RED_RUNS).expanduser()
+    try:
+        state = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(state, dict) or repo_key not in state:
+            return
+        del state[repo_key]
+        handle, temp = tempfile.mkstemp(dir=path.parent, prefix=".red-runs-")
+        try:
+            with os.fdopen(handle, "w", encoding="utf-8") as out:
+                json.dump(state, out)
+            os.replace(temp, path)
+        finally:
+            with contextlib.suppress(FileNotFoundError):
+                os.unlink(temp)
+    except (OSError, ValueError) as error:
+        print(f"push_once: warning: could not clear the CI record for {repo_key} in {path}: {error}", file=sys.stderr)
+
+
+def unrun_red(top, repo, branch, local):
+    """The refusal message when CI's last red run failed test files that no newer local test log names, else None.
+    Warnings go to stderr; ARSENAL_ALLOW_UNRUN_RED=<reason> passes a refusal and logs it."""
+    if is_zero(local) or not repo:
+        return None
+    key = "/".join(repo.lower().split("/")[-2:])
+    record, warning = red_record(key)
+    if not record:
+        print(f"push_once: warning: {warning}; unrun red not checked", file=sys.stderr)
+        return None
+    code = git("merge-base", "--is-ancestor", record["head_sha"], local)[0]
+    if code:
+        why = "its head is not in this push" if code == 1 else f"its head {record['head_sha']} is unknown here"
+        print(f"push_once: warning: CI record for {key} does not apply: {why}; unrun red not checked", file=sys.stderr)
+        return None
+    log_path = Path(top) / Path(os.environ.get("ARSENAL_TEST_LOG") or TEST_LOG)
+    missing, warning = unrun_files(record, log_path, top)
+    if warning:
+        print(f"push_once: warning: {warning}; every failed file counts as unrun", file=sys.stderr)
+    if not missing:
+        drop_record(key)
+        return None
+    files = " ".join(missing)
+    message = (f"{branch}: CI run {record.get('run')} failed {', '.join(missing)}, and no run marker in the test log "
+               f"({log_path}) at or after it is followed by their names; run them locally first, writing the marker "
+               f"and the run: {{ echo \"{RUN_MARKER} $(date +%s)\"; <your test command> {files}; }} >> {log_path} "
+               f"2>&1 (the log must show each path or module name: rerun with the paths given "
+               f"explicitly, or with a verbose runner, pytest -v <path>)")
+    reason = os.environ.get("ARSENAL_ALLOW_UNRUN_RED")
+    if reason:
+        log_opt_out(top, branch, local, "ARSENAL_ALLOW_UNRUN_RED", f"{message} [reason: {reason}]")
+        print(f"push_once: {message} [ARSENAL_ALLOW_UNRUN_RED={reason}: passes, logged to {LOG}]", file=sys.stderr)
+        return None
+    return message + "; or set ARSENAL_ALLOW_UNRUN_RED=<reason>"
 
 
 def parse_push_lines(text):
@@ -253,6 +455,8 @@ def main(argv=None):
     check.add_argument("--branch")
     for sub in (hook, check):
         sub.add_argument("--base", help="the branch a rebase is measured against (default: remote's default)")
+        sub.add_argument("--fresh-base", default=os.environ.get("ARSENAL_PUSH_BASE") or None,
+                         help="refuse a push that lacks the base tip fetched now (env ARSENAL_PUSH_BASE)")
     args = parser.parse_args(argv)
     try:
         code, top, err = git("rev-parse", "--show-toplevel")
@@ -264,7 +468,29 @@ def main(argv=None):
             pushes, url = cli_push(args.remote, args.branch), remote_url(args.remote)
         flags = [flag for flag in OPT_OUTS if os.environ.get(flag) == "1"]
         refused, repo = False, gh_repo(url) if pushes else None
+        tip = None
+        base_name = base_branch(args.remote, args.fresh_base) if args.fresh_base else None
+        if args.fresh_base and any(not is_zero(local) for _, local, _ in pushes):
+            tip, warning = fetched_base_tip(args.remote, base_name)
+            if warning:
+                print(f"push_once: warning: {warning}; base freshness not checked", file=sys.stderr)
         for branch, local, remote_sha in pushes:
+            stale = stale_base(branch, local, args.fresh_base, base_name, tip) if tip else None
+            if stale and flags:
+                print(f"push_once: {stale} [stale base passed by the opt-out below]",
+                      file=sys.stderr)
+            elif stale and os.environ.get("ARSENAL_ALLOW_STALE_BASE") == "1":
+                log_opt_out(top.strip(), branch, local, "ARSENAL_ALLOW_STALE_BASE", stale)
+                print(f"push_once: {stale} [ARSENAL_ALLOW_STALE_BASE=1: passes, logged to {LOG}]", file=sys.stderr)
+            elif stale:
+                refused = True
+                print(f"push_once: refused: {stale}", file=sys.stderr)
+                continue
+            unrun = None if flags else unrun_red(top.strip(), repo, branch, local)
+            if unrun:
+                refused = True
+                print(f"push_once: refused: {unrun}", file=sys.stderr)
+                continue
             try:
                 passes, message = verdict(branch, local, remote_sha, args.remote, args.base, repo)
             except UsageError as error:
@@ -272,6 +498,7 @@ def main(argv=None):
                     raise
                 passes, message = False, f"{branch}: {error}"
             if flags:
+                message = f"{stale}; {message}" if stale else message
                 log_opt_out(top.strip(), branch, local, flags[0], message)
                 message = f"{message} [{flags[0]}=1: passes, logged to {LOG}]"
             elif not passes:
