@@ -94,6 +94,7 @@ guard_destructive = optional("guard_destructive")
 guard_limits = optional("guard_limits")
 guard_lessons = optional("guard_lessons")
 guard_oom = optional("guard_oom")
+guard_ci_rerun = optional("guard_ci_rerun")
 
 EVIDENCE_FAILURES = 3   # failed commands kept with a lesson: the last ones since the previous lesson
 ERROR_CHARS = 400
@@ -409,6 +410,17 @@ def red_checks(events):
     return red
 
 
+def record_ci(path, data, command):
+    """Record red CI output a gh command showed, and a rerun or dispatch that started (rerun-after-red, CI half)."""
+    if not (guard_lessons and guard_ci_rerun and guard_ci_rerun.GH_WORD.search(command)):
+        return
+    failed = data.get("hook_event_name") == "PostToolUseFailure"
+    response = data.get("tool_response")
+    text = data.get("error") if failed else response.get("stdout") if isinstance(response, dict) else None
+    for event in guard_ci_rerun.observe(command, text, guard_lessons.commands, not failed):
+        record(path, {**event, "time": int(time.time())})
+
+
 def track():
     if switched_off():
         return  # ARSENAL_GUARD=off records nothing either
@@ -419,6 +431,7 @@ def track():
     if not path or not isinstance(command, str):
         return
     checks = check_keys(command)
+    record_ci(path, data, command)
     if data.get("hook_event_name") == "PostToolUseFailure":
         if data.get("is_interrupt") is not True:
             error = str(data.get("error") or "")

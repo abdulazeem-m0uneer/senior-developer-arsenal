@@ -11,6 +11,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -34,9 +35,10 @@ def job(name="tests", conclusion="failure", start="2026-01-05T10:00:00Z", end="2
     return {**found, "databaseId": job_id} if job_id else found
 
 
-def run_json(jobs, conclusion="failure", branch="feature/x", repo="acme/app", run_id="101"):
-    return {"jobs": jobs, "conclusion": conclusion, "headBranch": branch, "headSha": "c" * 40,
-            "event": "push", "url": f"https://github.com/{repo}/actions/runs/{run_id}", "workflowName": "ci"}
+def run_json(jobs, conclusion="failure", branch="feature/x", repo="acme/app", run_id="101", workflow="ci", sha="c" * 40,
+             **times):
+    return {"jobs": jobs, "conclusion": conclusion, "headBranch": branch, "headSha": sha,
+            "event": "push", "url": f"https://github.com/{repo}/actions/runs/{run_id}", "workflowName": workflow, **times}
 
 
 def log(*lines, job_name="tests", step="Run tests"):
@@ -747,6 +749,180 @@ class CiLearnTests(unittest.TestCase):
 
     def test_non_numeric_run_id_is_a_usage_error(self):
         self.assertEqual(self.learn(run_id="abc")[0], EXIT_UNREADABLE)
+
+    # --- G038: a red test run leaves one record per repository: run, head sha, time and its failed test files -----
+    def red_state(self):
+        self.state = self.tmp / "state" / "red-runs.json"
+        self.env = {"ARSENAL_RED_RUNS": str(self.state)}
+        self.pytest_log = log("FAILED tests/test_a.py::test_x - AssertionError: 1 != 2",
+                              "FAILED tests/test_a.py::test_y - AssertionError",
+                              f"{RED} FAIL {RESET} src/b.test.ts > adds", "ERROR tests/test_c.py - ImportError",
+                              "=== 3 failed, 9 passed")
+
+    def records(self):
+        return json.loads(self.state.read_text())
+
+    def test_a_red_test_run_records_its_failed_files(self):
+        self.red_state()
+        self.serve(run_json([job()]), self.pytest_log)
+        code, out, err = self.learn(env=self.env)
+        self.assertEqual(code, EXIT_OK, err)
+        record = self.records()["acme/app"]
+        self.assertEqual((record["run"], record["head_sha"]), ("101", "c" * 40))
+        self.assertEqual((record["workflow"], record["branch"]), ("ci", "feature/x"))
+        self.assertEqual(record["files"], ["src/b.test.ts", "tests/test_a.py", "tests/test_c.py"])
+        self.assertAlmostEqual(record["time"], time.time(), delta=60)
+
+    def test_a_failed_file_is_taken_from_a_line_that_names_a_failure_only(self):
+        self.red_state()
+        self.serve(run_json([job()]), log("collected tests/test_ok.py", "FAILED tests/test_bad.py::t - AssertionError"))
+        self.learn(env=self.env)
+        self.assertEqual(self.records()["acme/app"]["files"], ["tests/test_bad.py"])
+
+    def test_a_test_failure_with_no_parsable_file_records_an_empty_list(self):
+        self.red_state()
+        self.serve(run_json([job()]), log("AssertionError: expected 3 to equal 4"))
+        self.learn(env=self.env)
+        self.assertEqual(self.records()["acme/app"]["files"], [])
+
+    def test_other_classes_and_dry_runs_record_nothing(self):
+        self.red_state()
+        self.serve(run_json([job()]), log("src/a.ts:3:1 error TS2322: bad"))
+        self.learn(env=self.env)
+        self.assertFalse(self.state.exists())
+        self.serve(run_json([job()]), self.pytest_log)
+        self.learn("--dry-run", env=self.env)
+        self.assertFalse(self.state.exists())
+
+    def test_a_newer_run_replaces_the_repository_record_and_keeps_the_others(self):
+        self.red_state()
+        self.state.parent.mkdir()
+        self.state.write_text(json.dumps({"acme/app": {"run": "9", "head_sha": "a", "time": 1, "files": ["x.py"]},
+                                          "acme/other": {"run": "8", "head_sha": "b", "time": 2, "files": []}}))
+        self.serve(run_json([job()]), self.pytest_log)
+        self.learn(env=self.env)
+        records = self.records()
+        self.assertEqual(records["acme/app"]["run"], "101")
+        self.assertEqual(records["acme/other"]["run"], "8")
+
+    def test_a_corrupt_state_file_is_replaced(self):
+        self.red_state()
+        self.state.parent.mkdir()
+        self.state.write_text("{not json")
+        self.serve(run_json([job()]), self.pytest_log)
+        self.assertEqual(self.learn(env=self.env)[0], EXIT_OK)
+        self.assertEqual(self.records()["acme/app"]["run"], "101")
+
+    def test_an_unwritable_state_path_warns_and_still_succeeds(self):
+        self.red_state()
+        self.state.mkdir(parents=True)  # a directory where the file should be
+        self.serve(run_json([job()]), self.pytest_log)
+        code, out, err = self.learn(env=self.env)
+        self.assertEqual(code, EXIT_OK, err)
+        self.assertIn("warning: could not record the failed test files", err)
+        self.assertEqual([p.name for p in self.state.parent.iterdir()], ["red-runs.json"])  # no temp file left
+        self.assertIn("added", out)
+
+    # --- a passing run of the repository clears its record -------------------------------------------------------
+    def seed_records(self, **records):
+        """One record per key: a red `ci` run of `feature/x` at head sha `a`, unless the value overrides fields."""
+        self.state.parent.mkdir(exist_ok=True)
+        base = {"run": "9", "head_sha": "a", "time": 1, "files": ["x.py"], "workflow": "ci", "branch": "feature/x"}
+        self.state.write_text(json.dumps({key: {**base, **(fields if isinstance(fields, dict) else {})}
+                                          for key, fields in records.items()}))
+
+    def pass_run(self, **fields):
+        self.serve(run_json([job(conclusion="success")], conclusion="success", sha="d" * 40, **fields))
+        code, _, err = self.learn(env=self.env)
+        self.assertEqual(code, EXIT_OK, err)
+        return list(self.records())
+
+    def test_a_passing_run_of_the_same_workflow_and_branch_removes_its_record_and_keeps_the_others(self):
+        self.red_state()
+        self.seed_records(**{"acme/app": 1, "acme/other": 1})
+        self.assertEqual(self.pass_run(), ["acme/other"])
+
+    def test_a_passing_run_of_another_workflow_on_the_same_branch_keeps_the_record(self):
+        self.red_state()
+        self.seed_records(**{"acme/app": 1})
+        self.assertEqual(self.pass_run(workflow="lint"), ["acme/app"])
+
+    def test_a_passing_run_of_the_same_workflow_on_another_branch_keeps_the_record(self):
+        self.red_state()
+        self.seed_records(**{"acme/app": 1})
+        self.assertEqual(self.pass_run(branch="main"), ["acme/app"])
+
+    def test_an_old_record_without_workflow_and_branch_is_removed_only_by_a_run_at_its_sha(self):
+        self.red_state()
+        old = {"workflow": None, "branch": None}
+        self.seed_records(**{"acme/app": old})
+        record = {k: v for k, v in self.records()["acme/app"].items() if k not in old}
+        self.state.write_text(json.dumps({"acme/app": record}))
+        self.assertEqual(self.pass_run(), ["acme/app"])  # run at sha ddd..., record at sha a: stays
+        self.serve(run_json([job(conclusion="success")], conclusion="success", sha="a"), run_id="101")
+        self.assertEqual(self.learn(env=self.env)[0], EXIT_OK)
+        self.assertEqual(self.records(), {})
+
+    def test_a_passing_run_of_another_repository_leaves_the_record_alone(self):
+        self.red_state()
+        self.seed_records(**{"acme/app": 1})
+        self.serve(run_json([job(conclusion="success")], conclusion="success", repo="acme/else"))
+        self.assertEqual(self.learn(env=self.env)[0], EXIT_OK)
+        self.assertEqual(list(self.records()), ["acme/app"])
+
+    def learn_pass(self, run_id, **times):
+        self.serve(run_json([job(conclusion="success")], conclusion="success", sha="d" * 40, run_id=run_id, **times),
+                   run_id=run_id)
+        code, _, err = self.learn(run_id=run_id, env=self.env)
+        self.assertEqual(code, EXIT_OK, err)
+        return list(self.records())
+
+    def test_an_older_passing_run_does_not_clear_a_newer_red_record(self):
+        self.red_state()
+        self.seed_records(**{"acme/app": {"run": "500"}})
+        self.assertEqual(self.learn_pass("101"), ["acme/app"])
+        self.assertEqual(self.learn_pass("501"), [])
+
+    def test_a_record_without_a_run_id_is_cleared_only_by_a_run_created_after_it(self):
+        self.red_state()
+        self.seed_records(**{"acme/app": {"time": 1_800_000_000}})
+        record = {k: v for k, v in self.records()["acme/app"].items() if k != "run"}
+        self.state.write_text(json.dumps({"acme/app": record}))
+        self.assertEqual(self.learn_pass("101", createdAt="2027-01-15T07:59:59Z"), ["acme/app"])
+        self.assertEqual(self.learn_pass("102", createdAt="2027-01-15T08:00:01Z"), [])
+
+    def test_the_record_time_is_the_runs_own_update_time(self):
+        self.red_state()
+        self.serve(run_json([job()], updatedAt="2026-01-05T10:00:00Z", createdAt="2026-01-05T09:00:00Z"), self.pytest_log)
+        self.learn(env=self.env)
+        self.assertEqual(self.records()["acme/app"]["time"], 1767607200)  # 2026-01-05T10:00:00Z
+
+    def test_the_record_time_falls_back_to_the_created_time_then_now(self):
+        self.red_state()
+        self.serve(run_json([job()], createdAt="2026-01-05T09:00:00Z"), self.pytest_log)
+        self.learn(env=self.env)
+        self.assertEqual(self.records()["acme/app"]["time"], 1767603600)
+        self.serve(run_json([job()], updatedAt="0001-01-01T00:00:00Z"), self.pytest_log)
+        self.learn(env=self.env)
+        self.assertAlmostEqual(self.records()["acme/app"]["time"], time.time(), delta=60)
+
+    def test_an_old_red_does_not_replace_a_newer_red_record(self):
+        self.red_state()
+        self.seed_records(**{"acme/app": {"run": "500", "files": ["new.py"]}})
+        self.serve(run_json([job()]), self.pytest_log)
+        self.learn(env=self.env)
+        self.assertEqual(self.records()["acme/app"]["run"], "500")
+        self.assertEqual(self.records()["acme/app"]["files"], ["new.py"])
+
+    def test_a_passing_dry_run_and_a_missing_state_file_write_nothing(self):
+        self.red_state()
+        self.seed_records(**{"acme/app": 1})
+        self.serve(run_json([job(conclusion="success")], conclusion="success"))
+        self.learn("--dry-run", env=self.env)
+        self.assertEqual(list(self.records()), ["acme/app"])
+        self.state.unlink()
+        self.assertEqual(self.learn(env=self.env)[0], EXIT_OK)
+        self.assertFalse(self.state.exists())
 
 
 if __name__ == "__main__":
