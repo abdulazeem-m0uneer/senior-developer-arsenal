@@ -107,6 +107,7 @@ antigravity	global	file	guard_live_script.py	hooks/guard_live_script.py	.gemini/
 antigravity	global	file	guard_models.py	hooks/guard_models.py	.gemini/config/arsenal-hooks/guard_models.py	-
 antigravity	global	file	guard_oom.py	hooks/guard_oom.py	.gemini/config/arsenal-hooks/guard_oom.py	-
 antigravity	global	file	guard_outer_timeout.py	hooks/guard_outer_timeout.py	.gemini/config/arsenal-hooks/guard_outer_timeout.py	-
+antigravity	global	file	guard_replace_dollar.py	hooks/guard_replace_dollar.py	.gemini/config/arsenal-hooks/guard_replace_dollar.py	-
 antigravity	global	file	guard_scope.py	hooks/guard_scope.py	.gemini/config/arsenal-hooks/guard_scope.py	-
 antigravity	global	file	guard_syntax.py	hooks/guard_syntax.py	.gemini/config/arsenal-hooks/guard_syntax.py	-
 antigravity	global	file	guard_timer.py	hooks/guard_timer.py	.gemini/config/arsenal-hooks/guard_timer.py	-
@@ -234,6 +235,7 @@ antigravity	project	file	guard_live_script.py	hooks/guard_live_script.py	.agents
 antigravity	project	file	guard_models.py	hooks/guard_models.py	.agents/arsenal-hooks/guard_models.py	-
 antigravity	project	file	guard_oom.py	hooks/guard_oom.py	.agents/arsenal-hooks/guard_oom.py	-
 antigravity	project	file	guard_outer_timeout.py	hooks/guard_outer_timeout.py	.agents/arsenal-hooks/guard_outer_timeout.py	-
+antigravity	project	file	guard_replace_dollar.py	hooks/guard_replace_dollar.py	.agents/arsenal-hooks/guard_replace_dollar.py	-
 antigravity	project	file	guard_scope.py	hooks/guard_scope.py	.agents/arsenal-hooks/guard_scope.py	-
 antigravity	project	file	guard_syntax.py	hooks/guard_syntax.py	.agents/arsenal-hooks/guard_syntax.py	-
 antigravity	project	file	guard_timer.py	hooks/guard_timer.py	.agents/arsenal-hooks/guard_timer.py	-
@@ -345,6 +347,7 @@ gemini	global	file	guard_live_script.py	hooks/guard_live_script.py	.agents/arsen
 gemini	global	file	guard_models.py	hooks/guard_models.py	.agents/arsenal-hooks/guard_models.py	-
 gemini	global	file	guard_oom.py	hooks/guard_oom.py	.agents/arsenal-hooks/guard_oom.py	-
 gemini	global	file	guard_outer_timeout.py	hooks/guard_outer_timeout.py	.agents/arsenal-hooks/guard_outer_timeout.py	-
+gemini	global	file	guard_replace_dollar.py	hooks/guard_replace_dollar.py	.agents/arsenal-hooks/guard_replace_dollar.py	-
 gemini	global	file	guard_scope.py	hooks/guard_scope.py	.agents/arsenal-hooks/guard_scope.py	-
 gemini	global	file	guard_syntax.py	hooks/guard_syntax.py	.agents/arsenal-hooks/guard_syntax.py	-
 gemini	global	file	guard_timer.py	hooks/guard_timer.py	.agents/arsenal-hooks/guard_timer.py	-
@@ -458,6 +461,7 @@ gemini	project	file	guard_live_script.py	hooks/guard_live_script.py	.agents/arse
 gemini	project	file	guard_models.py	hooks/guard_models.py	.agents/arsenal-hooks/guard_models.py	-
 gemini	project	file	guard_oom.py	hooks/guard_oom.py	.agents/arsenal-hooks/guard_oom.py	-
 gemini	project	file	guard_outer_timeout.py	hooks/guard_outer_timeout.py	.agents/arsenal-hooks/guard_outer_timeout.py	-
+gemini	project	file	guard_replace_dollar.py	hooks/guard_replace_dollar.py	.agents/arsenal-hooks/guard_replace_dollar.py	-
 gemini	project	file	guard_scope.py	hooks/guard_scope.py	.agents/arsenal-hooks/guard_scope.py	-
 gemini	project	file	guard_syntax.py	hooks/guard_syntax.py	.agents/arsenal-hooks/guard_syntax.py	-
 gemini	project	file	guard_timer.py	hooks/guard_timer.py	.agents/arsenal-hooks/guard_timer.py	-
@@ -617,6 +621,7 @@ codex	global	file	guard_live_script.py	hooks/guard_live_script.py	.agents/arsena
 codex	global	file	guard_models.py	hooks/guard_models.py	.agents/arsenal-hooks/guard_models.py	-
 codex	global	file	guard_oom.py	hooks/guard_oom.py	.agents/arsenal-hooks/guard_oom.py	-
 codex	global	file	guard_outer_timeout.py	hooks/guard_outer_timeout.py	.agents/arsenal-hooks/guard_outer_timeout.py	-
+codex	global	file	guard_replace_dollar.py	hooks/guard_replace_dollar.py	.agents/arsenal-hooks/guard_replace_dollar.py	-
 codex	global	file	guard_scope.py	hooks/guard_scope.py	.agents/arsenal-hooks/guard_scope.py	-
 codex	global	file	guard_syntax.py	hooks/guard_syntax.py	.agents/arsenal-hooks/guard_syntax.py	-
 codex	global	file	guard_timer.py	hooks/guard_timer.py	.agents/arsenal-hooks/guard_timer.py	-
@@ -742,6 +747,7 @@ codex	project	file	guard_live_script.py	hooks/guard_live_script.py	.agents/arsen
 codex	project	file	guard_models.py	hooks/guard_models.py	.agents/arsenal-hooks/guard_models.py	-
 codex	project	file	guard_oom.py	hooks/guard_oom.py	.agents/arsenal-hooks/guard_oom.py	-
 codex	project	file	guard_outer_timeout.py	hooks/guard_outer_timeout.py	.agents/arsenal-hooks/guard_outer_timeout.py	-
+codex	project	file	guard_replace_dollar.py	hooks/guard_replace_dollar.py	.agents/arsenal-hooks/guard_replace_dollar.py	-
 codex	project	file	guard_scope.py	hooks/guard_scope.py	.agents/arsenal-hooks/guard_scope.py	-
 codex	project	file	guard_syntax.py	hooks/guard_syntax.py	.agents/arsenal-hooks/guard_syntax.py	-
 codex	project	file	guard_timer.py	hooks/guard_timer.py	.agents/arsenal-hooks/guard_timer.py	-
@@ -1043,6 +1049,7 @@ cursor	global	file	guard_live_script.py	hooks/guard_live_script.py	.agents/arsen
 cursor	global	file	guard_models.py	hooks/guard_models.py	.agents/arsenal-hooks/guard_models.py	-
 cursor	global	file	guard_oom.py	hooks/guard_oom.py	.agents/arsenal-hooks/guard_oom.py	-
 cursor	global	file	guard_outer_timeout.py	hooks/guard_outer_timeout.py	.agents/arsenal-hooks/guard_outer_timeout.py	-
+cursor	global	file	guard_replace_dollar.py	hooks/guard_replace_dollar.py	.agents/arsenal-hooks/guard_replace_dollar.py	-
 cursor	global	file	guard_scope.py	hooks/guard_scope.py	.agents/arsenal-hooks/guard_scope.py	-
 cursor	global	file	guard_syntax.py	hooks/guard_syntax.py	.agents/arsenal-hooks/guard_syntax.py	-
 cursor	global	file	guard_timer.py	hooks/guard_timer.py	.agents/arsenal-hooks/guard_timer.py	-
@@ -1168,6 +1175,7 @@ cursor	project	file	guard_live_script.py	hooks/guard_live_script.py	.agents/arse
 cursor	project	file	guard_models.py	hooks/guard_models.py	.agents/arsenal-hooks/guard_models.py	-
 cursor	project	file	guard_oom.py	hooks/guard_oom.py	.agents/arsenal-hooks/guard_oom.py	-
 cursor	project	file	guard_outer_timeout.py	hooks/guard_outer_timeout.py	.agents/arsenal-hooks/guard_outer_timeout.py	-
+cursor	project	file	guard_replace_dollar.py	hooks/guard_replace_dollar.py	.agents/arsenal-hooks/guard_replace_dollar.py	-
 cursor	project	file	guard_scope.py	hooks/guard_scope.py	.agents/arsenal-hooks/guard_scope.py	-
 cursor	project	file	guard_syntax.py	hooks/guard_syntax.py	.agents/arsenal-hooks/guard_syntax.py	-
 cursor	project	file	guard_timer.py	hooks/guard_timer.py	.agents/arsenal-hooks/guard_timer.py	-
@@ -1419,6 +1427,7 @@ copilot	global	file	guard_live_script.py	hooks/guard_live_script.py	.agents/arse
 copilot	global	file	guard_models.py	hooks/guard_models.py	.agents/arsenal-hooks/guard_models.py	-
 copilot	global	file	guard_oom.py	hooks/guard_oom.py	.agents/arsenal-hooks/guard_oom.py	-
 copilot	global	file	guard_outer_timeout.py	hooks/guard_outer_timeout.py	.agents/arsenal-hooks/guard_outer_timeout.py	-
+copilot	global	file	guard_replace_dollar.py	hooks/guard_replace_dollar.py	.agents/arsenal-hooks/guard_replace_dollar.py	-
 copilot	global	file	guard_scope.py	hooks/guard_scope.py	.agents/arsenal-hooks/guard_scope.py	-
 copilot	global	file	guard_syntax.py	hooks/guard_syntax.py	.agents/arsenal-hooks/guard_syntax.py	-
 copilot	global	file	guard_timer.py	hooks/guard_timer.py	.agents/arsenal-hooks/guard_timer.py	-
@@ -1544,6 +1553,7 @@ copilot	project	file	guard_live_script.py	hooks/guard_live_script.py	.agents/ars
 copilot	project	file	guard_models.py	hooks/guard_models.py	.agents/arsenal-hooks/guard_models.py	-
 copilot	project	file	guard_oom.py	hooks/guard_oom.py	.agents/arsenal-hooks/guard_oom.py	-
 copilot	project	file	guard_outer_timeout.py	hooks/guard_outer_timeout.py	.agents/arsenal-hooks/guard_outer_timeout.py	-
+copilot	project	file	guard_replace_dollar.py	hooks/guard_replace_dollar.py	.agents/arsenal-hooks/guard_replace_dollar.py	-
 copilot	project	file	guard_scope.py	hooks/guard_scope.py	.agents/arsenal-hooks/guard_scope.py	-
 copilot	project	file	guard_syntax.py	hooks/guard_syntax.py	.agents/arsenal-hooks/guard_syntax.py	-
 copilot	project	file	guard_timer.py	hooks/guard_timer.py	.agents/arsenal-hooks/guard_timer.py	-

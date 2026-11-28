@@ -140,6 +140,12 @@ The plugin's `PreToolUse` hook (`hooks/guard_lessons.py`) applies the built-in r
   {"rule": "commit-then-push", "lesson": "G028", "programs": ["push_once.py", "merge-green"], "min_version": "1.39.0"},
 ```
 
+`replace-dollar` is off until an entry names it (give it `"min_version": "1.40.0"`). The replacement text of JavaScript `.replace` and `.replaceAll` is not literal: `` $` `` inserts the text before the match, `$'` the text after it and `$$` becomes one `$`, so a shell regex end anchor before a quote (`'^\s*$'`) or bash `$'...'` text inside a replacement silently corrupts the edited file. Bash turns `$$` into its pid in double quotes and in an unquoted here-document, so only single-quoted words and `<<'EOF'` here-documents are judged for `$$`. It judges the JavaScript a Bash command runs, never the raw shell text: `node -e`, `--eval`, `-p` and `--print` code (also inside `sh -c` and `eval`), a here-string or here-document fed to node, and a here-document written to a `.js`, `.mjs` or `.cjs` file that the same command runs with node. It refuses a call whose second argument is string literals joined by `+` whose text holds one of the three tokens, and a call whose second argument is a variable or an expression (`s.replace(a, b)`, `rep(a, b)`) when any string literal of the script holds one, because the text is built elsewhere. A function replacement (`(m) => text`), `s.split(a).join(b)`, `$&` (also the `'\\$&'` regex-escape idiom), `$1` to `$9`, `$<name>`, Python and other programs pass; comments and regex literals are skipped. The reason names the token and says to pass a function, use split/join or the Edit tool. Not seen: a replacement read from a file at runtime, a script file run by `npx tsx`, `bun` or `deno`, a file written by one command and run by another. Known false refusal: a `.replace` of a non-string (`router.replace`, `history.replace`, `location.replace`) with a variable second argument is refused when any literal of the script holds one of the tokens. A command over 100000 characters, or JavaScript that cannot be read to its end, passes. String work only; any error passes.
+
+```json
+  {"rule": "replace-dollar", "lesson": "G009", "min_version": "1.40.0"},
+```
+
 ```json
 {"guards": [
   {"rule": "tool-result-read", "lesson": "L113", "min_version": "1.33.5"}

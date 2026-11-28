@@ -60,6 +60,7 @@ import guard_durable_path
 import guard_live_script
 import guard_oom
 import guard_outer_timeout
+import guard_replace_dollar
 import guard_syntax
 import guard_timer
 import guard_tool_result_read
@@ -127,7 +128,7 @@ OOM_TIMEOUT = ('; or, if it ran out its timeout limit, confirm that with python3
 # off until a registry entry names it
 OPT_IN = frozenset(("rerun-after-red", "shell-syntax", "unseen-hash", "typed-sha", "oom-first", "timer-safety",
                     "live-script", "dry-run-chain", "outer-timeout", "wait-on-text", "durable-path", "tool-result-read",
-                    "unseen-time", "container-limits", "commit-then-push"))
+                    "unseen-time", "container-limits", "commit-then-push", "replace-dollar"))
 ENTRY_KEYS = {"rule", "lesson", "reason", "enabled", "programs", "min_version", "workweek", "exceptions", "approvers",
               "shell", "window_mb", "allow", "guessed_times", "confirm", "hint", "no_queue_env", "paths", "scratch",
               "compose_project"}
@@ -451,12 +452,13 @@ BUILT_IN = {"pgrep-wait-loop": pgrep_wait_loop, "hook-bypass": hook_bypass, "hel
             "unseen-time": lambda cmd, entry: False,  # judged on the text a call sends: see outbound_hit
             "container-limits": lambda cmd, entry: False,  # judged on the whole command's container runs
             "commit-then-push": lambda cmd, entry: False,  # judged on the order of the whole command's runs
+            "replace-dollar": lambda cmd, entry: False,  # judged on the JavaScript the whole command runs
             "shell-syntax": lambda cmd, entry: False}  # judged on the whole command first: see judge
 OUTBOUND = ("calendar", "unseen-hash", "unseen-time")
 UNSEEN_RULES = ("unseen-hash", "unseen-time")  # the outbound rules that read the session transcript
 WHOLE_COMMAND = frozenset(("pipe-exit", "shell-syntax", "typed-sha", "oom-first", "timer-safety", "live-script",
                            "dry-run-chain", "outer-timeout", "wait-on-text", "durable-path", "tool-result-read", "container-limits",
-                           "commit-then-push") + OUTBOUND)
+                           "commit-then-push", "replace-dollar") + OUTBOUND)
 
 
 def has_word(args, word, long_value=False):
@@ -964,9 +966,9 @@ def judge(command, cwd, session=None, is_check=None, transcript=None, agent_id=N
                                               cwd, agent_id)
             if problem:
                 return Hit(entry.get("lesson"), name, entry.get("reason") or problem)
-        if name in ("wait-on-text", "durable-path", "container-limits"):
+        if name in ("wait-on-text", "durable-path", "container-limits", "replace-dollar"):
             problem = {"wait-on-text": guard_wait_on_text, "durable-path": guard_durable_path,
-                       "container-limits": guard_container_limits}[name].problem(command, entry, commands)
+                       "container-limits": guard_container_limits, "replace-dollar": guard_replace_dollar}[name].problem(command, entry, commands)
             if problem:
                 return Hit(entry.get("lesson"), name, entry.get("reason") or problem)
         if ((name == "pipe-exit" and pipe_exit(command, is_check))

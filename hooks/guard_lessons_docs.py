@@ -189,6 +189,26 @@ RULES = r"""Built-in rules:
                      unknown variable still counts), push_once.py hook or check (they push nothing) and a
                      here-document that only writes a script pass. The reason says to read both, then push. Fails
                      open. See guard_commit_push.py.
+  replace-dollar     off until a registry entry names it (give it "min_version": "1.40.0"). Bash: JavaScript that runs
+                     inline (node -e, --eval, -p, --print, also inside sh -c and eval; a here-string or here-document
+                     fed to node; a here-document written to a .js, .mjs or .cjs file the same command runs with node) with a
+                     `.replace(` or `.replaceAll(` whose replacement text holds `$``, `$'` or `$$`: JavaScript acts on
+                     them (text before the match, text after it, one `$`), so a shell regex end anchor before a quote
+                     or bash `$'...'` text is corrupted. Bash expands `$$` to its pid in double quotes and in an
+                     unquoted here-document, so only single-quoted words and <<'EOF' here-documents are judged for it.
+                     Refused: a second argument of string literals joined by `+` (a template literal without ${} too)
+                     whose text holds one of them; and a second argument that is a
+                     variable or an expression (`s.replace(a, b)`, `rep(a, b)`) when any string literal of the script
+                     holds one (the text is built elsewhere). Passes: a function replacement, split(a).join(b), `$&`
+                     (also the '\\$&' regex-escape idiom), `$1` to `$9`, `$<name>`, a token in a script whose every
+                     replacement is a token-free literal, Python and any other program; comments and regex literals
+                     are skipped. The reason names the token and says to pass a function ((m) => text), use
+                     split/join or the Edit tool. Not seen: a replacement read from a file at runtime, a script file run by npx tsx, bun or deno, a file
+                     written by one command and run by another. Known false refusal: router.replace, history.replace or
+                     location.replace with a variable second argument when any literal of the script holds one of
+                     the tokens. A command over
+                     100000 characters or JavaScript that cannot be read to its end passes. Fails open. See
+                     guard_replace_dollar.py.
   tool-result-read   off until a registry entry names it (give it "min_version": "1.33.5"). A Read (judge_outbound) of a file
                      inside <project>/<session>/tool-results/ under ~/.claude/projects/, or one
                      matching a glob of the entry's "paths" (with a "/" a path suffix, without one the basename): a
@@ -205,6 +225,6 @@ to 40 characters; oom-first and commit-then-push read the session state file onc
 `systemd-analyze calendar` (2 s at most) only for a Write, Edit or MultiEdit of a .timer file holding OnCalendar=
 values, and reads the edited unit file (256 KB at most) only for an edit of a .timer or .service file; live-script
 reads /proc (at most 2000 of this user's pids, 50 ms) for a Write, Edit or MultiEdit of an existing file;
-dry-run-chain, outer-timeout, wait-on-text, durable-path, container-limits and tool-result-read are string work only (durable-path reads the edited
+dry-run-chain, outer-timeout, wait-on-text, durable-path, container-limits, replace-dollar and tool-result-read are string work only (durable-path reads the edited
 unit, crontab or at file for an Edit, 256 KB at most).
 """
