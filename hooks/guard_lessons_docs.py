@@ -36,6 +36,13 @@ RULES = r"""Built-in rules:
                      Stop gate counts: tool and subcommand, flags and wrappers ignored) or a `git push` (same
                      operands) that failed last in this session and has no later pass, run again before a cause note
                      (`lessons.py cause "<assertion or check>: <cause or unknown>"`) was recorded after the failure.
+                     A cause note inside a list (`;`, `&&`) is recorded (also when a later step failed, from its
+                     "cause noted; rerun the failed command now" line), and the steps after an accepted one (both
+                     sides, no --help) in that call are not refused when it runs on every path to them: in the same
+                     if/case alternative or outside any, not in a || arm, after && only behind a cd to a directory
+                     that exists, and naming a lessons.py that exists or a `lessons` shim on PATH; a step in a || arm after it is still judged, and
+                     the steps before it are judged by the checks each runs. A check named by options only (`node --test <file>`) keeps
+                     them in its name; a name that is only a variable (`bash ${test}`) is not recorded.
                      Hooks from 1.38.0 also judge CI: `gh run rerun <id>` (with or without --failed or --job) of a run
                      a gh run view, watch, list or gh pr checks output showed failed or cancelled (also the api rerun
                      calls), and `gh workflow run` of the workflow seen red, are refused until a cause note followed
@@ -68,7 +75,19 @@ RULES = r"""Built-in rules:
                      with a zone there (2026-11-25T16:36:44Z) counts as its written time, its UTC time and its
                      time in the machine's zone. Not judged: a time in an "ETA MM-DD HH:MM" or "ETA HH:MM" clause,
                      after by, until, before or at the latest, in a code span, fenced block or URL, and the entry's
-                     "allow" words (exact times). "programs", "window_mb" and "allow" as for unseen-hash. Fails open
+                     "allow" words (exact times). "programs", "window_mb" and "allow" as for unseen-hash; a time
+                     older than the window still counts when guard.py track kept it: after each Bash call while the
+                     rule is on, it reads the next 4 MB of the transcript (about 0.1 s while catching up, nothing when
+                     idle) and keeps the times seen entries show in ~/.cache/arsenal/seen-times
+                     ($ARSENAL_SEEN_TIMES_DIR); a line over 4 MB is skipped. A program
+                     may be a task-tracker writer or report sender, also one an interpreter runs (`node api.mjs ...`;
+                     a GET or HEAD request is a read): its argv text (also --body), a here-document body, and the
+                     content of a --body-file or --file path readable at judge time are judged (`--body-file -`: the
+                     here-document or echo/printf text piped in); a file the same call writes (> >> &> tee, any spelling) is judged by the call's here-document and echo/printf text
+                     (an appended file by its old content too), not by what it holds now; a relative path starts from
+                     the session directory, by calendar and unseen-hash too. Programs
+                     that read positional file paths or a fixed folder (a mail composer or resender) are
+                     not covered. Fails open
                      when the transcript is missing, unreadable or slow. See guard_unseen_time.py.
   typed-sha          off until a registry entry names it (give it "min_version": "1.30.0"). A literal hex value for
                      gh pr merge --match-head-commit (`V` or `=V`) or git push --force-with-lease=<ref>:<V> that is
@@ -147,6 +166,29 @@ RULES = r"""Built-in rules:
                      --env-file in the current folder): two runs collide on container names. `docker run --help`, ps,
                      stats, logs and exec pass. The reason names what is missing. Fails open. See
                      guard_container_limits.py.
+  commit-then-push   off until a registry entry names it (give it "min_version": "1.39.0"). Bash: a `git push`, or a
+                     program of the entry's "programs" (a push wrapper such as push_once.py; by name or path basename,
+                     also through a launcher or a shell variable, or the script an interpreter runs; none by default,
+                     so only git push is judged), that follows a `git commit` (not --dry-run; git -C <dir> and other
+                     global options are read through) unless both `git status` and `git log` (`git rev-parse HEAD`
+                     counts as the log) were read after the commit and before the push, whatever the separators
+                     (&&, ||, ;, newlines, if/then blocks) and also inside a $( ) or backticks, bare or double-quoted.
+                     The commit may be in an earlier call: while the rule is on, the tracker (guard.py track) records
+                     each call's commits, pushes, statuses and logs (also of a call that exited non-zero, taken as
+                     having run all its commands), and a later push is judged against them; a push settles its
+                     repository's commit. Not reads: output to /dev/null, git rev-parse --abbrev-ref HEAD, a command
+                     inside a $( ) or backticks (captured, unless an echo or printf prints it), the arm of a || (it
+                     runs only when the command before it failed), a list sent to the background with &. A read in
+                     another arm of an if or case than the push does not count; a commit in another arm is not before
+                     it; a read in the test of an if counts. The repository is the call's directory moved by cd and
+                     git -C <dir> (a directory that is not known, such as $DIR, matches any); events are kept per
+                     agent and repository (another repo's or subagent's commit is not this push's); an ssh remote
+                     command and a here-document a shell runs (bash <<E, | bash) are judged. A push with no commit
+                     before it, push --dry-run or -n, a push to a repository on this machine (a path, ./, ../, ~,
+                     file://, or a variable set to one earlier in the same call; a remote name, host URL, host:path or
+                     unknown variable still counts), push_once.py hook or check (they push nothing) and a
+                     here-document that only writes a script pass. The reason says to read both, then push. Fails
+                     open. See guard_commit_push.py.
   tool-result-read   off until a registry entry names it (give it "min_version": "1.33.5"). A Read (judge_outbound) of a file
                      inside <project>/<session>/tool-results/ under ~/.claude/projects/, or one
                      matching a glob of the entry's "paths" (with a "/" a path suffix, without one the basename): a
@@ -159,7 +201,7 @@ Also not seen: a pgrep inside a quoted "$(...)" in a loop condition or in the lo
 Time budget: string work and at most a few stat calls and two small file reads per Bash call, plus one `<shell> -n`
 run (at most 1 s) when shell-syntax is on; unseen-hash adds one bounded transcript read (0.2 s at most), only when an
 outbound text holds a hash, and typed-sha one more (one budget for the call) when a command types a SHA of 7
-to 40 characters; oom-first reads the session state file once (shared with rerun-after-red); timer-safety runs one
+to 40 characters; oom-first and commit-then-push read the session state file once (shared with rerun-after-red); timer-safety runs one
 `systemd-analyze calendar` (2 s at most) only for a Write, Edit or MultiEdit of a .timer file holding OnCalendar=
 values, and reads the edited unit file (256 KB at most) only for an edit of a .timer or .service file; live-script
 reads /proc (at most 2000 of this user's pids, 50 ms) for a Write, Edit or MultiEdit of an existing file;

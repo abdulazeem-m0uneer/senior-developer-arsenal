@@ -45,11 +45,14 @@ import datetime as dt
 import json
 import os
 import re
+import shlex
+import shutil
 from collections import namedtuple
 from pathlib import Path
 
 import guard_calendar
 import guard_ci_rerun
+import guard_commit_push
 import guard_container_limits
 import guard_destructive as shell
 import guard_dry_run_chain
@@ -124,12 +127,12 @@ OOM_TIMEOUT = ('; or, if it ran out its timeout limit, confirm that with python3
 # off until a registry entry names it
 OPT_IN = frozenset(("rerun-after-red", "shell-syntax", "unseen-hash", "typed-sha", "oom-first", "timer-safety",
                     "live-script", "dry-run-chain", "outer-timeout", "wait-on-text", "durable-path", "tool-result-read",
-                    "unseen-time", "container-limits"))
+                    "unseen-time", "container-limits", "commit-then-push"))
 ENTRY_KEYS = {"rule", "lesson", "reason", "enabled", "programs", "min_version", "workweek", "exceptions", "approvers",
               "shell", "window_mb", "allow", "guessed_times", "confirm", "hint", "no_queue_env", "paths", "scratch",
               "compose_project"}
 TAKES_PROGRAMS = ("help-probe", "secret-in-message", "calendar", "unseen-hash", "unseen-time", "dry-run-chain",
-                  "outer-timeout")
+                  "outer-timeout", "commit-then-push")
 CUSTOM_KEYS = {"lesson", "reason", "program", "subcommand", "args_any", "args_all", "args_none", "assignments_any",
                "in_loop", "min_version"}
 VERSION_SHAPE = re.compile(r"\d{1,6}\.\d{1,6}\.\d{1,6}", re.ASCII)
@@ -163,19 +166,19 @@ class RegistryError(ValueError):
     """A registry file that cannot be used; the message names the file and the fault."""
 
 
-Command = namedtuple("Command", "word name args assignments in_loop variables branch", defaults=((), ()))
+Command = namedtuple("Command", "word name args assignments in_loop variables branch body", defaults=((), (), ()))
 
 
-def commands(command, depth=0, inherited=(), branches=None):
+def commands(command, depth=0, inherited=(), branches=None, body=()):
     """Each simple command as (program word, program name, args, its assignments, in a while/until condition);
     assignments include those exported earlier in the line; the script of sh -c and eval is expanded in place.
     Every command between `while`/`until` and `do` is in the condition (`while kill -0 $p && pgrep -f x; do`).
     variables: the NAME=value words a command's own words expand from, set earlier by a bare assignment or export
     (a prefix assignment, `X=a cmd $X`, is not: the shell expands $X before it assigns).
-    branch: the if/case alternatives it sits in (guard_dry_run_chain.Branches)."""
+    branch: the if/case alternatives it sits in (guard_dry_run_chain.Branches); body: the loop and function bodies."""
     found, exported, condition = [], list(inherited), False
     variables = list(inherited)
-    branches = branches or guard_dry_run_chain.Branches()
+    branches, bodies = branches or guard_dry_run_chain.Branches(), guard_dry_run_chain.Bodies(body)
     for argv, _piped, _heredoc, *ends in shell.command_runs(shell.split_heredocs(command)[0]):
         name, args = shell.program(argv)
         prefix = argv[:len(argv) - len(args) - 1] if name else argv
@@ -192,8 +195,8 @@ def commands(command, depth=0, inherited=(), branches=None):
         elif not name:
             variables += own  # `S=x.py; ...`: a bare assignment sets a shell variable
         assignments = exported + own
-        branch = branches.path(argv, *ends)
-        found.append(Command(word, name, args, assignments, condition, expands_from, branch))
+        branch, inside = branches.path(argv, *ends), bodies.enter(argv, ends[1])
+        found.append(Command(word, name, args, assignments, condition, expands_from, branch, inside))
         script = ""
         if name in shell.SHELLS and depth < MAX_DEPTH:
             flag = next((i for i, arg in enumerate(args) if re.match(r"^-[a-z]*c$", arg)), None)
@@ -201,7 +204,7 @@ def commands(command, depth=0, inherited=(), branches=None):
         elif name == "eval" and depth < MAX_DEPTH:
             script = " ".join(args)
         if script:
-            found.extend(commands(script, depth + 1, assignments, guard_dry_run_chain.Branches(branch)))  # HUSKY=0 bash -c '...'
+            found.extend(commands(script, depth + 1, assignments, guard_dry_run_chain.Branches(branch), inside))  # HUSKY=0 bash -c '...'
     return found
 
 
@@ -230,13 +233,66 @@ def is_cause_command(cmd):
     return script.rpartition("/")[2] in ("lessons", "lessons.py") and "cause" in args[:3]
 
 
+def accepted_note(cmd):
+    """True for a `lessons.py cause` that lessons.py accepts: both sides of "<check>: <cause>", no --help."""
+    _script, args = script_and_args(cmd)
+    if "--help" in args or "-h" in args:
+        return False
+    what, _, cause = " ".join(args[args.index("cause") + 1:]).partition(":")
+    return bool(what.strip() and cause.strip())
+
+
+def names_lessons(cmd, base):
+    """True when the note runs a lessons.py that exists (a relative path from base, None when not known) or a
+    program on PATH such as the `lessons` shim."""
+    script = shell.expand(script_and_args(cmd)[0], cmd.variables)
+    if "/" not in script and cmd.name not in INTERPRETERS:
+        return shutil.which(script) is not None
+    path = os.path.join(base or "", os.path.expanduser(script))
+    return os.path.isabs(path) and os.path.isfile(path)
+
+
+def sure_notes(cmds, cwd):
+    """The accepted cause notes that run whenever the line reaches them: not after `||`, after `&&` only behind a `cd`
+    to a directory that exists now, and naming a lessons.py that exists; note_covers adds the if/case alternatives
+    and the loop and function bodies."""
+    found, base, cd_lands = [], os.path.abspath(cwd or os.getcwd()), set()
+    for at, cmd in enumerate(cmds):
+        if cmd.name == "cd":
+            base = guard_calendar.directory_after_cd(cmd.args, base, shell, cmd.variables)
+            if base and os.path.isdir(base):
+                cd_lands.add(at)
+        if not is_cause_command(cmd) or not accepted_note(cmd) or cmd.branch.or_arm:
+            continue
+        if cmd.branch.and_after and any(c.name != "cd" or index not in cd_lands for index, c in enumerate(cmds[:at])
+                                        if c.branch.chain == cmd.branch.chain):
+            continue  # a step before it in its && chain may fail: the note may not run
+        if names_lessons(cmd, base):
+            found.append(at)
+    return found
+
+
+def note_covers(note, step):
+    """True when every if/case alternative and loop or function body the note sits in holds the step too: the note
+    runs on each path to it."""
+    return step.branch.path[:len(note.branch.path)] == note.branch.path and step.body[:len(note.body)] == note.body
+
+
+def own_keys(state, cmd):
+    """The session state with the check keys of one command only: in a list with a cause note, the steps before the
+    note are judged by what each runs, not by the checks after the note."""
+    check_keys = state.get("check_keys")
+    text = " ".join(shlex.quote(word) for word in (cmd.word, *cmd.args))  # quoted words are not read as commands
+    return {**state, "keys": set(check_keys(text)) if callable(check_keys) else set()}
+
+
 def rerun_after_red(cmd, entry):
     """The same check, or the same push, that failed last in this session and has no cause note since."""
     session = entry.get("session")
     if not session or is_cause_command(cmd):
         return False
     state = session()
-    return bool((state["keys"] | {push_key(cmd)}) & state["red"]) or (
+    return bool(((state["keys"] | {push_key(cmd)}) - {""}) & state["red"]) or (
         cmd.name == "gh" and guard_ci_rerun.refused(cmd.args, state.get("events") or []))
 
 
@@ -342,15 +398,19 @@ def run_of(cmd):
             [shell.expand(arg, cmd.variables) for arg in args], cmd.branch)
 
 
-def chain_runs(cmds):
-    """The runs of a command line for the dry-run-chain rule: the remote command of an ssh call counts as its own."""
+def with_remote_commands(cmds):
+    """The commands of a line, the remote command of an ssh call replacing the call: it runs as its own commands."""
     for cmd in cmds:
         remote = guard_timer.ssh_remote(cmd.args) if cmd.name == "ssh" else ""
         if remote:
-            yield from map(run_of, commands(remote, MAX_DEPTH - 1, cmd.assignments,
-                                            guard_dry_run_chain.Branches(cmd.branch)))
+            yield from commands(remote, MAX_DEPTH - 1, cmd.assignments, guard_dry_run_chain.Branches(cmd.branch), cmd.body)
         else:
-            yield run_of(cmd)
+            yield cmd
+
+
+def chain_runs(cmds):
+    """The runs of a command line for the dry-run-chain rule: the remote command of an ssh call counts as its own."""
+    return map(run_of, with_remote_commands(cmds))
 
 
 def help_probe(cmd, entry):
@@ -390,11 +450,13 @@ BUILT_IN = {"pgrep-wait-loop": pgrep_wait_loop, "hook-bypass": hook_bypass, "hel
             "tool-result-read": lambda cmd, entry: False,  # judged on Read calls only: see judge_outbound
             "unseen-time": lambda cmd, entry: False,  # judged on the text a call sends: see outbound_hit
             "container-limits": lambda cmd, entry: False,  # judged on the whole command's container runs
+            "commit-then-push": lambda cmd, entry: False,  # judged on the order of the whole command's runs
             "shell-syntax": lambda cmd, entry: False}  # judged on the whole command first: see judge
 OUTBOUND = ("calendar", "unseen-hash", "unseen-time")
 UNSEEN_RULES = ("unseen-hash", "unseen-time")  # the outbound rules that read the session transcript
 WHOLE_COMMAND = frozenset(("pipe-exit", "shell-syntax", "typed-sha", "oom-first", "timer-safety", "live-script",
-                           "dry-run-chain", "outer-timeout", "wait-on-text", "durable-path", "tool-result-read", "container-limits") + OUTBOUND)
+                           "dry-run-chain", "outer-timeout", "wait-on-text", "durable-path", "tool-result-read", "container-limits",
+                           "commit-then-push") + OUTBOUND)
 
 
 def has_word(args, word, long_value=False):
@@ -830,10 +892,10 @@ def calendar_hit(entry, texts):
     return Hit(entry.get("lesson"), "calendar", reason)
 
 
-def outbound_hit(name, entry, tool_name, tool_input, transcript, agent_id=None):
+def outbound_hit(name, entry, tool_name, tool_input, transcript, agent_id=None, cwd=None):
     """Hit for an outbound rule (calendar, unseen-hash) on the text this call sends; None when it is clean."""
     texts = guard_calendar.outbound_texts(tool_name, tool_input, entry.get("programs") or [], shell,
-                                          messages_only=name in UNSEEN_RULES)
+                                          messages_only=name in UNSEEN_RULES, cwd=cwd)
     if name == "calendar":
         return calendar_hit(entry, texts)
     check = guard_unseen_time if name == "unseen-time" else guard_unseen_hash
@@ -858,7 +920,7 @@ def judge_outbound(tool_name, tool_input, cwd, transcript=None, agent_id=None):
                        else guard_live_script.file_problem(tool_name, tool_input, cwd))
             hit = Hit(entry.get("lesson"), name, entry.get("reason") or problem) if problem else None
         else:
-            hit = outbound_hit(name, entry, tool_name, tool_input, transcript, agent_id) if name in OUTBOUND else None
+            hit = outbound_hit(name, entry, tool_name, tool_input, transcript, agent_id, cwd) if name in OUTBOUND else None
         if hit:
             return hit
     return None
@@ -895,6 +957,13 @@ def judge(command, cwd, session=None, is_check=None, transcript=None, agent_id=N
                        else guard_dry_run_chain.problem(chain_runs(commands(command)), entry))
             if problem:
                 return Hit(entry.get("lesson"), name, entry.get("reason") or problem)
+        if name == "commit-then-push":
+            if session:
+                state = state or [session()]
+            problem = guard_commit_push.problem(command, entry, commands, state[0].get("events") if state else None,
+                                              cwd, agent_id)
+            if problem:
+                return Hit(entry.get("lesson"), name, entry.get("reason") or problem)
         if name in ("wait-on-text", "durable-path", "container-limits"):
             problem = {"wait-on-text": guard_wait_on_text, "durable-path": guard_durable_path,
                        "container-limits": guard_container_limits}[name].problem(command, entry, commands)
@@ -904,15 +973,20 @@ def judge(command, cwd, session=None, is_check=None, transcript=None, agent_id=N
                 or (name == "typed-sha" and typed_sha(command, transcript, agent_id))):
             return Hit(entry.get("lesson"), name, entry.get("reason") or BUILT_IN_REASONS[name])
         if name in OUTBOUND:
-            hit = outbound_hit(name, entry, "Bash", {"command": command}, transcript, agent_id)
+            hit = outbound_hit(name, entry, "Bash", {"command": command}, transcript, agent_id, cwd)
             if hit:
                 return hit
     active = [rule for rule in active if rule[0] not in WHOLE_COMMAND]
-    for cmd in commands(command):
+    cmds = list(commands(command))
+    notes = sure_notes(cmds, cwd) if any(rule[0] == "rerun-after-red" for rule in active) and session else []
+    for at, cmd in enumerate(cmds):
         for name, entry, matcher in active:
             if name == "rerun-after-red" and session:
+                if not cmd.branch.or_arm and any(n <= at and note_covers(cmds[n], cmd) for n in notes):
+                    continue  # the cause note runs first: the steps after it are no rerun before a note
                 state = state or [session()]
-                entry = {**entry, "session": lambda: state[0]}
+                entry = {**entry, "session": (lambda: state[0]) if not notes else
+                         (lambda cmd=cmd: own_keys(state[0], cmd))}
             if matcher(cmd, entry):
                 return Hit(entry.get("lesson"), name, entry.get("reason") or BUILT_IN_REASONS[name])
     return None

@@ -56,12 +56,13 @@ LAUNCHERS = {  # launcher: (words before the program that name its mode, its opt
 LEADING = ("then", "do", "while", "until", "!", "{")  # words that may sit before a command or after if/else
 CONSTRUCT_IDS = itertools.count(1)  # one id per if or case, unique across every command line judged
 CHAIN_IDS = itertools.count(1)  # one id per && or | list, unique across every command line judged
+BODY_IDS = itertools.count(1)  # one id per loop or function body
 GREPS = frozenset(("grep", "egrep", "fgrep", "rg"))
 TEST_WORDS = frozenset(("[", "[[", "test")) | GREPS  # a command that tests its operands
 CAPTURE = re.compile(r"(\w+)=\$")  # the word before the ( of NAME=$(...)
 # gates and captures hold (variable name, generation): an assignment starts a new generation
-Place = namedtuple("Place", "path gates captures chain and_after staged pipefail",
-                   defaults=((), frozenset(), frozenset(), 0, False, False, False))
+Place = namedtuple("Place", "path gates captures chain and_after staged pipefail reading or_arm background",
+                   defaults=((), frozenset(), frozenset(), 0, False, False, False, False, False, False))
 FIX = "Run the dry run alone, read its line, then the real run as a separate call."
 
 
@@ -264,11 +265,49 @@ class Branches:
         gated = frozenset().union(frozenset() if after_or else self.condition.gate(), *(lv.gate for lv in self.levels))
         place = Place(self.base.path + tuple((level.id, level.alt) for level in self.levels),
                       self.base.gates | self.versioned(gated), frozenset(filter(None, self.stack)), self.chain,
-                      connector(opener) == "&&", "|" in (connector(opener), connector(closer)), self.pipefail)
+                      connector(opener) == "&&", "|" in (connector(opener), connector(closer)), self.pipefail,
+                      bool(self.levels) and self.levels[-1].reading,  # reading: in the test of an if or elif
+                      after_or, closer.strip("\n") == "&")  # or_arm: runs only when the one before failed
         self.condition.add(argv, joiner(opener))
         match = CAPTURE.fullmatch(argv[-1]) if closer.startswith("(") else None
         self.pending = (match[1], self.generation.get(match[1], 0)) if match else None  # export n=$(...): no bump
         return place
+
+
+class Bodies:
+    """The loop bodies (do ... done) and function bodies (`f() { ... }`, `f() ( ... )`, `function f { ... }`) a
+    command sits in, as ids from the outermost: a command in one may run any number of times, or never. A plain
+    { ... } group is tracked only to match its }. Feed it each command in order."""
+
+    def __init__(self, base=()):
+        """base: the bodies of the script's own command, for the commands of an sh -c or eval script."""
+        self.base, self.open, self.parens, self.named = tuple(base), [], 0, False
+
+    def enter(self, argv, opener):
+        """The body ids of the command argv; opener is every separator before it."""
+        function = opener.startswith("()") or self.named or argv[:1] == ["function"]
+        for char in opener[2:] if opener.startswith("()") else opener:
+            if char == "(":
+                self.parens += 1
+                if function:
+                    self.open.append(("(", self.parens, next(BODY_IDS)))
+                    function = False
+            elif char == ")":
+                self.open = [body for body in self.open if body[:2] != ("(", self.parens)]
+                self.parens = max(0, self.parens - 1)
+        words = argv[2:] if argv[:1] == ["function"] else argv
+        for word in itertools.takewhile(lambda w: w in LEADING, words):
+            kind = "do" if word == "do" else ("function{" if function else "{") if word == "{" else ""
+            if kind:
+                function = function and kind == "do"
+                self.open.append((kind, 0, next(BODY_IDS)))
+        self.named = argv[:1] == ["function"] and len(argv) == 2  # `function f` then `{` on the next line
+        inside = self.base + tuple(body[2] for body in self.open if body[0] != "{")
+        closes = {"done": ("do",), "}": ("{", "function{")}.get(argv[0] if argv else "", ())
+        last = next((at for at in range(len(self.open) - 1, -1, -1) if self.open[at][0] in closes), None)
+        if last is not None:
+            del self.open[last]
+        return inside
 
 
 def alternatives(first, second):

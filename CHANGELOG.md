@@ -4,6 +4,18 @@ All notable changes to Senior Developer Arsenal are recorded in this file.
 
 The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/), and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version is the one in the `VERSION` file, and each release is dated by the day its pull request merged (UTC).
 
+## [1.39.0] - 2026-11-28
+
+### Added
+
+- `commit-then-push` rule (`hooks/guard_commit_push.py`): a `git push` (or a listed push program) after a commit is refused until the session has shown `git status` and `git log -1` (or `git rev-parse HEAD`) for that repository since the commit. Reads that are captured, discarded, backgrounded or only in an `||` arm do not count; pushes to a local path or `file://` remote, `--dry-run`, and `push_once.py hook`/`check` are not pushes (#78).
+- `unseen-time` rule: `programs` in the registry entry extends it to the text a listed program sends (positional text, `--body-file` files written in the same call, and stdin), so times in report or tracker comments must also come from tool output (#78).
+- `unseen-time` keeps a per-transcript cache of seen times (`~/.cache/arsenal/seen-times`, or `ARSENAL_SEEN_TIMES_DIR`), filled after each Bash call, so a time shown before the 16 MB window still counts as seen (#78).
+
+### Fixed
+
+- `rerun-after-red`: a test command whose key came out empty (`node --test <file>`) or was only a variable no longer leaves an empty key that refused every later command; empty keys left by 1.38.0 are ignored. A cause note inside a command list now lifts the refusal for the steps after it, but not for steps in a loop or function body, or in an `||` arm (#78).
+
 ## [1.38.0] - 2026-11-27
 
 ### Added
@@ -536,6 +548,7 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 - Non-destructive installers for every supported agent.
 - CI with lint, test and smoke workflows.
 
+[1.39.0]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/78
 [1.38.0]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/77
 [1.37.1]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/76
 [1.37.0]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/75

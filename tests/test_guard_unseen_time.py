@@ -13,8 +13,10 @@ ROOT = Path(__file__).resolve().parent.parent
 
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(ROOT / "hooks"))
+sys.path.insert(0, str(ROOT / "tests"))
 import guard_lessons  # noqa: E402
 import guard_unseen_time as unseen_time  # noqa: E402
+import test_guard  # noqa: E402
 
 PLUS_THREE = "XXX-3"  # a POSIX zone three hours ahead of UTC, no tzdata needed
 NEW_YORK = "EST5EDT,M3.2.0,M11.1.0"  # UTC-5, UTC-4 in summer
@@ -44,14 +46,14 @@ class ZoneCase(unittest.TestCase):
     zone = PLUS_THREE
 
     def setUp(self):
-        patch = mock.patch.dict(os.environ, {"TZ": self.zone})
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.dir = Path(directory.name)
+        patch = mock.patch.dict(os.environ, {"TZ": self.zone, "ARSENAL_SEEN_TIMES_DIR": str(self.dir / "seen")})
         patch.start()
         time.tzset()
         self.addCleanup(time.tzset)
         self.addCleanup(patch.stop)
-        directory = tempfile.TemporaryDirectory()
-        self.addCleanup(directory.cleanup)
-        self.dir = Path(directory.name)
         self.transcript = self.dir / "session.jsonl"
 
     def write(self, *entries, raw=""):
@@ -267,6 +269,144 @@ class SubagentTests(ZoneCase):
         self.assertEqual(unseen_time.unseen(["at 17:36"], session, agent_id="a9"), [])
         self.assertEqual(unseen_time.unseen(["at 16:36"], session, agent_id="a9"), ["16:36"])
         self.assertEqual(unseen_time.unseen(["at 16:36"], session, agent_id="missing"), [])  # not found: passes
+
+
+class SeenTimesCacheTests(ZoneCase):
+    """remember() keeps the times seen entries showed, so a time stays seen after it left the window."""
+    FILLER = "x" * 2_000_000  # more than the 1 MB window these tests use
+
+    def test_a_time_remembered_before_it_left_the_window_stays_seen(self):
+        path = self.write(tool_result("t1", "16:36"), tool_result("t2", self.FILLER))
+        self.assertEqual(unseen_time.unseen(["at 16:36"], path, window_mb=1), ["16:36"])
+        unseen_time.remember(path)
+        self.assertEqual(unseen_time.unseen(["at 16:36"], path, window_mb=1), [])
+        self.assertEqual(unseen_time.unseen(["at 17:36"], path, window_mb=1), ["17:36"])
+
+    def test_each_call_reads_one_chunk_and_the_next_one_goes_on(self):
+        path = self.write(tool_result("t1", "16:36"), tool_result("t2", self.FILLER), tool_result("t3", "17:36"),
+                          tool_result("t4", self.FILLER))
+        with mock.patch.object(unseen_time, "CHUNK_BYTES", 1_000_000):
+            unseen_time.remember(path)
+            self.assertEqual(unseen_time.remembered(path), {"16:36"})  # the filler line did not fit the chunk
+            for _ in range(3):
+                unseen_time.remember(path)
+        self.assertEqual(unseen_time.remembered(path), {"16:36", "17:36"})
+        self.assertEqual(unseen_time.unseen(["at 16:36 and 17:36"], path, window_mb=1), [])
+
+    def test_a_line_longer_than_a_chunk_does_not_stop_the_scan(self):
+        path = self.write(tool_result("t2", self.FILLER), tool_result("t1", "16:36"))
+        with mock.patch.object(unseen_time, "CHUNK_BYTES", 1_000_000):
+            for _ in range(4):
+                unseen_time.remember(path)
+        self.assertTrue(unseen_time.remembered(path) >= {"16:36"})
+
+    def test_only_entries_that_count_as_seen_are_remembered(self):
+        refusal = "Arsenal lesson guard G015 (unseen-time): Time 18:36 appears in no tool output"
+        path = self.write(assistant_text("at 16:36"), tool_use("t1", "Bash", {"command": "echo 17:36"}),
+                          tool_result("t2", refusal), tool_result("t3", "built 2026-11-25T10:00:00Z"))
+        unseen_time.remember(path)
+        self.assertEqual(unseen_time.remembered(path), {"10:00", "13:00"})  # the UTC time and its +03:00 reading
+
+    def test_a_line_still_being_written_is_read_when_it_is_whole(self):
+        path = self.write(raw=json.dumps(tool_result("t1", "16:36"))[:-5])
+        unseen_time.remember(path)
+        self.assertEqual(unseen_time.remembered(path), set())
+        self.write(tool_result("t1", "16:36"))
+        unseen_time.remember(path)
+        self.assertEqual(unseen_time.remembered(path), {"16:36"})
+
+    def test_a_transcript_that_shrank_starts_again(self):
+        path = self.write(tool_result("t1", "16:36"), tool_result("t2", "x" * 100))
+        unseen_time.remember(path)
+        self.write(tool_result("t1", "17:36"))
+        unseen_time.remember(path)
+        self.assertEqual(unseen_time.remembered(path), {"17:36"})
+
+    def test_a_damaged_or_missing_cache_reads_as_empty_and_is_rebuilt(self):
+        path = self.write(tool_result("t1", "16:36"))
+        unseen_time.remember(path)
+        cache = unseen_time.cache_path(path)
+        for damage in ("not json", "[]", '{"size": "x", "times": 3}', '{"size": -1, "times": ["16:36"]}'):
+            cache.write_text(damage, encoding="utf-8")
+            self.assertEqual(unseen_time.remembered(path), set(), damage)
+            unseen_time.remember(path)
+            self.assertEqual(unseen_time.remembered(path), {"16:36"}, damage)
+
+    def test_a_missing_transcript_or_bad_input_never_raises(self):
+        for path in (str(self.dir / "missing.jsonl"), "", None, 3, str(self.dir)):
+            unseen_time.remember(path)
+            self.assertEqual(unseen_time.remembered(path), set())
+
+    def test_an_unwritable_cache_folder_passes(self):
+        path = self.write(tool_result("t1", "16:36"))
+        (self.dir / "seen").write_text("a file, not a folder", encoding="utf-8")
+        unseen_time.remember(path)
+        self.assertEqual(unseen_time.unseen(["at 16:36"], path), [])
+
+    def test_a_failed_replace_leaves_no_scratch_file(self):
+        path = self.write(tool_result("t1", "16:36"))
+        cache = unseen_time.cache_path(path)
+        with mock.patch.object(unseen_time.os, "replace", side_effect=OSError("disk full")):
+            unseen_time.remember(path)
+        self.assertEqual(list(cache.parent.glob("*.tmp")), [])
+        self.assertEqual(unseen_time.remembered(path), set())
+
+    def test_prune_removes_stale_scratch_files_and_keeps_fresh_ones(self):
+        folder = self.dir / "prune"
+        folder.mkdir()
+        now = time.time()
+        old = now - (unseen_time.CACHE_DAYS + 1) * 86400
+        for name, mtime in (("a.json.11.tmp", old), ("b.json", old), ("c.json.12.tmp", now), ("d.json", now),
+                            ("e.txt", old)):
+            (folder / name).write_text("{}", encoding="utf-8")
+            os.utime(folder / name, (mtime, mtime))
+        unseen_time.prune(folder, now)
+        self.assertEqual(sorted(p.name for p in folder.iterdir()), ["c.json.12.tmp", "d.json", "e.txt"])
+
+    def test_each_transcript_has_its_own_cache(self):
+        session = self.write(tool_result("t1", "16:36"), tool_result("t2", self.FILLER))
+        agent = self.dir / "session" / "subagents" / "agent-a9.jsonl"
+        agent.parent.mkdir(parents=True)
+        agent.write_text(json.dumps(tool_result("t1", "17:36")) + "\n" + json.dumps(tool_result("t2", self.FILLER))
+                         + "\n", encoding="utf-8")
+        unseen_time.remember(session)
+        unseen_time.remember(session, agent_id="a9")
+        self.assertEqual(unseen_time.unseen(["at 17:36"], session, window_mb=1, agent_id="a9"), [])
+        self.assertEqual(unseen_time.unseen(["at 16:36"], session, window_mb=1, agent_id="a9"), ["16:36"])
+        self.assertEqual(unseen_time.unseen(["at 17:36"], session, window_mb=1), ["17:36"])
+
+    def test_the_judge_reads_no_cache_when_the_window_saw_every_time(self):
+        path = self.write(tool_result("t1", "16:36"))
+        with mock.patch.object(unseen_time, "remembered", side_effect=AssertionError("read")):
+            self.assertEqual(unseen_time.unseen(["at 16:36"], path), [])
+
+
+class TrackRemembersTests(test_guard.GuardCase):
+    """guard.py track keeps the seen times after each Bash call while the rule is on."""
+
+    def setUp(self):
+        super().setUp()
+        self.transcript = Path(self.outside.name) / "session.jsonl"
+        self.transcript.write_text(json.dumps(tool_result("t1", "16:36")) + "\n", encoding="utf-8")
+        self.cache_dir = Path(self.outside.name) / "seen-times"
+
+    def cached(self):
+        with mock.patch.dict(os.environ, {"ARSENAL_SEEN_TIMES_DIR": str(self.cache_dir)}):
+            return unseen_time.remembered(str(self.transcript))
+
+    def test_a_bash_call_remembers_the_times_while_the_rule_is_on(self):
+        self.write(".agents/lesson-guards.json", json.dumps({"guards": [RuleCase.ENTRY]}))
+        self.bash("ls", transcript_path=str(self.transcript))
+        self.assertEqual(self.cached(), {"16:36"})
+
+    def test_a_failed_bash_call_remembers_them_too(self):
+        self.write(".agents/lesson-guards.json", json.dumps({"guards": [RuleCase.ENTRY]}))
+        self.bash("false", failed=True, error="Exit code 1", transcript_path=str(self.transcript))
+        self.assertEqual(self.cached(), {"16:36"})
+
+    def test_nothing_is_kept_while_the_rule_is_off(self):
+        self.bash("ls", transcript_path=str(self.transcript))
+        self.assertFalse(self.cache_dir.exists())
 
 
 class RuleCase(ZoneCase):

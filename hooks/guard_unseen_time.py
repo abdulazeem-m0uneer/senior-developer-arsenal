@@ -4,8 +4,10 @@
 Usage: found = guard_unseen_time.unseen(texts, transcript_path, window_mb=None, agent_id=None, allow=None)
        # [] when all seen; found = ["16:36", ...]
        text = guard_unseen_time.named(found)  # "16:36, 17:36 and 2 more"
+       guard_unseen_time.remember(transcript_path, agent_id=None)  # guard.py track: keep the times seen so far
 The texts are the ones unseen-hash judges (guard_calendar.outbound_texts with messages_only: gh comments, PRs and
-issues, the message of a git commit or tag, the registry entry's `programs`, outbound MCP tools, SendMessage). A time
+issues, the message of a git commit or tag, the registry entry's `programs` (a script an interpreter runs too, and the text of its --body-file or --file
+unless the call writes it), outbound MCP tools, SendMessage). A time
 typed from memory or converted by hand is often wrong, so each HH:MM in them (00-23 : 00-59) must have reached the
 session from outside the model first: the same transcript entries and window as guard_unseen_hash (tool results, user
 text, queued messages and attachments; never the assistant's own text, thinking or tool inputs).
@@ -23,12 +25,23 @@ time it shows, not by its UTC or local reading. A line that is a refusal by this
 Cost, fail-open and the budget are guard_unseen_hash's: the last `window_mb` MB (default and most 16), 0.2 s for the
 read and the check together, at most MAX_TIMES distinct times per call; a missing or unreadable transcript, a timeout
 before a time was judged unseen or any error passes the call. A call with no time reads nothing.
+Older text: a time the window does not show still counts as seen when remember() kept it. guard.py track calls it
+after each Bash call while the rule is on: it parses the next CHUNK_BYTES of the transcript from where the last call
+stopped (from the start on the first call) and keeps the times seen entries show in a small per-transcript cache
+($ARSENAL_SEEN_TIMES_DIR, default ~/.cache/arsenal/seen-times). Measured on a 108 MB transcript: about 0.1 s per call
+while it catches up (29 calls), 0.05 ms when idle; the judge reads the cache only for a time the window did not show.
+Whole-file search instead was measured at 0.07-0.09 s per needle and 108 MB, five needles per time: over the budget.
+Not kept: a line longer than a chunk, and the text after the last call (the window holds it).
 Standard library and guard_unseen_hash, guard_calendar only.
 """
+import hashlib
 import json
+import os
 import re
+import stat
 import time
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 import guard_unseen_hash
 from guard_unseen_hash import OutOfTime, agent_transcript, read_tail, seen_texts, window_bytes
@@ -50,6 +63,10 @@ URL = re.compile(r"https?://\S+", re.I)
 STAMP = re.compile(r"(\d{4})-(\d\d)-(\d\d)[t ]([01]\d|2[0-3]):([0-5]\d)(?::([0-5]\d)(?:\.\d+)?)?"
                    r"(?:(z(?![a-z])|[+-]\d\d(?::?\d\d)?)|\s([+-]\d{4}))?", re.I)
 REFUSAL = re.compile(r"arsenal lesson guard \S+ \(unseen-time\): ")  # guard.refusal_text, lowercased
+CHUNK_BYTES = 4 * 1024 * 1024  # one remember() parses at most this much: about 90 ms on a real transcript
+CACHE_DIR_ENV = "ARSENAL_SEEN_TIMES_DIR"
+CACHE_DAYS = 30  # a cache file not written for this long is removed when another one is created
+MAX_PRUNED = 1000  # cache files looked at per prune
 
 named = guard_unseen_hash.named
 
@@ -163,6 +180,101 @@ class Window:
         return False
 
 
+def cache_path(transcript_path):
+    """The cache file of one transcript, under $ARSENAL_SEEN_TIMES_DIR or ~/.cache/arsenal/seen-times."""
+    folder = os.environ.get(CACHE_DIR_ENV) or os.path.join(os.path.expanduser("~"), ".cache", "arsenal", "seen-times")
+    key = hashlib.sha256(os.path.realpath(transcript_path).encode("utf-8", "surrogateescape")).hexdigest()[:32]
+    return Path(folder) / f"{key}.json"
+
+
+def load_cache(path):
+    """{"size": bytes read, "cut": inside a line longer than a chunk, "times": [...]}, or None when missing or bad."""
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(data, dict):
+        return None
+    size, times_seen, cut = data.get("size"), data.get("times"), data.get("cut", False)
+    valid = (isinstance(size, int) and not isinstance(size, bool) and size >= 0 and isinstance(cut, bool)
+             and isinstance(times_seen, list) and all(isinstance(t, str) and re.fullmatch(HH_MM, t) for t in times_seen))
+    return {"size": size, "cut": cut, "times": times_seen} if valid else None
+
+
+def remembered(transcript_path):
+    """The times remember() kept for this transcript; set() when there are none or on any error."""
+    try:
+        if not isinstance(transcript_path, str) or not transcript_path:
+            return set()
+        data = load_cache(cache_path(transcript_path))
+        return set(data["times"]) if data else set()
+    except Exception:
+        return set()
+
+
+def prune(folder, now):
+    """Remove cache files not written for CACHE_DAYS (a session's cache outlives it otherwise)."""
+    with os.scandir(folder) as entries:
+        for count, entry in enumerate(entries):
+            if count >= MAX_PRUNED:
+                break
+            if (entry.name.endswith((".json", ".tmp")) and entry.is_file()
+                    and now - entry.stat().st_mtime > CACHE_DAYS * 86400):  # .tmp: a write that crashed midway
+                os.unlink(entry.path)
+
+
+def save_cache(path, data):
+    created = not path.exists()
+    path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    scratch = path.with_name(f"{path.name}.{os.getpid()}.tmp")
+    try:
+        scratch.write_text(json.dumps(data), encoding="utf-8")
+        os.replace(scratch, path)  # parallel writers each leave a whole file; a lost one is reread from its size
+    finally:
+        if scratch.exists():  # the replace did not happen: no scratch file is left behind
+            scratch.unlink()
+    if created:
+        prune(path.parent, time.time())
+
+
+def remember(transcript_path, agent_id=None):
+    """Add the times the next transcript lines (at most CHUNK_BYTES) show to the transcript's cache, so a time stays
+    seen after it left the window. guard.py track calls it after each Bash call while the rule is on. A line longer
+    than a chunk is skipped; a line still being written waits for the next call. Never raises."""
+    try:
+        if not isinstance(transcript_path, str) or not transcript_path:
+            return
+        if agent_id:
+            transcript_path = agent_transcript(transcript_path, agent_id)
+            if transcript_path is None:
+                return
+        if not stat.S_ISREG(os.stat(transcript_path).st_mode):
+            return
+        cache = cache_path(transcript_path)
+        data = load_cache(cache) or {"size": 0, "cut": False, "times": []}
+        with open(transcript_path, "rb") as handle:
+            if os.fstat(handle.fileno()).st_size < data["size"]:  # rewritten: what it showed before is gone
+                data = {"size": 0, "cut": False, "times": []}
+            handle.seek(data["size"])
+            chunk = handle.read(CHUNK_BYTES).lower()
+        whole = chunk.rfind(b"\n") + 1  # the bytes up to the last whole line
+        if not whole:
+            if len(chunk) < CHUNK_BYTES:
+                return  # nothing new, or a line still being written
+            data.update(size=data["size"] + len(chunk), cut=True)  # inside a line longer than a chunk
+        else:
+            start = chunk.find(b"\n") + 1 if data["cut"] else 0  # the rest of a skipped long line
+            window, shown = Window(chunk, float("inf"), time.monotonic), set(data["times"])
+            while start < whole:
+                end = chunk.find(b"\n", start)
+                shown |= window.read_line(start, end)
+                start = end + 1
+            data.update(size=data["size"] + whole, cut=False, times=sorted(shown))
+        save_cache(cache, data)
+    except Exception:  # the tracker must never break a session
+        return
+
+
 def unseen(texts, transcript_path, window_mb=None, clock=time.monotonic, budget=BUDGET_SECONDS, agent_id=None,
            allow=None):
     """The times in the texts that no seen entry of the transcript window showed; [] on any failure, and only the
@@ -191,4 +303,6 @@ def unseen(texts, transcript_path, window_mb=None, clock=time.monotonic, budget=
         pass
     except Exception:  # fail open: a broken check never refuses a call
         return []
+    if found:  # older text: the times remember() kept before it left the window
+        found -= remembered(transcript_path)
     return [candidate for candidate in wanted if candidate in found]
