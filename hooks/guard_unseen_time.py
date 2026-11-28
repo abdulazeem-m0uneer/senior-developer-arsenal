@@ -11,10 +11,13 @@ unless the call writes it), outbound MCP tools, SendMessage). A time
 typed from memory or converted by hand is often wrong, so each HH:MM in them (00-23 : 00-59) must have reached the
 session from outside the model first: the same transcript entries and window as guard_unseen_hash (tool results, user
 text, queued messages and attachments; never the assistant's own text, thinking or tool inputs).
-Not judged: a time in an "ETA MM-DD HH:MM" or "ETA HH:MM" clause (a day word, "~" or a date with or without the year
-may stand between), a time right after "by", "until", "before" or "at the latest" (the same), a range (09:00-17:00),
-a duration after took, takes, lasted, elapsed or duration, a time in a code span, a fenced
-block or a URL, and the registry entry's "allow" words (exact HH:MM, so "16:36"). The seconds of a time (16:36:44) are
+A masked time (16:0x, 16:3X: a minute digit 0-5, then x or X) is judged as one time: it is seen when any of the ten
+times 16:00 to 16:09 is, or when a seen entry shows it as written (any case); the refusal names it as written.
+Not judged: a time in an "ETA MM-DD HH:MM" or
+"ETA HH:MM" clause (a day word, "~" or a date with or without the year may stand between), a time right after "by",
+"until", "before" or "at the latest" (the same), a range (09:00-17:00), a duration after took, takes, lasted, elapsed
+or duration, a time in a code span, a fenced block or a URL, and the registry entry's "allow" words (exact HH:MM, so
+"16:36", or a masked HH:Mx, so "16:3x", in either case). The seconds of a time (16:36:44) are
 not judged; the minutes and seconds of a longer one (the 11:12 in 10:11:12, a MAC address) are not times.
 Seen: the HH:MM appears in a seen entry, or an ISO timestamp there (2026-11-25T16:36:44Z, 2026-11-25 19:36:44 +0300)
 that has a zone gives it: the written time, its UTC time and its time in the machine's own zone on that date (the
@@ -50,12 +53,15 @@ MAX_TIMES = 16
 BUDGET_SECONDS = guard_unseen_hash.BUDGET_SECONDS
 ZONE_WEEKS = 60  # the zone's offsets are sampled weekly this far back and forward from now
 HH_MM = r"(?:[01]\d|2[0-3]):[0-5]\d"
+HH_MX = r"(?:[01]\d|2[0-3]):[0-5](?:\d|x(?!\w))"  # HH:MM, or HH:Mx with a masked minute (case-insensitive)
 DATE_PREFIX = r"(?:(?:\d{4}-)?\d\d-\d\d[t\s]+)?"
 TIME = re.compile(rf"(?<![\d:.]){HH_MM}(?!\d|:\d\d:)")
+TAIL = re.compile(rb":\d\d:")  # the minute and second of a longer reading
+MASKED = re.compile(r"(?<![\d:.])(?:[01]\d|2[0-3]):[0-5]x(?!\w)", re.I)  # TIME's left edge, so 2026-11-25T16:3x is judged
 DAY = r"(?:(?:mon|tue|wed|thu|fri|sat|sun)[a-z]*|today|tomorrow|tonight)"
-FUTURE = rf"~?\s*(?:{DAY}\s+)?{DATE_PREFIX}~?{HH_MM}(?!\d)"
-SPAN_OF_TIME = (rf"(?<![\d:.]){HH_MM}\s*[-\u2013]\s*{HH_MM}(?!\d)"
-                rf"|\b(?:took|takes|lasted|elapsed|duration):?\s*{HH_MM}(?!\d)")
+FUTURE = rf"~?\s*(?:{DAY}\s+)?{DATE_PREFIX}~?{HH_MX}(?!\d)"
+SPAN_OF_TIME = (rf"(?<![\d:.]){HH_MX}\s*[-\u2013]\s*{HH_MX}(?!\d)"
+                rf"|\b(?:took|takes|lasted|elapsed|duration):?\s*{HH_MX}(?!\d)")
 CLAUSE = re.compile(rf"\beta\b:?\s*{FUTURE}|\b(?:by|until|before|at the latest)\s+{FUTURE}|{SPAN_OF_TIME}", re.I)
 FENCE = re.compile(r"```.*?```", re.S)
 SPAN = re.compile(r"`[^`\n]*`")
@@ -67,12 +73,15 @@ CHUNK_BYTES = 4 * 1024 * 1024  # one remember() parses at most this much: about 
 CACHE_DIR_ENV = "ARSENAL_SEEN_TIMES_DIR"
 CACHE_DAYS = 30  # a cache file not written for this long is removed when another one is created
 MAX_PRUNED = 1000  # cache files looked at per prune
+SKIPS_PER_TICK = 4096  # needle hits that are no time, passed between two reads of the clock
+HEX = b"0123456789abcdef"
 
 named = guard_unseen_hash.named
 
 
 def times(texts, allow=None):
-    """The distinct HH:MM in the texts that the rule judges, in order, at most MAX_TIMES."""
+    """The distinct HH:MM, and HH:Mx with a masked minute (as first written), in the texts that the rule judges, in
+    order, at most MAX_TIMES."""
     skip = {word.lower() for word in allow or () if isinstance(word, str)}
     found = {}
     for text in texts:
@@ -80,10 +89,16 @@ def times(texts, allow=None):
             continue
         text = URL.sub(" ", SPAN.sub(" ", FENCE.sub(" ", text)))
         text = STAMP.sub(lambda match: f" {match.group(4)}:{match.group(5)} ", CLAUSE.sub(" ", text))
-        for match in TIME.finditer(text):
-            if match.group() not in skip:
-                found[match.group()] = None
-    return list(found)[:MAX_TIMES]
+        matches = sorted((match.start(), match.group()) for rule in (TIME, MASKED) for match in rule.finditer(text))
+        for _, written in matches:
+            if written.lower() not in skip:
+                found.setdefault(written.lower(), written)
+    return list(found.values())[:MAX_TIMES]
+
+
+def readings(candidate):
+    """The times a candidate stands for: itself, or the ten times its masked minute could be."""
+    return [f"{candidate[:-1]}{digit}" for digit in range(10)] if candidate[-1] in "xX" else [candidate]
 
 
 def clock_time(moment):
@@ -115,7 +130,9 @@ def entry_times(text):
     shown = set()
     for match in STAMP.finditer(text):
         shown |= stamp_times(match)
-    shown.update(match.group() for match in TIME.finditer(STAMP.sub(" ", text)))
+    plain = STAMP.sub(" ", text)
+    shown.update(match.group() for match in TIME.finditer(plain))
+    shown.update(match.group().lower() for match in MASKED.finditer(plain))  # a masked time as written
     return shown
 
 
@@ -131,6 +148,20 @@ def needles(clock_value, offsets):
     minute = int(hours) * 60 + int(minutes)
     moved = {(minute + sign * offset) % 1440 for offset in offsets for sign in (-1, 1)} | {minute}
     return [f"{value // 60:02d}:{value % 60:02d}".encode() for value in sorted(moved)]
+
+
+def accepted(candidate):
+    """The texts of a seen entry that make a candidate seen: its readings, and a masked one as written."""
+    return [*readings(candidate), candidate.lower()]
+
+
+def search_terms(candidate, offsets):
+    """What the window is searched for: the needles of a time, and for a masked one their shared HH:M prefixes
+    (ten times in one search each, so a masked time costs about what a plain one does) and itself as written."""
+    found = {needle for reading in readings(candidate) for needle in needles(reading, offsets)}
+    if candidate[-1] not in "xX":
+        return sorted(found)
+    return sorted({needle[:-1] for needle in found} | {candidate.lower().encode()})
 
 
 class Window:
@@ -166,16 +197,42 @@ class Window:
                     shown |= entry_times(line)
         return shown
 
-    def seen(self, wanted, candidate):
-        """True when a seen entry shows the time; the lines holding any needle are parsed newest first."""
+    def after_unicode_escape(self, pos):
+        """Whether the digit before pos ends a JSON \\uXXXX escape: the decoded text has a non-digit there."""
+        return (pos >= 6 and self.data[pos - 6:pos - 4] == b"\\u"
+                and all(byte in HEX for byte in self.data[pos - 4:pos]))
+
+    def is_time_at(self, pos, needle):
+        """Whether the needle found at pos is a time, by the edges TIME uses: no digit, ":" or "." before it, and after
+        it (a masked minute's prefix needs its digit first) no digit and no ":SS:"."""
+        after = pos + len(needle)
+        if pos and self.data[pos - 1:pos] in b"0123456789:." and not self.after_unicode_escape(pos):
+            return False
+        if needle.endswith(b"x"):  # a masked time as written
+            return not re.match(rb"\w", self.data[after:after + 1])
+        if len(needle) < len(b"HH:MM"):  # the HH:M prefix of a masked time
+            if not self.data[after:after + 1].isdigit():
+                return False
+            after += 1
+        return not self.data[after:after + 1].isdigit() and not TAIL.match(self.data, after)
+
+    def seen(self, wanted, candidates):
+        """True when a seen entry shows one of the times; the lines holding any needle are parsed newest first."""
+        skipped = 0
         for needle in wanted:
             end = len(self.data)
             while True:
                 pos = self.data.rfind(needle, 0, end)
                 if pos < 0:
                     break
+                end = pos
+                if not self.is_time_at(pos, needle):
+                    skipped += 1
+                    if skipped % SKIPS_PER_TICK == 0:
+                        self.tick()
+                    continue
                 end, shown = self.line_times(pos)
-                if candidate in shown:
+                if shown.intersection(candidates):
                     return True
         return False
 
@@ -197,7 +254,8 @@ def load_cache(path):
         return None
     size, times_seen, cut = data.get("size"), data.get("times"), data.get("cut", False)
     valid = (isinstance(size, int) and not isinstance(size, bool) and size >= 0 and isinstance(cut, bool)
-             and isinstance(times_seen, list) and all(isinstance(t, str) and re.fullmatch(HH_MM, t) for t in times_seen))
+             and isinstance(times_seen, list)
+             and all(isinstance(t, str) and re.fullmatch(HH_MX, t, re.I) for t in times_seen))
     return {"size": size, "cut": cut, "times": times_seen} if valid else None
 
 
@@ -291,18 +349,19 @@ def unseen(texts, transcript_path, window_mb=None, clock=time.monotonic, budget=
                 return []
         window = Window(read_tail(transcript_path, window_bytes(window_mb)), deadline, clock)
         offsets = zone_offsets()
-        searched = {candidate: needles(candidate, offsets) for candidate in wanted}
+        searched = {candidate: search_terms(candidate, offsets) for candidate in wanted}
         for candidate in wanted:  # times printed nowhere first: parsing lines must not spend their budget
             window.tick()
             if not window.shows_any(searched[candidate]):
                 found.add(candidate)
         for candidate in wanted:
-            if candidate not in found and not window.seen(searched[candidate], candidate):
+            if candidate not in found and not window.seen(searched[candidate], accepted(candidate)):
                 found.add(candidate)
     except OutOfTime:  # a time judged unseen stays unseen; the ones not judged yet pass
         pass
     except Exception:  # fail open: a broken check never refuses a call
         return []
     if found:  # older text: the times remember() kept before it left the window
-        found -= remembered(transcript_path)
+        kept = remembered(transcript_path)
+        found = {candidate for candidate in found if kept.isdisjoint(accepted(candidate))}
     return [candidate for candidate in wanted if candidate in found]

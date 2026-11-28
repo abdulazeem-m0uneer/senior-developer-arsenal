@@ -124,6 +124,157 @@ class WhatIsATimeTests(unittest.TestCase):
                          "01:00, 02:00, 03:00 and 2 more")
 
 
+class MaskedTimeTests(ZoneCase):
+    """A masked time (16:0x, 16:3X) stands for the ten times HH:M0 to HH:M9 (lesson G015, fourth repeat)."""
+
+    def test_a_masked_minute_is_a_time_as_written(self):
+        self.assertEqual(unseen_time.times(["ran at 16:0x, then 16:3X and 20:3x"]), ["16:0x", "16:3X", "20:3x"])
+        self.assertEqual(unseen_time.times(["16:0x 16:0X 16:0x"]), ["16:0x"])  # one time, the first spelling
+
+    def test_a_masked_time_counts_as_one_toward_the_bound(self):
+        many = " ".join(f"{hour:02d}:0x" for hour in range(24))
+        self.assertEqual(unseen_time.times([many]), [f"{hour:02d}:0x" for hour in range(16)])
+        mixed = " ".join(f"{hour:02d}:00 {hour:02d}:1x" for hour in range(24))
+        self.assertEqual(len(unseen_time.times([mixed])), 16)
+
+    def test_a_word_character_after_the_x_is_not_a_masked_time(self):
+        self.assertEqual(unseen_time.times(["at 16:0x_y"]), [])
+        self.assertEqual(unseen_time.times(["by 16:0x_y"]), [])
+
+    def test_a_letter_before_a_masked_time_does_not_hide_it(self):  # the same left edge as a plain time (t16:05)
+        self.assertEqual(unseen_time.times(["2026-11-25T16:3x"]), ["16:3x"])
+        self.assertEqual(unseen_time.times(["at16:0x"]), ["16:0x"])
+        self.assertEqual(unseen_time.times(["t16:05"]), ["16:05"])
+
+    def test_a_ratio_with_a_masked_minute_is_judged(self):  # pinned: the rule cannot tell it from a time
+        self.assertEqual(unseen_time.times(["ratio 10:1x"]), ["10:1x"])
+
+    def test_what_is_not_a_masked_time(self):
+        for text in ("0x1F", "16:0xff", "16:0xA", "10:16:0x", "16:6x", "24:0x", "16:xx", "16:0xx",
+                     "16:0x7", "116:0x", "16.16:0x"):
+            masked = [found for found in unseen_time.times([text]) if found[-1] in "xX"]
+            self.assertEqual(masked, [], text)
+
+    def test_exemptions_apply_to_a_masked_time(self):
+        for text in ("ETA 16:0x", "ETA 11-26 16:0x", "ETA ~16:3x", "done by 16:3x", "until Fri 16:3X", "before 16:0x",
+                     "at the latest 16:0x", "hours 16:0x-17:00", "16:00-17:3x", "16:0x - 17:3x", "took 16:0x",
+                     "run `date 16:0x` now", "```\nlog 16:0x\n```", "see https://example.com/16:0x",
+                     "16:0x\u201317:00"):
+            self.assertEqual(unseen_time.times([text]), [], text)
+        self.assertEqual(unseen_time.times(["ETA 16:0x, ran at 17:3x"]), ["17:3x"])
+
+    def test_the_allow_list_exempts_a_masked_time_as_written(self):
+        self.assertEqual(unseen_time.times(["16:0x 17:3x"], allow=["16:0x"]), ["17:3x"])
+        self.assertEqual(unseen_time.times(["16:0X"], allow=["16:0x"]), [])
+        self.assertEqual(unseen_time.times(["16:0x"], allow=["16:00"]), ["16:0x"])
+
+    def test_a_masked_time_nothing_showed_is_unseen(self):
+        self.assertEqual(self.unseen("the install ran at 16:0x", tool_result("t1", "Fri Nov 28 15:24:44 UTC 2026")),
+                         ["16:0x"])
+        self.assertEqual(self.unseen("16:3X", assistant_text("16:34"), tool_use("t1", "Bash", {"command": "16:35"})),
+                         ["16:3X"])
+
+    def test_it_is_seen_when_any_of_its_ten_times_is_shown(self):
+        for shown in ("16:00", "16:04", "16:09"):
+            self.assertEqual(self.unseen("ran at 16:0x", tool_result("t1", f"now {shown}:44")), [], shown)
+        self.assertEqual(self.unseen("ran at 16:0x", tool_result("t1", "16:10 15:04 16:14")), ["16:0x"])
+
+    def test_it_is_seen_by_a_user_message(self):
+        self.assertEqual(self.unseen("ran at 16:0X", user_text("it was 16:07")), [])
+
+    def test_a_masked_and_a_plain_time_are_judged_each(self):
+        printed = tool_result("t1", "16:04")
+        self.assertEqual(self.unseen("16:0x 17:3x 16:36", printed), ["17:3x", "16:36"])
+
+    def test_it_is_seen_by_the_utc_reading_of_a_zoned_stamp(self):
+        stamp = tool_result("t1", '{"mergedAt":"2026-11-28T14:04:10Z"}')  # 17:04 on this +03:00 machine
+        self.assertEqual(self.unseen("at 14:0x", stamp), [])
+        self.assertEqual(self.unseen("at 17:0x", stamp), [])
+        self.assertEqual(self.unseen("at 15:0x", stamp), ["15:0x"])
+
+    def test_a_stamp_without_a_zone_counts_as_written_only(self):
+        stamp = tool_result("t1", "2026-11-28T14:04:10")
+        self.assertEqual(self.unseen("at 14:0x", stamp), [])
+        self.assertEqual(self.unseen("at 17:0x", stamp), ["17:0x"])
+
+    def test_it_is_seen_when_remember_kept_one_of_its_times(self):
+        path = self.write(tool_result("t1", "16:04"), tool_result("t2", "x" * 2_000_000))
+        self.assertEqual(unseen_time.unseen(["at 16:0x"], path, window_mb=1), ["16:0x"])
+        unseen_time.remember(path)
+        self.assertEqual(unseen_time.unseen(["at 16:0x"], path, window_mb=1), [])
+        self.assertEqual(unseen_time.unseen(["at 16:1x"], path, window_mb=1), ["16:1x"])
+
+    def test_it_is_seen_across_a_line_the_window_parses(self):
+        # the digit is on a line after other lines that hold neighbouring needles
+        entries = [tool_result(f"t{n}", f"15:{n:02d}") for n in range(10)] + [tool_result("t9", "16:05")]
+        self.assertEqual(self.unseen("at 16:0x", *entries), [])
+
+    def test_a_subagent_is_judged_on_its_own_transcript(self):
+        session = self.write(tool_result("t1", "16:04"))
+        folder = self.dir / "session" / "subagents"
+        folder.mkdir(parents=True)
+        (folder / "agent-a9.jsonl").write_text(json.dumps(tool_result("t1", "17:00")) + "\n", encoding="utf-8")
+        self.assertEqual(unseen_time.unseen(["at 16:0x"], session, agent_id="a9"), ["16:0x"])
+
+    def test_ten_searches_of_a_full_window_stay_inside_the_budget(self):
+        path = self.write(tool_result("t1", "x" * (16 * 1024 * 1024 - 400)))
+        start = time.monotonic()
+        found = unseen_time.unseen(["ran at 16:0x"], path)
+        self.assertEqual(found, ["16:0x"])
+        self.assertLess(time.monotonic() - start, 10 * unseen_time.BUDGET_SECONDS)  # generous: a slow runner passes
+
+    def test_log_stamps_that_only_contain_the_prefix_parse_no_line(self):
+        # the 16:0 of 09:16:05 is not a time: with 300 lines, a clock that costs one unit per read passes the
+        # budget only when no line is parsed
+        stamps = [tool_result(f"t{n}", f"[2026-11-28 09:16:{n % 60:02d}] ok") for n in range(300)]
+        for masked in ("16:0x", "16:3x"):
+            ticks = itertools.count()
+            found = unseen_time.unseen([f"at {masked}"], self.write(*stamps), clock=lambda: next(ticks), budget=50)
+            self.assertEqual(found, [masked])
+
+    def test_a_dense_line_of_skipped_hits_is_bounded_by_the_budget(self):
+        # 300000 hits of "16:0" that are no time (a digit or ":" before each) and no line to parse: the clock must
+        # still be read, or one hexdump-like line spends the window unbounded
+        dense = tool_result("t1", "t" + "16:05:" * 300_000)
+        ticks = itertools.count()
+        found = unseen_time.unseen(["at 16:0x"], self.write(dense), clock=lambda: next(ticks), budget=50)
+        self.assertEqual(found, [])  # out of time before a time was judged unseen: the call passes
+
+    def test_a_masked_time_a_user_wrote_is_seen_as_written(self):
+        for written in ("16:0x", "16:0X"):
+            self.assertEqual(self.unseen("around 16:0x", user_text(f"meet around {written}")), [], written)
+        self.assertEqual(self.unseen("around 16:0x", user_text("meet around 16:1x")), ["16:0x"])
+        self.assertEqual(self.unseen("around 16:0X", user_text("meet around 16:0x")), [])
+        self.assertEqual(self.unseen("at 16:3x", tool_result("t1", "window 2026-11-25T16:3x")), [])  # ISO form, seen side
+
+    def test_a_masked_time_in_older_text_stays_seen_when_remember_kept_it(self):
+        path = self.write(user_text("meet around 16:0x"), tool_result("t2", "x" * 2_000_000))
+        self.assertEqual(unseen_time.unseen(["at 16:0x"], path, window_mb=1), ["16:0x"])
+        unseen_time.remember(path)
+        self.assertEqual(unseen_time.unseen(["at 16:0x"], path, window_mb=1), [])
+        self.assertEqual(unseen_time.unseen(["at 16:00"], path, window_mb=1), ["16:00"])
+
+    def test_a_time_right_after_a_json_unicode_escape_is_seen(self):
+        for text in ("caf\u00e916:05", "\u001b16:05", "a\u00b716:05"):
+            self.assertEqual(self.unseen("ran at 16:05", tool_result("t1", text)), [], text)
+            self.assertEqual(self.unseen("ran at 16:0x", tool_result("t1", text)), [], text)
+        self.assertEqual(self.unseen("ran at 16:05", tool_result("t1", "x116:05")), ["16:05"])
+
+
+    def test_a_year_and_a_longer_number_are_not_the_prefix_of_a_time(self):
+        self.assertEqual(self.unseen("at 16:0x", tool_result("t1", "2016:05 and 16:055 and 116:05")), ["16:0x"])
+
+
+class MaskedTimeOnAnotherZoneTests(ZoneCase):
+    zone = "XXX-2"  # +02:00
+
+    def test_an_iso_stamp_in_utc_shows_the_masked_time_on_the_machines_clock(self):
+        stamp = tool_result("t1", '{"mergedAt":"2026-11-28T14:04:10Z"}')
+        self.assertEqual(self.unseen("the install ran at 16:0x", stamp), [])
+        self.assertEqual(self.unseen("the install ran at 14:0x", stamp), [])
+        self.assertEqual(self.unseen("the install ran at 15:0x", stamp), ["15:0x"])
+
+
 class SeenTests(ZoneCase):
     def test_a_time_a_tool_printed_is_seen(self):
         self.assertEqual(self.unseen("merged at 16:36", tool_result("t1", "Wed Nov 26 16:36:44 UTC 2026")), [])
@@ -449,6 +600,14 @@ class RuleTests(RuleCase):
         self.assertNotIn("16:36", hit.reason)
         self.assertIn("date +%H:%M", hit.reason)
         self.assertIn("timestamp", hit.reason)
+
+    def test_a_masked_time_is_judged_and_named_as_written(self):
+        self.registry(self.ENTRY, {"rule": "calendar", "enabled": False})  # the calendar rule names guesses first
+        hit = self.judge('gh pr comment 5 -b "the install ran at 17:0x, and 16:3X"')
+        self.assertEqual((hit.lesson, hit.rule), ("G015", "unseen-time"))
+        self.assertIn("17:0x", hit.reason)
+        self.assertNotIn("16:3X", hit.reason)  # 16:36 was printed
+        self.assertIsNone(self.judge('gh pr comment 5 -b "ran at 19:3x"'))  # the local reading of 16:36 UTC
 
     def test_a_seen_time_passes(self):
         self.registry(self.ENTRY)

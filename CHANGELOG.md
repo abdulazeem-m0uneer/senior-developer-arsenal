@@ -4,6 +4,13 @@ All notable changes to Senior Developer Arsenal are recorded in this file.
 
 The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/), and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version is the one in the `VERSION` file, and each release is dated by the day its pull request merged (UTC).
 
+## [1.39.1] - 2026-11-28
+
+### Fixed
+
+- `unseen-time`: a time with a masked minute (`16:0x`, `16:3X`, also in ISO form `2026-11-25T16:3x`) is now judged: it counts as seen when any of the ten times it stands for (16:00 to 16:09) is seen, or when a seen entry shows it as written; the ETA, by/until, range, duration, code, URL and allow exemptions apply as for a plain time, and an allow entry may be masked (#79).
+- `unseen-time`: search hits that are not times (the minutes and seconds of `09:16:05`, or `2016:0`) are skipped before a line is parsed, and long runs of skipped hits read the clock, so a log-heavy window stays inside the time budget; a time right after a JSON `\u` escape now counts as seen (#79).
+
 ## [1.39.0] - 2026-11-28
 
 ### Added
@@ -548,6 +555,7 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 - Non-destructive installers for every supported agent.
 - CI with lint, test and smoke workflows.
 
+[1.39.1]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/79
 [1.39.0]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/78
 [1.38.0]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/77
 [1.37.1]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/76
