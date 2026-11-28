@@ -95,6 +95,8 @@ guard_limits = optional("guard_limits")
 guard_lessons = optional("guard_lessons")
 guard_oom = optional("guard_oom")
 guard_ci_rerun = optional("guard_ci_rerun")
+guard_commit_push = optional("guard_commit_push")
+guard_unseen_time = optional("guard_unseen_time")
 
 EVIDENCE_FAILURES = 3   # failed commands kept with a lesson: the last ones since the previous lesson
 ERROR_CHARS = 400
@@ -220,6 +222,8 @@ def kind(path):
 REDIRECT_FD = re.compile(r"\d*>&\d*|&>>?")  # 2>&1 and &> are not a background or a separator
 SEPARATOR = re.compile(r"\|\||&&|\||&|;|\n")
 NOT_A_RUN = re.compile(r"(?:^|\s)(?:--version|--help|-V|-h|--collect-only|--co)(?=\s|$)")
+VARIABLE_ONLY = re.compile(r"(?:\$\{?\w+\}?)+")  # `bash ${test}`: names no check that a rerun could be matched by
+CAUSE_NOTED = re.compile(r"^cause noted; rerun the failed command now\r?$", re.M)  # lessons.py cause's own line
 SCAN_CHARS = 20000  # a longer command is read at its head and tail: the scan cost must not grow with hostile input
 
 
@@ -255,7 +259,11 @@ def check_keys(command, decisive=False):
             words.remove("run")
         if words == ["ruff"]:
             words.append("check")
-        keys.add(" ".join(w for w in words if not w.startswith("-") or w in ("--check", "--validate"))[:COMMAND_CHARS])
+        key = " ".join(w for w in words if not w.startswith("-") or w in ("--check", "--validate"))
+        if not key:  # `node --test <file>`: only options after the interpreter; keep them with it
+            key = " ".join(match.group("check").split())
+        if not VARIABLE_ONLY.fullmatch(key):
+            keys.add(key[:COMMAND_CHARS])
     return sorted(keys)
 
 
@@ -407,6 +415,7 @@ def red_checks(events):
             red.discard(key)
         elif kind_ == "cause":
             red.clear()
+    red.discard("")  # 1.38.0 recorded "" for `node --test <file>`; it matched every command that is not a push
     return red
 
 
@@ -421,6 +430,27 @@ def record_ci(path, data, command):
         record(path, {**event, "time": int(time.time())})
 
 
+def record_commit_flow(path, data, command):
+    """Record the commits, pushes, statuses and logs a call ran, failed or not, while the commit-then-push rule is on
+    (a push in a later call is judged against them)."""
+    if not (guard_lessons and guard_commit_push):
+        return
+    cwd = hook.working_dir(data)
+    entry = next((entry for name, entry, _ in guard_lessons.rules(cwd) if name == "commit-then-push"), None)
+    if entry:
+        agent = {"agent": data["agent_id"]} if data.get("agent_id") else {}  # one flow per agent and repository
+        for event, repo in guard_commit_push.observed(bounded(command), entry.get("programs"), guard_lessons.commands, cwd):
+            record(path, {"event": event, **({"cwd": repo} if repo else {}), **agent})
+
+
+def remember_seen_times(data):
+    """Keep the times the transcript showed while the unseen-time rule is on, so they stay seen after they leave the
+    rule's window (guard_unseen_time.remember: one bounded chunk per call)."""
+    if guard_lessons and guard_unseen_time and any(
+            name == "unseen-time" for name, _, _ in guard_lessons.rules(hook.working_dir(data))):
+        guard_unseen_time.remember(data.get("transcript_path"), data.get("agent_id"))
+
+
 def track():
     if switched_off():
         return  # ARSENAL_GUARD=off records nothing either
@@ -432,11 +462,15 @@ def track():
         return
     checks = check_keys(command)
     record_ci(path, data, command)
+    remember_seen_times(data)
     if data.get("hook_event_name") == "PostToolUseFailure":
         if data.get("is_interrupt") is not True:
             error = str(data.get("error") or "")
             before = escalation_exit_prefix(command, error)
+            record_commit_flow(path, data, command if before is None else before)  # what ran before the failing step
             if before is None:
+                if CAUSE_NOTED.search(error) and CAUSE_COMMAND.search(bounded(command)):
+                    record(path, {"event": "cause"})  # the note was accepted; a later step of the list failed
                 if escalated_lesson(command, error):  # the repeat was saved, then a later step failed
                     note_lesson(path, data, command, error)
                 record_failure(path, command, error, checks)
@@ -455,6 +489,7 @@ def track():
         record(path, {"event": "klog"})
     for key in pushes(command):
         record(path, {"event": "push_ok", "key": key})
+    record_commit_flow(path, data, command)
     checks = check_keys(command, decisive=True)  # a pass hidden by `| tail` or `|| true` proves nothing
     if checks:
         record(path, {"event": "pass", "checks": checks})

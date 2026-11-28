@@ -5,6 +5,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import unittest
 from pathlib import Path
@@ -89,6 +90,58 @@ class ProblemTests(unittest.TestCase):
     def test_one_line_per_mistake(self):
         found = problems("Wed 11-26 and Wed 11-26 at 16:4x, ETA 11-21", SUN_THU)
         self.assertEqual(len(found), 3)  # the wrong weekday, the guess, and the non-workday promise
+
+
+class BodyFileTests(unittest.TestCase):
+    """read_body_file reads at most BODY_FILE_MAX_BYTES, even from a file that grew after its stat."""
+
+    def setUp(self):
+        folder = tempfile.TemporaryDirectory()
+        self.addCleanup(folder.cleanup)
+        self.dir = Path(folder.name)
+
+    def test_a_file_at_the_limit_is_read_and_one_byte_over_is_not(self):
+        limit = guard_calendar.BODY_FILE_MAX_BYTES
+        edge, over = self.dir / "edge.txt", self.dir / "over.txt"
+        edge.write_text("é" * (limit // 2), encoding="utf-8")  # two bytes each: the limit counts bytes
+        over.write_bytes(b"x" * (limit + 1))
+        self.assertEqual(guard_calendar.read_body_file(str(edge)), "é" * (limit // 2))
+        self.assertIsNone(guard_calendar.read_body_file(str(over)))
+
+    def test_a_file_that_grew_after_its_stat_is_skipped(self):
+        small, grown = self.dir / "small.txt", self.dir / "grown.txt"
+        small.write_text("x", encoding="utf-8")
+        grown.write_bytes(b"x" * (guard_calendar.BODY_FILE_MAX_BYTES + 10))
+        with mock.patch.object(guard_calendar.os, "fstat", return_value=os.stat(small)):
+            self.assertIsNone(guard_calendar.read_body_file(str(grown)))
+
+    @unittest.skipUnless(hasattr(os, "mkfifo"), "no FIFOs here")
+    def test_a_path_swapped_for_a_fifo_after_its_check_never_blocks(self):
+        small, fifo = self.dir / "small.txt", self.dir / "swapped"
+        small.write_text("x", encoding="utf-8")
+        os.mkfifo(fifo)
+        results = []
+        with mock.patch.object(guard_calendar.os, "stat", return_value=os.stat(small)):
+            reader = threading.Thread(target=lambda: results.append(guard_calendar.read_body_file(str(fifo))),
+                                      daemon=True)
+            reader.start()
+            reader.join(2)
+        if reader.is_alive():  # blocked in open(): a writer end lets it return before the test fails
+            os.close(os.open(fifo, os.O_WRONLY | os.O_NONBLOCK))
+            reader.join(2)
+            self.fail("read_body_file blocked on a FIFO")
+        self.assertEqual(results, [None])
+
+    def test_newlines_read_as_in_text_mode(self):
+        crlf = self.dir / "crlf.txt"
+        crlf.write_bytes(b"Sun 11-30\r\nMon\rTue")
+        self.assertEqual(guard_calendar.read_body_file(str(crlf)), "Sun 11-30\nMon\nTue")
+
+    def test_missing_not_utf8_or_none_is_none(self):
+        bad = self.dir / "bad.txt"
+        bad.write_bytes(b"\xff\xfe")
+        for path in (None, str(self.dir / "missing.txt"), str(bad), str(self.dir)):
+            self.assertIsNone(guard_calendar.read_body_file(path), path)
 
 
 class WorkweekTests(unittest.TestCase):

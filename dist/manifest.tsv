@@ -95,6 +95,7 @@ antigravity	global	file	agent_hook.py	hooks/agent_hook.py	.gemini/config/arsenal
 antigravity	global	file	guard.py	hooks/guard.py	.gemini/config/arsenal-hooks/guard.py	-
 antigravity	global	file	guard_calendar.py	hooks/guard_calendar.py	.gemini/config/arsenal-hooks/guard_calendar.py	-
 antigravity	global	file	guard_ci_rerun.py	hooks/guard_ci_rerun.py	.gemini/config/arsenal-hooks/guard_ci_rerun.py	-
+antigravity	global	file	guard_commit_push.py	hooks/guard_commit_push.py	.gemini/config/arsenal-hooks/guard_commit_push.py	-
 antigravity	global	file	guard_container_limits.py	hooks/guard_container_limits.py	.gemini/config/arsenal-hooks/guard_container_limits.py	-
 antigravity	global	file	guard_destructive.py	hooks/guard_destructive.py	.gemini/config/arsenal-hooks/guard_destructive.py	-
 antigravity	global	file	guard_dry_run_chain.py	hooks/guard_dry_run_chain.py	.gemini/config/arsenal-hooks/guard_dry_run_chain.py	-
@@ -221,6 +222,7 @@ antigravity	project	file	agent_hook.py	hooks/agent_hook.py	.agents/arsenal-hooks
 antigravity	project	file	guard.py	hooks/guard.py	.agents/arsenal-hooks/guard.py	-
 antigravity	project	file	guard_calendar.py	hooks/guard_calendar.py	.agents/arsenal-hooks/guard_calendar.py	-
 antigravity	project	file	guard_ci_rerun.py	hooks/guard_ci_rerun.py	.agents/arsenal-hooks/guard_ci_rerun.py	-
+antigravity	project	file	guard_commit_push.py	hooks/guard_commit_push.py	.agents/arsenal-hooks/guard_commit_push.py	-
 antigravity	project	file	guard_container_limits.py	hooks/guard_container_limits.py	.agents/arsenal-hooks/guard_container_limits.py	-
 antigravity	project	file	guard_destructive.py	hooks/guard_destructive.py	.agents/arsenal-hooks/guard_destructive.py	-
 antigravity	project	file	guard_dry_run_chain.py	hooks/guard_dry_run_chain.py	.agents/arsenal-hooks/guard_dry_run_chain.py	-
@@ -331,6 +333,7 @@ gemini	global	file	agent_hook.py	hooks/agent_hook.py	.agents/arsenal-hooks/agent
 gemini	global	file	guard.py	hooks/guard.py	.agents/arsenal-hooks/guard.py	-
 gemini	global	file	guard_calendar.py	hooks/guard_calendar.py	.agents/arsenal-hooks/guard_calendar.py	-
 gemini	global	file	guard_ci_rerun.py	hooks/guard_ci_rerun.py	.agents/arsenal-hooks/guard_ci_rerun.py	-
+gemini	global	file	guard_commit_push.py	hooks/guard_commit_push.py	.agents/arsenal-hooks/guard_commit_push.py	-
 gemini	global	file	guard_container_limits.py	hooks/guard_container_limits.py	.agents/arsenal-hooks/guard_container_limits.py	-
 gemini	global	file	guard_destructive.py	hooks/guard_destructive.py	.agents/arsenal-hooks/guard_destructive.py	-
 gemini	global	file	guard_dry_run_chain.py	hooks/guard_dry_run_chain.py	.agents/arsenal-hooks/guard_dry_run_chain.py	-
@@ -443,6 +446,7 @@ gemini	project	file	agent_hook.py	hooks/agent_hook.py	.agents/arsenal-hooks/agen
 gemini	project	file	guard.py	hooks/guard.py	.agents/arsenal-hooks/guard.py	-
 gemini	project	file	guard_calendar.py	hooks/guard_calendar.py	.agents/arsenal-hooks/guard_calendar.py	-
 gemini	project	file	guard_ci_rerun.py	hooks/guard_ci_rerun.py	.agents/arsenal-hooks/guard_ci_rerun.py	-
+gemini	project	file	guard_commit_push.py	hooks/guard_commit_push.py	.agents/arsenal-hooks/guard_commit_push.py	-
 gemini	project	file	guard_container_limits.py	hooks/guard_container_limits.py	.agents/arsenal-hooks/guard_container_limits.py	-
 gemini	project	file	guard_destructive.py	hooks/guard_destructive.py	.agents/arsenal-hooks/guard_destructive.py	-
 gemini	project	file	guard_dry_run_chain.py	hooks/guard_dry_run_chain.py	.agents/arsenal-hooks/guard_dry_run_chain.py	-
@@ -601,6 +605,7 @@ codex	global	file	agent_hook.py	hooks/agent_hook.py	.agents/arsenal-hooks/agent_
 codex	global	file	guard.py	hooks/guard.py	.agents/arsenal-hooks/guard.py	-
 codex	global	file	guard_calendar.py	hooks/guard_calendar.py	.agents/arsenal-hooks/guard_calendar.py	-
 codex	global	file	guard_ci_rerun.py	hooks/guard_ci_rerun.py	.agents/arsenal-hooks/guard_ci_rerun.py	-
+codex	global	file	guard_commit_push.py	hooks/guard_commit_push.py	.agents/arsenal-hooks/guard_commit_push.py	-
 codex	global	file	guard_container_limits.py	hooks/guard_container_limits.py	.agents/arsenal-hooks/guard_container_limits.py	-
 codex	global	file	guard_destructive.py	hooks/guard_destructive.py	.agents/arsenal-hooks/guard_destructive.py	-
 codex	global	file	guard_dry_run_chain.py	hooks/guard_dry_run_chain.py	.agents/arsenal-hooks/guard_dry_run_chain.py	-
@@ -725,6 +730,7 @@ codex	project	file	agent_hook.py	hooks/agent_hook.py	.agents/arsenal-hooks/agent
 codex	project	file	guard.py	hooks/guard.py	.agents/arsenal-hooks/guard.py	-
 codex	project	file	guard_calendar.py	hooks/guard_calendar.py	.agents/arsenal-hooks/guard_calendar.py	-
 codex	project	file	guard_ci_rerun.py	hooks/guard_ci_rerun.py	.agents/arsenal-hooks/guard_ci_rerun.py	-
+codex	project	file	guard_commit_push.py	hooks/guard_commit_push.py	.agents/arsenal-hooks/guard_commit_push.py	-
 codex	project	file	guard_container_limits.py	hooks/guard_container_limits.py	.agents/arsenal-hooks/guard_container_limits.py	-
 codex	project	file	guard_destructive.py	hooks/guard_destructive.py	.agents/arsenal-hooks/guard_destructive.py	-
 codex	project	file	guard_dry_run_chain.py	hooks/guard_dry_run_chain.py	.agents/arsenal-hooks/guard_dry_run_chain.py	-
@@ -1025,6 +1031,7 @@ cursor	global	file	agent_hook.py	hooks/agent_hook.py	.agents/arsenal-hooks/agent
 cursor	global	file	guard.py	hooks/guard.py	.agents/arsenal-hooks/guard.py	-
 cursor	global	file	guard_calendar.py	hooks/guard_calendar.py	.agents/arsenal-hooks/guard_calendar.py	-
 cursor	global	file	guard_ci_rerun.py	hooks/guard_ci_rerun.py	.agents/arsenal-hooks/guard_ci_rerun.py	-
+cursor	global	file	guard_commit_push.py	hooks/guard_commit_push.py	.agents/arsenal-hooks/guard_commit_push.py	-
 cursor	global	file	guard_container_limits.py	hooks/guard_container_limits.py	.agents/arsenal-hooks/guard_container_limits.py	-
 cursor	global	file	guard_destructive.py	hooks/guard_destructive.py	.agents/arsenal-hooks/guard_destructive.py	-
 cursor	global	file	guard_dry_run_chain.py	hooks/guard_dry_run_chain.py	.agents/arsenal-hooks/guard_dry_run_chain.py	-
@@ -1149,6 +1156,7 @@ cursor	project	file	agent_hook.py	hooks/agent_hook.py	.agents/arsenal-hooks/agen
 cursor	project	file	guard.py	hooks/guard.py	.agents/arsenal-hooks/guard.py	-
 cursor	project	file	guard_calendar.py	hooks/guard_calendar.py	.agents/arsenal-hooks/guard_calendar.py	-
 cursor	project	file	guard_ci_rerun.py	hooks/guard_ci_rerun.py	.agents/arsenal-hooks/guard_ci_rerun.py	-
+cursor	project	file	guard_commit_push.py	hooks/guard_commit_push.py	.agents/arsenal-hooks/guard_commit_push.py	-
 cursor	project	file	guard_container_limits.py	hooks/guard_container_limits.py	.agents/arsenal-hooks/guard_container_limits.py	-
 cursor	project	file	guard_destructive.py	hooks/guard_destructive.py	.agents/arsenal-hooks/guard_destructive.py	-
 cursor	project	file	guard_dry_run_chain.py	hooks/guard_dry_run_chain.py	.agents/arsenal-hooks/guard_dry_run_chain.py	-
@@ -1399,6 +1407,7 @@ copilot	global	file	agent_hook.py	hooks/agent_hook.py	.agents/arsenal-hooks/agen
 copilot	global	file	guard.py	hooks/guard.py	.agents/arsenal-hooks/guard.py	-
 copilot	global	file	guard_calendar.py	hooks/guard_calendar.py	.agents/arsenal-hooks/guard_calendar.py	-
 copilot	global	file	guard_ci_rerun.py	hooks/guard_ci_rerun.py	.agents/arsenal-hooks/guard_ci_rerun.py	-
+copilot	global	file	guard_commit_push.py	hooks/guard_commit_push.py	.agents/arsenal-hooks/guard_commit_push.py	-
 copilot	global	file	guard_container_limits.py	hooks/guard_container_limits.py	.agents/arsenal-hooks/guard_container_limits.py	-
 copilot	global	file	guard_destructive.py	hooks/guard_destructive.py	.agents/arsenal-hooks/guard_destructive.py	-
 copilot	global	file	guard_dry_run_chain.py	hooks/guard_dry_run_chain.py	.agents/arsenal-hooks/guard_dry_run_chain.py	-
@@ -1523,6 +1532,7 @@ copilot	project	file	agent_hook.py	hooks/agent_hook.py	.agents/arsenal-hooks/age
 copilot	project	file	guard.py	hooks/guard.py	.agents/arsenal-hooks/guard.py	-
 copilot	project	file	guard_calendar.py	hooks/guard_calendar.py	.agents/arsenal-hooks/guard_calendar.py	-
 copilot	project	file	guard_ci_rerun.py	hooks/guard_ci_rerun.py	.agents/arsenal-hooks/guard_ci_rerun.py	-
+copilot	project	file	guard_commit_push.py	hooks/guard_commit_push.py	.agents/arsenal-hooks/guard_commit_push.py	-
 copilot	project	file	guard_container_limits.py	hooks/guard_container_limits.py	.agents/arsenal-hooks/guard_container_limits.py	-
 copilot	project	file	guard_destructive.py	hooks/guard_destructive.py	.agents/arsenal-hooks/guard_destructive.py	-
 copilot	project	file	guard_dry_run_chain.py	hooks/guard_dry_run_chain.py	.agents/arsenal-hooks/guard_dry_run_chain.py	-

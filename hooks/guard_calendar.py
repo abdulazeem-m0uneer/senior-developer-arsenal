@@ -33,7 +33,15 @@ A month-day without a year is the one nearest today (within 200 days). Single-di
 read: they look like hour ranges ("Mon 9-5"); write hours as times ("Mon 10:00-12:00").
 What is outbound: a Bash call to a message program the registry names (by name or path, run by a shell such as
 `bash path/send.sh`, or through a variable set earlier in the command line: `S=./send.sh; $S`, `export S=...`;
-`bash -c '...'` is code, not a script), `gh [-R repo] issue|pr comment|create|
+`bash -c '...'` is code, not a script; an interpreter runs one too: `node path/api.mjs ...`, `python3 -u send.py`,
+the first word after its options, an option's value skipped; `deno run`, `bun run`; `node -e` is code; a GET or
+HEAD request is a read, not a message), and the text of that program's `--body-file PATH` or `--file PATH` (also
+`=PATH`; `$VAR` and `~` expanded, a relative path from the session directory, moved by the call's own `cd`) when the file is a regular file of at
+most 200 KB that is readable at judge time (an unreadable one is skipped). A file the same call writes (`> PATH`, `>> PATH`,
+`tee [-a] PATH`, any spelling of the path) is not read as it is now: the here-document bodies and the echo / printf
+text of the call are judged instead (an appended file's old content too).
+Not judged: a program that takes its text from positional file paths or a fixed folder (a mail composer or resender),
+`gh [-R repo] issue|pr comment|create|
 edit|review`, `gh release create|edit`, `git commit` or `git tag` (their arguments, and the here-document bodies of
 the call, which is where `-m "$(cat <<'EOF' ...)"` keeps the message); the `message` of the built-in SendMessage
 tool (to another agent or session; not its `to` or `summary`); and an MCP tool whose last name part has a
@@ -297,16 +305,51 @@ def gh_message_args(args):
 
 
 SHELL_OPTIONS_WITH_VALUE = frozenset(("-o", "+o", "-O", "+O", "--rcfile", "--init-file"))
+INTERPRETERS = frozenset(("node", "nodejs", "bun", "deno", "python", "python3", "ruby", "perl", "php"))
+INTERPRETER_CODE_OPTIONS = frozenset(("-e", "-c", "-p", "--eval", "--print"))
+INTERPRETER_VALUE_OPTIONS = frozenset((  # options that take the next word as their value; any other has none
+    "-r", "--require", "--loader", "--experimental-loader", "--import", "--conditions", "-C", "--title", "--config",
+    "--import-map", "-W", "-X", "-Q", "-I", "-E", "-d"))
+BODY_FILE_FLAGS = frozenset(("--body-file", "--file"))
+BODY_FILE_MAX_BYTES = 200_000
+READ_METHODS = frozenset(("GET", "HEAD"))  # `api.mjs GET '/task/x?q=17:36'` asks, it does not write
+
+
+def names_program(word, programs):
+    return word in programs or word.rpartition("/")[2] in programs
+
+
+def interpreter_script_args(runner, args, programs, shell, variables):
+    """The arguments of a listed script run by an interpreter (`node [options] script args`), or None. An option
+    may take a value (`--loader ts-node/esm`, `-W ignore`, see INTERPRETER_VALUE_OPTIONS): that word is skipped; the
+    first other word is the script. `deno run` / `bun run` name the script after `run`; -e, -c and -p run code."""
+    after_option, seen_word = False, False
+    for index, arg in enumerate(args):
+        if arg[:1] in ("-", "+"):
+            if arg in INTERPRETER_CODE_OPTIONS:
+                return None
+            after_option = arg in INTERPRETER_VALUE_OPTIONS
+            continue
+        if names_program(shell.expand(arg, variables), programs):
+            return args[index + 1:]
+        if after_option or arg == "run" and runner in ("deno", "bun") and not seen_word:
+            after_option, seen_word = False, True
+            continue
+        return None  # another script
+    return None
 
 
 def program_args(word, args, programs, shell, variables):
-    """The arguments a message program named in `programs` gets, or None when the command runs none. The program is
-    matched by its word or basename, after a $NAME set earlier in the command line (`S=./send.sh; $S`) is read, or
-    as the script a shell runs (`bash path/send.sh`, `sh $S`); `bash -c '...'` runs code, not a script."""
+    """The arguments of a message program (by name or path basename) when `word` is it, or the arguments after it
+    when `word` is a shell or interpreter that runs it: `bash path/send.sh`, `sh $S`, `node path/api.mjs`;
+    `bash -c '...'` runs code, not a script."""
     word = shell.expand(word, variables)
-    if word in programs or word.rpartition("/")[2] in programs:
+    if names_program(word, programs):
         return args
-    if word.rpartition("/")[2] not in shell.SHELLS:
+    runner = word.rpartition("/")[2]
+    if runner in INTERPRETERS:
+        return interpreter_script_args(runner, args, programs, shell, variables)
+    if runner not in shell.SHELLS:
         return None
     index = 0
     while index < len(args) and args[index][:1] in ("-", "+"):
@@ -314,25 +357,142 @@ def program_args(word, args, programs, shell, variables):
             return None
         index += 2 if args[index] in SHELL_OPTIONS_WITH_VALUE else 1
     script = shell.expand(args[index], variables) if index < len(args) else ""
-    return args[index + 1:] if script and (script in programs or script.rpartition("/")[2] in programs) else None
+    return args[index + 1:] if script and names_program(script, programs) else None
 
 
-def bash_texts(command, programs, shell, messages_only=False):
+def resolve_path(word, base, shell, variables):
+    """The absolute path a word names (variables, `~` and `$HOME` expanded, a relative one taken from `base`), or
+    None when it is relative and the shell's directory is unknown."""
+    path = os.path.expandvars(os.path.expanduser(shell.expand(word, variables)))
+    if os.path.isabs(path):
+        return os.path.normpath(path)
+    return os.path.normpath(os.path.join(base, path)) if base is not None else None
+
+
+def body_file_values(args):
+    """What a message program is told to read its text from (--body-file PATH, --body-file=PATH, --file ...) as
+    typed; `-` is stdin."""
+    words = []
+    for index, arg in enumerate(args):
+        flag, equals, value = arg.partition("=")
+        if flag not in BODY_FILE_FLAGS:
+            continue
+        if not equals:
+            value = args[index + 1] if index + 1 < len(args) else ""
+        if value:
+            words.append(value)
+    return words
+
+
+def body_file_words(args):
+    return [value for value in body_file_values(args) if value != "-"]
+
+
+REDIRECT_OPERATORS = (">", ">>", ">|", "&>", "&>>")
+
+
+def is_redirect(word):
+    path = word.lstrip("&>|")
+    return word in REDIRECT_OPERATORS or word[:1] in (">", "&") and ">" in word[:3] and len(path) > 0 \
+        and not word.startswith(">&")
+
+
+def without_redirects(args):
+    """The arguments of a command minus its output redirections (`> f`, `>> f`, `>f`, `&> f`, `&>>f`)."""
+    kept, skip = [], False
+    for word in args:
+        if skip:
+            skip = False
+        elif word in REDIRECT_OPERATORS:
+            skip = True
+        elif not is_redirect(word):
+            kept.append(word)
+    return kept
+
+
+def file_writes(argv, name, args):
+    """[(path word as typed, appends)] the command writes: `> f`, `>> f`, `>f`, `&>f`, and the files `tee` is given."""
+    writes = []
+    for index, word in enumerate(argv):
+        if word in REDIRECT_OPERATORS and index + 1 < len(argv):
+            writes.append((argv[index + 1], word.endswith(">>")))
+        elif is_redirect(word) and word not in REDIRECT_OPERATORS:
+            writes.append((word.lstrip("&>|"), word.startswith((">>", "&>>"))))
+    if name == "tee":
+        appends = "-a" in args or "--append" in args
+        writes += [(word, appends) for word in without_redirects(args) if word[:1] != "-"]
+    return writes
+
+
+def read_body_file(path):
+    """The text of a regular file of at most BODY_FILE_MAX_BYTES, or None when it cannot be read now (not resolved,
+    missing, a directory, a device, too large, not UTF-8)."""
+    if path is None:
+        return None
+    try:
+        if not stat.S_ISREG(os.stat(path).st_mode):
+            return None  # a device or FIFO is never opened: opening one can block or act
+        # checked again on the descriptor, opened without blocking: the path may be swapped for a FIFO after the stat
+        with os.fdopen(os.open(path, os.O_RDONLY | getattr(os, "O_NONBLOCK", 0)), "rb") as handle:
+            info = os.fstat(handle.fileno())
+            if not stat.S_ISREG(info.st_mode) or info.st_size > BODY_FILE_MAX_BYTES:
+                return None
+            data = handle.read(BODY_FILE_MAX_BYTES + 1)  # bounded: the file may have grown since the fstat
+        if len(data) > BODY_FILE_MAX_BYTES:
+            return None
+        return data.decode("utf-8").replace("\r\n", "\n").replace("\r", "\n")  # the newlines a text-mode read gives
+    except (OSError, ValueError):
+        return None
+
+
+def directory_after_cd(args, base, shell, variables):
+    """The shell's directory after `cd ARGS` (None when it cannot be told: `cd`, `cd -`, `cd $UNSET`; an absolute
+    target is known even when the directory before it was not)."""
+    if len(args) != 1 or args[0] == "-":
+        return None
+    target = os.path.expanduser(shell.expand(args[0], variables))
+    if "$" in target or base is None and not os.path.isabs(target):
+        return None
+    return os.path.normpath(os.path.join(base or "/", target))
+
+
+def bash_texts(command, programs, shell, messages_only=False, cwd=None):
     """The arguments of the message commands in a Bash call (quotes removed), and the here-document bodies of a
     call that sends: `git commit -F - <<EOF` and `-m "$(cat <<'EOF' ... EOF)"` carry the message there.
     messages_only: for git, only the message of a commit or tag (see git_message), not its other arguments; for gh,
     not the commit operands GitHub checks (see gh_message_args); and the here-documents only when one reaches a
     sending command: on its stdin (directly or through a pipe; for git only with -F -) or inside one of its
     arguments (-m "$(cat <<'EOF' ...)"). The bodies are not split per command: when one reaches a sending command,
-    every body of the call is judged."""
-    texts, sent, variables, fed = [], False, [], False
+    every body of the call is judged. cwd: the session's directory, where a relative path and `cd` start."""
+    texts, sent, variables, fed, heredoc_sent = [], False, [], False, False
+    written, writer_args, sends_written = {}, [], False  # written: file -> appended to, by an earlier command
+    heredoc_files, piped_text = set(), []  # files a here-document is written to; echo / printf text for the next stdin
     command_part, heredoc = shell.split_heredocs(command)
-    for argv, piped, has_heredoc in shell.simple_commands(command_part):
+    base = os.path.abspath(cwd or os.getcwd())  # where the shell is, so far (`cd` moves it)
+    outer_bases, leaving = [], 0  # the bases outside the `( ... )` or `$( ... )` we are in; ")" closers to pop
+    for argv, piped, has_heredoc, _case, opener, closer in shell.command_runs(command_part):
+        for _ in range(leaving):  # a subshell ended after the previous command: its `cd` does not carry on
+            base = outer_bases.pop() if outer_bases else base
+        outer_bases += [base] * opener.count("(")
+        leaving = closer.count(")")
         fed = has_heredoc or piped and fed  # a here-document reaches this command's stdin
         name, args = shell.program(argv)
         word = argv[len(argv) - len(args) - 1] if name else ""
+        stdin_text, piped_text = (piped_text if piped else []), []
+        for target, appends in file_writes(argv, name, args):
+            path = resolve_path(target, base, shell, variables)
+            if path is not None:
+                written[path] = appends
+                if has_heredoc:
+                    heredoc_files.add(path)
+        if name in ("echo", "printf"):
+            writer_args += without_redirects(args)  # text a later `--body-file` may carry
+            piped_text = [spoken(without_redirects(args))]  # and what a pipe feeds the next command
         if name == "export" or not name:  # `S=./send.sh;` or `export S=...`: a later $S reads it
             variables += [arg for arg in (args if name else argv) if shell.ASSIGNMENT.match(arg)]
+            continue
+        if name == "cd":
+            base = directory_after_cd(args, base, shell, variables)
             continue
         message = program_args(word, args, programs, shell, variables)
         gh = gh_words(args) if name == "gh" else []
@@ -340,6 +500,20 @@ def bash_texts(command, programs, shell, messages_only=False):
             message = args
         if message is None:
             continue
+        if name not in ("git", "gh"):
+            if message[:1] and message[0] in READ_METHODS:
+                continue
+            if "-" in body_file_values(message):
+                texts += stdin_text  # `echo text | send.sh --body-file -`
+            for body_word in body_file_words(message):
+                path = resolve_path(body_word, base, shell, variables)
+                if path in written:  # the call writes the file first: what it writes is the message
+                    sends_written = True  # (here-document, or the echo / printf text); an append keeps the old text
+                    heredoc_sent = heredoc_sent or path in heredoc_files
+                    old = read_body_file(path) if written[path] else None
+                else:
+                    old = read_body_file(path)
+                texts += [old] if old is not None else []
         if messages_only and name == "git":
             message = git_message(args)
             if message is None:  # `git log --grep tag`: not a commit or tag
@@ -349,7 +523,9 @@ def bash_texts(command, programs, shell, messages_only=False):
             continue
         texts.append(spoken(gh_message_args(args) if messages_only and name == "gh" else message))
         sent = sent or not messages_only or fed or any("<<" in value for value in message)
-    if sent and heredoc:
+    if sends_written:
+        texts += [spoken(writer_args)] if writer_args else []
+    if (sent or heredoc_sent) and heredoc:
         texts.append(heredoc)
     return texts
 
@@ -363,11 +539,11 @@ def sends_text(tool_name):
     return bool(words & SEND_WORDS) and not words & NOT_SEND_WORDS
 
 
-def outbound_texts(tool_name, tool_input, programs, shell, messages_only=False):
+def outbound_texts(tool_name, tool_input, programs, shell, messages_only=False, cwd=None):
     """The text a tool call sends to people; [] for anything else (file edits, reads, plain commands)."""
     if tool_name == "Bash":
         command = tool_input.get("command") if isinstance(tool_input, dict) else None
-        return bash_texts(command, programs, shell, messages_only) if isinstance(command, str) else []
+        return bash_texts(command, programs, shell, messages_only, cwd) if isinstance(command, str) else []
     if tool_name == "SendMessage":  # the built-in message to another agent or session; `to` is an address
         message = tool_input.get("message") if isinstance(tool_input, dict) else None
         return list(string_values(message, skip_ids=messages_only))
