@@ -4,6 +4,12 @@ All notable changes to Senior Developer Arsenal are recorded in this file.
 
 The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/), and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version is the one in the `VERSION` file, and each release is dated by the day its pull request merged (UTC).
 
+## [1.40.0] - 2026-11-28
+
+### Added
+
+- `replace-dollar` rule (`hooks/guard_replace_dollar.py`, opt-in): refuses a Bash command whose JavaScript (`node -e`/`-p`, a here-document fed to node, or a `.js`/`.mjs`/`.cjs` file the same command writes and runs) calls `.replace` or `.replaceAll` with a string replacement holding `$'`, `$$` or a dollar sign followed by a backtick, which JavaScript expands instead of writing them; also when the replacement is a variable or an expression and a string in the script holds one of them. Function replacements, `split().join()`, `$&` and `$1`..`$9` pass. Measured over 14 days of transcripts: every such token was a bug (#80).
+
 ## [1.39.1] - 2026-11-28
 
 ### Fixed
@@ -555,6 +561,7 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 - Non-destructive installers for every supported agent.
 - CI with lint, test and smoke workflows.
 
+[1.40.0]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/80
 [1.39.1]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/79
 [1.39.0]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/78
 [1.38.0]: https://github.com/abdulazeem-m0uneer/senior-developer-arsenal/pull/77
